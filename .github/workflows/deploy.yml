@@ -1,0 +1,25 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute deploy script via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~ # Укажите абсолютный путь к папке с вашим сайтом
+            git pull origin main
+            php8.2 artisan migrate
+            php8.2 artisan optimize
+
+            # Добавьте команды для перезапуска служб, установки зависимостей и т.д.
+            # npm install
+            # systemctl restart nginx
