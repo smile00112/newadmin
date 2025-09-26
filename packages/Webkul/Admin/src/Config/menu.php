@@ -38,13 +38,13 @@ return [
         'sort'       => 2,
         'icon'       => '',
     ],
-//    [
-//        'key'        => 'sales.invoices',
-//        'name'       => 'admin::app.components.layouts.sidebar.invoices',
-//        'route'      => 'admin.sales.invoices.index',
-//        'sort'       => 3,
-//        'icon'       => '',
-//    ],
+    [
+        'key'        => 'sales.invoices',
+        'name'       => 'admin::app.components.layouts.sidebar.invoices',
+        'route'      => 'admin.sales.invoices.index',
+        'sort'       => 3,
+        'icon'       => '',
+    ],
 //    [
 //        'key'        => 'sales.refunds',
 //        'name'       => 'admin::app.components.layouts.sidebar.refunds',
