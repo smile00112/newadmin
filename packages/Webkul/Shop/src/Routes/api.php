@@ -104,7 +104,7 @@ Route::group(['prefix' => 'api'], function () {
     });
     Route::group(['prefix' => 'login/sms'], function () {
         Route::controller(CustomerController::class)->prefix('customer')->group(function () {
-            Route::post('send_code', 'login')->name('shop.api.customers.session.create');
+            Route::post('send_code', 'login')->name('shop.api.customers.auth.sms.send_code');
         });
     });
     /**
