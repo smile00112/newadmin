@@ -434,7 +434,7 @@ return [
 
                 'datagrid' => [
                     'id'               => 'ID',
-                    'inventory-source' => 'Источник инвентаря',
+                    'inventory-source' => 'Склад',
                     'order-date'       => 'Дата заказа',
                     'order-id'         => 'ID заказа',
                     'shipment-date'    => 'Дата отгрузки',
@@ -474,7 +474,7 @@ return [
                 'currency'             => 'Валюта',
                 'customer'             => 'Клиент',
                 'email'                => 'Email - :email',
-                'inventory-source'     => 'Источник инвентаря',
+                'inventory-source'     => 'Склады',
                 'order-date'           => 'Дата заказа',
                 'order-id'             => 'ID заказа',
                 'order-information'    => 'Информация о заказе',
@@ -3049,8 +3049,8 @@ return [
 
         'inventory-sources' => [
             'index' => [
-                'create-btn' => 'Создать источник инвентаризации',
-                'title'      => 'Источники инвентаря',
+                'create-btn' => 'Создать склад',
+                'title'      => 'Склады',
 
                 'datagrid' => [
                     'active'   => 'Активен',
@@ -3066,8 +3066,8 @@ return [
             ],
 
             'create' => [
-                'add-title'      => 'Добавить источник инвентаря',
-                'address'        => 'Адрес источника',
+                'add-title'      => 'Добавить склад',
+                'address'        => 'Адрес склада',
                 'back-btn'       => 'Назад',
                 'city'           => 'Город',
                 'code'           => 'Код',
@@ -3084,14 +3084,14 @@ return [
                 'name'           => 'Название',
                 'postcode'       => 'Почтовый индекс',
                 'priority'       => 'Приоритет',
-                'save-btn'       => 'Сохранить источник инвентаря',
+                'save-btn'       => 'Сохранить склад',
                 'select-country' => 'Выберите страну',
                 'select-state'   => 'Выберите область',
                 'settings'       => 'Настройки',
                 'state'          => 'Область',
                 'status'         => 'Статус',
                 'street'         => 'Улица',
-                'title'          => 'Источники инвентаря',
+                'title'          => 'Склады',
             ],
 
             'edit' => [
@@ -3111,22 +3111,22 @@ return [
                 'name'           => 'Название',
                 'postcode'       => 'Почтовый индекс',
                 'priority'       => 'Приоритет',
-                'save-btn'       => 'Сохранить источник инвентаря',
+                'save-btn'       => 'Сохранить склад',
                 'select-country' => 'Выберите страну',
                 'select-state'   => 'Выберите область',
                 'settings'       => 'Настройки',
-                'source-address' => 'Адрес источника',
+                'source-address' => 'Адрес склада',
                 'state'          => 'Область',
                 'status'         => 'Статус',
                 'street'         => 'Улица',
-                'title'          => 'Редактировать источники инвентаря',
+                'title'          => 'Редактировать склад',
             ],
 
-            'create-success'    => 'Источник инвентаря успешно создан',
-            'delete-failed'     => 'Ошибка при удалении источников инвентаря',
-            'delete-success'    => 'Источники инвентаря успешно удалены',
-            'last-delete-error' => 'По крайней мере, один источник инвентаря обязателен.',
-            'update-success'    => 'Источники инвентаря успешно обновлены',
+            'create-success'    => 'Склад успешно создан',
+            'delete-failed'     => 'Ошибка при удалении склада',
+            'delete-success'    => 'Склад успешно удалены',
+            'last-delete-error' => 'По крайней мере, один склад обязателен.',
+            'update-success'    => 'Склады успешно обновлены',
         ],
 
         'taxes' => [
@@ -3265,7 +3265,7 @@ return [
                 'general'                 => 'Общее',
                 'hostname'                => 'Имя хоста',
                 'hostname-placeholder'    => 'https://www.example.com (Не добавляйте слеш в конце.)',
-                'inventory-sources'       => 'Источники инвентаря',
+                'inventory-sources'       => 'Склады',
                 'last-delete-error'       => 'Требуется хотя бы один канал.',
                 'locales'                 => 'Локали',
                 'logo'                    => 'Логотип',
@@ -3303,7 +3303,7 @@ return [
                 'general'                => 'Общее',
                 'hostname'               => 'Имя хоста',
                 'hostname-placeholder'   => 'https://www.example.com (Не добавляйте слеш в конце.)',
-                'inventory-sources'      => 'Источники инвентаря',
+                'inventory-sources'      => 'Склады',
                 'last-delete-error'      => 'Требуется хотя бы один канал.',
                 'locales'                => 'Локали',
                 'logo'                   => 'Логотип',
@@ -4743,7 +4743,7 @@ return [
                 'gdpr-data-requests'       => 'Запросы данных GDPR',
                 'groups'                   => 'Группы',
                 'imports'                  => 'Импорт',
-                'inventory-sources'        => 'Источники инвентаризации',
+                'inventory-sources'        => 'Склады',
                 'invoices'                 => 'Счета',
                 'locales'                  => 'Локали',
                 'marketing'                => 'Маркетинг',
@@ -4996,7 +4996,7 @@ return [
         'groups'                   => 'Группы',
         'import'                   => 'Импортировать',
         'imports'                  => 'Импорт',
-        'inventory-sources'        => 'Источники инвентаря',
+        'inventory-sources'        => 'Склады',
         'invoices'                 => 'Счета',
         'locales'                  => 'Локали',
         'marketing'                => 'Маркетинг',
