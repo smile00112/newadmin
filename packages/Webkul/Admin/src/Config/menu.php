@@ -31,13 +31,13 @@ return [
     /*
      * TODO - remove this
      * */
-//    [
-//        'key'        => 'sales.shipments',
-//        'name'       => 'admin::app.components.layouts.sidebar.shipments',
-//        'route'      => 'admin.sales.shipments.index',
-//        'sort'       => 2,
-//        'icon'       => '',
-//    ],
+    [
+        'key'        => 'sales.shipments',
+        'name'       => 'admin::app.components.layouts.sidebar.shipments',
+        'route'      => 'admin.sales.shipments.index',
+        'sort'       => 2,
+        'icon'       => '',
+    ],
 //    [
 //        'key'        => 'sales.invoices',
 //        'name'       => 'admin::app.components.layouts.sidebar.invoices',
