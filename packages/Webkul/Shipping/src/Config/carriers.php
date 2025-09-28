@@ -19,4 +19,13 @@ return [
         'default_rate' => '0',
         'class'        => 'Webkul\Shipping\Carriers\Free',
     ],
+    
+    'pickup' => [
+        'code'         => 'pickup',
+        'title'        => 'Pickup',
+        'description'  => 'Store Pickup',
+        'active'       => true,
+        'default_rate' => '0',
+        'class'        => 'Webkul\Shipping\Carriers\Pickup',
+    ],
 ];

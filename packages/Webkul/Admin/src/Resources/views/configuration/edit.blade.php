@@ -91,7 +91,7 @@
                             <span class="icon-language text-2xl"></span>
 
                             {{ $currentLocale->name }}
-                            
+
                             <input
                                 type="hidden"
                                 name="locale"
@@ -117,7 +117,7 @@
             </div>
         </div>
 
-        <div class="mt-6 grid grid-cols-[1fr_2fr] gap-10 max-xl:flex-wrap">
+        <div class="mt-6 grid grid-cols-[0.5fr_3fr] gap-10 max-xl:flex-wrap">
             @foreach ($activeConfiguration->getChildren() as $child)
                 <div class="grid content-start gap-2.5">
                     <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
@@ -136,7 +136,7 @@
                             && view()->exists($path = $field->getPath())
                         )
                             {!! view($path, compact('field', 'child'))->render() !!}
-                        @else 
+                        @else
                             @include ('admin::configuration.field-type')
                         @endif
                     @endforeach
