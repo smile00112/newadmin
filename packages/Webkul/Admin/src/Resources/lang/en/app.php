@@ -4403,6 +4403,20 @@ return [
                         'title-info'  => '"Free shipping" refers to a shipping method where the cost of shipping is waived, and the seller covers the shipping expenses for delivering goods to the buyer.',
                     ],
 
+                    'zone-shipping' => [
+                        'description' => 'Description',
+                        'page-title'  => 'Zone Delivery',
+                        'rate'        => 'Rate',
+                        'status'      => 'Status',
+                        'title'       => 'Title',
+                        'title-info'  => 'Zone delivery allows setting a fixed fee or per-unit fee based on predefined zones.',
+                        'type'        => [
+                            'per-order' => 'Per Order',
+                            'per-unit'  => 'Per Unit',
+                            'title'     => 'Type',
+                        ],
+                    ],
+
                     'pickup-shipping' => [
                         'description' => 'Description',
                         'page-title'  => 'Store Pickup',

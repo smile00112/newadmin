@@ -20,6 +20,16 @@ return [
         'class'        => 'Webkul\Shipping\Carriers\Free',
     ],
     
+    'zone' => [
+        'code'         => 'zone',
+        'title'        => 'Zone Delivery',
+        'description'  => 'Zone-based Delivery',
+        'active'       => false,
+        'default_rate' => '0',
+        'type'         => 'per_unit',
+        'class'        => 'Webkul\Shipping\Carriers\Zone',
+    ],
+    
     'pickup' => [
         'code'         => 'pickup',
         'title'        => 'Pickup',

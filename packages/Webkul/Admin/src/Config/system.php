@@ -1810,6 +1810,12 @@ return [
         'sort'   => 1,
         'fields' => [
             [
+                'name'          => 'active',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.free-shipping.status',
+                'type'          => 'boolean',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
                 'name'          => 'title',
                 'title'         => 'admin::app.configuration.index.sales.shipping-methods.free-shipping.title',
                 'type'          => 'text',
@@ -1821,14 +1827,9 @@ return [
                 'name'          => 'description',
                 'title'         => 'admin::app.configuration.index.sales.shipping-methods.free-shipping.description',
                 'type'          => 'textarea',
+                'depends'       => 'active:1',
                 'channel_based' => true,
                 'locale_based'  => true,
-            ], [
-                'name'          => 'active',
-                'title'         => 'admin::app.configuration.index.sales.shipping-methods.free-shipping.status',
-                'type'          => 'boolean',
-                'channel_based' => true,
-                'locale_based'  => false,
             ],
         ],
     ], [
@@ -1838,6 +1839,12 @@ return [
         'sort'   => 2,
         'fields' => [
             [
+                'name'          => 'active',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.pickup-shipping.status',
+                'type'          => 'boolean',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
                 'name'          => 'title',
                 'title'         => 'admin::app.configuration.index.sales.shipping-methods.pickup-shipping.title',
                 'type'          => 'text',
@@ -1849,12 +1856,60 @@ return [
                 'name'          => 'description',
                 'title'         => 'admin::app.configuration.index.sales.shipping-methods.pickup-shipping.description',
                 'type'          => 'textarea',
+                'depends'       => 'active:1',
+                'channel_based' => true,
+                'locale_based'  => true,
+            ],
+        ],
+    ], [
+        'key'    => 'sales.carriers.zone',
+        'name'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.page-title',
+        'info'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.title-info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name'          => 'active',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.status',
+                'type'          => 'boolean',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
+                'name'          => 'title',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.title',
+                'type'          => 'text',
+                'depends'       => 'active:1',
+                'validation'    => 'required_if:active,1',
                 'channel_based' => true,
                 'locale_based'  => true,
             ], [
-                'name'          => 'active',
-                'title'         => 'admin::app.configuration.index.sales.shipping-methods.pickup-shipping.status',
-                'type'          => 'boolean',
+                'name'          => 'description',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.description',
+                'type'          => 'textarea',
+                'depends'       => 'active:1',
+                'channel_based' => true,
+                'locale_based'  => true,
+            ], [
+                'name'          => 'default_rate',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.rate',
+                'type'          => 'text',
+                'depends'       => 'active:1',
+                'validation'    => 'required_if:active,1|numeric',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
+                'name'    => 'type',
+                'title'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.type.title',
+                'type'    => 'select',
+                'depends' => 'active:1',
+                'options' => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.type.per-unit',
+                        'value' => 'per_unit',
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.type.per-order',
+                        'value' => 'per_order',
+                    ],
+                ],
                 'channel_based' => true,
                 'locale_based'  => false,
             ],
@@ -1863,9 +1918,15 @@ return [
         'key'    => 'sales.carriers.flatrate',
         'name'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.page-title',
         'info'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.title-info',
-        'sort'   => 3,
+        'sort'   => 4,
         'fields' => [
             [
+                'name'          => 'active',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.status',
+                'type'          => 'boolean',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
                 'name'          => 'title',
                 'title'         => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.title',
                 'type'          => 'text',
@@ -1877,6 +1938,7 @@ return [
                 'name'          => 'description',
                 'title'         => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.description',
                 'type'          => 'textarea',
+                'depends'       => 'active:1',
                 'channel_based' => true,
                 'locale_based'  => true,
             ], [
@@ -1891,6 +1953,7 @@ return [
                 'name'    => 'type',
                 'title'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.type.title',
                 'type'    => 'select',
+                'depends' => 'active:1',
                 'options' => [
                     [
                         'title' => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.type.per-unit',
@@ -1900,12 +1963,6 @@ return [
                         'value' => 'per_order',
                     ],
                 ],
-                'channel_based' => true,
-                'locale_based'  => false,
-            ], [
-                'name'          => 'active',
-                'title'         => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.status',
-                'type'          => 'boolean',
                 'channel_based' => true,
                 'locale_based'  => false,
             ],

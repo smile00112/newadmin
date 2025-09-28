@@ -771,7 +771,6 @@ return [
             'title' => 'Бронирование продукта',
         ],
     ],
-
     'catalog' => [
         'products' => [
             'index' => [
@@ -1532,7 +1531,6 @@ return [
             'update-success'    => 'Атрибут успешно обновлен',
             'user-define-error' => 'Системный атрибут не может быть удален',
         ],
-
         'categories' => [
             'index' => [
                 'add-btn' => 'Создать категорию',
@@ -2075,7 +2073,6 @@ return [
             ],
         ],
     ],
-
     'marketing' => [
         'communications' => [
             'templates' => [
@@ -2811,7 +2808,6 @@ return [
         'no-resource'    => 'Ресурс не существует.',
         'update-success' => 'Страница CMS успешно обновлена.',
     ],
-
     'settings' => [
         'locales' => [
             'index' => [
@@ -3281,7 +3277,7 @@ return [
                 'seo'                     => 'SEO домашней страницы',
                 'seo-description'         => 'Мета-описание',
                 'seo-keywords'            => 'Мета-ключевые слова',
-                'seo-title'               => 'Мета-заголовок',
+                'seo-title'              => 'Мета-заголовок',
                 'settings'                => 'Настройки',
                 'status'                  => 'Статус',
                 'theme'                   => 'Тема',
@@ -3563,7 +3559,6 @@ return [
             'update-success' => 'Тема успешно обновлена',
         ],
     ],
-
     'reporting' => [
         'sales' => [
             'index' => [
@@ -4129,7 +4124,6 @@ return [
                     ],
                 ],
             ],
-
             'customer' => [
                 'info'  => 'Клиент',
                 'title' => 'Клиент',
@@ -4488,6 +4482,20 @@ return [
                             'title'     => 'Тип',
                         ],
                     ],
+
+                    'zone-shipping' => [
+                        'description' => 'Описание',
+                        'page-title'  => 'Доставка по зонам',
+                        'rate'        => 'Ставка',
+                        'status'      => 'Статус',
+                        'title'       => 'Название',
+                        'title-info'  => 'Доставка по зонам позволяет задавать фиксированную или почасовую ставку за единицу в зависимости от заранее определённых зон.',
+                        'type'        => [
+                            'per-order' => 'За заказ',
+                            'per-unit'  => 'За единицу',
+                            'title'     => 'Тип',
+                        ],
+                    ],
                 ],
 
                 'payment-methods' => [
@@ -4699,7 +4707,6 @@ return [
             ],
         ],
     ],
-
     'components' => [
         'layouts' => [
             'header' => [
