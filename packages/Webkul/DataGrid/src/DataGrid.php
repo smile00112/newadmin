@@ -551,11 +551,12 @@ abstract class DataGrid
         $this->processRequestedFilters($requestedParams['filters'] ?? []);
 
 //        TODO remove it
-        if(!empty($_GET['ingredient'])){
-            $this->queryBuilder->where('product_flat.type', 'ingredient');
-        }
-        else{
-            $this->queryBuilder->where( 'product_flat.type', '<>', 'ingredient');
+        if(strpos($_SERVER['REDIRECT_URL'], 'products')!==false) {
+            if (!empty($_GET['ingredient'])) {
+                $this->queryBuilder->where('product_flat.type', 'ingredient');
+            } else {
+                $this->queryBuilder->where('product_flat.type', '<>', 'ingredient');
+            }
         }
         //dd($this->queryBuilder->ddRawSql());
         $this->processRequestedSorting($requestedParams['sort'] ?? []);
