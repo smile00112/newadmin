@@ -370,6 +370,56 @@ class ProductController extends Controller
         return ProductResource::collection($products);
     }
 
+    /*TODO - refactor this*/
+    public function search_ingredients()
+    {
+        $query = trim(request('query'));
+
+        if (empty($query)) {
+            return response()->json([
+                'data' => [],
+            ]);
+        }
+
+        $searchEngine = 'database';
+
+        if (
+            core()->getConfigData('catalog.products.search.engine') == 'elastic'
+            && core()->getConfigData('catalog.products.search.admin_mode') == 'elastic'
+        ) {
+            $searchEngine = 'elastic';
+
+            $indexNames = core()->getAllChannels()->map(function ($channel) {
+                return Product::formatElasticSearchIndexName($channel->code, app()->getLocale());
+            })->toArray();
+        }
+
+        $channelId = $this->customerRepository->find(request('customer_id'))->channel_id ?? null;
+
+        $params = [
+            'index'      => $indexNames ?? null,
+            'name'       => request('query'),
+            'sort'       => 'created_at',
+            'order'      => 'desc',
+            'channel_id' => $channelId,
+        ];
+
+        if (request()->has('type')) {
+            $params['type'] = request('type');
+        }
+
+        if (request()->has('exclude_customizable_products')) {
+            $params['exclude_customizable_products'] = request('exclude_customizable_products');
+        }
+
+        $products = $this->productRepository
+            ->setSearchEngine($searchEngine)
+            ->getAll($params);
+
+        return ProductResource::collection($products);
+    }
+
+
     /**
      * Download image or file.
      *

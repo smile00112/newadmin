@@ -283,7 +283,13 @@ class Product extends Model implements ProductContract
     {
         return $this->belongsToMany(static::class, 'product_cross_sells', 'parent_id', 'child_id');
     }
-
+    /**
+     * The cross sells that belong to the product.
+     */
+    public function ingredients_incompatibility(): BelongsToMany
+    {
+        return $this->belongsToMany(static::class, 'product_ingredients_incompatibility', 'parent_id', 'child_id');
+    }
     /**
      * The cross sells that belong to the product.
      */

@@ -129,12 +129,14 @@
             <x-admin::products.search
                 ref="productSearch"
                 ::added-product-ids="addedProductIds"
+                ::search-ingredients="true"
                 @onProductAdded="addSelected($event)"
             />
         </div>
     </script>
 
     <script type="module">
+        //alert('{{$product->type}}');
         app.component('v-product-links', {
             template: '#v-product-links-template',
 
@@ -142,33 +144,19 @@
                 return {
                     currentProduct: @json($product),
 
-                    selectedType: 'related_products',
+                    selectedType: 'ingredients_incompatibility',
 
                     types: [
                         {
-                            key: 'related_products',
-                            title: `@lang('admin::app.catalog.products.edit.links.related-products.title')`,
-                            info: `@lang('admin::app.catalog.products.edit.links.related-products.info')`,
-                            empty_info: `@lang('admin::app.catalog.products.edit.links.related-products.empty-info')`,
-                        }, {
-                            key: 'up_sells',
-                            title: `@lang('admin::app.catalog.products.edit.links.up-sells.title')`,
-                            info: `@lang('admin::app.catalog.products.edit.links.up-sells.info')`,
-                            empty_info: `@lang('admin::app.catalog.products.edit.links.up-sells.empty-info')`,
-                        }, {
-                            key: 'cross_sells',
-                            title: `@lang('admin::app.catalog.products.edit.links.cross-sells.title')`,
-                            info: `@lang('admin::app.catalog.products.edit.links.cross-sells.info')`,
-                            empty_info: `@lang('admin::app.catalog.products.edit.links.cross-sells.empty-info')`,
+                            key: 'ingredients_incompatibility',
+                            title: `@lang('admin::app.catalog.products.edit.links.ingredients_incompatibility.title')`,
+                            info: `@lang('admin::app.catalog.products.edit.links.ingredients_incompatibility.info')`,
+                            empty_info: `@lang('admin::app.catalog.products.edit.links.ingredients_incompatibility.empty-info')`,
                         }
                     ],
 
                     addedProducts: {
-                        'up_sells': @json($product->up_sells()->with('images')->get()),
-
-                        'cross_sells': @json($product->cross_sells()->with('images')->get()),
-
-                        'related_products': @json($product->related_products()->with('images')->get())
+                        'ingredients_incompatibility': @json($product->ingredients_incompatibility()->with('images')->get())
                     },
                 }
             },

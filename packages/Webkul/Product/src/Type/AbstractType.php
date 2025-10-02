@@ -184,6 +184,8 @@ abstract class AbstractType
 
         $product->related_products()->sync($data['related_products'] ?? []);
 
+        $product->ingredients_incompatibility()->sync($data['ingredients_incompatibility'] ?? []);
+
         $this->productInventoryRepository->saveInventories($data, $product);
 
         $this->productImageRepository->upload($data, $product, 'images');

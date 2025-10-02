@@ -71,12 +71,21 @@ return [
      * Catalog.
      */
     [
+        'key'        => 'catalog.ingredients',
+        'name'       => 'admin::app.components.layouts.sidebar.ingredients',
+        'route'      => 'admin.catalog.ingredients',
+        'sort'       => 1,
+        'icon'       => '',
+    ]
+    ,
+    [
         'key'        => 'catalog',
         'name'       => 'admin::app.components.layouts.sidebar.catalog',
         'route'      => 'admin.catalog.products.index',
         'sort'       => 3,
         'icon'       => 'icon-product',
-    ], [
+    ]
+    , [
         'key'        => 'catalog.products',
         'name'       => 'admin::app.components.layouts.sidebar.products',
         'route'      => 'admin.catalog.products.index',

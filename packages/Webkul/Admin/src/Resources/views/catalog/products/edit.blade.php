@@ -3,6 +3,15 @@
         @lang('admin::app.catalog.products.edit.title')
     </x-slot>
 
+    @php
+    // проброс ошибок в session, т.е. валидация через formRequest
+    if(!empty($errors)){
+        foreach ($errors->all() as $error) {
+            session()->flash('error', $error);
+            //echo $error . "<br>";
+        }
+    }
+    @endphp
     {!! view_render_event('bagisto.admin.catalog.product.edit.before', ['product' => $product]) !!}
 
     <x-admin::form
@@ -168,9 +177,9 @@
                         @if ($customAttributes->isNotEmpty())
                             <!--TODO - remove this-->
 {{--                        {{$group->code}}--}}
-                            @if(in_array($group->code, ['shipping']))
-                               @continue;
-                            @endif
+{{--                            @if(in_array($group->code, ['shipping']))--}}
+{{--                               @continue;--}}
+{{--                            @endif--}}
 
 {{--                            {{$group->code}}--}}
                             {!! view_render_event("bagisto.admin.catalog.product.edit.form.{$group->code}.before", ['product' => $product]) !!}
@@ -187,9 +196,9 @@
                                 @foreach ($customAttributes as $attribute)
 {{--                                    {{$group->code}}--}}
 <!--                                    TODO - remove this -->
-                                    @if(in_array($attribute->code, ['color', 'brand', 'size', 'length', 'width', 'height']))
-                                        @continue
-                                    @endif
+{{--                                    @if(in_array($attribute->code, ['color', 'brand', 'size', 'length', 'width', 'height']))--}}
+{{--                                        @continue--}}
+{{--                                    @endif--}}
 
                                     {!! view_render_event("bagisto.admin.catalog.product.edit.form.{$group->code}.controls.before", ['product' => $product]) !!}
 
@@ -243,8 +252,14 @@
                         <!-- Product Type View Blade File -->
                         @includeIf('admin::catalog.products.edit.types.' . $product->type)
 
-                        <!-- Related, Cross Sells, Up Sells View Blade File -->
-                        @include('admin::catalog.products.edit.links')
+{{--                        TODO - refactor this--}}
+                        @if($product->type !== 'ingredient')
+                            <!-- Related, Cross Sells, Up Sells View Blade File -->
+                            @include('admin::catalog.products.edit.links')
+                        @else
+                            <!-- Incompatibility Ingredients View Blade File -->
+                            @include('admin::catalog.products.edit.links_incompatibility_ingredients')
+                        @endif
 
                         <!-- Include Product Type Additional Blade Files If Any -->
                         @foreach ($product->getTypeInstance()->getAdditionalViews() as $view)
@@ -271,8 +286,14 @@
                             <!-- Product Type View Blade File -->
                             @includeIf('admin::catalog.products.edit.types.' . $product->type)
 
-                            <!-- Related, Cross Sells, Up Sells View Blade File -->
-                            @include('admin::catalog.products.edit.links')
+    {{--                        TODO - refactor this--}}
+                            @if($product->type !== 'ingredient')
+                                <!-- Related, Cross Sells, Up Sells View Blade File -->
+                                @include('admin::catalog.products.edit.links')
+                            @else
+                                <!-- Incompatibility Ingredients View Blade File -->
+                                @include('admin::catalog.products.edit.links_incompatibility_ingredients')
+                            @endif
 
                             <!-- Include Product Type Additional Blade Files If Any -->
                             @foreach ($product->getTypeInstance()->getAdditionalViews() as $view)

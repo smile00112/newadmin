@@ -87,8 +87,12 @@ Route::prefix('catalog')->group(function () {
     /**
      * Products routes.
      */
+
+
     Route::controller(ProductController::class)->prefix('products')->group(function () {
         Route::get('', 'index')->name('admin.catalog.products.index');
+
+        //Route::get('ingredients', 'index', ['ingredient' => 1])->name('admin.catalog.products.ingredients');
 
         Route::post('create', 'store')->name('admin.catalog.products.store');
 
@@ -136,6 +140,16 @@ Route::prefix('catalog')->group(function () {
 
         Route::get('search', 'search')->name('admin.catalog.products.search');
 
+        //Route::get('search', 'search_ingredients')->name('admin.catalog.products.search_ingredients');
+
         Route::get('{id}/{attribute_id}', 'download')->name('admin.catalog.products.file.download');
+    });
+
+    Route::controller(ProductController::class)->prefix('ingredients')->group(function () {
+
+        //redirect()->route('admin.catalog.products.index', ['id' => 1]);
+        Route::get('', function(){
+            return  redirect('/admin/catalog/products?ingredient=1');
+        })->name('admin.catalog.ingredients');
     });
 });

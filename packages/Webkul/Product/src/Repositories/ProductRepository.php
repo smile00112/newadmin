@@ -402,7 +402,7 @@ class ProductRepository extends Repository
 
                 $qb->groupBy('products.id');
             }
-
+           // echo $qb->toSql();
             /**
              * Sort collection.
              */
