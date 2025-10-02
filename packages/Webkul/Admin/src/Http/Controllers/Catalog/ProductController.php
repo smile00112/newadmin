@@ -157,7 +157,12 @@ class ProductController extends Controller
 
         session()->flash('success', trans('admin::app.catalog.products.update-success'));
 
-        return redirect()->route('admin.catalog.products.index');
+        /*TODO refactor*/
+        if($product->type !=='ingredient'){
+            return redirect()->route('admin.catalog.products.index');
+        }else{
+            return redirect('/admin/catalog/products?ingredient=1');
+        }
     }
 
     /**

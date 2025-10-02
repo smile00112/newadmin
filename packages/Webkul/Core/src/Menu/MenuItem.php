@@ -85,7 +85,16 @@ class MenuItem
      */
     public function isActive(): bool
     {
+        /*TODO refactor*/
+        if( !empty($_GET['ingredient']) && strpos($this->getUrl(), 'admin/catalog/ingredients') !== false){
+            return true;
+        }
         if (request()->fullUrlIs($this->getUrl().'*')) {
+            /*TODO refactor*/
+            if(!empty($_GET['ingredient']) && strpos($this->getUrl(), 'admin/catalog/products') !== false){
+                return false;
+            }
+
             return true;
         }
 

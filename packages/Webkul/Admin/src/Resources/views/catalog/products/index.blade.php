@@ -435,7 +435,7 @@
                                     {!! view_render_event('bagisto.admin.catalog.products.create_form.general.controls.before') !!}
 
                                     <!-- Product Type -->
-                                    <x-admin::form.control-group>
+                                    <x-admin::form.control-group >
                                         <x-admin::form.control-group.label class="required">
                                             @lang('admin::app.catalog.products.index.create.type')
                                         </x-admin::form.control-group.label>
@@ -445,9 +445,10 @@
                                             name="type"
                                             rules="required"
                                             :label="trans('admin::app.catalog.products.index.create.type')"
+                                            value="simple"
                                         >
                                             @foreach(config('product_types') as $key => $type)
-                                                <option value="{{ $key }}">
+                                                <option @if($key == 'simple') selected @endif value="{{ $key }}">
                                                     @lang($type['name'])
                                                 </option>
                                             @endforeach
@@ -457,7 +458,7 @@
                                     </x-admin::form.control-group>
 
                                     <!-- Attribute Family Id -->
-                                    <x-admin::form.control-group>
+                                    <x-admin::form.control-group style="display: none">
                                         <x-admin::form.control-group.label class="required">
                                             @lang('admin::app.catalog.products.index.create.family')
                                         </x-admin::form.control-group.label>
@@ -467,9 +468,10 @@
                                             name="attribute_family_id"
                                             rules="required"
                                             :label="trans('admin::app.catalog.products.index.create.family')"
+                                            value="{{$families[0]->id}}"
                                         >
                                             @foreach($families as $family)
-                                                <option value="{{ $family->id }}">
+                                                <option @if($loop->index === 0) selected @endif  value="{{ $family->id }}">
                                                     {{ $family->name }}
                                                 </option>
                                             @endforeach
@@ -479,7 +481,7 @@
                                     </x-admin::form.control-group>
 
                                     <!-- SKU -->
-                                    <x-admin::form.control-group>
+                                    <x-admin::form.control-group style="display: none">
                                         <x-admin::form.control-group.label class="required">
                                             @lang('admin::app.catalog.products.index.create.sku')
                                         </x-admin::form.control-group.label>
@@ -487,8 +489,9 @@
                                         <x-admin::form.control-group.control
                                             type="text"
                                             name="sku"
-                                            ::rules="{ required: true, regex: /^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/ }"
+                                            ::rules="{ required: false, regex: /^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$/ }"
                                             :label="trans('admin::app.catalog.products.index.create.sku')"
+                                            value="{{Str::uuid()->toString()}}"
                                         />
 
                                         <x-admin::form.control-group.error control-name="sku" />
