@@ -753,7 +753,7 @@ return [
             ],
 
             'start' => [
-                'locale'        => 'Локаль',
+                'locale'        => 'Язык',
                 'main'          => 'Початок',
                 'select-locale' => 'Вибір локалі',
                 'title'         => 'Ваша установка Bagisto',

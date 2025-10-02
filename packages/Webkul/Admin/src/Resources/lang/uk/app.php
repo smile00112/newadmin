@@ -2595,7 +2595,7 @@ return [
                         'delete'              => 'Видалити',
                         'edit'                => 'Редагувати',
                         'id'                  => 'ID',
-                        'locale'              => 'Локаль',
+                        'locale'              => 'Язык',
                         'mass-delete-success' => 'Вибрані терміни пошуку успішно видалено',
                         'redirect-url'        => 'URL переадресації',
                         'results'             => 'Результати',
@@ -2606,7 +2606,7 @@ return [
                     'create' => [
                         'channel'        => 'Канал',
                         'delete-warning' => 'Ви впевнені, що хочете виконати цю дію?',
-                        'locale'         => 'Локаль',
+                        'locale'         => 'Язык',
                         'redirect-url'   => 'URL переадресації',
                         'results'        => 'Результати',
                         'save-btn'       => 'Зберегти термін пошуку',
@@ -2717,7 +2717,7 @@ return [
                         'edit'                => 'Редагувати',
                         'for'                 => 'Для',
                         'id'                  => 'ID',
-                        'locale'              => 'Локаль',
+                        'locale'              => 'Язык',
                         'mass-delete-success' => 'Вибрані переадресації URL успішно видалено',
                         'permanent-redirect'  => 'Постійна (301)',
                         'product'             => 'Продукт',
@@ -2732,7 +2732,7 @@ return [
                         'cms-page'           => 'Сторінка CMS',
                         'delete-warning'     => 'Ви впевнені, що хочете виконати цю дію?',
                         'for'                => 'Для',
-                        'locale'             => 'Локаль',
+                        'locale'             => 'Язык',
                         'permanent-redirect' => 'Постійна (301)',
                         'product'            => 'Продукт',
                         'redirect-type'      => 'Тип переадресації',
@@ -2815,8 +2815,8 @@ return [
     'settings' => [
         'locales' => [
             'index' => [
-                'create-btn' => 'Створити Локаль',
-                'locale'     => 'Локаль',
+                'create-btn' => 'Створити Язык',
+                'locale'     => 'Язык',
                 'logo-size'  => 'Роздільна здатність зображення повинна бути 24px x 16px',
                 'title'      => 'Локалі',
 
@@ -2837,21 +2837,21 @@ return [
                     'direction'        => 'Напрямок',
                     'locale-logo'      => 'Логотип Локалі',
                     'name'             => 'Назва',
-                    'save-btn'         => 'Зберегти Локаль',
+                    'save-btn'         => 'Зберегти Язык',
                     'select-direction' => 'Вибрати напрямок',
-                    'title'            => 'Створити Локаль',
+                    'title'            => 'Створити Язык',
                 ],
 
                 'edit' => [
                     'title' => 'Редагувати Локалі',
                 ],
 
-                'create-success'    => 'Локаль створена успішно.',
+                'create-success'    => 'Язык створена успішно.',
                 'delete-failed'     => 'Помилка видалення Локалі',
-                'delete-success'    => 'Локаль успішно видалена.',
+                'delete-success'    => 'Язык успішно видалена.',
                 'delete-warning'    => 'Ви впевнені, що хочете виконати цю дію?',
-                'last-delete-error' => 'Необхідно щонайменше одну Локаль.',
-                'update-success'    => 'Локаль успішно оновлена.',
+                'last-delete-error' => 'Необхідно щонайменше одну Язык.',
+                'update-success'    => 'Язык успішно оновлена.',
             ],
         ],
 
@@ -3275,7 +3275,7 @@ return [
                 'root-category'           => 'Коренева категорія',
                 'save-btn'                => 'Зберегти канал',
                 'select-default-currency' => 'Виберіть типову валюту',
-                'select-default-locale'   => 'Виберіть типову локаль',
+                'select-default-locale'   => 'Виберіть типову язык',
                 'select-root-category'    => 'Виберіть кореневу категорію',
                 'select-theme'            => 'Виберіть тему',
                 'seo'                     => 'SEO головної сторінки',

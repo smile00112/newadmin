@@ -657,7 +657,7 @@ return [
                 'database-prefix-help'        => 'Префикс должен иметь 4 символа и может содержать только буквы, цифры и символы подчеркивания.',
                 'database-username'           => 'Имя пользователя базы данных',
                 'default-currency'            => 'Валюта по умолчанию',
-                'default-locale'              => 'Локаль по умолчанию',
+                'default-locale'              => 'Язык по умолчанию',
                 'default-timezone'            => 'Часовой пояс по умолчанию',
                 'default-url'                 => 'URL по умолчанию',
                 'default-url-link'            => 'https://localhost',
@@ -753,9 +753,9 @@ return [
             ],
 
             'start' => [
-                'locale'        => 'Локаль',
+                'locale'        => 'Язык',
                 'main'          => 'Начало',
-                'select-locale' => 'Выбрать локаль',
+                'select-locale' => 'Выбрать язык',
                 'title'         => 'Ваша установка Bagisto',
                 'welcome-title' => 'Добро пожаловать в Bagisto',
             ],
