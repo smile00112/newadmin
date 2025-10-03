@@ -23,6 +23,7 @@
             $qty = old('inventories[' . $inventorySource->id . ']')
                 ?: ($product->inventories->where('inventory_source_id', $inventorySource->id)->pluck('qty')->first() ?? 0);
 
+//            TODO remove
             $qty = $qty > 0 ? $qty : 1;
         @endphp
 

@@ -218,9 +218,17 @@
                                         $style = 'display: none';
 
                                     }
+
+                                    $class = 'last:!mb-0';
+                                    if(in_array($attribute->code, ['special_price_from', 'special_price_to'])){
+                                        $class = 'w-full lg:w-1/3';
+
+                                    }
+
+
                                 @endphp
 
-                                    <x-admin::form.control-group class="last:!mb-0" style="{{ $style }}" >
+                                    <x-admin::form.control-group class="{{$class}}" style="{{ $style }}" >
                                         <x-admin::form.control-group.label>
 {{--                                            TODO remove this & find translation--}}
                                             @php

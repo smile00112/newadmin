@@ -177,9 +177,11 @@
                                 </div>
 
                                 <div class="flex flex-col gap-1 flex-1">
-                                    <p class="break-all text-sm font-semibold text-gray-800 dark:text-white sm:text-base">
+                                    <a class="break-all text-sm font-semibold text-gray-800 dark:text-white sm:text-base cursor-pointer"
+                                       :href="`/admin/catalog/products/edit/${record.product_id}`"
+                                    >
                                         @{{ record.name }}
-                                    </p>
+                                    </a>
 
                                     <p class="text-xs text-gray-600 dark:text-gray-300 sm:text-sm">
                                         @{{ "@lang('admin::app.catalog.products.index.datagrid.id-value')".replace(':id', record.product_id) }}
@@ -273,9 +275,11 @@
                             @endif
 
                             <div class="flex flex-col gap-1.5">
-                                <p class="break-all text-base font-semibold text-gray-800 dark:text-white">
+                                <a class="break-all text-base font-semibold text-gray-800 dark:text-white cursor-pointer"
+                                   :href="`/admin/catalog/products/edit/${record.product_id}`"
+                                >
                                     @{{ record.name }}
-                                </p>
+                                </a>
 
                                 <p class="text-gray-600 dark:text-gray-300">
                                     @{{ "@lang('admin::app.catalog.products.index.datagrid.sku-value')".replace(':sku', record.sku) }}
