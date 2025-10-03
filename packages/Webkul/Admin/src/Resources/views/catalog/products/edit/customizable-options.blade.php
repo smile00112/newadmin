@@ -17,7 +17,8 @@
             type="text/x-template"
             id="v-customizable-options-template"
         >
-            <div class="box-shadow relative rounded bg-white dark:bg-gray-900">
+{{--            TODO refactor display:none--}}
+            <div class="box-shadow relative rounded bg-white dark:bg-gray-900"  style="display:none">
                 <!-- Option Panel Header -->
                 <div class="p-4 flex flex-col mb-2.5">
                     <div class="flex justify-between gap-5">

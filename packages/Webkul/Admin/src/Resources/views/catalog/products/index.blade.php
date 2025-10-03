@@ -440,15 +440,29 @@
                                             @lang('admin::app.catalog.products.index.create.type')
                                         </x-admin::form.control-group.label>
 
+{{--                                                    TODO refactor--}}
+                                        @php
+                                        $value = 'simple';
+                                            if(!empty($_GET['ingredient']))
+                                                $value = 'ingredient';
+                                            elseif(empty($_GET['ingredient']))
+                                                $value = 'simple';
+                                        @endphp
                                         <x-admin::form.control-group.control
                                             type="select"
                                             name="type"
                                             rules="required"
                                             :label="trans('admin::app.catalog.products.index.create.type')"
-                                            value="simple"
+                                            value="{{$value}}"
                                         >
                                             @foreach(config('product_types') as $key => $type)
-                                                <option @if($key == 'simple') selected @endif value="{{ $key }}">
+                                                <option
+{{--                                                    TODO refactor--}}
+                                                    @if($key == 'ingredient' && !empty($_GET['ingredient'])) selected
+                                                    @elseif(empty($_GET['ingredient']) && $key == 'simple') selected
+                                                      @endif
+                                                    value="{{ $key }}"
+                                                >
                                                     @lang($type['name'])
                                                 </option>
                                             @endforeach

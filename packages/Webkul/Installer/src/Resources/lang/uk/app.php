@@ -40,7 +40,7 @@ return [
                 'special-price'        => 'Спеціальна ціна',
                 'special-price-from'   => 'Спеціальна ціна від',
                 'special-price-to'     => 'Спеціальна ціна до',
-                'status'               => 'Статус',
+                'status'               => 'Статус..',
                 'tax-category'         => 'Категорія податків',
                 'url-key'              => 'URL-ключ',
                 'visible-individually' => 'Видимий окремо',

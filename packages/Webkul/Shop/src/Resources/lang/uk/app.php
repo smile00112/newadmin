@@ -180,7 +180,7 @@ return [
                 'total'       => 'Всього',
 
                 'status' => [
-                    'title' => 'Статус',
+                    'title' => 'Статус.',
 
                     'options' => [
                         'canceled'        => 'Отменен',
@@ -211,7 +211,7 @@ return [
                     'shipping-address'     => 'Адреса доставки',
                     'shipping-method'      => 'Спосіб доставки',
                     'shipping-and-payment' => 'Деталі доставки та оплати',
-                    'status'               => 'Статус',
+                    'status'               => 'Статус.',
                     'title'                => 'Перегляд',
                     'total'                => 'Всього',
 
@@ -352,7 +352,7 @@ return [
                 'payment-error'       => 'Оплата не была выполнена за это скачивание.',
                 'records-found'       => 'Найдено записей',
                 'remaining-downloads' => 'Оставшиеся загрузки',
-                'status'              => 'Статус',
+                'status'              => 'Статус.',
                 'title'               => 'Заголовок',
             ],
 
@@ -412,7 +412,7 @@ return [
                         'processing' => 'В обробці',
                         'revoke-btn' => 'Скасувати',
                         'revoked'    => 'Скасовано',
-                        'status'     => 'Статус',
+                        'status'     => 'Статус.',
                         'type'       => 'Тип',
                         'update'     => 'Оновити',
                     ],
@@ -454,7 +454,7 @@ return [
                         'qty'          => 'Кількість',
                         'shipping'     => 'Доставка',
                         'sku'          => 'SKU',
-                        'status'       => 'Статус',
+                        'status'       => 'Статус.',
                         'title'        => 'Інформація про замовлення',
                         'type'         => 'Тип',
                     ],

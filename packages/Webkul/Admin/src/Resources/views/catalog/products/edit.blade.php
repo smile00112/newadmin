@@ -184,9 +184,18 @@
 {{--                            {{$group->code}}--}}
                             {!! view_render_event("bagisto.admin.catalog.product.edit.form.{$group->code}.before", ['product' => $product]) !!}
 
-                            <div class="box-shadow relative rounded bg-white p-4 dark:bg-gray-900">
+<!--                                    TODO - remove this -->
+                            @php
+                                $style_group = '';
+                                if(in_array($group->code, ['meta_description', 'shipping', 'settings'])){
+                                    $style_group = 'display: none';
+
+                                }
+                            @endphp
+
+                            <div class="box-shadow relative rounded bg-white p-4 dark:bg-gray-900" style="{{ $style_group }}">
                                 <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
-                                    {{ $group->name }}
+                                    {{ $group->name }} <!--{{$group->code}}-->
                                 </p>
 
                                 @if ($group->code == 'meta_description')
@@ -202,9 +211,24 @@
 
                                     {!! view_render_event("bagisto.admin.catalog.product.edit.form.{$group->code}.controls.before", ['product' => $product]) !!}
 
-                                    <x-admin::form.control-group class="last:!mb-0">
+
+                                @php
+                                    $style = '';
+                                    if(in_array($attribute->code, ['sku', 'tax', 'product_number', 'url_key', 'tax_category_id', 'weight', 'color', 'brand', 'size', 'length', 'width', 'height'])){
+                                        $style = 'display: none';
+
+                                    }
+                                @endphp
+
+                                    <x-admin::form.control-group class="last:!mb-0" style="{{ $style }}" >
                                         <x-admin::form.control-group.label>
-                                            {!! $attribute->admin_name . ($attribute->is_required ? '<span class="required"></span>' : '') !!}
+{{--                                            TODO remove this & find translation--}}
+                                            @php
+                                                $attribute_name = $attribute->admin_name;
+                                                if($attribute_name === 'Статус')
+                                                    $attribute_name = 'Активен';
+                                            @endphp
+                                            {!! $attribute_name . ($attribute->is_required ? '<span class="required"></span>' : '') !!}
 
                                             @if (
                                                 $attribute->value_per_channel

@@ -145,7 +145,7 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function update(ProductForm $request, int $id)
     {
@@ -168,7 +168,7 @@ class ProductController extends Controller
     /**
      * Update inventories.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateInventories(InventoryRequest $inventoryRequest, int $id)
     {
@@ -189,7 +189,7 @@ class ProductController extends Controller
     /**
      * Uploads downloadable file.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function uploadLink(int $id)
     {
@@ -201,7 +201,7 @@ class ProductController extends Controller
     /**
      * Copy a given Product.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\jsonResponse
      */
     public function copy(int $id)
     {
@@ -225,7 +225,7 @@ class ProductController extends Controller
     /**
      * Uploads downloadable sample file.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\JsonResponse
      */
     public function uploadSample(int $id)
     {
