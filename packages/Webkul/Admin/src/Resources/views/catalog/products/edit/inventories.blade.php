@@ -2,21 +2,21 @@
 
 <v-inventories>
     <!-- Panel Content -->
-    <div class="mb-5 text-sm text-gray-600 dark:text-gray-300">
-        <div class="relative mb-2.5 flex items-center">
-            <span class="inline-block rounded-full bg-yellow-500 p-1.5 ltr:mr-1.5 rtl:ml-1.5"></span>
+{{--    <div class="mb-5 text-sm text-gray-600 dark:text-gray-300 inventoriesinventories">--}}
+{{--        <div class="relative mb-2.5 flex items-center">--}}
+{{--            <span class="inline-block rounded-full bg-yellow-500 p-1.5 ltr:mr-1.5 rtl:ml-1.5"></span>--}}
 
-            @lang('admin::app.catalog.products.edit.inventories.pending-ordered-qty', [
-                'qty' => $product->ordered_inventories->pluck('qty')->first() ?? 0,
-            ])
+{{--            @lang('admin::app.catalog.products.edit.inventories.pending-ordered-qty', [--}}
+{{--                'qty' => $product->ordered_inventories->pluck('qty')->first() ?? 0,--}}
+{{--            ])--}}
 
-            <i class="icon-information peer rounded-full bg-gray-700 text-lg font-bold text-white transition-all hover:bg-gray-800 ltr:ml-2.5 rtl:mr-2.5"></i>
+{{--            <i class="icon-information peer rounded-full bg-gray-700 text-lg font-bold text-white transition-all hover:bg-gray-800 ltr:ml-2.5 rtl:mr-2.5"></i>--}}
 
-            <div class="absolute bottom-6 hidden rounded-lg bg-black p-2.5 text-sm italic text-white opacity-80 peer-hover:block">
-                @lang('admin::app.catalog.products.edit.inventories.pending-ordered-qty-info')
-            </div>
-        </div>
-    </div>
+{{--            <div class="absolute bottom-6 hidden rounded-lg bg-black p-2.5 text-sm italic text-white opacity-80 peer-hover:block">--}}
+{{--                @lang('admin::app.catalog.products.edit.inventories.pending-ordered-qty-info')--}}
+{{--            </div>--}}
+{{--        </div>--}}
+{{--    </div>--}}
 
     @foreach (app(\Webkul\Inventory\Repositories\InventorySourceRepository::class)->findWhere(['status' => 1]) as $inventorySource)
         @php

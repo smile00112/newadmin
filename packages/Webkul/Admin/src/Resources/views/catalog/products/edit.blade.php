@@ -165,8 +165,9 @@
                         @php $customAttributes = $product->getEditableAttributes($group); @endphp
 
                         @if (
-                            $group->code === 'inventories'
-                            && (
+//                            $group->code === 'inventories'
+//                            &&
+                            (
                                 $product->getTypeInstance()->isComposite()
                                 || $product->type === 'downloadable'
                             )
@@ -221,7 +222,7 @@
 
                                     $class = 'last:!mb-0';
                                     if(in_array($attribute->code, ['special_price_from', 'special_price_to'])){
-                                        $class = 'w-full lg:w-1/3';
+                                       // $class = 'w-full lg:w-1/3';
 
                                     }
 
