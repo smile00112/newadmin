@@ -299,6 +299,14 @@ class Product extends Model implements ProductContract
     }
 
     /**
+     * Get the constructor that owns the product.
+     */
+    public function constructor(): HasMany
+    {
+        return $this->hasMany(ProductConstructor::class, 'parent_id');
+    }
+
+    /**
      * Is saleable.
      *
      * @param  string  $key

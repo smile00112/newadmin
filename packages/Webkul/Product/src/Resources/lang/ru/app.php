@@ -48,6 +48,7 @@ return [
         'grouped'      => 'Группированный',
         'simple'       => 'Простой',
         'virtual'      => 'Виртуальный',
-        'ingredient'      => 'Ингредиент',
+        'ingredient'   => 'Ингредиент',
+        'constructor'  => 'Конструктор',
     ],
 ];

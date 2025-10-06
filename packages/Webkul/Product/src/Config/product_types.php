@@ -55,4 +55,10 @@ return [
         'class' => 'Webkul\Product\Type\Ingredient',
         'sort'  => 8,
     ],
+    'constructor'      => [
+        'key'   => 'constructor',
+        'name'  => 'product::app.type.constructor',
+        'class' => 'Webkul\Product\Type\Constructor',
+        'sort'  => 9,
+    ],
 ];

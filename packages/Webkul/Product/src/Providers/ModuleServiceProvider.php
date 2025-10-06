@@ -34,5 +34,8 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
         \Webkul\Product\Models\ProductReviewAttachment::class,
         \Webkul\Product\Models\ProductSalableInventory::class,
         \Webkul\Product\Models\ProductVideo::class,
+        \Webkul\Product\Models\ProductConstructor::class,
+        \Webkul\Product\Models\ProductConstructorGroup::class,
+        \Webkul\Product\Models\ProductConstructorGroupProduct::class,
     ];
 }

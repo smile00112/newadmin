@@ -48,5 +48,7 @@ return [
         'grouped'      => 'Grouped',
         'simple'       => 'Simple',
         'virtual'      => 'Virtual',
+        'ingredient'   => 'Ingredient',
+        'constructor'  => 'Constructor',
     ],
 ];
