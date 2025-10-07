@@ -754,7 +754,8 @@
             <x-admin::products.search
                 ref="productSearchModal"
                 ::added-product-ids="addedProductIds"
-                ::query-params="{type: 'simple', exclude_customizable_products: 1}"
+                {{--                ::query-params="{type: 'simple', exclude_customizable_products: 1}"--}}
+                ::search-ingredients="true"
                 @onProductAdded="addProductToGroup($event)"
             />
         </div>

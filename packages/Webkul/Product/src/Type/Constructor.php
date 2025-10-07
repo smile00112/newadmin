@@ -2,6 +2,7 @@
 
 namespace Webkul\Product\Type;
 
+use Illuminate\Support\Facades\DB;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Product\Helpers\Indexers\Price\Grouped as GroupedIndexer;
@@ -98,6 +99,12 @@ class Constructor extends AbstractType
             // If no constructor data, remove existing constructors
             $product->constructor()->delete();
         }
+
+        // Ensure constructor products have inventory records for admin display
+        $this->ensureInventoryRecord($product);
+
+        // Update product price based on constructor configuration
+        $this->updateProductPrice($product);
 
         return $product;
     }
@@ -280,5 +287,99 @@ class Constructor extends AbstractType
             'constructor_options.*' => 'array',
             'constructor_options.*.*' => 'integer|min:0',
         ];
+    }
+
+    /**
+     * Ensure constructor product has inventory record for admin display.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return void
+     */
+    protected function ensureInventoryRecord($product)
+    {
+        // Check if product has any inventory records
+        if ($product->inventories->count() == 0) {
+            // Create a default inventory record for admin display
+            $this->productInventoryRepository->create([
+                'product_id' => $product->id,
+                'vendor_id' => 0, // Default vendor
+                'inventory_source_id' => 1, // Default inventory source
+                'qty' => 999, // High quantity to show as available
+            ]);
+        } else {
+            // Update existing inventory record to ensure it shows as available
+            foreach ($product->inventories as $inventory) {
+                if ($inventory->qty <= 0) {
+                    $inventory->update(['qty' => 999]);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Update product price based on constructor configuration.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return void
+     */
+    protected function updateProductPrice($product)
+    {
+        // Refresh the product to get latest constructor data
+        $product->load('constructor.groups.products');
+
+        // Calculate the minimal price from default products
+        $minimalPrice = $this->calculateMinimalPrice();
+
+        // Update the product's price attribute
+//        $product->update(['price' => $minimalPrice]);
+//
+//        $product->product_flats()->update([
+//            'price' => $minimalPrice
+//        ]);
+        //TODO refactor
+        $affectedRows = DB::table('product_flat')
+            ->where('product_id', $product->id)
+            ->update(['price' => $minimalPrice]);
+//dd($affectedRows);
+
+    }
+
+    /**
+     * Calculate minimal price from default products.
+     *
+     * @return float
+     */
+    protected function calculateMinimalPrice()
+    {
+        $totalPrice = 1;
+        $hasDefaultProducts = false;
+
+        // Ensure we have the latest constructor data
+        $this->product->load('constructor.groups.products');
+
+        foreach ($this->product->constructor as $constructor) {
+            foreach ($constructor->groups as $group) {
+//dump($group);
+                // Get all products from this group and filter for default ones
+                $allProducts = $group->products;
+                $defaultProducts = $allProducts->filter(function ($product) {
+                    return $product->pivot->default == true || $product->pivot->default == 1;
+                });
+//dump($defaultProducts);
+                if ($defaultProducts->count() > 0) {
+                    $hasDefaultProducts = true;
+                    // Get the cheapest default product from this group
+                    $cheapestProduct = $defaultProducts->min(function ($product) {
+                        return $product->getTypeInstance()->getMinimalPrice();
+                    });
+
+//dump($cheapestProduct);
+                    $totalPrice += $cheapestProduct;
+                }
+            }
+        }
+//dd(($hasDefaultProducts ? $totalPrice : 0));
+        return $hasDefaultProducts ? $totalPrice : 0;
     }
 }
