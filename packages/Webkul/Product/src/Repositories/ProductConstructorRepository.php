@@ -28,21 +28,33 @@ class ProductConstructorRepository extends Repository
      */
     public function saveConstructor($data, $product)
     {
-        if (! isset($data['constructor'])) {
+        if (! isset($data['constructor']) || ! is_array($data['constructor'])) {
             return;
         }
 
-        $constructorData = $data['constructor'];
+        $constructors = $data['constructor'];
+        $constructorIds = [];
 
-        if (isset($constructorData['id']) && $constructorData['id']) {
-            $constructor = $this->find($constructorData['id']);
-            $constructor->update($constructorData);
-        } else {
-            $constructorData['parent_id'] = $product->id;
-            $constructor = $this->create($constructorData);
+        foreach ($constructors as $constructorData) {
+            // Skip empty constructor data
+            if (empty($constructorData) || (!isset($constructorData['visible']) && !isset($constructorData['required']))) {
+                continue;
+            }
+
+            if (isset($constructorData['id']) && $constructorData['id']) {
+                $constructor = $this->find($constructorData['id']);
+                $constructor->update($constructorData);
+            } else {
+                $constructorData['parent_id'] = $product->id;
+                $constructor = $this->create($constructorData);
+            }
+
+            $constructorIds[] = $constructor->id;
+            $this->saveConstructorGroups($constructorData, $constructor);
         }
 
-        $this->saveConstructorGroups($constructorData, $constructor);
+        // Remove constructors that are not in the current data
+        $product->constructor()->whereNotIn('id', $constructorIds)->delete();
     }
 
     /**
@@ -58,9 +70,25 @@ class ProductConstructorRepository extends Repository
             return;
         }
 
+        // Handle JSON string format
+        if (is_string($constructorData['groups'])) {
+            $groups = json_decode($constructorData['groups'], true);
+        } else {
+            $groups = $constructorData['groups'];
+        }
+
+        if (! is_array($groups) || empty($groups)) {
+            return;
+        }
+
         $groupIds = [];
 
-        foreach ($constructorData['groups'] as $groupData) {
+        foreach ($groups as $groupData) {
+            // Skip empty group data
+            if (empty($groupData) || (!isset($groupData['name']) && !isset($groupData['field_type']))) {
+                continue;
+            }
+
             if (isset($groupData['id']) && $groupData['id']) {
                 $group = ProductConstructorGroup::find($groupData['id']);
                 $group->update($groupData);
@@ -91,7 +119,39 @@ class ProductConstructorRepository extends Repository
             return;
         }
 
-        $productIds = array_filter($groupData['products']);
-        $group->products()->sync($productIds);
+        $products = [];
+        
+        // Handle both array format (from frontend) and key-value format
+        if (is_array($groupData['products'])) {
+            foreach ($groupData['products'] as $index => $product) {
+                // If it's an array with numeric keys, it's an array of products
+                if (is_array($product) && isset($product['id'])) {
+                    $productId = $product['id'];
+                    // Skip if product ID is 0 or invalid
+                    if ($productId > 0) {
+                        $products[$productId] = [
+                            'sort' => $product['sort'] ?? 0,
+                            'default' => $product['default'] ?? false
+                        ];
+                    }
+                }
+                // If it's a key-value format where key is product ID
+                elseif (is_numeric($product) && $product > 0) {
+                    $productId = $product;
+                    $products[$productId] = [
+                        'sort' => 0,
+                        'default' => false
+                    ];
+                }
+            }
+        }
+
+        // Only sync if we have valid products
+        if (!empty($products)) {
+            $group->products()->sync($products);
+        } else {
+            // If no valid products, detach all existing products
+            $group->products()->detach();
+        }
     }
 }

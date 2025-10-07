@@ -27,6 +27,7 @@ return new class extends Migration
 
             $table->integer('parent_id')->unsigned();
             $table->foreign('parent_id')->references('id')->on('products')->onDelete('cascade');
+            $table->timestamps();
         });
 
         Schema::create('product_constructor_group', function (Blueprint $table) {
@@ -41,16 +42,22 @@ return new class extends Migration
             $table->boolean('zero_price')->default(true); //Все продукты группы по нулевой цене
             $table->boolean('required')->default(false); //Обязательный выбор
             $table->boolean('hidden')->default(false); //Группа скрыта
+            $table->tinyInteger('sort')->unsigned()->default(0);
 
             $table->integer('parent_id')->unsigned();
             $table->foreign('parent_id')->references('id')->on('product_constructor')->onDelete('cascade');
+            $table->timestamps();
         });
 
         Schema::create('product_constructor_group_products', function (Blueprint $table) {
+            $table->increments('id');
+            $table->tinyInteger('sort')->unsigned()->default(0);
+            $table->boolean('default')->default(false); //продукт выбран по умочанию при добавлении в корзину
+
             $table->integer('group_id')->unsigned();
             $table->integer('product_id')->unsigned();
 
-            $table->primary(['group_id', 'product_id']);
+            //$table->primary(['group_id', 'product_id']);
             $table->foreign('group_id')->references('id')->on('product_constructor_group')->onDelete('cascade');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });

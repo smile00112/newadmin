@@ -32,6 +32,7 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
         'zero_price',
         'required',
         'hidden',
+        'sort',
         'parent_id',
     ];
 
@@ -48,6 +49,7 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
         'zero_price' => 'boolean',
         'required' => 'boolean',
         'hidden' => 'boolean',
+        'sort' => 'integer',
         'parent_id' => 'integer',
     ];
 
@@ -79,7 +81,7 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
             'product_constructor_group_products',
             'group_id',
             'product_id'
-        );
+        )->withPivot('sort', 'default');
     }
 
     /**

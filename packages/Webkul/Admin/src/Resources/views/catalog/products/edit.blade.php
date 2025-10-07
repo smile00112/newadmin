@@ -163,10 +163,10 @@
                 <div class="flex flex-col gap-2 {{ $column == 1 ? 'flex-1 max-xl:flex-auto' : 'w-[360px] max-w-full max-sm:w-full' }}">
                     @foreach ($groups as $group)
                         @php $customAttributes = $product->getEditableAttributes($group); @endphp
-
+                            {{--    {{$group->code}} - {{$product->getTypeInstance()->isComposite()}} |--}}
                         @if (
-//                            $group->code === 'inventories'
-//                            &&
+                            $group->code === 'inventories'
+                            &&
                             (
                                 $product->getTypeInstance()->isComposite()
                                 || $product->type === 'downloadable'

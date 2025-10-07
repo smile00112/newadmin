@@ -37,6 +37,8 @@ class ProductConstructorGroupProduct extends Model implements ProductConstructor
     protected $fillable = [
         'group_id',
         'product_id',
+        'sort',
+        'default',
     ];
 
     /**
@@ -47,6 +49,8 @@ class ProductConstructorGroupProduct extends Model implements ProductConstructor
     protected $casts = [
         'group_id' => 'integer',
         'product_id' => 'integer',
+        'sort' => 'integer',
+        'default' => 'boolean',
     ];
 
     /**

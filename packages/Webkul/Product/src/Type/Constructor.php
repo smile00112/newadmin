@@ -4,6 +4,7 @@ namespace Webkul\Product\Type;
 
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Product\Helpers\Indexers\Price\Grouped as GroupedIndexer;
 use Webkul\Product\Repositories\ProductAttributeValueRepository;
 use Webkul\Product\Repositories\ProductConstructorRepository;
 use Webkul\Product\Repositories\ProductCustomerGroupPriceRepository;
@@ -90,7 +91,13 @@ class Constructor extends AbstractType
             return $product;
         }
 
-        $this->productConstructorRepository->saveConstructor($data, $product);
+        // Only save constructor data if it exists and has content
+        if (isset($data['constructor']) && is_array($data['constructor']) && !empty($data['constructor'])) {
+            $this->productConstructorRepository->saveConstructor($data, $product);
+        } else {
+            // If no constructor data, remove existing constructors
+            $product->constructor()->delete();
+        }
 
         return $product;
     }
@@ -249,6 +256,16 @@ class Constructor extends AbstractType
         }
 
         return $products;
+    }
+
+    /**
+     * Returns price indexer class for a specific product type
+     *
+     * @return string
+     */
+    public function getPriceIndexer()
+    {
+        return app(GroupedIndexer::class);
     }
 
     /**
