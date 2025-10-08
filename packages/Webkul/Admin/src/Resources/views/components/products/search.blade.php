@@ -230,7 +230,7 @@
 
                     this.$emit('onProductAdded', selectedProducts);
 
-                    this.$refs.searchProductDrawer.close();
+                    //this.$refs.searchProductDrawer.close();
                 },
 
                 totalQty(product) {

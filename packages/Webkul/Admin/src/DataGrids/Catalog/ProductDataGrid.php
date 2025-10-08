@@ -44,10 +44,13 @@ class ProductDataGrid extends DataGrid
             ->leftJoin('product_inventories', 'product_flat.product_id', '=', 'product_inventories.product_id')
             ->leftJoin('product_images', 'product_flat.product_id', '=', 'product_images.product_id')
             ->leftJoin('product_categories as pc', 'product_flat.product_id', '=', 'pc.product_id')
+            ->leftJoin('product_constructor_group_products', 'product_flat.product_id', '=', 'product_constructor_group_products.parent_id')
             ->leftJoin('category_translations as ct', function ($leftJoin) {
                 $leftJoin->on('pc.category_id', '=', 'ct.category_id')
                     ->where('ct.locale', app()->getLocale());
             })
+            // join для связи с товарами-ингредиентами
+            ->leftJoin('product_flat as ingredient_flat', 'product_constructor_group_products.product_id', '=', 'ingredient_flat.product_id')
             ->select(
                 'product_flat.locale',
                 'product_flat.channel',
@@ -66,6 +69,8 @@ class ProductDataGrid extends DataGrid
             )
             ->addSelect(DB::raw('SUM(DISTINCT '.$tablePrefix.'product_inventories.qty) as quantity'))
             ->addSelect(DB::raw('COUNT(DISTINCT '.$tablePrefix.'product_images.id) as images_count'))
+            // select для суммы цен ингредиентов
+            ->addSelect(DB::raw('COALESCE(SUM(ingredient_flat.price), 0) as selected_ingredients_sum'))
             ->where('product_flat.locale', app()->getLocale())
             ->groupBy('product_flat.product_id');
 

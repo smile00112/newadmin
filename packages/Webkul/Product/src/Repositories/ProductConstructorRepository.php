@@ -121,6 +121,9 @@ class ProductConstructorRepository extends Repository
 
         $products = [];
         
+        // Get the parent product ID from the constructor
+        $parentProductId = $group->constructor->product->id ?? null;
+        
         // Handle both array format (from frontend) and key-value format
         if (is_array($groupData['products'])) {
             foreach ($groupData['products'] as $index => $product) {
@@ -131,7 +134,8 @@ class ProductConstructorRepository extends Repository
                     if ($productId > 0) {
                         $products[$productId] = [
                             'sort' => $product['sort'] ?? 0,
-                            'default' => $product['default'] ?? false
+                            'default' => $product['default'] ?? false,
+                            'parent_id' => $parentProductId
                         ];
                     }
                 }
@@ -140,7 +144,8 @@ class ProductConstructorRepository extends Repository
                     $productId = $product;
                     $products[$productId] = [
                         'sort' => 0,
-                        'default' => false
+                        'default' => false,
+                        'parent_id' => $parentProductId
                     ];
                 }
             }

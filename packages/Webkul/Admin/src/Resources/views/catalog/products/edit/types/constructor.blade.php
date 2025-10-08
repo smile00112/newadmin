@@ -106,7 +106,7 @@
                     </div>
 
                     <!-- Constructor Groups -->
-                    <div v-if="constructor.groups && constructor.groups.length" class="space-y-3">
+                    <div v-if="constructor.groups && constructor.groups.length && !isEditMode" class="space-y-3">
                         <div
                             v-for="(group, groupIndex) in constructor.groups"
                             :key="group.id || groupIndex"

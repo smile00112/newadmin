@@ -5,10 +5,16 @@ export default {
              * Generates a formatted price.
              *
              * @param {number} price - The price value to be formatted.
+             * @param {boolean} price_from_prefix - The price from prefix.
+             * @param {number} price_dops - The prices of product delected dops.
              * @returns {string} - The formatted price string.
              */
-            formatPrice: (price) => {
+            formatPrice: (price, price_from_prefix = false, price_dops = 0, log_data = null) => {
+console.log(log_data);
                 let locale = document.querySelector('meta[http-equiv="content-language"]').content;
+
+                //если есть цена за допы, прибавляем её к цене товара
+                if (price_dops > 0) price+=price_dops;
 
                 locale = locale.replace(/([a-z]{2})_([A-Z]{2})/g, '$1-$2');
 
@@ -16,8 +22,10 @@ export default {
 
                 const symbol = currency.symbol !== '' ? currency.symbol : currency.code;
 
+                const priceFromPrefix  = price_from_prefix ? 'от ' : '';
+
                 if (! currency.currency_position) {
-                    return new Intl.NumberFormat(locale, {
+                    return priceFromPrefix + new Intl.NumberFormat(locale, {
                         style: "currency",
                         currency: currency.code,
                     }).format(price);
@@ -31,6 +39,7 @@ export default {
 
                 const formattedCurrency = formatter.formatToParts(price)
                     .map(part => {
+                        console.log(part.type);
                         switch (part.type) {
                             case 'currency':
                                 return '';
@@ -51,21 +60,22 @@ export default {
                     })
                     .join('');
 
+
                 switch (currency.currency_position) {
                     case 'left':
-                        return symbol + formattedCurrency;
+                        return priceFromPrefix + symbol + formattedCurrency;
 
                     case 'left_with_space':
-                        return symbol + ' ' + formattedCurrency;
+                        return priceFromPrefix + symbol + ' ' + formattedCurrency;
 
                     case 'right':
-                        return formattedCurrency + symbol;
+                        return priceFromPrefix + formattedCurrency + symbol;
 
                     case 'right_with_space':
-                        return formattedCurrency + ' ' + symbol;
+                        return priceFromPrefix + formattedCurrency + ' ' + symbol;
 
                     default:
-                        return formattedCurrency;
+                        return priceFromPrefix + formattedCurrency;
                 }
             },
         };

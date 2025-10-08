@@ -22,11 +22,11 @@ class Constructor extends AbstractType
      * @var array
      */
     protected $skipAttributes = [
-        'price',
-        'cost',
-        'special_price',
-        'special_price_from',
-        'special_price_to',
+        //'price',
+        //'cost',
+        //        'special_price',
+        //        'special_price_from',
+        //        'special_price_to',
         'length',
         'width',
         'height',
@@ -135,7 +135,16 @@ class Constructor extends AbstractType
                 $newGroup->parent_id = $newConstructor->id;
                 $newGroup->save();
 
-                $newGroup->products()->sync($group->products->pluck('id'));
+                // Sync products with parent_id
+                $products = [];
+                foreach ($group->products as $groupProduct) {
+                    $products[$groupProduct->id] = [
+                        'sort' => $groupProduct->pivot->sort ?? 0,
+                        'default' => $groupProduct->pivot->default ?? false,
+                        'parent_id' => $product->id
+                    ];
+                }
+                $newGroup->products()->sync($products);
             }
         }
     }
@@ -337,6 +346,9 @@ class Constructor extends AbstractType
 //        $product->product_flats()->update([
 //            'price' => $minimalPrice
 //        ]);
+
+//        dump($product);
+//        dump($minimalPrice);
         //TODO refactor
         $affectedRows = DB::table('product_flat')
             ->where('product_id', $product->id)

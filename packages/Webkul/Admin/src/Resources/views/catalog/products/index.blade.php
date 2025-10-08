@@ -318,7 +318,8 @@
 
                             <div class="flex flex-col gap-1.5">
                                 <p class="text-base font-semibold text-gray-800 dark:text-white">
-                                    @{{ $admin.formatPrice(record.price) }}
+{{--                                    TODO add have price_from property--}}
+                                    @{{ $admin.formatPrice(record.price, (record.type === 'constructor' || record.type === 'grouped'), record.selected_ingredients_sum*1, record) }}
                                 </p>
 
                                 <!-- Parent Product Quantity -->

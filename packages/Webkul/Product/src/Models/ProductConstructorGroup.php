@@ -81,7 +81,7 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
             'product_constructor_group_products',
             'group_id',
             'product_id'
-        )->withPivot('sort', 'default');
+        )->withPivot('sort', 'default', 'parent_id');
     }
 
     /**
