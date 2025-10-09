@@ -42,7 +42,7 @@ class ShopServiceProvider extends ServiceProvider
         $router->aliasMiddleware('customer', AuthenticateCustomer::class);
 
         Route::middleware(['web', 'shop', PreventRequestsDuringMaintenance::class])->group(__DIR__.'/../Routes/web.php');
-        Route::middleware(['web', 'shop', PreventRequestsDuringMaintenance::class])->group(__DIR__.'/../Routes/api.php');
+        Route::middleware(['api', 'throttle:api', 'shop', PreventRequestsDuringMaintenance::class])->group(__DIR__.'/../Routes/api.php');
 
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
