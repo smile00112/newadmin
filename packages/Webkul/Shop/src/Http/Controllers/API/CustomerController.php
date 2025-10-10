@@ -76,8 +76,6 @@ class CustomerController extends APIController
             'phone' => 'required|string|min:10|max:15'
         ]);
 
-return response()->json(['success']);
-
         try {
             $result = $this->smsService->sendVerificationCode($request->phone);
 

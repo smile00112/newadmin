@@ -5,7 +5,7 @@ return [
     'documentations' => [
         'default' => [
             'api' => [
-                'title' => 'Bagisto Rest Shop API Documentation',
+                'title' => 'Shop API Documentation',
             ],
 
             'routes' => [
@@ -41,14 +41,14 @@ return [
                  * Absolute paths to directory containing the swagger annotations are stored.
                 */
                 'annotations' => [
-                    base_path('vendor/bagisto/rest-api/src/Docs/Shop'),
+                    base_path('packages/Webkul/RestApi/src/Docs/Shop'),
                 ],
 
             ],
         ],
 //        'admin' => [
 //            'api' => [
-//                'title' => 'Bagisto Admin Rest API Documentation',
+//                'title' => 'Admin Rest API Documentation',
 //            ],
 //
 //            'routes' => [

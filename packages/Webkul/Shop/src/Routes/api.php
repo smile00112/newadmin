@@ -105,13 +105,13 @@ Route::group(['prefix' => 'api'], function () {
         Route::post('login', 'login')->name('shop.api.auth.login');
 
         // Phone/SMS authentication
-//        Route::post('send-sms-code', 'sendSmsCode')->name('shop.api.auth.send_sms_code');
-//        Route::post('verify-sms-code', 'verifySmsCode')->name('shop.api.auth.verify_sms_code');
-//
-//        // Token management
-//        Route::get('check-token', 'checkToken')->name('shop.api.auth.check_token');
-//        Route::post('refresh-token', 'refreshToken')->name('shop.api.auth.refresh_token');
-//        Route::post('logout', 'logout')->name('shop.api.auth.logout');
+        Route::post('send-sms-code', 'sendSmsCode')->name('shop.api.auth.send_sms_code');
+        Route::post('verify-sms-code', 'verifySmsCode')->name('shop.api.auth.verify_sms_code');
+
+        // Token management
+        Route::get('check-token', 'checkToken')->name('shop.api.auth.check_token');
+        Route::post('refresh-token', 'refreshToken')->name('shop.api.auth.refresh_token');
+        Route::post('logout', 'logout')->name('shop.api.auth.logout');
     });
 
 

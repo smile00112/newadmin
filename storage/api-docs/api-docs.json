@@ -1,17 +1,17 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Bagisto Store Front Rest API Documentation",
-        "description": "Bagisto Store Front Rest API Documentation",
+        "title": "Rest API Documentation",
+        "description": "Rest API Documentation",
         "contact": {
             "email": "shop@example.com"
         },
-        "version": "2.3.0"
+        "version": "1.0.0"
     },
     "servers": [
         {
             "url": "http://dolinger_new_admin.test",
-            "description": "Bagisto Rest API"
+            "description": "Rest API"
         }
     ],
     "paths": {
@@ -2471,7 +2471,7 @@
                         "description": "Accept Token Flag",
                         "required": false,
                         "schema": {
-                            "type": "bool"
+                            "type": "boolean"
                         }
                     }
                 ],
@@ -3521,7 +3521,7 @@
                                             "first_name": "John",
                                             "last_name": "Doe",
                                             "email": "john@example.com",
-                                            "company_name": "Bagisto",
+                                            "company_name": "Lovefood",
                                             "city": "Marrero",
                                             "state": "LA",
                                             "country": "US",
@@ -3590,7 +3590,7 @@
                                             "first_name": "John",
                                             "last_name": "Doe",
                                             "email": "john@example.com",
-                                            "company_name": "Bagisto",
+                                            "company_name": "Lovefood",
                                             "city": "Mansfield",
                                             "state": "OH",
                                             "country": "US",
@@ -4303,6 +4303,492 @@
                         "sanctum": []
                     }
                 ]
+            }
+        },
+        "/api/v1/customer/auth/sms/initiate": {
+            "post": {
+                "tags": [
+                    "Multi-Channel Authentication"
+                ],
+                "summary": "Initiate SMS authentication",
+                "description": "Send verification code via SMS to customer's phone number",
+                "operationId": "initiateSmsAuth",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "phone_number",
+                                    "country_code",
+                                    "device_name"
+                                ],
+                                "properties": {
+                                    "phone_number": {
+                                        "description": "Phone number without country code",
+                                        "type": "string",
+                                        "example": "1234567890"
+                                    },
+                                    "country_code": {
+                                        "description": "Country code (2 characters)",
+                                        "type": "string",
+                                        "example": "+1"
+                                    },
+                                    "device_name": {
+                                        "description": "Device name for token creation",
+                                        "type": "string",
+                                        "example": "iPhone 13"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification code sent to your phone."
+                                        },
+                                        "verification_token": {
+                                            "type": "string",
+                                            "example": "abc123def456"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid phone number format",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid phone number format."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No account found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No account found with this phone number."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to send verification code",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to send verification code."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/auth/whatsapp/initiate": {
+            "post": {
+                "tags": [
+                    "Multi-Channel Authentication"
+                ],
+                "summary": "Initiate WhatsApp authentication",
+                "description": "Send verification code via WhatsApp to customer's phone number",
+                "operationId": "initiateWhatsAppAuth",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "phone_number",
+                                    "country_code",
+                                    "device_name"
+                                ],
+                                "properties": {
+                                    "phone_number": {
+                                        "description": "Phone number without country code",
+                                        "type": "string",
+                                        "example": "1234567890"
+                                    },
+                                    "country_code": {
+                                        "description": "Country code (2 characters)",
+                                        "type": "string",
+                                        "example": "+1"
+                                    },
+                                    "device_name": {
+                                        "description": "Device name for token creation",
+                                        "type": "string",
+                                        "example": "iPhone 13"
+                                    },
+                                    "whatsapp_id": {
+                                        "description": "WhatsApp user ID (optional)",
+                                        "type": "string",
+                                        "example": "whatsapp_user_123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification code sent to your WhatsApp."
+                                        },
+                                        "verification_token": {
+                                            "type": "string",
+                                            "example": "abc123def456"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/auth/telegram/initiate": {
+            "post": {
+                "tags": [
+                    "Multi-Channel Authentication"
+                ],
+                "summary": "Initiate Telegram authentication",
+                "description": "Send verification code via Telegram to customer's Telegram ID",
+                "operationId": "initiateTelegramAuth",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "telegram_id",
+                                    "device_name"
+                                ],
+                                "properties": {
+                                    "telegram_id": {
+                                        "description": "Telegram user ID",
+                                        "type": "string",
+                                        "example": "123456789"
+                                    },
+                                    "username": {
+                                        "description": "Telegram username (optional)",
+                                        "type": "string",
+                                        "example": "john_doe"
+                                    },
+                                    "first_name": {
+                                        "description": "First name (optional)",
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "last_name": {
+                                        "description": "Last name (optional)",
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "device_name": {
+                                        "description": "Device name for token creation",
+                                        "type": "string",
+                                        "example": "iPhone 13"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification code sent to your Telegram."
+                                        },
+                                        "verification_token": {
+                                            "type": "string",
+                                            "example": "abc123def456"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/auth/verify": {
+            "post": {
+                "tags": [
+                    "Multi-Channel Authentication"
+                ],
+                "summary": "Verify code and authenticate",
+                "description": "Verify the received code and authenticate the user",
+                "operationId": "verifyAndAuthenticate",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "verification_code",
+                                    "verification_token"
+                                ],
+                                "properties": {
+                                    "verification_code": {
+                                        "description": "6-digit verification code",
+                                        "type": "string",
+                                        "example": "123456"
+                                    },
+                                    "verification_token": {
+                                        "description": "Verification token from initiate request",
+                                        "type": "string",
+                                        "example": "abc123def456"
+                                    },
+                                    "device_name": {
+                                        "description": "Device name for token creation (optional)",
+                                        "type": "string",
+                                        "example": "iPhone 13"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authentication successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Customer"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Authentication successful."
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "1|abc123def456..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or expired verification code",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid or expired verification code."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/auth/reset-token": {
+            "post": {
+                "tags": [
+                    "Multi-Channel Authentication"
+                ],
+                "summary": "Reset authentication token",
+                "description": "Send verification code to reset authentication token via different channels",
+                "operationId": "resetToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "reset_method"
+                                ],
+                                "properties": {
+                                    "reset_method": {
+                                        "description": "Method to send verification code",
+                                        "type": "string",
+                                        "enum": [
+                                            "sms",
+                                            "whatsapp",
+                                            "telegram",
+                                            "email"
+                                        ],
+                                        "example": "sms"
+                                    },
+                                    "phone_number": {
+                                        "description": "Phone number (required for SMS/WhatsApp)",
+                                        "type": "string",
+                                        "example": "+11234567890"
+                                    },
+                                    "telegram_id": {
+                                        "description": "Telegram ID (required for Telegram)",
+                                        "type": "string",
+                                        "example": "123456789"
+                                    },
+                                    "email": {
+                                        "description": "Email address (required for email)",
+                                        "type": "string",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Verification code sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification code sent via sms."
+                                        },
+                                        "verification_token": {
+                                            "type": "string",
+                                            "example": "abc123def456"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/auth/verify-reset": {
+            "post": {
+                "tags": [
+                    "Multi-Channel Authentication"
+                ],
+                "summary": "Verify reset code and generate new token",
+                "description": "Verify the reset code and generate a new authentication token",
+                "operationId": "verifyResetAndGenerateToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "verification_code",
+                                    "verification_token"
+                                ],
+                                "properties": {
+                                    "verification_code": {
+                                        "description": "6-digit verification code",
+                                        "type": "string",
+                                        "example": "123456"
+                                    },
+                                    "verification_token": {
+                                        "description": "Verification token from reset request",
+                                        "type": "string",
+                                        "example": "abc123def456"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token reset successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Customer"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token reset successful."
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "1|abc123def456..."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/customer/subscription": {
@@ -6074,8 +6560,6 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
@@ -8175,7 +8659,7 @@
                         "title": "Hostname",
                         "description": "Channel host name, website URL",
                         "type": "string",
-                        "example": "https://demo.bagisto.com/"
+                        "example": "https://lovefood.com/"
                     },
                     "logo": {
                         "title": "Logo",
@@ -8596,7 +9080,7 @@
                         "title": "Company Name",
                         "description": "Customer's Company Name",
                         "type": "string",
-                        "example": "Bagisto-Laravel"
+                        "example": "Lovefood"
                     },
                     "vat_id": {
                         "title": "VAT ID",
@@ -10499,6 +10983,10 @@
         {
             "name": "Wishlists",
             "description": "API Endpoints for Wishlists"
+        },
+        {
+            "name": "Multi-Channel Authentication",
+            "description": "API endpoints for SMS, WhatsApp, and Telegram authentication"
         }
     ],
     "security": [
