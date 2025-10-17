@@ -5,6 +5,7 @@
 .phpunit.result.cache
 .vscode
 .vagrant
+php.ini
 *.hot
 /stubs
 /data

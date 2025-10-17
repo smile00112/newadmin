@@ -249,13 +249,42 @@ return [
     ],
 
     /**
+     * Newsletters.
+     */
+    [
+        'key'        => 'newsletters',
+        'name'       => 'newsletters::app.sidebar.newsletters',
+        'route'      => 'admin.newsletters.mailing-lists.index',
+        'sort'       => 7,
+        'icon'       => 'icon-newsletter',
+    ], [
+        'key'        => 'newsletters.mailing-lists',
+        'name'       => 'newsletters::app.sidebar.mailing-lists',
+        'route'      => 'admin.newsletters.mailing-lists.index',
+        'sort'       => 2,
+        'icon'       => '',
+    ], [
+        'key'        => 'newsletters.stop-list',
+        'name'       => 'newsletters::app.sidebar.stop-list',
+        'route'      => 'admin.newsletters.stop-list.index',
+        'sort'       => 4,
+        'icon'       => '',
+    ], [
+        'key'        => 'newsletters.whatsapp-instances',
+        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
+        'route'      => 'admin.newsletters.whatsapp-instances.index',
+        'sort'       => 6,
+        'icon'       => '',
+    ],
+
+    /**
      * Reporting.
      */
     [
         'key'        => 'reporting',
         'name'       => 'admin::app.components.layouts.sidebar.reporting',
         'route'      => 'admin.reporting.sales.index',
-        'sort'       => 7,
+        'sort'       => 8,
         'icon'       => 'icon-report',
         'icon-class' => 'report-icon',
     ], [
@@ -285,7 +314,7 @@ return [
         'key'        => 'settings',
         'name'       => 'admin::app.components.layouts.sidebar.settings',
         'route'      => 'admin.settings.locales.index',
-        'sort'       => 8,
+        'sort'       => 9,
         'icon'       => 'icon-settings',
         'icon-class' => 'settings-icon',
     ], [
@@ -377,7 +406,7 @@ return [
         'key'        => 'configuration',
         'name'       => 'admin::app.components.layouts.sidebar.configure',
         'route'      => 'admin.configuration.index',
-        'sort'       => 9,
+        'sort'       => 10,
         'icon'       => 'icon-configuration',
     ],
 ];

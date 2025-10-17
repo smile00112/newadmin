@@ -4762,6 +4762,7 @@ return [
                 'locales'                  => 'Locales',
                 'marketing'                => 'Marketing',
                 'mode'                     => 'Dark Mode',
+                'newsletters'                => 'Newsletters',
                 'newsletter-subscriptions' => 'Newsletter Subscriptions',
                 'orders'                   => 'Orders',
                 'products'                 => 'Products',
