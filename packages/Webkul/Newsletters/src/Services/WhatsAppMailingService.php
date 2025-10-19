@@ -19,11 +19,11 @@ class WhatsAppMailingService
     {
 
         try {
-            $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
 
+            $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
             //'chatId' => $phone.'@c.us',
             $response = $greenApiService->sendMessage($phoneNumber.'@c.us', $message);
-
+dd($response);
             if ($response['idMessage']) {
                 Log::info("WhatsApp message sent successfully", [
                     'instance_id' => $instance->id,
@@ -77,5 +77,14 @@ class WhatsAppMailingService
         Redis::expire($key, 1); // Expire after 1 second
 
         return true;
+    }
+
+    public function makeRandomMessage($text): string
+    {
+        return $result = preg_replace_callback('/\{([^}]+)\}/', function($matches) {
+            $options = explode('|', $matches[1]);
+            return $options[array_rand($options)];
+        }, $text);
+
     }
 }

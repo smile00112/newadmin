@@ -37,6 +37,8 @@ return [
             'sending' => 'Отправка',
             'sent' => 'Отправлено',
             'failed' => 'Ошибка',
+            'is-active' => 'Активен',
+            'not-active' => 'Не активен',
         ],
 
         'customer-numbers' => [
@@ -54,6 +56,7 @@ return [
             'mailing-list' => 'Список рассылки',
             'no-numbers' => 'Номера клиентов не найдены.',
             'is-active' => 'Активен',
+            'not-active' => 'Не активен',
             'subscribed-at' => 'Подписан',
             'unsubscribed-at' => 'Отписан',
         ],
@@ -167,6 +170,9 @@ return [
             'optional' => 'Необязательно',
             'csv_file' => 'CSV файл',
             'csv_format' => 'Формат CSV',
+            'numbers_count' => 'Получателей',
+            'sent_count' => 'Отправлено',
+            'incoming_count' => 'Входящие',
         ],
         'validation' => [
             'required' => 'Поле :field обязательно для заполнения.',

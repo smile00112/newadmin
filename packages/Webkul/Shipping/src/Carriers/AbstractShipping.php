@@ -2,7 +2,7 @@
 
 namespace Webkul\Shipping\Carriers;
 
-use Webkul\Shipping\Exceptions\CarrierCodeException;
+use Webkul\Shipping\Exceptions\GreenApiDataValidateException;
 
 abstract class AbstractShipping
 {
@@ -40,7 +40,7 @@ abstract class AbstractShipping
     public function getCode()
     {
         if (empty($this->code)) {
-            throw new CarrierCodeException('Carrier code should be initialized.');
+            throw new GreenApiDataValidateException('Carrier code should be initialized.');
         }
 
         return $this->code;

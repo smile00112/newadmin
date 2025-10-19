@@ -52,4 +52,6 @@ class MailingList extends Model
     {
         return $this->hasMany(CustomerNumber::class);
     }
+
+
 }

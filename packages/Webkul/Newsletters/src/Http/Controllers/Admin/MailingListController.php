@@ -28,8 +28,18 @@ class MailingListController extends Controller
      */
     public function index()
     {
-        $mailingLists = $this->mailingListRepository->all();
-
+        $mailingLists = $this->mailingListRepository->with('customerNumbers')->withCount([
+            'customerNumbers as numbers_delivered' => function ($query) {
+                $query->where('delivered', true);
+            },
+            'customerNumbers as numbers_viewed' => function ($query) {
+                $query->where('viewed', true);
+            },
+            'customerNumbers as incoming_messages_count' => function ($query) {
+                $query->where('incoming_message', true);
+            }
+        ])->orderBy('created_at', 'desc')->all();
+      //  dd($mailingLists);
         return view('newsletters::admin.mailing-lists.index', compact('mailingLists'));
     }
 
@@ -591,8 +601,18 @@ class MailingListController extends Controller
 
         $service = new \Webkul\Newsletters\Services\WhatsAppMailingService();
         $vacapInstance = \Webkul\Newsletters\Models\VacapInstance::find(8);
-       // dd($vacapInstance);
-        $service->sendMessage($vacapInstance, '79206003708', 'Privet');
+        $text = "{🍷|🍸|🥂|🍹|🥃|🍾} {Алкоголь на дом|Алкоголь с доставкой|Напитки с доставкой|Экспресс-сервис напитков|Сервис алкоголя} от {Синица|Синица 24/7|Синица Delivery} — {привезём быстро|напитки доставляем|доставим заказ без задержек|работаем как экспресс-служба|курьер всегда на связи}
+{Оригинальные напитки и проверенная классика|Классика и новинки для любой компании|Топовые бренды и любимые позиции|Только проверенные варианты в ассортименте|Бутылки на любой вкус и настроение}";
+        $text = $service->makeRandomMessage($text);
+
+        $service->sendMessage($vacapInstance, '79206003708', $text);
+
+        //привязываем инстанс к сообщению
+        //присваиваем сообщению номер из greenapi
+
+
+        dd($service);
+
 //https://1105.api.green-api.com
 //1105346932
 //5fa9c1aac71e4278bbde55cf579420b77cf9a264fdfd4a5b87
