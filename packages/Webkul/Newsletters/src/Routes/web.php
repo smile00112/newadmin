@@ -8,6 +8,14 @@ use Webkul\Newsletters\Http\Controllers\Admin\CustomerNumberController;
 use Webkul\Newsletters\Http\Controllers\Admin\StopListController;
 use Webkul\Newsletters\Http\Controllers\Admin\UnifiedNewsletterController;
 
+//TODO add custom middleware to greenapi webhook routes
+Route::group(['prefix' => 'newsletters'], function () {
+    Route::controller(HooksController::class)->prefix('hook')->group(function () {
+        Route::get('webhook', 'get_hook')->name('admin.newsletters.hook');
+        Route::post('webhook', 'get_hook')->name('admin.newsletters.hook');
+    });
+});
+
 Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']], function () {
 
     /**
@@ -17,10 +25,7 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         return 'Newsletters module is working!';
     })->name('admin.newsletters.test');
 
-    Route::controller(HooksController::class)->prefix('hook')->group(function () {
-        Route::get('webhook', 'get_hook')->name('admin.newsletters.hook');
-        Route::post('', 'get_hook')->name('admin.newsletters.hook');
-    });
+
     /**
      * Vacap Instances routes.
      */

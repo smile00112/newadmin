@@ -3,6 +3,9 @@
 namespace Webkul\Newsletters\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Webkul\Newsletters\Models\CustomerNumber;
+use Webkul\Newsletters\Observers\CustomerNumberObserver;
+use Webkul\Newsletters\Console\Commands\TestWebSocketBroadcast;
 
 class ModuleServiceProvider extends ServiceProvider
 {
@@ -26,6 +29,9 @@ class ModuleServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../Resources/views' => resource_path('views/vendor/newsletters'),
         ], 'views');
+
+        // Register model observers
+        CustomerNumber::observe(CustomerNumberObserver::class);
     }
 
     /**
@@ -34,6 +40,7 @@ class ModuleServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->registerConfig();
+        $this->registerCommands();
     }
 
     /**
@@ -44,5 +51,21 @@ class ModuleServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(
             dirname(__DIR__).'/Config/newsletters.php', 'newsletters'
         );
+        
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/reverb.php', 'reverb'
+        );
+    }
+
+    /**
+     * Register console commands.
+     */
+    protected function registerCommands(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                TestWebSocketBroadcast::class,
+            ]);
+        }
     }
 }

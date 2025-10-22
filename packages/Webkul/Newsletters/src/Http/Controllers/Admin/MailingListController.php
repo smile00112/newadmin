@@ -5,6 +5,7 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Newsletters\Models\StopList;
 use Webkul\Newsletters\Repositories\MailingListRepository;
 use Webkul\Newsletters\Repositories\VacapInstanceRepository;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
@@ -598,27 +599,40 @@ class MailingListController extends Controller
     {
 
         $mailingList = $this->mailingListRepository->findOrFail($id);
-
         $service = new \Webkul\Newsletters\Services\WhatsAppMailingService();
-        $vacapInstance = \Webkul\Newsletters\Models\VacapInstance::find(8);
-        $text = "{🍷|🍸|🥂|🍹|🥃|🍾} {Алкоголь на дом|Алкоголь с доставкой|Напитки с доставкой|Экспресс-сервис напитков|Сервис алкоголя} от {Синица|Синица 24/7|Синица Delivery} — {привезём быстро|напитки доставляем|доставим заказ без задержек|работаем как экспресс-служба|курьер всегда на связи}
-{Оригинальные напитки и проверенная классика|Классика и новинки для любой компании|Топовые бренды и любимые позиции|Только проверенные варианты в ассортименте|Бутылки на любой вкус и настроение}";
-        $text = $service->makeRandomMessage($text);
 
-        $service->sendMessage($vacapInstance, '79206003708', $text);
+        //$vacapInstance = \Webkul\Newsletters\Models\VacapInstance::find(8);
+        //$text = "{🍷|🍸|🥂|🍹|🥃|🍾} {Алкоголь на дом|Алкоголь с доставкой|Напитки с доставкой|Экспресс-сервис напитков|Сервис алкоголя} от {Синица|Синица 24/7|Синица Delivery} — {привезём быстро|напитки доставляем|доставим заказ без задержек|работаем как экспресс-служба|курьер всегда на связи}
+        //{Оригинальные напитки и проверенная классика|Классика и новинки для любой компании|Топовые бренды и любимые позиции|Только проверенные варианты в ассортименте|Бутылки на любой вкус и настроение}";
 
-        //привязываем инстанс к сообщению
-        //присваиваем сообщению номер из greenapi
+        foreach($mailingList->customerNumbers as $customerNumber){
+            if(\Webkul\Newsletters\Models\StopList::where('phone_number', $customerNumber->phone_number)->exists()){
+                Log::error('Number in stopList', [
+                    'phone' => $customerNumber->phone_number
+                ]);
+                continue;
+            }
 
+            $text = $service->makeRandomMessage($mailingList->message_text);
+            $instance = $service->makeRandomInstance($mailingList->whatsappInstances);
+            $message_id = $service->sendMessage($instance, $customerNumber->phone_number, $text);
 
-        dd($service);
+            if($message_id){
+                //привязываем инстанс к сообщению
+                //присваиваем сообщению номер из greenapi
+                $customerNumber->update([
+                    'greenapi_chat_id' => $message_id,
+                    'whatsapp_instance_id' => $instance->id
+                ]);
 
-//https://1105.api.green-api.com
-//1105346932
-//5fa9c1aac71e4278bbde55cf579420b77cf9a264fdfd4a5b87
-//
-//$service->sendMessage();
+                //заносим в стоп лист
+                \Webkul\Newsletters\Models\StopList::create(['phone_number' => $customerNumber->phone_number]);
+            }
+            else{
+                Log::error('Failed to send message, no message_id return');
+            }
 
+        }
 
     }
 

@@ -15,22 +15,21 @@ class WhatsAppMailingService
     /**
      * Send WhatsApp message using VacapInstance
      */
-    public function sendMessage(VacapInstance $instance, string $phoneNumber, string $message): bool
+    public function sendMessage(VacapInstance $instance, string $phoneNumber, string $message): string | null
     {
-
         try {
-
             $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
             //'chatId' => $phone.'@c.us',
             $response = $greenApiService->sendMessage($phoneNumber.'@c.us', $message);
-dd($response);
+
             if ($response['idMessage']) {
                 Log::info("WhatsApp message sent successfully", [
                     'instance_id' => $instance->id,
                     'phone' => $phoneNumber,
                     'response' => $response
                 ]);
-                return true;
+
+                return $response['idMessage'];
             }
 
             Log::error("WhatsApp API error", [
@@ -39,7 +38,7 @@ dd($response);
                 'response' => $response
             ]);
 
-            return false;
+            return null;
         } catch (\Exception $e) {
             echo $e->getMessage();
             Log::error("WhatsApp sending failed", [
@@ -47,7 +46,7 @@ dd($response);
                 'phone' => $phoneNumber,
                 'error' => $e->getMessage()
             ]);
-            return false;
+            return null;
         }
     }
 
@@ -85,6 +84,10 @@ dd($response);
             $options = explode('|', $matches[1]);
             return $options[array_rand($options)];
         }, $text);
+    }
 
+    public function makeRandomInstance($instances)
+    {
+        return $instances->random();
     }
 }

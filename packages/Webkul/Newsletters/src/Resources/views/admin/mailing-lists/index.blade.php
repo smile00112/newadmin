@@ -29,12 +29,10 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.mailing-lists.active') }}
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.admin.mailing-lists.start-at') }}
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.common.fields.created_at') }}
-                        </th>
+{{--                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
+{{--                            {{ __('newsletters::app.admin.mailing-lists.start-at') }}--}}
+{{--                        </th>--}}
+
 
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.numbers_count') }}
@@ -47,7 +45,9 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.incoming_count') }}
                         </th>
-
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            {{ __('newsletters::app.common.fields.created_at') }}
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.actions') }}
                         </th>
@@ -55,38 +55,42 @@
                 </thead>
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($mailingLists as $mailingList)
-                        <tr>
+                        <tr data-mailing-list-id="{{ $mailingList->id }}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                 {{ $mailingList->id }}
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                                {{ Str::limit($mailingList->message_text, 50) }}
+                                <a href="{{ route('admin.newsletters.mailing-lists.edit', $mailingList->id) }}">
+                                    {{ Str::limit($mailingList->message_text, 50) }}
+                                </a>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $mailingList->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                     {{ $mailingList->active ? __('newsletters::app.admin.mailing-lists.is-active') : __('newsletters::app.admin.mailing-lists.not-active') }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                @php
-                                //dd($mailingList->start_at);
-                                @endphp
-                                {{ ($mailingList->start_at && $mailingList->start_at->year > 1) ? $mailingList->start_at->format('Y-m-d H:i') : '-' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {{ $mailingList->created_at->format('Y-m-d H:i') }}
-                            </td>
+{{--                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">--}}
+{{--                                @php--}}
+{{--                                //dd($mailingList->start_at);--}}
+{{--                                @endphp--}}
+{{--                                {{ ($mailingList->start_at && $mailingList->start_at->year > 1) ? $mailingList->start_at->format('Y-m-d H:i') : '-' }}--}}
+{{--                            </td>--}}
+
 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                 {{ $mailingList->customerNumbers->count() }}
                             </td>
 
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="sent_count">
                                 {{ $mailingList->numbers_delivered }}
                             </td>
 
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="incoming_count">
+                                {{ $mailingList->incoming_messages_count ?: '-'}}
+                            </td>
+
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {{ $mailingList->incoming_message ?: '-'}}
+                                {{ $mailingList->created_at->format('Y-m-d H:i') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
@@ -128,6 +132,83 @@
             </table>
         </div>
     </div>
+
+    <!-- Include Laravel Echo and Pusher -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script>
+        // Initialize Pusher with Reverb configuration
+        const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
+            cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
+            wsHost: '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}',
+            wsPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
+            wssPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
+            forceTLS: {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }},
+            enabledTransports: ['ws', 'wss'],
+        });
+
+        // Subscribe to mailing lists stats channel
+        const channel = pusher.subscribe('mailing-lists-stats');
+
+        // Listen for stats updates
+        channel.bind('stats-updated', function(data) {
+            console.log('Stats updated:', data);
+
+            const mailingListId = data.mailing_list_id;
+            const stats = data.stats;
+
+            // Find the row and update the cells
+            const row = document.querySelector(`tr[data-mailing-list-id="${mailingListId}"]`);
+            if (row) {
+                // Update sent_count column (7th column)
+                const sentCountCell = row.querySelector('[data-field="sent_count"]');
+                if (sentCountCell) {
+                    sentCountCell.textContent = stats.sent_count;
+                }
+
+                // Update incoming_count column (8th column)
+                const incomingCountCell = row.querySelector('[data-field="incoming_count"]');
+                if (incomingCountCell) {
+                    incomingCountCell.textContent = stats.incoming_count || '-';
+                }
+
+                // Add visual feedback
+                row.style.backgroundColor = '#f0f9ff';
+                row.style.transition = 'background-color 0.3s ease';
+
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 2000);
+
+                // Show notification
+                showNotification(`Stats updated for mailing list #${mailingListId}`);
+            }
+        });
+
+        // Show notification function
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Handle connection errors
+        pusher.connection.bind('error', function(err) {
+            console.error('Pusher connection error:', err);
+        });
+
+        // Handle connection state changes
+        pusher.connection.bind('state_change', function(states) {
+            console.log('Pusher connection state:', states.current);
+        });
+    </script>
 
     <script>
         function deleteMailingList(id) {

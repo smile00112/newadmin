@@ -5,6 +5,7 @@ namespace Webkul\Newsletters\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CustomerNumber extends Model
 {
@@ -30,6 +31,7 @@ class CustomerNumber extends Model
         'viewed',
         'new_message',
         'mailing_list_id',
+        'whatsapp_instance_id',
         'unsubscribed_at',
         'metadata',
     ];
@@ -46,5 +48,13 @@ class CustomerNumber extends Model
     public function mailingList(): BelongsTo
     {
         return $this->belongsTo(MailingList::class);
+    }
+
+    /**
+     * Get the mailing instance.
+     */
+    public function WhatsAppInstance(): belongsTo
+    {
+        return $this->belongsTo(VacapInstance::class, 'whatsapp_instance_id', 'id', 'whatsapp_instance_id');
     }
 }
