@@ -269,13 +269,14 @@ return [
         'route'      => 'admin.newsletters.stop-list.index',
         'sort'       => 4,
         'icon'       => '',
-    ], [
-        'key'        => 'newsletters.whatsapp-instances',
-        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
-        'route'      => 'admin.newsletters.whatsapp-instances.index',
-        'sort'       => 6,
-        'icon'       => '',
     ],
+//    [
+//        'key'        => 'newsletters.whatsapp-instances',
+//        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
+//        'route'      => 'admin.newsletters.whatsapp-instances.index',
+//        'sort'       => 6,
+//        'icon'       => '',
+//    ],
 
     /**
      * Reporting.

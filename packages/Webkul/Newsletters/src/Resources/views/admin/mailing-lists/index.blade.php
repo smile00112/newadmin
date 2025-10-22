@@ -55,7 +55,7 @@
                 </thead>
                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($mailingLists as $mailingList)
-                        <tr data-mailing-list-id="{{ $mailingList->id }}">
+                        <tr data-mailing-list-id="{{ $mailingList->id }}" class="{{$mailingList->incoming_messages_count>0?'bg-green-100':''}}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                 {{ $mailingList->id }}
                             </td>

@@ -81,22 +81,22 @@
                     </div>
 
                     <!-- Start At -->
-                    <div>
-                        <label for="start_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {{ __('newsletters::app.admin.mailing-lists.start-at') }}
-                        </label>
-                        <input
-                            type="datetime-local"
-                            name="start_at"
-                            id="start_at"
-                            value="{{ old('start_at', $mailingList->start_at ? $mailingList->start_at->format('Y-m-d\TH:i') : '') }}"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                        >
-                        @error('start_at')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    </div>
+{{--                    <div>--}}
+{{--                        <label for="start_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">--}}
+{{--                            {{ __('newsletters::app.admin.mailing-lists.start-at') }}--}}
+{{--                        </label>--}}
+{{--                        <input--}}
+{{--                            type="datetime-local"--}}
+{{--                            name="start_at"--}}
+{{--                            id="start_at"--}}
+{{--                            value="{{ old('start_at', $mailingList->start_at ? $mailingList->start_at->format('Y-m-d\TH:i') : '') }}"--}}
+{{--                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"--}}
+{{--                        >--}}
+{{--                        @error('start_at')--}}
+{{--                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>--}}
+{{--                        @enderror--}}
+{{--                    </div>--}}
+{{--                    </div>--}}
             </div>
         </div>
 
