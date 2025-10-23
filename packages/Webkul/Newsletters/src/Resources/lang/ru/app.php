@@ -83,6 +83,11 @@ return [
             'load-more-notice' => 'Загрузка дополнительных номеров...',
             'loading-chat' => 'Загрузка чата...',
             'no-chat-history' => 'Нет истории чата',
+            'reply-message' => 'Ответить клиенту',
+            'type-your-message' => 'Введите ваше сообщение...',
+            'message-sent-success' => 'Сообщение успешно отправлено',
+            'message-sent-failed' => 'Не удалось отправить сообщение',
+            'message-empty-error' => 'Введите текст сообщения',
 
         ],
 
@@ -150,6 +155,7 @@ return [
             'export' => 'Экспорт',
             'import' => 'Импорт',
             'send' => 'Отправить',
+            'sending' => 'Отправка',
             'view' => 'Просмотр',
             'update' => 'Обновить',
             'close' => 'Закрыть',

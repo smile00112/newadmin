@@ -79,6 +79,11 @@ return [
             'searching' => 'Searching',
             'search-error' => 'Search failed. Please try again.',
             'no-search-results' => 'No customer numbers found matching your search.',
+            'reply-message' => 'Reply to Customer',
+            'type-your-message' => 'Type your message...',
+            'message-sent-success' => 'Message sent successfully',
+            'message-sent-failed' => 'Failed to send message',
+            'message-empty-error' => 'Please enter a message',
         ],
 
         'stop-list' => [
@@ -165,6 +170,7 @@ return [
             'export' => 'Export',
             'import' => 'Import',
             'send' => 'Send',
+            'sending' => 'Sending',
             'view' => 'View',
             'update' => 'Update',
             'close' => 'Close',

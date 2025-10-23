@@ -67,6 +67,7 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::post('import', 'import')->name('admin.newsletters.customer-numbers.import');
         Route::post('chat-history', 'getChatHistory')->name('admin.newsletters.customer-numbers.chat-history');
         Route::post('search', 'search')->name('admin.newsletters.customer-numbers.search');
+        Route::post('send-reply', 'sendReply')->name('admin.newsletters.customer-numbers.send-reply');
     });
 
     /**

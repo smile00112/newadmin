@@ -276,34 +276,93 @@ class CustomerNumberController extends Controller
 
         try {
             $query = $this->customerNumberRepository->newQuery();
-
+            
             $searchTerm = $request->query;
-
+            
             $query->where(function($q) use ($searchTerm) {
                 $q->where('phone_number', 'like', '%' . $searchTerm . '%')
                   ->orWhere('name', 'like', '%' . $searchTerm . '%');
             });
-
+            
             if ($request->mailing_list_id) {
                 $query->where('mailing_list_id', $request->mailing_list_id);
             }
-
+            
             $results = $query->with('mailingList')->limit(20)->get();
-
+            
             return response()->json([
                 'success' => true,
                 'results' => $results,
             ]);
-
+            
         } catch (\Exception $e) {
             Log::error('Customer number search failed', [
                 'query' => $request->query,
                 'error' => $e->getMessage(),
             ]);
-
+            
             return response()->json([
                 'success' => false,
                 'message' => trans('newsletters::app.admin.customer-numbers.search-failed'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Send reply message to customer.
+     */
+    public function sendReply(Request $request)
+    {
+        $this->validate($request, [
+            'customer_number_id' => 'required|exists:newsletters_customer_numbers,id',
+            'message' => 'required|string|min:1|max:4096',
+        ]);
+
+        try {
+            $customerNumber = $this->customerNumberRepository->with(['whatsAppInstance'])->findOrFail($request->customer_number_id);
+
+            if (!$customerNumber->whatsAppInstance) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.customer-numbers.no-whatsapp-instance'),
+                ], 400);
+            }
+
+            // Send message via WhatsApp
+            $messageId = $this->whatsAppMailingService->sendMessage(
+                $customerNumber->whatsAppInstance,
+                $customerNumber->phone_number,
+                $request->message
+            );
+
+            if ($messageId) {
+                Log::info('Reply message sent successfully', [
+                    'customer_number_id' => $customerNumber->id,
+                    'phone_number' => $customerNumber->phone_number,
+                    'message_id' => $messageId,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => trans('newsletters::app.admin.customer-numbers.message-sent-success'),
+                    'message_id' => $messageId,
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.customer-numbers.message-sent-failed'),
+            ], 500);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send reply message', [
+                'customer_number_id' => $request->customer_number_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.customer-numbers.message-sent-failed') . ': ' . $e->getMessage(),
             ], 500);
         }
     }

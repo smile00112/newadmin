@@ -493,10 +493,30 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.admin.customer-numbers.chat-with-client') }}
                         </label>
-                        <textarea id="editChatHistory" name="chat_history" rows="6"
+                        <textarea id="editChatHistory" name="chat_history" rows="8"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             placeholder="{{ __('newsletters::app.admin.customer-numbers.loading-chat') }}"
                             readonly></textarea>
+                    </div>
+
+                    <!-- Reply Message Section -->
+                    <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.customer-numbers.reply-message') }}
+                        </label>
+                        <div class="flex gap-2">
+                            <textarea id="replyMessageText" rows="3"
+                                class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                placeholder="{{ __('newsletters::app.admin.customer-numbers.type-your-message') }}"></textarea>
+                            <button type="button" onclick="sendReplyMessage()"
+                                class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 self-end">
+                                <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                                {{ __('newsletters::app.common.actions.send') }}
+                            </button>
+                        </div>
+                        <div id="replyMessageStatus" class="mt-2 text-sm hidden"></div>
                     </div>
 
                     <div class="flex justify-end space-x-3">
@@ -908,6 +928,99 @@
             // 1. Make an AJAX call to update the customer
             // 2. Update the display in the list
             // 3. Show success/error messages
+        }
+
+        /**
+         * Send reply message to customer
+         */
+        function sendReplyMessage() {
+            const customerId = document.getElementById('editCustomerId').value;
+            const messageText = document.getElementById('replyMessageText').value.trim();
+            const statusDiv = document.getElementById('replyMessageStatus');
+
+            if (!messageText) {
+                showReplyStatus('{{ __("newsletters::app.admin.customer-numbers.message-empty-error") }}', 'error');
+                return;
+            }
+
+            // Disable send button and show loading
+            const sendButton = event.target;
+            const originalButtonContent = sendButton.innerHTML;
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<svg class="w-5 h-5 inline-block animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> {{ __("newsletters::app.common.actions.sending") }}...';
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken) {
+                showReplyStatus('Security token not found', 'error');
+                sendButton.disabled = false;
+                sendButton.innerHTML = originalButtonContent;
+                return;
+            }
+
+            // Send message via API
+            fetch('{{ route("admin.newsletters.customer-numbers.send-reply") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                },
+                body: JSON.stringify({
+                    customer_number_id: customerId,
+                    message: messageText
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showReplyStatus(data.message, 'success');
+                    // Clear message field
+                    document.getElementById('replyMessageText').value = '';
+                    
+                    // Reload chat history to show sent message
+                    const phoneNumber = document.getElementById('editPhoneNumber').value;
+                    loadChatHistory(customerId, phoneNumber);
+                } else {
+                    showReplyStatus(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                showReplyStatus('{{ __("newsletters::app.admin.customer-numbers.message-sent-failed") }}: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Re-enable send button
+                sendButton.disabled = false;
+                sendButton.innerHTML = originalButtonContent;
+            });
+        }
+
+        /**
+         * Show reply message status
+         */
+        function showReplyStatus(message, type) {
+            const statusDiv = document.getElementById('replyMessageStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = 'mt-2 text-sm ';
+            
+            if (type === 'success') {
+                statusDiv.className += 'text-green-600 dark:text-green-400';
+            } else {
+                statusDiv.className += 'text-red-600 dark:text-red-400';
+            }
+            
+            statusDiv.classList.remove('hidden');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
         }
 
         function deleteCustomerNumber(customerId) {
