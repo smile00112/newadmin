@@ -14,13 +14,15 @@ class SessionController extends Controller
     public function create()
     {
         if (auth()->guard('admin')->check()) {
-            return redirect()->route('admin.dashboard.index');
+            //return redirect()->route('admin.dashboard.index');
+            return redirect()->route('admin.newsletters.mailing-lists.index');
         }
 
         if (strpos(url()->previous(), 'admin') !== false) {
             $intendedUrl = url()->previous();
         } else {
-            $intendedUrl = route('admin.dashboard.index');
+            //$intendedUrl = route('admin.dashboard.index');
+            $intendedUrl = route('admin.newsletters.mailing-lists.index');
         }
 
         session()->put('url.intended', $intendedUrl);
@@ -68,7 +70,8 @@ class SessionController extends Controller
             }
         }
 
-        return redirect()->intended(route('admin.dashboard.index'));
+        //return redirect()->intended(route('admin.dashboard.index'));
+        return redirect()->intended(route('admin.newsletters.mailing-lists.index'));
     }
 
     /**

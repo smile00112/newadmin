@@ -225,14 +225,28 @@
     <script>
         function deleteMailingList(id) {
             if (confirm('{{ __("newsletters::app.admin.mailing-lists.delete-confirm") }}')) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                
+                if (!csrfToken) {
+                    console.error('CSRF token not found!');
+                    alert('Security token not found. Please refresh the page and try again.');
+                    return;
+                }
+
                 fetch('{{ route("admin.newsletters.mailing-lists.destroy", ":id") }}'.replace(':id', id), {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.message) {
                         alert(data.message);
@@ -241,7 +255,7 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('{{ __("newsletters::app.admin.mailing-lists.delete-failed") }}');
+                    alert('{{ __("newsletters::app.admin.mailing-lists.delete-failed") }}: ' + error.message);
                 });
             }
         }
