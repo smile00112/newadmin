@@ -58,4 +58,10 @@ Route::group(['middleware' => ['admin', NoCacheMiddleware::class], 'prefix' => c
      * Remaining routes.
      */
     require 'rest-routes.php';
+
+    /**
+     * fvm token routes.
+     */
+    require 'fcm-token-routes.php';
+
 });

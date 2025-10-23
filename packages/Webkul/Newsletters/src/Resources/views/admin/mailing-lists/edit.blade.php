@@ -100,90 +100,8 @@
             </div>
         </div>
 
-        <!-- WhatsApp Instances and Customer Numbers Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- WhatsApp Instances Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                    <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        {{ __('newsletters::app.admin.whatsapp-instances.title') }}
-                    </h2>
-                    <div class="flex space-x-2 gap-2">
-                        <button type="button" onclick="addWhatsAppInstanceRow()"
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            {{ __('newsletters::app.common.actions.add') }} {{ __('newsletters::app.admin.whatsapp-instances.title') }}
-                        </button>
-                        <button type="button" onclick="openCSVImportModal('whatsapp')"
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            {{ __('newsletters::app.common.actions.import') }} CSV
-                        </button>
-                        </div>
-                </div>
-                </div>
-                <div class="p-6">
-                <div id="whatsappInstancesContainer">
-                    @forelse($whatsappInstances as $index => $instance)
-                        <div class="whatsapp-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.whatsapp-instances.link-name') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="whatsapp_instances[{{ $index }}][link_name]"
-                                        value="{{ old('whatsapp_instances.' . $index . '.link_name', $instance->link_name) }}"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                        </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.whatsapp-instances.login') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="whatsapp_instances[{{ $index }}][login]"
-                                        value="{{ old('whatsapp_instances.' . $index . '.login', $instance->login) }}"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                    </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.whatsapp-instances.password') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="whatsapp_instances[{{ $index }}][password]"
-                                        value="{{ old('whatsapp_instances.' . $index . '.password', $instance->password) }}"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                </div>
-                            </div>
-                            <div class="flex justify-end">
-                                <button type="button" onclick="removeWhatsAppInstanceRow(this)"
-                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    {{ __('newsletters::app.common.actions.delete') }}
-                                </button>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="text-center py-8">
-                            <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.whatsapp-instances.no-instances') }}</p>
-                        </div>
-                    @endforelse
-                </div>
-                </div>
-            </div>
+        <!-- WhatsApp Instances, Customer Numbers, and User Numbers Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
             <!-- Customer Numbers Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -191,58 +109,96 @@
                 <div class="flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
                         {{ __('newsletters::app.admin.customer-numbers.title') }}
+                            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                                ({{ count($customerNumbers) }}/{{ $totalCustomerNumbers }})
+                            </span>
                     </h2>
                     <div class="flex space-x-2 gap-2">
                         <button type="button" onclick="addCustomerNumberRow()"
                             class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             {{ __('newsletters::app.common.actions.add') }} {{ __('newsletters::app.admin.customer-numbers.title') }}
                         </button>
-                        <button type="button" onclick="openCSVImportModal('customers')"
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            {{ __('newsletters::app.common.actions.import') }} CSV
-                        </button>
+{{--                        <button type="button" onclick="openCSVImportModal('customers')"--}}
+{{--                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">--}}
+{{--                            {{ __('newsletters::app.common.actions.import') }} CSV--}}
+{{--                        </button>--}}
                     </div>
                 </div>
                 </div>
-                <div class="p-6">
+
+                <!-- Search and Load More Section -->
+                <div class="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex-1">
+                            <input type="text" id="phoneSearchInput" placeholder="{{ __('newsletters::app.admin.customer-numbers.search-placeholder') }}"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white">
+                        </div>
+                        @if($totalCustomerNumbers > 50)
+                            <button type="button" onclick="loadMoreCustomerNumbers()"
+                                class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-500">
+                                {{ __('newsletters::app.admin.customer-numbers.load-more') }}
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="px-6 py-2">
                 <div id="customerNumbersContainer">
                     @forelse($customerNumbers as $index => $customer)
-                        <div class="customer-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Hidden fields for existing customer data -->
+                            <input type="hidden" name="customer_numbers[{{ $index }}][id]" value="{{ $customer->id }}">
+                            <input type="hidden" name="customer_numbers[{{ $index }}][phone_number]" value="{{ $customer->phone_number }}">
+                            <input type="hidden" name="customer_numbers[{{ $index }}][name]" value="{{ $customer->name }}">
+                            <input type="hidden" name="customer_numbers[{{ $index }}][delivered]" value="{{ $customer->delivered ? '1' : '0' }}">
+                            <input type="hidden" name="customer_numbers[{{ $index }}][viewed]" value="{{ $customer->viewed ? '1' : '0' }}">
+                            <input type="hidden" name="customer_numbers[{{ $index }}][incoming_message]" value="{{ $customer->incoming_message ? '1' : '0' }}">
+                            <input type="hidden" name="customer_numbers[{{ $index }}][whatsapp_instance_id]" value="{{ $customer->whatsapp_instance_id }}">
+                            <div class="customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ $customer->incoming_message ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700' : '' }}">
+                                <div class="flex items-center space-x-4 flex-1">
+                                    <div class="flex-shrink-0">
+                                        @if($customer->incoming_message)
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                                {{ __('newsletters::app.admin.customer-numbers.incoming') }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="grid grid-cols-4 gap-4 text-sm">
                                         <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.customer-numbers.phone-number') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="customer_numbers[{{ $index }}][phone_number]"
-                                        value="{{ old('customer_numbers.' . $index . '.phone_number', $customer->phone_number) }}"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
+                                                <span class="text-gray-500 dark:text-gray-400">ID: {{ $customer->id }}</span>
                                         </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.customer-numbers.name') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="customer_numbers[{{ $index }}][name]"
-                                        value="{{ old('customer_numbers.' . $index . '.name', $customer->name) }}"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
+                                                <span class="font-medium text-gray-900 dark:text-white phone-number">{{ $customer->phone_number }}</span>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.phone-number') }}</div>
                                 </div>
+                                            <div>
+                                                <span class="font-medium {{ $customer->delivered ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                                    {{ $customer->delivered ? __('newsletters::app.admin.customer-numbers.delivered') : __('newsletters::app.admin.customer-numbers.not-delivered') }}
+                                                </span>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.delivered_title') }}</div>
                             </div>
-                            <div class="flex justify-end">
-                                <button type="button" onclick="removeCustomerNumberRow(this)"
-                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            <div>
+                                                <span class="font-medium {{ $customer->viewed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                                    {{ $customer->viewed ? __('newsletters::app.admin.customer-numbers.viewed') : __('newsletters::app.admin.customer-numbers.not-viewed') }}
+                                                </span>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.viewed_title') }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" onclick="openCustomerEditModal({{ $customer->id }}, '{{ $customer->phone_number }}', '{{ $customer->name }}', {{ $customer->delivered ? 'true' : 'false' }}, {{ $customer->viewed ? 'true' : 'false' }})"
+                                        class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
+                                        title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M3 17.25V21H6.75L17.81 9.94L14.06 6.19L3 17.25ZM20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L18.37 3.29C17.98 2.9 17.35 2.9 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04Z" fill="currentColor"/>
                                     </svg>
-                                    {{ __('newsletters::app.common.actions.delete') }}
+                                    </button>
+                                    <button type="button" onclick="deleteCustomerNumber({{ $customer->id }})"
+                                        class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-red-500"
+                                        title="{{ __('newsletters::app.admin.customer-numbers.delete-button-caption') }}">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
                                 </button>
                                 </div>
                         </div>
@@ -253,6 +209,93 @@
                     @endforelse
                 </div>
             </div>
+            </div>
+
+            <!-- WhatsApp Instances Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ __('newsletters::app.admin.whatsapp-instances.title') }}
+                        </h2>
+                        <div class="flex space-x-2 gap-2">
+                            <button type="button" onclick="addWhatsAppInstanceRow()"
+                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                {{ __('newsletters::app.common.actions.add') }} {{ __('newsletters::app.admin.whatsapp-instances.title') }}
+                            </button>
+{{--                            <button type="button" onclick="openCSVImportModal('whatsapp')"--}}
+{{--                                    class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">--}}
+{{--                                {{ __('newsletters::app.common.actions.import') }} CSV--}}
+{{--                            </button>--}}
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="whatsappInstancesContainer">
+                        @forelse($whatsappInstances as $index => $instance)
+                            <div class="whatsapp-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                                <!-- Hidden field for existing instance ID -->
+                                <input type="hidden" name="whatsapp_instances[{{ $index }}][id]" value="{{ $instance->id }}">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            {{ __('newsletters::app.admin.whatsapp-instances.link-name') }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="whatsapp_instances[{{ $index }}][link_name]"
+                                            value="{{ old('whatsapp_instances.' . $index . '.link_name', $instance->link_name) }}"
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            {{ __('newsletters::app.admin.whatsapp-instances.login') }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="whatsapp_instances[{{ $index }}][login]"
+                                            value="{{ old('whatsapp_instances.' . $index . '.login', $instance->login) }}"
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        >
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            {{ __('newsletters::app.admin.whatsapp-instances.password') }}
+                                            <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="password"
+                                            name="whatsapp_instances[{{ $index }}][password]"
+                                            value="{{ old('whatsapp_instances.' . $index . '.password', $instance->password) }}"
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="button" onclick="removeWhatsAppInstanceRow(this)"
+                                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        {{--                                    {{ __('newsletters::app.common.actions.delete') }}--}}
+                                    </button>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-8">
+                                <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.whatsapp-instances.no-instances') }}</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
         </div>
         </div>
         <!-- Submit Buttons -->
@@ -314,50 +357,252 @@
         </div>
     </div>
 
+    <!-- User Numbers Modal -->
+    <div id="userNumbersModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden" style="z-index: 9999;" onclick="closeUserNumbersModal()">
+        <div class="modal-content relative top-10 mx-auto p-4 sm:p-6 border w-11/12 max-w-4xl shadow-xl rounded-lg bg-white dark:bg-gray-800" style="z-index: 10000;" onclick="event.stopPropagation()">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                        {{ __('newsletters::app.admin.user-numbers.manage-users') }}
+                    </h3>
+                    <button onclick="closeUserNumbersModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Search and Filter -->
+                <div class="mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.user-numbers.search') }}
+                            </label>
+                            <input type="text" id="userSearchInput" placeholder="{{ __('newsletters::app.admin.user-numbers.search-placeholder') }}"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.user-numbers.filter') }}
+                            </label>
+                            <select id="userFilterSelect" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                                <option value="all">{{ __('newsletters::app.admin.user-numbers.all-users') }}</option>
+                                <option value="selected">{{ __('newsletters::app.admin.user-numbers.selected-users') }}</option>
+                                <option value="unselected">{{ __('newsletters::app.admin.user-numbers.unselected-users') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users List -->
+                <div class="mb-4 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <div id="usersList" class="p-4">
+                        <!-- Users will be loaded here via JavaScript -->
+                        <div class="text-center py-8">
+                            <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.user-numbers.loading-users') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Users Summary -->
+                <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            {{ __('newsletters::app.admin.user-numbers.selected-count') }}: <span id="selectedUsersCount">0</span>
+                        </span>
+                        <button type="button" onclick="clearAllSelections()" class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200">
+                            {{ __('newsletters::app.admin.user-numbers.clear-all') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button onclick="closeUserNumbersModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                        {{ __('newsletters::app.common.actions.cancel') }}
+                    </button>
+                    <button onclick="applyUserSelections()"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        {{ __('newsletters::app.common.actions.apply') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Edit Modal -->
+    <div id="customerEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden" style="z-index: 9999;" onclick="closeCustomerEditModal()">
+        <div class="modal-content relative top-20 mx-auto p-4 sm:p-6 border w-80 max-w-md shadow-xl rounded-lg bg-white dark:bg-gray-800" style="z-index: 10000;" onclick="event.stopPropagation()">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                        {{ __('newsletters::app.admin.customer-numbers.edit-customer') }}
+                    </h3>
+                    <button onclick="closeCustomerEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <form id="customerEditForm">
+                    <input type="hidden" id="editCustomerId" name="customer_id">
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.customer-numbers.phone-number') }}
+                        </label>
+                        <input type="text" id="editPhoneNumber" name="phone_number"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.customer-numbers.name') }}
+                        </label>
+                        <input type="text" id="editCustomerName" name="name"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.customer-numbers.delivered') }}
+                        </label>
+                        <select id="editDelivered" name="delivered"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="0">{{ __('newsletters::app.admin.customer-numbers.not-delivered') }}</option>
+                            <option value="1">{{ __('newsletters::app.admin.customer-numbers.delivered') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.customer-numbers.viewed') }}
+                        </label>
+                        <select id="editViewed" name="viewed"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="0">{{ __('newsletters::app.admin.customer-numbers.not-viewed') }}</option>
+                            <option value="1">{{ __('newsletters::app.admin.customer-numbers.viewed') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.customer-numbers.chat-with-client') }}
+                        </label>
+                        <textarea id="editChatHistory" name="chat_history" rows="6"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="{{ __('newsletters::app.admin.customer-numbers.loading-chat') }}"
+                            readonly></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeCustomerEditModal()"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                            {{ __('newsletters::app.common.actions.cancel') }}
+                        </button>
+                        <button type="button" onclick="saveCustomerChanges()"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            {{ __('newsletters::app.common.actions.save') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <style>
-        #csvImportModal {
+        #csvImportModal, #userNumbersModal, #customerEditModal {
             z-index: 9999 !important;
         }
-        #csvImportModal .modal-content {
+        #csvImportModal .modal-content, #userNumbersModal .modal-content, #customerEditModal .modal-content {
             z-index: 10000 !important;
+        }
+        .user-item {
+            transition: background-color 0.2s ease;
+        }
+        .user-item:hover {
+            background-color: #f3f4f6;
+        }
+        .user-item.selected {
+            background-color: #dbeafe;
+        }
+        .user-item.selected:hover {
+            background-color: #bfdbfe;
+        }
+        .dark .user-item:hover {
+            background-color: #374151;
+        }
+        .dark .user-item.selected {
+            background-color: #1e3a8a;
+        }
+        .dark .user-item.selected:hover {
+            background-color: #1e40af;
         }
     </style>
 
+
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
+        // Initialize Pusher with Reverb configuration
+        const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
+            cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
+            wsHost: '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}',
+            wsPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
+            wssPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
+            forceTLS: {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }},
+            enabledTransports: ['ws', 'wss'],
+        });
+        const channel = pusher.subscribe('mailing-lists-stats');
+
+        channel.bind('message-read', function(data) {
+            console.log('Message read:', data);
+            //updateCustomerNumberRow(event);
+        });
+
+        channel.bind('mailing-list-{{ $mailingList->id }}', function(data) {
+            console.log('Message mailing-list', data);
+            //updateCustomerNumberRow(event);
+        });
+
+
         let customerNumberIndex = {{ count($customerNumbers) }};
         let whatsappInstanceIndex = {{ count($whatsappInstances) }};
+        let userNumberIndex = {{ count($userNumbers ?? []) }};
         let currentImportType = '';
+        let allUsers = [];
+        let selectedUsers = new Set();
 
         function addCustomerNumberRow() {
             const container = document.getElementById('customerNumbersContainer');
             const newRow = document.createElement('div');
-            newRow.className = 'customer-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
+            newRow.className = 'customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700';
             newRow.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {{ __('newsletters::app.admin.customer-numbers.phone-number') }} <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="customer_numbers[${customerNumberIndex}][phone_number]"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            required>
+                <div class="flex items-center space-x-4 flex-1">
+                    <div class="flex-shrink-0">
+                        <!-- No incoming message badge for new rows -->
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {{ __('newsletters::app.admin.customer-numbers.name') }} <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="customer_numbers[${customerNumberIndex}][name]"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-3">
+                            <input type="text" name="customer_numbers[${customerNumberIndex}][phone_number]" placeholder="{{ __('newsletters::app.admin.customer-numbers.phone-number') }}"
+                                class="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                                required>
+                            <input type="text" name="customer_numbers[${customerNumberIndex}][name]" placeholder="{{ __('newsletters::app.admin.customer-numbers.name') }}"
+                                class="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
                             required>
                     </div>
                 </div>
-                <div class="flex justify-end">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">New</span>
                     <button type="button" onclick="removeCustomerNumberRow(this)"
-                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-red-500">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
-                        {{ __('newsletters::app.common.actions.delete') }}
                     </button>
                 </div>
             `;
@@ -370,6 +615,321 @@
                 button.closest('.customer-number-row').remove();
             }
         }
+
+        // Phone number search functionality with debounce and API
+        let searchTimeout;
+        let isSearching = false;
+
+        function searchCustomerNumbers() {
+            const searchTerm = document.getElementById('phoneSearchInput').value.trim();
+            const container = document.getElementById('customerNumbersContainer');
+
+            // Check if container exists
+            if (!container) {
+                console.error('Customer numbers container not found');
+                return;
+            }
+
+            if (searchTerm.length < 1) {
+                // If search is empty, reload the original 50 numbers
+                location.reload();
+                return;
+            }
+
+            if (isSearching) return;
+            isSearching = true;
+
+            // Show loading state
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="inline-flex items-center px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-600 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {{ __('newsletters::app.admin.customer-numbers.searching') }}...
+                    </div>
+                </div>
+            `;
+
+            // Get CSRF token safely
+            const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfTokenElement ? csrfTokenElement.getAttribute('content') : '{{ csrf_token() }}';
+
+            // Make API request
+            fetch('{{ route("admin.newsletters.customer-numbers.search") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    search_term: searchTerm,
+                    mailing_list_id: {{ $mailingList->id }}
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                isSearching = false;
+                if (data.success) {
+                    displaySearchResults(data.results, data.count);
+                } else {
+                    showSearchError(data.message || 'Search failed');
+                }
+            })
+            .catch(error => {
+                isSearching = false;
+                console.error('Search error:', error);
+                showSearchError('{{ __("newsletters::app.admin.customer-numbers.search-error") }}');
+            });
+        }
+
+        function displaySearchResults(results, count) {
+            const container = document.getElementById('customerNumbersContainer');
+
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.no-search-results') }}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            results.forEach((customer, index) => {
+                html += `
+                    <div class="customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 ${customer.incoming_message ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700' : ''}">
+                        <div class="flex items-center space-x-4 flex-1">
+                            <div class="flex-shrink-0">
+                                ${customer.incoming_message ? `
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                        {{ __('newsletters::app.admin.customer-numbers.incoming') }}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <span class="font-medium text-gray-900 dark:text-white phone-number">${customer.phone_number}</span>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.phone-number') }}</div>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium ${customer.delivered ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                            ${customer.delivered ? '{{ __("newsletters::app.admin.customer-numbers.delivered") }}' : '{{ __("newsletters::app.admin.customer-numbers.not-delivered") }}'}
+                                        </span>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.delivered') }}</div>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium ${customer.viewed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                                            ${customer.viewed ? '{{ __("newsletters::app.admin.customer-numbers.viewed") }}' : '{{ __("newsletters::app.admin.customer-numbers.not-viewed") }}'}
+                                        </span>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.viewed') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">ID: ${customer.id}</span>
+                            <button type="button" onclick="openCustomerEditModal(${customer.id}, '${customer.phone_number}', '${customer.name}', ${customer.delivered}, ${customer.viewed})"
+                                class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
+                                title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 17.25V21H6.75L17.81 9.94L14.06 6.19L3 17.25ZM20.71 7.04C21.1 6.65 21.1 6.02 20.71 5.63L18.37 3.29C17.98 2.9 17.35 2.9 16.96 3.29L15.13 5.12L18.88 8.87L20.71 7.04Z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <button type="button" onclick="deleteCustomerNumber(${customer.id})"
+                                class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-red-500"
+                                title="{{ __('newsletters::app.admin.customer-numbers.delete-button-caption') }}">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+
+            // Update the header count
+            const header = document.querySelector('h2');
+            if (header) {
+                const countSpan = header.querySelector('span');
+                if (countSpan) {
+                    countSpan.textContent = `(${count}/{{ $totalCustomerNumbers }})`;
+                }
+            }
+        }
+
+        function showSearchError(message) {
+            const container = document.getElementById('customerNumbersContainer');
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-red-600 dark:text-red-400">${message}</p>
+                </div>
+            `;
+        }
+
+        // Debounced search function
+        function debouncedSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(searchCustomerNumbers, 1000);
+        }
+
+        // Load more customer numbers functionality
+        function loadMoreCustomerNumbers() {
+            // This would typically make an AJAX call to load more numbers
+            // For now, we'll show an alert indicating the feature
+            alert('{{ __("newsletters::app.admin.customer-numbers.load-more-notice") }}');
+        }
+
+        // Event listener for phone search with debounce
+        const phoneSearchInput = document.getElementById('phoneSearchInput');
+        if (phoneSearchInput) {
+            phoneSearchInput.addEventListener('input', debouncedSearch);
+        } else {
+            console.error('Phone search input not found');
+        }
+
+        // Customer Edit Modal Functions
+        function openCustomerEditModal(id, phoneNumber, name, delivered, viewed) {
+            // Check if modal elements exist
+            const editCustomerId = document.getElementById('editCustomerId');
+            const editPhoneNumber = document.getElementById('editPhoneNumber');
+            const editCustomerName = document.getElementById('editCustomerName');
+            const editDelivered = document.getElementById('editDelivered');
+            const editViewed = document.getElementById('editViewed');
+            const chatTextarea = document.getElementById('editChatHistory');
+            const modal = document.getElementById('customerEditModal');
+
+            if (!editCustomerId || !editPhoneNumber || !editCustomerName || !editDelivered || !editViewed || !chatTextarea || !modal) {
+                console.error('Modal elements not found');
+                return;
+            }
+
+            editCustomerId.value = id;
+            editPhoneNumber.value = phoneNumber;
+            editCustomerName.value = name;
+            editDelivered.value = delivered ? '1' : '0';
+            editViewed.value = viewed ? '1' : '0';
+
+            // Clear and set loading placeholder for chat history
+            chatTextarea.value = '';
+            chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.loading-chat") }}';
+
+            modal.classList.remove('hidden');
+
+            // Load chat history via API
+            loadChatHistory(id, phoneNumber);
+        }
+
+        function closeCustomerEditModal() {
+            const modal = document.getElementById('customerEditModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            } else {
+                console.error('Customer edit modal not found');
+            }
+        }
+
+        // Load chat history via API
+        function loadChatHistory(customerId, phoneNumber) {
+            const chatTextarea = document.getElementById('editChatHistory');
+
+            // Check if textarea exists
+            if (!chatTextarea) {
+                console.error('Chat textarea not found');
+                return;
+            }
+
+            // Show loading state
+            chatTextarea.value = '';
+            chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.loading-chat") }}';
+
+            // Get CSRF token safely
+            const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfTokenElement ? csrfTokenElement.getAttribute('content') : '{{ csrf_token() }}';
+
+            // Make API request
+            fetch('{{ route("admin.newsletters.customer-numbers.chat-history") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    customer_id: customerId,
+                    phone_number: phoneNumber
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    chatTextarea.value = data.chat_history || '{{ __("newsletters::app.admin.customer-numbers.no-chat-history") }}';
+                    chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.chat-with-client") }}';
+                } else {
+                    chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading chat history:', error);
+                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
+            });
+        }
+
+        function saveCustomerChanges() {
+            const formData = {
+                customer_id: document.getElementById('editCustomerId').value,
+                phone_number: document.getElementById('editPhoneNumber').value,
+                name: document.getElementById('editCustomerName').value,
+                delivered: document.getElementById('editDelivered').value,
+                viewed: document.getElementById('editViewed').value
+            };
+
+            // Here you would typically make an AJAX call to save the changes
+            // For now, we'll show an alert and close the modal
+            console.log('Saving customer changes:', formData);
+            alert('{{ __("newsletters::app.admin.customer-numbers.update-success") }}');
+            closeCustomerEditModal();
+
+            // In a real implementation, you would:
+            // 1. Make an AJAX call to update the customer
+            // 2. Update the display in the list
+            // 3. Show success/error messages
+        }
+
+        function deleteCustomerNumber(customerId) {
+            if (confirm('{{ __("newsletters::app.admin.customer-numbers.delete-confirm") }}')) {
+                // Here you would typically make an AJAX call to delete the customer
+                // For now, we'll show an alert
+                console.log('Deleting customer:', customerId);
+                alert('{{ __("newsletters::app.admin.customer-numbers.delete-success") }}');
+
+                // In a real implementation, you would:
+                // 1. Make an AJAX call to delete the customer
+                // 2. Remove the row from the display
+                // 3. Show success/error messages
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeCustomerEditModal();
+            }
+        });
 
         function addWhatsAppInstanceRow() {
             const container = document.getElementById('whatsappInstancesContainer');
@@ -408,7 +968,7 @@
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
-                        {{ __('newsletters::app.common.actions.delete') }}
+{{--                        {{ __('newsletters::app.common.actions.delete') }}--}}
                     </button>
                 </div>
             `;
@@ -558,7 +1118,7 @@
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
-                                    {{ __('newsletters::app.common.actions.delete') }}
+{{--                                    {{ __('newsletters::app.common.actions.delete') }}--}}
                                 </button>
                             </div>
                         `;
@@ -681,5 +1241,277 @@
             result.push(current);
             return result;
         }
+
+        // User Numbers Management Functions
+        function openUserNumbersModal() {
+            const modal = document.getElementById('userNumbersModal');
+            modal.classList.remove('hidden');
+            loadUsers();
+        }
+
+        function closeUserNumbersModal() {
+            document.getElementById('userNumbersModal').classList.add('hidden');
+        }
+
+        function loadUsers() {
+            // Use the actual user data passed from the controller
+            allUsers = @json($userNumbers ?? []);
+
+            renderUsers();
+            updateSelectedCount();
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('usersList');
+            const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+            const filterType = document.getElementById('userFilterSelect').value;
+
+            let filteredUsers = allUsers.filter(user => {
+                const matchesSearch = user.name.toLowerCase().includes(searchTerm) ||
+                                    user.email.toLowerCase().includes(searchTerm);
+                const matchesFilter = filterType === 'all' ||
+                                    (filterType === 'selected' && selectedUsers.has(user.id)) ||
+                                    (filterType === 'unselected' && !selectedUsers.has(user.id));
+                return matchesSearch && matchesFilter;
+            });
+
+            if (filteredUsers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.user-numbers.no-users-found') }}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredUsers.map(user => `
+                <div class="user-item p-3 border border-gray-200 dark:border-gray-600 rounded-lg mb-2 cursor-pointer ${selectedUsers.has(user.id) ? 'selected' : ''}"
+                     onclick="toggleUserSelection('${user.id}')">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" ${selectedUsers.has(user.id) ? 'checked' : ''}
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                   onclick="event.stopPropagation(); toggleUserSelection('${user.id}')">
+                            <div>
+                                <div class="font-medium text-gray-900 dark:text-white">${user.name}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">${user.email}</div>
+                                ${user.phone ? `<div class="text-xs text-gray-400">Phone: ${user.phone}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.type === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}">
+                                ${user.type === 'admin' ? 'Admin' : 'Customer'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleUserSelection(userId) {
+            if (selectedUsers.has(userId)) {
+                selectedUsers.delete(userId);
+            } else {
+                selectedUsers.add(userId);
+            }
+            renderUsers();
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedUsersCount').textContent = selectedUsers.size;
+        }
+
+        function clearAllSelections() {
+            selectedUsers.clear();
+            renderUsers();
+            updateSelectedCount();
+        }
+
+        function applyUserSelections() {
+            const container = document.getElementById('userNumbersContainer');
+
+            // Clear existing user number rows
+            container.innerHTML = '';
+
+            if (selectedUsers.size === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.user-numbers.no-users') }}</p>
+                    </div>
+                `;
+                closeUserNumbersModal();
+                return;
+            }
+
+            // Add selected users as rows
+            selectedUsers.forEach(userId => {
+                const user = allUsers.find(u => u.id === userId);
+                if (user) {
+                    const newRow = document.createElement('div');
+                    newRow.className = 'user-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
+                    newRow.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ __('newsletters::app.admin.user-numbers.name') }}
+                                </label>
+                                <input type="text" name="user_numbers[${userNumberIndex}][name]" value="${user.name}"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                    readonly>
+                                <input type="hidden" name="user_numbers[${userNumberIndex}][id]" value="${user.id}">
+                                <input type="hidden" name="user_numbers[${userNumberIndex}][type]" value="${user.type}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ __('newsletters::app.admin.user-numbers.email') }}
+                                </label>
+                                <input type="email" name="user_numbers[${userNumberIndex}][email]" value="${user.email}"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                    readonly>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ __('newsletters::app.admin.user-numbers.type') }}
+                                </label>
+                                <div class="flex items-center h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.type === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}">
+                                        ${user.type === 'admin' ? 'Admin' : 'Customer'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        ${user.phone ? `
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {{ __('newsletters::app.admin.user-numbers.phone') }}
+                                </label>
+                                <input type="text" name="user_numbers[${userNumberIndex}][phone]" value="${user.phone}"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                    readonly>
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="flex justify-end">
+                            <button type="button" onclick="removeUserNumberRow(this)"
+                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                {{ __('newsletters::app.common.actions.delete') }}
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(newRow);
+                    userNumberIndex++;
+                }
+            });
+
+            closeUserNumbersModal();
+        }
+
+        function removeUserNumberRow(button) {
+            if (confirm('{{ __("newsletters::app.common.messages.confirm_delete") }}')) {
+                button.closest('.user-number-row').remove();
+            }
+        }
+
+        // Event listeners for search and filter
+        document.getElementById('userSearchInput').addEventListener('input', renderUsers);
+        document.getElementById('userFilterSelect').addEventListener('change', renderUsers);
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeUserNumbersModal();
+            }
+        });
+
+        // WebSocket / Broadcast connection for real-time updates
+        @if(config('broadcasting.default') !== 'null')
+        {{--(function() {--}}
+        {{--    // Initialize broadcast connection if available--}}
+        {{--    if (typeof window.Echo !== 'undefined') {--}}
+        {{--        // Subscribe to mailing list channel--}}
+        {{--        window.Echo.channel('mailing-list.{{ $mailingList->id }}')--}}
+        {{--            .listen('.customer-number.message-read', (event) => {--}}
+        {{--                console.log('Customer number message read event received:', event);--}}
+        {{--                updateCustomerNumberRow(event);--}}
+        {{--            });--}}
+
+        {{--        console.log('Subscribed to mailing-list.{{ $mailingList->id }} channel');--}}
+        {{--    } else {--}}
+        {{--        console.warn('Laravel Echo is not initialized. Real-time updates are disabled.');--}}
+        {{--    }--}}
+        {{--})();--}}
+        @endif
+        /**
+         * Update customer number row when incoming_message is cleared
+         */
+        function updateCustomerNumberRow(event) {
+            const customerId = event.customer_number_id;
+            const container = document.getElementById('customerNumbersContainer');
+
+            if (!container) return;
+
+            // Find all customer number rows
+            const rows = container.querySelectorAll('.customer-number-row');
+
+            rows.forEach(row => {
+                // Find the hidden input with customer ID
+                const idInput = row.querySelector('input[name*="[id]"]');
+
+                if (idInput && idInput.value == customerId) {
+                    // Remove yellow background highlighting
+                    row.classList.remove('bg-yellow-50', 'dark:bg-yellow-900/20', 'border-yellow-300', 'dark:border-yellow-700');
+
+                    // Remove the "incoming" badge
+                    const badgeContainer = row.querySelector('.flex-shrink-0');
+                    if (badgeContainer) {
+                        badgeContainer.innerHTML = '';
+                    }
+
+                    // Update hidden input for incoming_message
+                    const incomingMessageInput = row.querySelector('input[name*="[incoming_message]"]');
+                    if (incomingMessageInput) {
+                        incomingMessageInput.value = '0';
+                    }
+
+                    console.log('Updated customer number row for ID:', customerId);
+
+                    // Optional: Show a brief notification
+                    showNotification('Message status updated for ' + event.phone_number);
+                }
+            });
+        }
+
+        /**
+         * Show brief notification
+         */
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
+            notification.textContent = message;
+            notification.style.opacity = '0';
+
+            document.body.appendChild(notification);
+
+            // Fade in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+
+            // Fade out and remove
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
     </script>
+
 </x-admin::layouts>

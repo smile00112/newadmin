@@ -29,6 +29,7 @@ class Admin extends Authenticatable implements AdminContract
         'api_token',
         'role_id',
         'status',
+        'fcm_token',
     ];
 
     /**
@@ -119,5 +120,14 @@ class Admin extends Authenticatable implements AdminContract
     protected static function newFactory(): Factory
     {
         return AdminFactory::new();
+    }
+
+    /**
+     * get fcm token
+     * @return string
+     */
+    public function routeNotificationForFcm()
+    {
+        return $this->fcm_token; // Поле в таблице users для хранения токена
     }
 }

@@ -30,6 +30,8 @@
         "kalnoy/nestedset": "^6.0",
         "khaled.alshamaa/ar-php": "^6.0.0",
         "konekt/concord": "^1.2",
+        "kreait/firebase-php": "^7.23",
+        "laravel-notification-channels/fcm": "^5.1",
         "laravel/framework": "^11.0",
         "laravel/octane": "^2.3",
         "laravel/reverb": "^1.6",

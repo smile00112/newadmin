@@ -51,7 +51,7 @@ class ModuleServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(
             dirname(__DIR__).'/Config/newsletters.php', 'newsletters'
         );
-        
+
         $this->mergeConfigFrom(
             dirname(__DIR__).'/Config/reverb.php', 'reverb'
         );

@@ -256,7 +256,8 @@ return [
         'name'       => 'newsletters::app.sidebar.newsletters',
         'route'      => 'admin.newsletters.mailing-lists.index',
         'sort'       => 7,
-        'icon'       => 'icon-newsletter',
+        'icon'       => 'icon-mail',
+        'icon-class' => 'mail-icon',
     ], [
         'key'        => 'newsletters.mailing-lists',
         'name'       => 'newsletters::app.sidebar.mailing-lists',
@@ -310,15 +311,16 @@ return [
 
     /**
      * Settings.
-     */
-//    [
-//        'key'        => 'settings',
-//        'name'       => 'admin::app.components.layouts.sidebar.settings',
-//        'route'      => 'admin.settings.locales.index',
-//        'sort'       => 9,
-//        'icon'       => 'icon-settings',
-//        'icon-class' => 'settings-icon',
-//    ], [
+//     */
+    [
+        'key'        => 'settings',
+        'name'       => 'admin::app.components.layouts.sidebar.settings',
+        'route'      => 'admin.settings.locales.index',
+        'sort'       => 9,
+        'icon'       => 'icon-settings',
+        'icon-class' => 'settings-icon',
+    ],
+// [
 //        'key'        => 'settings.locales',
 //        'name'       => 'admin::app.components.layouts.sidebar.locales',
 //        'route'      => 'admin.settings.locales.index',
@@ -350,13 +352,15 @@ return [
 //        'route'      => 'admin.settings.channels.index',
 //        'sort'       => 5,
 //        'icon'       => '',
-//    ], [
-//        'key'        => 'settings.users',
-//        'name'       => 'admin::app.components.layouts.sidebar.users',
-//        'route'      => 'admin.settings.users.index',
-//        'sort'       => 6,
-//        'icon'       => '',
-//    ], [
+//    ],
+    [
+        'key'        => 'settings.users',
+        'name'       => 'admin::app.components.layouts.sidebar.users',
+        'route'      => 'admin.settings.users.index',
+        'sort'       => 6,
+        'icon'       => '',
+    ],
+//    [
 //        'key'        => 'settings.roles',
 //        'name'       => 'admin::app.components.layouts.sidebar.roles',
 //        'route'      => 'admin.settings.roles.index',

@@ -25,7 +25,7 @@ class MailingList extends Model
     protected $fillable = [
         'message_text',
         'active',
-        'start_at'
+        //'start_at'
     ];
 
     /**

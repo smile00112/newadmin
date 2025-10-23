@@ -5267,4 +5267,5 @@ return [
             'tracking-number'            => 'Номер отслеживания: :tracking_number',
         ],
     ],
+
 ];

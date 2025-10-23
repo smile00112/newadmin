@@ -1,4 +1,16 @@
 <x-admin::layouts>
+    {{--
+    <script type="module">
+        import { requestForToken } from './js/firebase-messaging.js';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Запрашиваем токен при загрузке админ-панели
+            setTimeout(() => {
+                requestForToken();
+            }, 2000);
+        });
+    </script>
+    --}}
     <x-slot:title>
         {{ __('newsletters::app.admin.mailing-lists.title') }}
     </x-slot:title>

@@ -143,6 +143,95 @@
 
 {!! view_render_event('bagisto.admin.layout.vue-app-mount.before') !!}
 
+{{--@include('newsletters::admin.layouts.fcm-scripts')--}}
+<!--
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
+<script>
+    // Firebase configuration from JSON file
+    {{--const firebaseConfig = @json($firebaseConfig);--}}
+    const firebaseConfig = {
+        apiKey: "AIzaSyBZEJmlJwm18F2nzDkO-PJF2B-sTzUpYE0",
+        authDomain: "couriers-3473b.firebaseapp.com",
+        projectId: "couriers-3473b",
+        storageBucket: "couriers-3473b.appspot.com",
+        messagingSenderId: "353175461051",
+        appId: "1:353175461051:web:d716ecec53b59845939d9e"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Initialize Firebase Cloud Messaging
+    const messaging = firebase.messaging();
+
+    // FCM Token Management
+    class FCMService {
+        constructor() {
+            this.messaging = messaging;
+            {{--this.vapidKey = @json($vapidKey);--}}
+                this.vapidKey = "1952201";
+            this.init();
+        }
+
+        async init() {
+            try {
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                    console.log('Service Worker registered:', registration);
+                }
+
+                // Request permission
+                const permission = await Notification.requestPermission();
+
+                if (permission === 'granted') {
+                    // Get FCM token
+                    const token = await this.messaging.getToken({
+                        vapidKey: this.vapidKey
+                    });
+
+                    if (token) {
+                        console.log('FCM Token:', token);
+                        // Send token to server
+                        await this.sendTokenToServer(token);
+                    }
+                }
+            } catch (error) {
+                console.error('FCM initialization error:', error);
+            }
+        }
+
+        async sendTokenToServer(token) {
+            try {
+                const response = await fetch('{{ route("admin.fcm.token") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        fcm_token: token,
+                        user_id: {{ auth()->guard('admin')->id() }}
+                    })
+                });
+
+                if (response.ok) {
+                    console.log('FCM token saved successfully');
+                }
+            } catch (error) {
+                console.error('Error saving FCM token:', error);
+            }
+        }
+    }
+
+    // Initialize FCM when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        new FCMService();
+    });
+
+</script>
+-->
 <script>
     /**
      * Load event, the purpose of using the event is to mount the application
@@ -154,6 +243,7 @@
         app.mount("#app");
     });
 </script>
+
 
 {!! view_render_event('bagisto.admin.layout.vue-app-mount.after') !!}
 </body>

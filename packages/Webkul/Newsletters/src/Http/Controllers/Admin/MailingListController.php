@@ -214,9 +214,46 @@ class MailingListController extends Controller
     {
         $mailingList = $this->mailingListRepository->findOrFail($id);
         $whatsappInstances = $this->vacapInstanceRepository->where('mailing_list_id', $id)->get();
-        $customerNumbers = $this->customerNumberRepository->where('mailing_list_id', $id)->get();
+        
+        // Get customer numbers with sorting and pagination
+        $customerNumbers = $this->customerNumberRepository
+            ->where('mailing_list_id', $id)
+            ->orderBy('incoming_message', 'desc') // incoming_message = 1 first
+            ->orderBy('id', 'desc') // then by id desc
+            ->limit(50)
+            ->get();
+            
+        $totalCustomerNumbers = $this->customerNumberRepository->where('mailing_list_id', $id)->count();
+        
+        // Get admin users and customers for user numbers
+        $adminUsers = \Webkul\User\Models\Admin::select('id', 'name', 'email')->get();
+        $customers = \Webkul\Customer\Models\Customer::select('id', 'first_name', 'last_name', 'email', 'phone')->get();
+        
+        // Combine admin users and customers into a unified user numbers array
+        $userNumbers = collect();
+        
+        // Add admin users
+        foreach ($adminUsers as $admin) {
+            $userNumbers->push((object)[
+                'id' => 'admin_' . $admin->id,
+                'name' => $admin->name,
+                'email' => $admin->email,
+                'type' => 'admin'
+            ]);
+        }
+        
+        // Add customers
+        foreach ($customers as $customer) {
+            $userNumbers->push((object)[
+                'id' => 'customer_' . $customer->id,
+                'name' => $customer->first_name . ' ' . $customer->last_name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'type' => 'customer'
+            ]);
+        }
 
-        return view('newsletters::admin.mailing-lists.edit', compact('mailingList', 'whatsappInstances', 'customerNumbers'));
+        return view('newsletters::admin.mailing-lists.edit', compact('mailingList', 'whatsappInstances', 'customerNumbers', 'userNumbers', 'totalCustomerNumbers'));
     }
 
     /**
@@ -277,103 +314,180 @@ class MailingListController extends Controller
 
             // Update WhatsApp instances
             if ($request->has('whatsapp_instances')) {
-                // Get existing instances count before deletion
-                $existingInstancesCount = $this->vacapInstanceRepository->where('mailing_list_id', $id)->count();
-
-                Log::info('Deleting existing WhatsApp instances', [
-                    'mailing_list_id' => $id,
-                    'existing_instances_count' => $existingInstancesCount,
-                ]);
-
-                // Delete existing WhatsApp instances for this mailing list
-                $this->vacapInstanceRepository->where('mailing_list_id', $id)->delete();
-
-                Log::info('Existing WhatsApp instances deleted successfully', [
-                    'mailing_list_id' => $id,
-                    'deleted_count' => $existingInstancesCount,
-                ]);
-
-                // Create new WhatsApp instances
                 $whatsappInstances = $request->input('whatsapp_instances');
                 $validInstances = array_filter($whatsappInstances, function($instance) {
                     return !empty($instance['link_name']) && !empty($instance['login']) && !empty($instance['password']);
                 });
 
-                Log::info('Processing new WhatsApp instances', [
+                Log::info('Processing WhatsApp instances for update', [
                     'total_instances' => count($whatsappInstances),
                     'valid_instances' => count($validInstances),
                     'mailing_list_id' => $id,
                 ]);
 
+                // Get existing instances
+                $existingInstances = $this->vacapInstanceRepository->where('mailing_list_id', $id)->get()->keyBy('id');
+                $processedInstanceIds = [];
+
                 foreach ($validInstances as $index => $instanceData) {
                     $instanceData['mailing_list_id'] = $id;
+                    
+                    // Check if this is an update (has ID) or new instance
+                    if (isset($instanceData['id']) && !empty($instanceData['id']) && $existingInstances->has($instanceData['id'])) {
+                        // Update existing instance
+                        $existingInstance = $existingInstances->get($instanceData['id']);
+                        
+                        Log::info('Updating existing WhatsApp instance', [
+                            'instance_id' => $existingInstance->id,
+                            'instance_index' => $index,
+                            'link_name' => $instanceData['link_name'],
+                            'login' => $instanceData['login'],
+                            'mailing_list_id' => $id,
+                        ]);
 
-                    Log::info('Creating WhatsApp instance', [
-                        'instance_index' => $index,
-                        'link_name' => $instanceData['link_name'],
-                        'login' => $instanceData['login'],
+                        $this->vacapInstanceRepository->update($instanceData, $existingInstance->id);
+                        $processedInstanceIds[] = $existingInstance->id;
+
+                        Log::info('WhatsApp instance updated successfully', [
+                            'instance_id' => $existingInstance->id,
+                            'link_name' => $instanceData['link_name'],
+                            'login' => $instanceData['login'],
+                            'mailing_list_id' => $id,
+                        ]);
+                    } else {
+                        // Create new instance
+                        Log::info('Creating new WhatsApp instance', [
+                            'instance_index' => $index,
+                            'link_name' => $instanceData['link_name'],
+                            'login' => $instanceData['login'],
+                            'mailing_list_id' => $id,
+                        ]);
+
+                        $instance = $this->vacapInstanceRepository->create($instanceData);
+                        $processedInstanceIds[] = $instance->id;
+
+                        Log::info('WhatsApp instance created successfully', [
+                            'instance_id' => $instance->id,
+                            'link_name' => $instance->link_name,
+                            'login' => $instance->login,
+                            'mailing_list_id' => $instance->mailing_list_id,
+                        ]);
+                    }
+                }
+
+                // Delete instances that were not in the request (removed by user)
+                $instancesToDelete = $existingInstances->whereNotIn('id', $processedInstanceIds);
+                
+                if ($instancesToDelete->count() > 0) {
+                    Log::info('Deleting removed WhatsApp instances', [
                         'mailing_list_id' => $id,
+                        'instances_to_delete' => $instancesToDelete->pluck('id')->toArray(),
                     ]);
 
-                    $instance = $this->vacapInstanceRepository->create($instanceData);
-
-                    Log::info('WhatsApp instance created successfully', [
-                        'instance_id' => $instance->id,
-                        'link_name' => $instance->link_name,
-                        'login' => $instance->login,
-                        'mailing_list_id' => $instance->mailing_list_id,
-                    ]);
+                    foreach ($instancesToDelete as $instanceToDelete) {
+                        $this->vacapInstanceRepository->delete($instanceToDelete->id);
+                        
+                        Log::info('WhatsApp instance deleted', [
+                            'instance_id' => $instanceToDelete->id,
+                            'link_name' => $instanceToDelete->link_name,
+                            'mailing_list_id' => $id,
+                        ]);
+                    }
                 }
             }
 
             // Update customer numbers
             if ($request->has('customer_numbers')) {
-                // Get existing customers count before deletion
-                $existingCustomersCount = $this->customerNumberRepository->where('mailing_list_id', $id)->count();
-
-                Log::info('Deleting existing customer numbers', [
-                    'mailing_list_id' => $id,
-                    'existing_customers_count' => $existingCustomersCount,
-                ]);
-
-                // Delete existing customer numbers for this mailing list
-                $this->customerNumberRepository->where('mailing_list_id', $id)->delete();
-
-                Log::info('Existing customer numbers deleted successfully', [
-                    'mailing_list_id' => $id,
-                    'deleted_count' => $existingCustomersCount,
-                ]);
-
-                // Create new customer numbers
                 $customerNumbers = $request->input('customer_numbers');
+                
+                // Filter out empty entries and validate required fields
                 $validCustomers = array_filter($customerNumbers, function($customer) {
-                    return !empty($customer['phone_number']) && !empty($customer['name']);
+                    return !empty($customer['id']) && !empty($customer['phone_number']) && !empty($customer['name']);
                 });
 
-                Log::info('Processing new customer numbers', [
+                Log::info('Processing customer numbers for update', [
                     'total_customers' => count($customerNumbers),
                     'valid_customers' => count($validCustomers),
                     'mailing_list_id' => $id,
                 ]);
 
+                // Get existing customers
+                $existingCustomers = $this->customerNumberRepository->where('mailing_list_id', $id)->get()->keyBy('id');
+                $processedCustomerIds = [];
+
                 foreach ($validCustomers as $index => $customerData) {
                     $customerData['mailing_list_id'] = $id;
+                    
+                    // Check if this is an update (has ID) or new customer
+                    if (isset($customerData['id']) && !empty($customerData['id']) && $existingCustomers->has($customerData['id'])) {
+                        // Update existing customer
+                        $existingCustomer = $existingCustomers->get($customerData['id']);
+                        
+                        Log::info('Updating existing customer number', [
+                            'customer_id' => $existingCustomer->id,
+                            'customer_index' => $index,
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'delivered' => $customerData['delivered'] ?? 0,
+                            'viewed' => $customerData['viewed'] ?? 0,
+                            'incoming_message' => $customerData['incoming_message'] ?? 0,
+                            'whatsapp_instance_id' => $customerData['whatsapp_instance_id'] ?? null,
+                            'mailing_list_id' => $id,
+                        ]);
 
-                    Log::info('Creating customer number', [
-                        'customer_index' => $index,
-                        'phone_number' => $customerData['phone_number'],
-                        'name' => $customerData['name'],
+                        // Prepare update data (exclude ID from update)
+                        $updateData = $customerData;
+                        unset($updateData['id']);
+                        
+                        $this->customerNumberRepository->update($updateData, $existingCustomer->id);
+                        $processedCustomerIds[] = $existingCustomer->id;
+
+                        Log::info('Customer number updated successfully', [
+                            'customer_id' => $existingCustomer->id,
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'mailing_list_id' => $id,
+                        ]);
+                    } else {
+                        // Create new customer (should not happen in normal flow, but keeping for safety)
+                        Log::info('Creating new customer number', [
+                            'customer_index' => $index,
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'mailing_list_id' => $id,
+                        ]);
+
+                        $customer = $this->customerNumberRepository->create($customerData);
+                        $processedCustomerIds[] = $customer->id;
+
+                        Log::info('Customer number created successfully', [
+                            'customer_id' => $customer->id,
+                            'phone_number' => $customer->phone_number,
+                            'name' => $customer->name,
+                            'mailing_list_id' => $customer->mailing_list_id,
+                        ]);
+                    }
+                }
+
+                // Delete customers that were not in the request (removed by user)
+                $customersToDelete = $existingCustomers->whereNotIn('id', $processedCustomerIds);
+                
+                if ($customersToDelete->count() > 0) {
+                    Log::info('Deleting removed customer numbers', [
                         'mailing_list_id' => $id,
+                        'customers_to_delete' => $customersToDelete->pluck('id')->toArray(),
                     ]);
 
-                    $customer = $this->customerNumberRepository->create($customerData);
-
-                    Log::info('Customer number created successfully', [
-                        'customer_id' => $customer->id,
-                        'phone_number' => $customer->phone_number,
-                        'name' => $customer->name,
-                        'mailing_list_id' => $customer->mailing_list_id,
-                    ]);
+                    foreach ($customersToDelete as $customerToDelete) {
+                        $this->customerNumberRepository->delete($customerToDelete->id);
+                        
+                        Log::info('Customer number deleted', [
+                            'customer_id' => $customerToDelete->id,
+                            'phone_number' => $customerToDelete->phone_number,
+                            'name' => $customerToDelete->name,
+                            'mailing_list_id' => $id,
+                        ]);
+                    }
                 }
             }
 

@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('newsletters_mailing_lists', function (Blueprint $table) {
-            $table->id();
-            $table->text('message_text');
-            $table->boolean('active')->default(true);
-            $table->dateTime('start_at')->nullable();
-            $table->timestamps();
+        Schema::table('admins', function (Blueprint $table) {
+            $table->string('fcm_token')->nullable()->after('remember_token');
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('newsletters_mailing_lists');
+        Schema::table('admins', function (Blueprint $table) {
+            $table->dropColumn('fcm_token');
+        });
     }
 };

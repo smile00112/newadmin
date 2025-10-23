@@ -25,3 +25,4 @@ class MailingListRepository extends Repository
 
 
 
+

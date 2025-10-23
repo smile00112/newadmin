@@ -33,13 +33,16 @@ class CustomerNumber extends Model
         'mailing_list_id',
         'whatsapp_instance_id',
         'unsubscribed_at',
-        'metadata',
+        'incoming_message'
+        //'metadata',
     ];
 
     protected $casts = [
-        'new_message' => 'boolean',
+        'delivered' => 'boolean',
+        'viewed' => 'boolean',
+        'incoming_message' => 'boolean',
         'unsubscribed_at' => 'datetime',
-        'metadata' => 'array',
+        //'metadata' => 'array',
     ];
 
     /**
@@ -53,7 +56,7 @@ class CustomerNumber extends Model
     /**
      * Get the mailing instance.
      */
-    public function WhatsAppInstance(): belongsTo
+    public function whatsAppInstance(): belongsTo
     {
         return $this->belongsTo(VacapInstance::class, 'whatsapp_instance_id', 'id', 'whatsapp_instance_id');
     }

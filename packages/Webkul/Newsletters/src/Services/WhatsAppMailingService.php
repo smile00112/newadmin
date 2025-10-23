@@ -51,6 +51,139 @@ class WhatsAppMailingService
     }
 
     /**
+     * Get chat history and parse messages for display
+     */
+    public function getChatHistory(VacapInstance $instance, string $phoneNumber, int $count = 50): string
+    {
+        try {
+            $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
+            $response = $greenApiService->getChatHistory($phoneNumber.'@c.us', $count);
+
+            if (isset($response) && is_array($response)) {
+                Log::info("WhatsApp chat history retrieved successfully", [
+                    'instance_id' => $instance->id,
+                    'phone' => $phoneNumber,
+                    'messages_count' => count($response)
+                ]);
+
+                return $this->parseChatHistory($response);
+            }
+
+            Log::error("WhatsApp API error - no messages found", [
+                'instance_id' => $instance->id,
+                'phone' => $phoneNumber,
+                'response' => $response
+            ]);
+
+            return "История сообщений не найдена.";
+        } catch (\Exception $e) {
+            Log::error("WhatsApp chat history failed", [
+                'instance_id' => $instance->id,
+                'phone' => $phoneNumber,
+                'error' => $e->getMessage()
+            ]);
+            return "Ошибка при получении истории сообщений: " . $e->getMessage();
+        }
+    }
+
+    /**
+     * Parse chat history messages for display in textarea
+     */
+    private function parseChatHistory(array $messages): string
+    {
+        if (empty($messages)) {
+            return "Сообщения не найдены.";
+        }
+
+        $parsedMessages = [];
+
+        foreach ($messages as $message) {
+            $parsedMessage = $this->parseMessage($message);
+            if ($parsedMessage) {
+                $parsedMessages[] = $parsedMessage;
+            }
+        }
+
+        return implode("\n", $parsedMessages);
+    }
+
+    /**
+     * Parse individual message based on type
+     */
+    private function parseMessage(array $message): ?string
+    {
+        $timestamp = isset($message['timestamp']) ? date('d.m.Y H:i:s', $message['timestamp']) : 'Неизвестно';
+        $type = $message['type'] ?? 'unknown';
+        $typeMessage = $message['typeMessage'] ?? 'unknown';
+        $senderName = $message['senderName'] ?? 'Неизвестно';
+
+        // Определяем направление сообщения
+        $direction = $type === 'incoming' ? 'Входящее' : 'Исходящее';
+
+        // Формируем базовую информацию о сообщении
+        $messageInfo = "[{$timestamp}] {$direction} от {$senderName}";
+
+        // Обрабатываем разные типы сообщений
+        switch ($typeMessage) {
+            case 'textMessage':
+            case 'extendedTextMessage':
+                $text = $message['textMessage'] ?? 'Текстовое сообщение';
+                return "{$messageInfo}: {$text}";
+
+            case 'imageMessage':
+                $caption = $message['caption'] ?? '';
+                return "{$messageInfo}: [Изображение]" . ($caption ? " - {$caption}" : '');
+
+            case 'videoMessage':
+                $caption = $message['caption'] ?? '';
+                return "{$messageInfo}: [Видео]" . ($caption ? " - {$caption}" : '');
+
+            case 'audioMessage':
+                return "{$messageInfo}: [Аудио сообщение]";
+
+            case 'documentMessage':
+                $fileName = $message['fileName'] ?? 'Документ';
+                return "{$messageInfo}: [Документ: {$fileName}]";
+
+            case 'locationMessage':
+                $latitude = $message['latitude'] ?? '';
+                $longitude = $message['longitude'] ?? '';
+                $name = $message['name'] ?? '';
+                return "{$messageInfo}: [Геолокация: {$name}] ({$latitude}, {$longitude})";
+
+            case 'contactMessage':
+                $name = $message['name'] ?? '';
+                $phone = $message['phone'] ?? '';
+                return "{$messageInfo}: [Контакт: {$name} - {$phone}]";
+
+            case 'stickerMessage':
+                return "{$messageInfo}: [Стикер]";
+
+            case 'reactionMessage':
+                $reactionText = $message['reactionText'] ?? '';
+                return "{$messageInfo}: [Реакция: {$reactionText}]";
+
+            case 'pollMessage':
+                $pollName = $message['pollName'] ?? '';
+                return "{$messageInfo}: [Опрос: {$pollName}]";
+
+            case 'deletedMessage':
+                return "{$messageInfo}: [Сообщение удалено]";
+
+            case 'systemMessage':
+                $text = $message['textMessage'] ?? 'Системное сообщение';
+                return "{$messageInfo}: [Система] {$text}";
+
+            default:
+                // Для неизвестных типов сообщений показываем базовую информацию
+                $text = $message['textMessage'] ?? $message['caption'] ?? 'Неизвестный тип сообщения';
+                return "{$messageInfo}: [{$typeMessage}] {$text}";
+        }
+    }
+
+
+
+    /**
      * Get random VacapInstance from mailing list
      */
     public function getRandomInstance(MailingList $mailingList): ?VacapInstance

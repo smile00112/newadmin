@@ -3,7 +3,7 @@
 return [
     'admin' => [
         'whatsapp-instances' => [
-            'title' => 'WhatsApp Экземпляры',
+            'title' => 'WhatsApp инстансы',
             'create-success' => 'WhatsApp экземпляр успешно создан.',
             'update-success' => 'WhatsApp экземпляр успешно обновлен.',
             'delete-success' => 'WhatsApp экземпляр успешно удален.',
@@ -13,7 +13,7 @@ return [
             'login' => 'Логин',
             'password' => 'Пароль',
             'mailing-list' => 'Список рассылки',
-            'no-instances' => 'WhatsApp экземпляры не найдены.',
+            'no-instances' => 'WhatsApp инстансы не найдены.',
         ],
 
         'mailing-lists' => [
@@ -49,6 +49,7 @@ return [
             'delete-failed' => 'Номер клиента не может быть удален.',
             'delete-confirm' => 'Вы уверены, что хотите удалить этот номер клиента?',
             'import-success' => 'Успешно импортировано :count номеров клиентов.',
+            'import-skipped' => 'Пропущено: :count',
             'import-failed' => 'Не удалось импортировать номера клиентов.',
             'phone-number' => 'Номер телефона',
             'name' => 'Имя',
@@ -59,6 +60,30 @@ return [
             'not-active' => 'Не активен',
             'subscribed-at' => 'Подписан',
             'unsubscribed-at' => 'Отписан',
+            'not-delivered' => 'Не доставлено',
+            'delivered' => 'Доставлено',
+            'not-viewed' => 'Не просмотрено',
+            'viewed' => 'Просмотрено',
+            'search-placeholder' => 'Поиск по номеру',
+            'chat-with-client' => 'Чат с клиентом',
+            'chat-history-error' => 'Ошибка загрузки чата',
+            'chat-history-failed' => 'Не удалось загрузить историю чата',
+            'search-failed' => 'Ошибка поиска',
+            'no-whatsapp-instance' => 'У клиента нет WhatsApp инстанса',
+            'incoming' => 'Входящее сообщение',
+            'delivered_title' => 'Доставка',
+            'viewed_title' => 'Просмотр',
+            'edit-button-caption' => 'Редактировать',
+            'delete-button-caption' => 'Удалить',
+            'edit-customer' => 'Редактировать клиента',
+            'load-more' => 'Загрузить еще',
+            'searching' => 'Поиск',
+            'no-search-results' => 'Результатов не найдено',
+            'search-error' => 'Ошибка поиска',
+            'load-more-notice' => 'Загрузка дополнительных номеров...',
+            'loading-chat' => 'Загрузка чата...',
+            'no-chat-history' => 'Нет истории чата',
+
         ],
 
         'stop-list' => [

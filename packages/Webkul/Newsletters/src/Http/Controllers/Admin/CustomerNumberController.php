@@ -4,8 +4,13 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
+use Webkul\Newsletters\Events\CustomerNumberMessageRead;
+use Webkul\Newsletters\Services\WhatsAppMailingService;
 
 class CustomerNumberController extends Controller
 {
@@ -13,7 +18,8 @@ class CustomerNumberController extends Controller
      * Create a new controller instance.
      */
     public function __construct(
-        protected CustomerNumberRepository $customerNumberRepository
+        protected CustomerNumberRepository $customerNumberRepository,
+        protected WhatsAppMailingService $whatsAppMailingService
     ) {}
 
     /**
@@ -40,7 +46,14 @@ class CustomerNumberController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'phone_number' => 'required|string|max:20',
+            'phone_number' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^\+?[1-9]\d{1,14}$/',
+                Rule::unique('newsletters_customer_numbers')
+                    ->where('mailing_list_id', $request->mailing_list_id),
+            ],
             'name' => 'required|string|max:255',
             'mailing_list_id' => 'required|exists:newsletters_mailing_lists,id',
         ]);
@@ -69,7 +82,15 @@ class CustomerNumberController extends Controller
     public function update(Request $request, int $id)
     {
         $this->validate($request, [
-            'phone_number' => 'required|string|max:20',
+            'phone_number' => [
+                'required',
+                'string',
+                'max:20',
+                'regex:/^\+?[1-9]\d{1,14}$/',
+                Rule::unique('newsletters_customer_numbers')
+                    ->where('mailing_list_id', $request->mailing_list_id)
+                    ->ignore($id),
+            ],
             'name' => 'required|string|max:255',
             'mailing_list_id' => 'required|exists:newsletters_mailing_lists,id',
         ]);
@@ -114,29 +135,176 @@ class CustomerNumberController extends Controller
         try {
             $file = $request->file('file');
             $mailingListId = $request->mailing_list_id;
-            
+
             $csvData = array_map('str_getcsv', file($file->getPathname()));
             $header = array_shift($csvData);
 
             $imported = 0;
-            foreach ($csvData as $row) {
-                $data = array_combine($header, $row);
-                
-                $this->customerNumberRepository->create([
-                    'phone_number' => $data['phone_number'] ?? '',
-                    'name' => $data['name'] ?? null,
-                    'mailing_list_id' => $mailingListId,
-                ]);
-                
-                $imported++;
+            $skipped = 0;
+            $errors = [];
+
+            DB::beginTransaction();
+
+            foreach ($csvData as $index => $row) {
+                try {
+                    $data = array_combine($header, $row);
+
+                    $phoneNumber = trim($data['phone_number'] ?? '');
+                    $name = trim($data['name'] ?? '');
+
+                    // Skip empty rows
+                    if (empty($phoneNumber)) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Check for duplicates
+                    $exists = $this->customerNumberRepository->findWhere([
+                        'phone_number' => $phoneNumber,
+                        'mailing_list_id' => $mailingListId,
+                    ])->first();
+
+                    if ($exists) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $this->customerNumberRepository->create([
+                        'phone_number' => $phoneNumber,
+                        'name' => $name ?: null,
+                        'mailing_list_id' => $mailingListId,
+                    ]);
+
+                    $imported++;
+
+                } catch (\Exception $e) {
+                    $errors[] = "Row " . ($index + 2) . ": " . $e->getMessage();
+                    Log::error("CSV Import Error at row " . ($index + 2), [
+                        'error' => $e->getMessage(),
+                        'data' => $data ?? null,
+                    ]);
+                }
             }
 
-            session()->flash('success', trans('newsletters::app.admin.customer-numbers.import-success', ['count' => $imported]));
+            DB::commit();
+
+            $message = trans('newsletters::app.admin.customer-numbers.import-success', ['count' => $imported]);
+            if ($skipped > 0) {
+                $message .= ' ' . trans('newsletters::app.admin.customer-numbers.import-skipped', ['count' => $skipped]);
+            }
+
+            session()->flash('success', $message);
+
+            if (!empty($errors)) {
+                session()->flash('warning', 'Some rows had errors: ' . implode('; ', array_slice($errors, 0, 5)));
+            }
 
         } catch (\Exception $e) {
-            session()->flash('error', trans('newsletters::app.admin.customer-numbers.import-failed'));
+            DB::rollBack();
+            Log::error('CSV Import Failed', ['error' => $e->getMessage()]);
+            session()->flash('error', trans('newsletters::app.admin.customer-numbers.import-failed') . ': ' . $e->getMessage());
         }
 
         return redirect()->route('admin.newsletters.customer-numbers.index');
+    }
+
+    /**
+     * Get chat history for a customer number.
+     */
+    public function getChatHistory(Request $request)
+    {
+        $this->validate($request, [
+            'customer_id' => 'required|exists:newsletters_customer_numbers,id',
+        ]);
+
+        try {
+            $customerNumber = $this->customerNumberRepository->with(['whatsAppInstance'])->findOrFail($request->customer_id);
+
+            if(!$customerNumber->whatsAppInstance){
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.customer-numbers.no-whatsapp-instance'),
+                ], 500);
+            }
+
+            // Clear incoming_message flag when chat history is viewed
+            if ($customerNumber->incoming_message) {
+                $customerNumber->incoming_message = false;
+                $customerNumber->save();
+                
+                // Broadcast the change to update the UI in real-time
+                broadcast(new CustomerNumberMessageRead($customerNumber));
+                
+                Log::info('Incoming message flag cleared for customer number', [
+                    'customer_number_id' => $customerNumber->id,
+                    'phone_number' => $customerNumber->phone_number,
+                ]);
+            }
+
+            $chatHistory = $this->whatsAppMailingService->getChatHistory($customerNumber->whatsAppInstance, $customerNumber->phone_number);
+            // This is a placeholder implementation
+            //$chatHistory = [];
+
+            return response()->json([
+                'success' => true,
+                'customer_number' => $customerNumber,
+                'chat_history' => $chatHistory,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve chat history', [
+                'customer_number_id' => $request->customer_number_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.customer-numbers.chat-history-failed'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Search customer numbers.
+     */
+    public function search(Request $request)
+    {
+        $this->validate($request, [
+            'query' => 'required|string|min:2',
+            'mailing_list_id' => 'nullable|exists:newsletters_mailing_lists,id',
+        ]);
+
+        try {
+            $query = $this->customerNumberRepository->newQuery();
+
+            $searchTerm = $request->query;
+
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('phone_number', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('name', 'like', '%' . $searchTerm . '%');
+            });
+
+            if ($request->mailing_list_id) {
+                $query->where('mailing_list_id', $request->mailing_list_id);
+            }
+
+            $results = $query->with('mailingList')->limit(20)->get();
+
+            return response()->json([
+                'success' => true,
+                'results' => $results,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Customer number search failed', [
+                'query' => $request->query,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.customer-numbers.search-failed'),
+            ], 500);
+        }
     }
 }
