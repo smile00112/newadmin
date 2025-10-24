@@ -143,6 +143,8 @@ Route::prefix('catalog')->group(function () {
         Route::get('search', 'search')->name('admin.catalog.products.search');
         
         Route::get('constructor-group-template/{id}', 'getConstructorGroupTemplate')->name('admin.catalog.products.constructor_group_template');
+        
+        Route::post('save-group-as-template', 'saveGroupAsTemplate')->name('admin.catalog.products.save_group_as_template');
 
         //Route::get('search', 'search_ingredients')->name('admin.catalog.products.search_ingredients');
 

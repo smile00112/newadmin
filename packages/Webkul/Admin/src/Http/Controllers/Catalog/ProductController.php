@@ -392,6 +392,78 @@ class ProductController extends Controller
     }
 
     /**
+     * Save constructor group as template.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveGroupAsTemplate(): JsonResponse
+    {
+        $data = request()->all();
+        
+        // Validate required fields
+        if (empty($data['name'])) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => trans('admin::app.catalog.products.edit.types.constructor.template-name-required'),
+            ], 400);
+        }
+        
+        try {
+            // Prepare template data
+            $templateData = [
+                'template_name'                    => $data['name'], // Use group name as template name
+                'name'                             => $data['name'],
+                'field_type'                       => $data['field_type'] ?? 'checkbox',
+                'checked_type'                     => $data['checked_type'] ?? 'once',
+                'quantity_min'                     => $data['quantity_min'] ?? 0,
+                'quantity_max'                     => $data['quantity_max'] ?? 0,
+                'show_title'                       => $data['show_title'] ?? false,
+                'opened_by_default'                => $data['opened_by_default'] ?? false,
+                'zero_price'                       => $data['zero_price'] ?? false,
+                'required'                         => $data['required'] ?? false,
+                'hidden'                           => $data['hidden'] ?? false,
+                'double_portions'                  => $data['double_portions'] ?? false,
+                'half_portions'                    => $data['half_portions'] ?? false,
+                'ingredients_incompatibilities_id' => !empty($data['ingredients_incompatibilities_id']) 
+                    ? $data['ingredients_incompatibilities_id'] 
+                    : null,
+                'sort'                             => $data['sort'] ?? 0,
+            ];
+            
+            // Create template
+            $template = $this->constructorGroupTemplateRepository->create($templateData);
+            
+            // Sync products with pivot data
+            if (!empty($data['products']) && is_array($data['products'])) {
+                $productsData = [];
+                foreach ($data['products'] as $product) {
+                    if (!empty($product['id'])) {
+                        $productsData[$product['id']] = [
+                            'sort'    => $product['sort'] ?? 0,
+                            'default' => !empty($product['default']) ? 1 : 0,
+                        ];
+                    }
+                }
+                $template->products()->sync($productsData);
+            }
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => trans('admin::app.catalog.products.edit.types.constructor.template-saved-successfully'),
+                'template' => [
+                    'id'   => $template->id,
+                    'name' => $template->template_name,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Result of search product.
      *
      * @return \Illuminate\Http\JsonResponse

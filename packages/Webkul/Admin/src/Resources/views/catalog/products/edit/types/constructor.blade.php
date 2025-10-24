@@ -152,11 +152,11 @@
                             <!-- Group Products -->
                             <div v-if="group.products && group.products.length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                 <div
-                                    v-for="product in group.products"
+                                    v-for="(product, productIndex) in group.products"
                                     :key="product.id"
                                     class="flex items-center gap-2 p-2 bg-gray-50 rounded dark:bg-gray-800"
                                 >
-                                    <div class="w-8 h-8 rounded overflow-hidden">
+                                    <div class="w-8 h-8 rounded overflow-hidden flex-shrink-0">
                                         <img
                                             v-if="product.images && product.images.length"
                                             :src="product.images[0].url"
@@ -175,6 +175,14 @@
                                             @{{ product.sku }}
                                         </p>
                                     </div>
+                                    <button
+                                        type="button"
+                                        class="flex-shrink-0 p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                                        @click="removeProductFromConstructorGroup(constructorIndex, groupIndex, productIndex)"
+                                        title="@lang('admin::app.catalog.products.edit.types.constructor.delete-btn')"
+                                    >
+                                        <i class="icon-trash text-lg"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -775,7 +783,7 @@
                                             class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                                             @click="removeProductFromGroup(productIndex)"
                                         >
-                                            <i class="icon-trash text-sm"></i>
+                                            <i class="icon-delete text-sm"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -791,20 +799,30 @@
 
                 <!-- Modal Footer -->
                 <x-slot:footer>
-                    <div class="flex items-center gap-x-2.5">
-                        <x-admin::button
-                            button-type="button"
-                            class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
-                            :title="trans('admin::app.catalog.products.edit.types.constructor.cancel-btn')"
-                            @click.prevent="$refs.groupFormModal.close()"
-                        />
+                    <div class="flex items-center justify-between w-full gap-x-2.5">
+                        <button
+                            type="button"
+                            class="secondary-button"
+                            @click.prevent="saveGroupAsTemplate()"
+                        >
+                            @lang('admin::app.catalog.products.edit.types.constructor.save-as-template')
+                        </button>
 
-                        <x-admin::button
-                            button-type="button"
-                            class="primary-button"
-                            :title="trans('admin::app.catalog.products.edit.types.constructor.save-group-btn')"
-                            @click.prevent="saveGroup()"
-                        />
+                        <div class="flex items-center gap-x-2.5">
+                            <x-admin::button
+                                button-type="button"
+                                class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                                :title="trans('admin::app.catalog.products.edit.types.constructor.cancel-btn')"
+                                @click.prevent="$refs.groupFormModal.close()"
+                            />
+
+                            <x-admin::button
+                                button-type="button"
+                                class="primary-button"
+                                :title="trans('admin::app.catalog.products.edit.types.constructor.save-group-btn')"
+                                @click.prevent="saveGroup()"
+                            />
+                        </div>
                     </div>
                 </x-slot:footer>
             </x-admin::modal>
@@ -1039,6 +1057,12 @@
                     this.groupForm.products.splice(productIndex, 1);
                 },
 
+                removeProductFromConstructorGroup(constructorIndex, groupIndex, productIndex) {
+                    if (confirm('@lang('admin::app.catalog.products.edit.types.constructor.confirm-delete-product')')) {
+                        this.constructors[constructorIndex].groups[groupIndex].products.splice(productIndex, 1);
+                    }
+                },
+
                 getFieldTypeLabel(type) {
                     const types = {
                         'checkbox': '@lang('admin::app.catalog.products.edit.types.constructor.field-type-checkbox')',
@@ -1063,7 +1087,7 @@
 
                     try {
                         const response = await fetch(`{{ route('admin.catalog.products.constructor_group_template', '') }}/${this.selectedTemplateId}`);
-                        
+
                         if (!response.ok) {
                             throw new Error('Failed to load template');
                         }
@@ -1100,6 +1124,48 @@
                         this.selectedTemplateId = '';
                     } catch (error) {
                         console.error('Error loading template:', error);
+                        this.$emitter.emit('add-flash', {
+                            type: 'error',
+                            message: error.message
+                        });
+                    }
+                },
+
+                async saveGroupAsTemplate() {
+                    // Validate group name
+                    if (!this.groupForm.name) {
+                        this.$emitter.emit('add-flash', {
+                            type: 'warning',
+                            message: '@lang('admin::app.catalog.products.edit.types.constructor.template-name-required')'
+                        });
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('{{ route('admin.catalog.products.save_group_as_template') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify(this.groupForm)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.$emitter.emit('add-flash', {
+                                type: 'success',
+                                message: result.message
+                            });
+                        } else {
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: result.message
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error saving template:', error);
                         this.$emitter.emit('add-flash', {
                             type: 'error',
                             message: error.message
