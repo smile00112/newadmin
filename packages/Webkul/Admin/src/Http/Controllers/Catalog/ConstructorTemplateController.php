@@ -122,22 +122,61 @@ class ConstructorTemplateController extends Controller
         
         $template = $this->templateRepository->findOrFail($id);
         
-        // Загружаем продукты с названиями из product_flat и изображениями
-        $template->load(['products' => function ($query) use ($locale, $channel) {
-            $query->select('products.id', 'products.sku')
-                  ->with('images')
-                  ->join('product_flat', 'products.id', '=', 'product_flat.product_id')
-                  ->where('product_flat.locale', $locale)
-                  ->where('product_flat.channel', $channel)
-                  ->addSelect('product_flat.name');
-        }]);
+        // Загружаем продукты с изображениями
+        $template->load(['products.images']);
+        
+        // Преобразуем продукты в простые массивы для безопасной JSON сериализации
+        $productsData = [];
+        foreach ($template->products as $product) {
+            if ($product) {
+                $productFlat = DB::table('product_flat')
+                    ->where('product_id', $product->id)
+                    ->where('locale', $locale)
+                    ->where('channel', $channel)
+                    ->first();
+                
+                $productsData[] = [
+                    'id' => $product->id,
+                    'sku' => $product->sku,
+                    'name' => $productFlat->name ?? $product->sku,
+                    'images' => $product->images->map(function ($image) {
+                        return ['url' => $image->url, 'path' => $image->path];
+                    })->toArray(),
+                    'pivot' => [
+                        'sort' => $product->pivot->sort ?? 0,
+                        'default' => $product->pivot->default ?? 0,
+                    ],
+                ];
+            }
+        }
+        
+        // Создаем объект шаблона только с необходимыми данными
+        $templateData = (object) [
+            'id' => $template->id,
+            'template_name' => $template->template_name,
+            'name' => $template->name,
+            'field_type' => $template->field_type,
+            'checked_type' => $template->checked_type,
+            'quantity_min' => $template->quantity_min,
+            'quantity_max' => $template->quantity_max,
+            'show_title' => $template->show_title,
+            'opened_by_default' => $template->opened_by_default,
+            'zero_price' => $template->zero_price,
+            'required' => $template->required,
+            'hidden' => $template->hidden,
+            'double_portions' => $template->double_portions,
+            'half_portions' => $template->half_portions,
+            'sort' => $template->sort,
+            'ingredients_incompatibilities_id' => $template->ingredients_incompatibilities_id,
+            'products' => $productsData,
+        ];
         
         $incompatibilityTemplates = $this->incompatibilityTemplateRepository
             ->where('active', 1)
             ->orderBy('name')
             ->get();
 
-        return view('admin::catalog.constructor-templates.edit', compact('template', 'incompatibilityTemplates'));
+        return view('admin::catalog.constructor-templates.edit', compact('template', 'templateData', 'incompatibilityTemplates'));
     }
 
     /**

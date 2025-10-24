@@ -349,20 +349,21 @@ class ProductController extends Controller
         
         $template = $this->constructorGroupTemplateRepository->findOrFail($id);
         
-        // Load products with images and flat data
-        $template->load(['products' => function ($query) use ($locale, $channel) {
-            $query->with('images')
-                  ->join('product_flat', 'products.id', '=', 'product_flat.product_id')
-                  ->where('product_flat.locale', $locale)
-                  ->where('product_flat.channel', $channel)
-                  ->select('products.id', 'products.sku', 'product_flat.name');
-        }]);
+        // Load products with images
+        $template->load(['products.images']);
         
-        // Transform products to include pivot data
-        $products = $template->products->map(function ($product) {
+        // Transform products to include pivot data and names from product_flat
+        $products = $template->products->map(function ($product) use ($locale, $channel) {
+            // Get name from product_flat
+            $productFlat = \DB::table('product_flat')
+                ->where('product_id', $product->id)
+                ->where('locale', $locale)
+                ->where('channel', $channel)
+                ->first();
+            
             return [
                 'id'      => $product->id,
-                'name'    => $product->name,
+                'name'    => $productFlat->name ?? $product->sku,
                 'sku'     => $product->sku,
                 'sort'    => $product->pivot->sort ?? 0,
                 'default' => (bool) ($product->pivot->default ?? false),

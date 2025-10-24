@@ -430,16 +430,18 @@
 
                 methods: {
                     loadProducts() {
-                        const template = @json($template);
+                        const template = @json($templateData);
                         
-                        this.products = (template.products || []).map(product => ({
-                            id: product.id,
-                            name: product.name,
-                            sku: product.sku,
-                            sort: product.pivot?.sort || 0,
-                            default: product.pivot?.default || false,
-                            images: product.images || []
-                        }));
+                        this.products = (template.products || [])
+                            .filter(product => product && product.id) // Фильтруем null продукты
+                            .map(product => ({
+                                id: product.id,
+                                name: product.name || product.sku || 'Unknown',
+                                sku: product.sku || '',
+                                sort: product.pivot?.sort || 0,
+                                default: product.pivot?.default || false,
+                                images: product.images || []
+                            }));
                     },
 
                     openProductSearch() {
