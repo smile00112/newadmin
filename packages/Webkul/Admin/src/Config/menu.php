@@ -103,11 +103,23 @@ return [
         'route'      => 'admin.catalog.attributes.index',
         'sort'       => 3,
         'icon'       => '',
-    ], [
+    ],     [
         'key'        => 'catalog.families',
         'name'       => 'admin::app.components.layouts.sidebar.attribute-families',
         'route'      => 'admin.catalog.families.index',
         'sort'       => 4,
+        'icon'       => '',
+    ], [
+        'key'        => 'catalog.ingredient_compatibility',
+        'name'       => 'admin::app.catalog.ingredient-compatibility.index.title',
+        'route'      => 'admin.catalog.ingredient_compatibility.index',
+        'sort'       => 5,
+        'icon'       => '',
+    ], [
+        'key'        => 'catalog.constructor_templates',
+        'name'       => 'admin::app.catalog.constructor-templates.index.title',
+        'route'      => 'admin.catalog.constructor_templates.index',
+        'sort'       => 6,
         'icon'       => '',
     ],
 

@@ -34,6 +34,9 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
         'hidden',
         'sort',
         'parent_id',
+        'double_portions',
+        'half_portions',
+        'ingredients_incompatibilities_id',
     ];
 
     /**
@@ -51,6 +54,9 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
         'hidden' => 'boolean',
         'sort' => 'integer',
         'parent_id' => 'integer',
+        'double_portions' => 'boolean',
+        'half_portions' => 'boolean',
+
     ];
 
     /**
@@ -109,5 +115,13 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
             'once' => 'Только один продукт',
             'multiple' => 'Несколько продуктов',
         ];
+    }
+
+    /**
+     * Get the incompatibility template.
+     */
+    public function incompatibilityTemplate(): BelongsTo
+    {
+        return $this->belongsTo(ProductIngredientsIncompatibilityTemplateProxy::modelClass(), 'ingredients_incompatibilities_id');
     }
 }

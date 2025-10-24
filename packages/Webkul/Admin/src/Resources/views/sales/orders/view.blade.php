@@ -76,7 +76,7 @@
                 $order->canCancel()
                 && bouncer()->hasPermission('sales.orders.cancel')
             )
-               <form
+                <form
                     method="POST"
                     ref="cancelOrderForm"
                     action="{{ route('admin.sales.orders.cancel', $order->id) }}"
@@ -160,7 +160,7 @@
                                                     'qty'    => $item->qty_ordered,
                                                 ])
                                             </p>
-
+                                            <!--
                                             @if (isset($item->additional['attributes']))
                                                 @foreach ($item->additional['attributes'] as $attribute)
                                                     <p class="text-gray-600 dark:text-gray-300">
@@ -168,9 +168,9 @@
                                                             ! isset($attribute['attribute_type'])
                                                             || $attribute['attribute_type'] !== 'file'
                                                         )
-                                                            {{ $attribute['attribute_name'] }} : {{ $attribute['option_label'] }}
-                                                        @else
-                                                            {{ $attribute['attribute_name'] }} :
+                                                        {{ $attribute['attribute_name'] }} : {{ $attribute['option_label'] }}
+                                                    @else
+                                                        {{ $attribute['attribute_name'] }} :
 
                                                             <a
                                                                 href="{{ Storage::url($attribute['option_label']) }}"
@@ -178,27 +178,28 @@
                                                                 download="{{ File::basename($attribute['option_label']) }}"
                                                             >
                                                                 {{ File::basename($attribute['option_label']) }}
-                                                            </a>
-                                                        @endif
+                                                        </a>
+@endif
                                                     </p>
                                                 @endforeach
                                             @endif
-
+                                            -->
                                             <p class="text-gray-600 dark:text-gray-300">
                                                 @lang('admin::app.sales.orders.view.sku', ['sku' => $item->sku])
                                             </p>
-
+                                            <!--
                                             <p class="text-gray-600 dark:text-gray-300">
                                                 {{ $item->qty_ordered ? trans('admin::app.sales.orders.view.item-ordered', ['qty_ordered' => $item->qty_ordered]) : '' }}
 
-                                                {{ $item->qty_invoiced ? trans('admin::app.sales.orders.view.item-invoice', ['qty_invoiced' => $item->qty_invoiced]) : '' }}
+                                            {{ $item->qty_invoiced ? trans('admin::app.sales.orders.view.item-invoice', ['qty_invoiced' => $item->qty_invoiced]) : '' }}
 
-                                                {{ $item->qty_shipped ? trans('admin::app.sales.orders.view.item-shipped', ['qty_shipped' => $item->qty_shipped]) : '' }}
+                                            {{ $item->qty_shipped ? trans('admin::app.sales.orders.view.item-shipped', ['qty_shipped' => $item->qty_shipped]) : '' }}
 
-                                                {{ $item->qty_refunded ? trans('admin::app.sales.orders.view.item-refunded', ['qty_refunded' => $item->qty_refunded]) : '' }}
+                                            {{ $item->qty_refunded ? trans('admin::app.sales.orders.view.item-refunded', ['qty_refunded' => $item->qty_refunded]) : '' }}
 
-                                                {{ $item->qty_canceled ? trans('admin::app.sales.orders.view.item-canceled', ['qty_canceled' => $item->qty_canceled]) : '' }}
+                                            {{ $item->qty_canceled ? trans('admin::app.sales.orders.view.item-canceled', ['qty_canceled' => $item->qty_canceled]) : '' }}
                                             </p>
+-->
                                         </div>
                                     </div>
                                 </div>
@@ -593,6 +594,7 @@
                         </div>
 
                         <!-- Billing Address -->
+                        {{--
                         @if ($order->billing_address)
                             <span class="block w-full border-b dark:border-gray-800"></span>
 
@@ -609,6 +611,7 @@
                                 {!! view_render_event('bagisto.admin.sales.order.billing_address.after', ['order' => $order]) !!}
                             </div>
                         @endif
+                        --}}
 
                         <!-- Shipping Address -->
                         @if ($order->shipping_address)
@@ -697,19 +700,19 @@
                             <p class="text-gray-600 dark:text-gray-300">
                                 @lang('admin::app.sales.orders.view.payment-method')
                             </p>
+                            {{--
+                                                        <!-- Currency -->
+                                                        <p class="pt-4 font-semibold text-gray-800 dark:text-white">
+                                                            {{ $order->order_currency_code }}
+                                                        </p>
 
-                            <!-- Currency -->
-                            <p class="pt-4 font-semibold text-gray-800 dark:text-white">
-                                {{ $order->order_currency_code }}
-                            </p>
-
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @lang('admin::app.sales.orders.view.currency')
-                            </p>
-
+                                                        <p class="text-gray-600 dark:text-gray-300">
+                                                            @lang('admin::app.sales.orders.view.currency')
+                                                        </p>
+                            --}}
                             @php $additionalDetails = \Webkul\Payment\Payment::getAdditionalDetails($order->payment->method); @endphp
 
-                            <!-- Additional details -->
+                                <!-- Additional details -->
                             @if (! empty($additionalDetails))
                                 <p class="pt-4 font-semibold text-gray-800 dark:text-white">
                                     {{ $additionalDetails['title'] }}
@@ -729,7 +732,8 @@
 
                             <div class="pt-4">
                                 <p class="font-semibold text-gray-800 dark:text-white">
-                                    {{ $order->shipping_title }}
+                                    <!--  {{ $order->shipping_title }} -->
+                                    Доставка курьером
                                 </p>
 
                                 <p class="text-gray-600 dark:text-gray-300">
@@ -749,96 +753,99 @@
                         @endif
                     </x-slot>
                 </x-admin::accordion>
+                {{--
+                                <!-- Invoice Information-->
+                                <x-admin::accordion>
+                                    <x-slot:header>
+                                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
+                                            @lang('admin::app.sales.orders.view.invoices') ({{ count($order->invoices) }})
+                                        </p>
+                                    </x-slot>
 
-                <!-- Invoice Information-->
-                <x-admin::accordion>
-                    <x-slot:header>
-                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
-                            @lang('admin::app.sales.orders.view.invoices') ({{ count($order->invoices) }})
-                        </p>
-                    </x-slot>
+                                    <x-slot:content>
+                                        @forelse ($order->invoices as $index => $invoice)
+                                            <div class="grid gap-y-2.5">
+                                                <div>
+                                                    <p class="font-semibold text-gray-800 dark:text-white">
+                                                        @lang('admin::app.sales.orders.view.invoice-id', ['invoice' => $invoice->increment_id ?? $invoice->id])
+                                                    </p>
 
-                    <x-slot:content>
-                        @forelse ($order->invoices as $index => $invoice)
-                            <div class="grid gap-y-2.5">
-                                <div>
-                                    <p class="font-semibold text-gray-800 dark:text-white">
-                                        @lang('admin::app.sales.orders.view.invoice-id', ['invoice' => $invoice->increment_id ?? $invoice->id])
-                                    </p>
+                                                    <p class="text-gray-600 dark:text-gray-300">
+                                                        {{ core()->formatDate($invoice->created_at, 'd M, Y H:i:s a') }}
+                                                    </p>
+                                                </div>
 
-                                    <p class="text-gray-600 dark:text-gray-300">
-                                        {{ core()->formatDate($invoice->created_at, 'd M, Y H:i:s a') }}
-                                    </p>
-                                </div>
+                                                <div class="flex gap-2.5">
+                                                    <a
+                                                        href="{{ route('admin.sales.invoices.view', $invoice->id) }}"
+                                                        class="text-sm text-blue-600 transition-all hover:underline"
+                                                    >
+                                                        @lang('admin::app.sales.orders.view.view')
+                                                    </a>
 
-                                <div class="flex gap-2.5">
-                                    <a
-                                        href="{{ route('admin.sales.invoices.view', $invoice->id) }}"
-                                        class="text-sm text-blue-600 transition-all hover:underline"
-                                    >
-                                        @lang('admin::app.sales.orders.view.view')
-                                    </a>
+                                                    <a
+                                                        href="{{ route('admin.sales.invoices.print', $invoice->id) }}"
+                                                        class="text-sm text-blue-600 transition-all hover:underline"
+                                                    >
+                                                        @lang('admin::app.sales.orders.view.download-pdf')
+                                                    </a>
+                                                </div>
+                                            </div>
 
-                                    <a
-                                        href="{{ route('admin.sales.invoices.print', $invoice->id) }}"
-                                        class="text-sm text-blue-600 transition-all hover:underline"
-                                    >
-                                        @lang('admin::app.sales.orders.view.download-pdf')
-                                    </a>
-                                </div>
-                            </div>
+                                            @if ($index < count($order->invoices) - 1)
+                                                <span class="mb-4 mt-4 block w-full border-b dark:border-gray-800"></span>
+                                            @endif
+                                        @empty
+                                            <p class="text-gray-600 dark:text-gray-300">
+                                                @lang('admin::app.sales.orders.view.no-invoice-found')
+                                            </p>
+                                        @endforelse
+                                    </x-slot>
 
-                            @if ($index < count($order->invoices) - 1)
-                                <span class="mb-4 mt-4 block w-full border-b dark:border-gray-800"></span>
-                            @endif
-                        @empty
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @lang('admin::app.sales.orders.view.no-invoice-found')
-                            </p>
-                        @endforelse
-                    </x-slot>
-                </x-admin::accordion>
+                                </x-admin::accordion>
+                --}}
 
-                <!-- Shipment Information-->
-                <x-admin::accordion>
-                    <x-slot:header>
-                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
-                            @lang('admin::app.sales.orders.view.shipments') ({{ count($order->shipments) }})
-                        </p>
-                    </x-slot>
+                {{--
+                                <!-- Shipment Information-->
+                                <x-admin::accordion>
+                                    <x-slot:header>
+                                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
+                                            @lang('admin::app.sales.orders.view.shipments') ({{ count($order->shipments) }})
+                                        </p>
+                                    </x-slot>
 
-                    <x-slot:content>
-                        @forelse ($order->shipments as $shipment)
-                            <div class="grid gap-y-2.5">
-                                <div>
-                                    <!-- Shipment Id -->
-                                    <p class="font-semibold text-gray-800 dark:text-white">
-                                        @lang('admin::app.sales.orders.view.shipment', ['shipment' => $shipment->id])
-                                    </p>
+                                    <x-slot:content>
+                                        @forelse ($order->shipments as $shipment)
+                                            <div class="grid gap-y-2.5">
+                                                <div>
+                                                    <!-- Shipment Id -->
+                                                    <p class="font-semibold text-gray-800 dark:text-white">
+                                                        @lang('admin::app.sales.orders.view.shipment', ['shipment' => $shipment->id])
+                                                    </p>
 
-                                    <!-- Shipment Created -->
-                                    <p class="text-gray-600 dark:text-gray-300">
-                                        {{ core()->formatDate($shipment->created_at, 'd M, Y H:i:s a') }}
-                                    </p>
-                                </div>
+                                                    <!-- Shipment Created -->
+                                                    <p class="text-gray-600 dark:text-gray-300">
+                                                        {{ core()->formatDate($shipment->created_at, 'd M, Y H:i:s a') }}
+                                                    </p>
+                                                </div>
 
-                                <div class="flex gap-2.5">
-                                    <a
-                                        href="{{ route('admin.sales.shipments.view', $shipment->id) }}"
-                                        class="text-sm text-blue-600 transition-all hover:underline"
-                                    >
-                                        @lang('admin::app.sales.orders.view.view')
-                                    </a>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @lang('admin::app.sales.orders.view.no-shipment-found')
-                            </p>
-                        @endforelse
-                    </x-slot>
-                </x-admin::accordion>
-
+                                                <div class="flex gap-2.5">
+                                                    <a
+                                                        href="{{ route('admin.sales.shipments.view', $shipment->id) }}"
+                                                        class="text-sm text-blue-600 transition-all hover:underline"
+                                                    >
+                                                        @lang('admin::app.sales.orders.view.view')
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <p class="text-gray-600 dark:text-gray-300">
+                                                @lang('admin::app.sales.orders.view.no-shipment-found')
+                                            </p>
+                                        @endforelse
+                                    </x-slot>
+                                </x-admin::accordion>
+                --}}
                 <!-- Refund Information -->
                 <x-admin::accordion>
                     <x-slot:header>

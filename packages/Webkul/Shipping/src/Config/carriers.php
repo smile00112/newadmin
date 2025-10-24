@@ -3,8 +3,8 @@
 return [
     'flatrate' => [
         'code'         => 'flatrate',
-        'title'        => 'Flat Rate',
-        'description'  => 'Flat Rate Shipping',
+        'title'        => 'Платная доставка',
+        'description'  => 'Доставка по фиксированной ставке',
         'active'       => true,
         'default_rate' => '10',
         'type'         => 'per_unit',
@@ -13,27 +13,27 @@ return [
 
     'free' => [
         'code'         => 'free',
-        'title'        => 'Free Shipping',
-        'description'  => 'Free Shipping',
+        'title'        => 'Бесплатная доставка',
+        'description'  => 'Бесплатная доставка',
         'active'       => true,
         'default_rate' => '0',
         'class'        => 'Webkul\Shipping\Carriers\Free',
     ],
-    
+
     'zone' => [
         'code'         => 'zone',
-        'title'        => 'Zone Delivery',
-        'description'  => 'Zone-based Delivery',
+        'title'        => 'Доставка по зонам',
+        'description'  => 'Доставка по зонам',
         'active'       => false,
         'default_rate' => '0',
         'type'         => 'per_unit',
         'class'        => 'Webkul\Shipping\Carriers\Zone',
     ],
-    
+
     'pickup' => [
         'code'         => 'pickup',
-        'title'        => 'Pickup',
-        'description'  => 'Store Pickup',
+        'title'        => 'Самовывоз',
+        'description'  => 'Самовывоз',
         'active'       => true,
         'default_rate' => '0',
         'class'        => 'Webkul\Shipping\Carriers\Pickup',

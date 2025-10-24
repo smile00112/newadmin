@@ -11,6 +11,8 @@ use Webkul\Admin\Http\Controllers\Catalog\Product\GroupedController;
 use Webkul\Admin\Http\Controllers\Catalog\Product\SimpleController;
 use Webkul\Admin\Http\Controllers\Catalog\Product\VirtualController;
 use Webkul\Admin\Http\Controllers\Catalog\ProductController;
+use Webkul\Admin\Http\Controllers\Catalog\IngredientCompatibilityController;
+use Webkul\Admin\Http\Controllers\Catalog\ConstructorTemplateController;
 
 /**
  * Catalog routes.
@@ -139,6 +141,8 @@ Route::prefix('catalog')->group(function () {
         });
 
         Route::get('search', 'search')->name('admin.catalog.products.search');
+        
+        Route::get('constructor-group-template/{id}', 'getConstructorGroupTemplate')->name('admin.catalog.products.constructor_group_template');
 
         //Route::get('search', 'search_ingredients')->name('admin.catalog.products.search_ingredients');
 
@@ -151,5 +155,47 @@ Route::prefix('catalog')->group(function () {
         Route::get('', function(){
             return  redirect('/admin/catalog/products?ingredient=1');
         })->name('admin.catalog.ingredients');
+    });
+
+    /**
+     * Ingredient Compatibility routes.
+     */
+    Route::controller(IngredientCompatibilityController::class)->prefix('ingredient-compatibility')->group(function () {
+        Route::get('', 'index')->name('admin.catalog.ingredient_compatibility.index');
+
+        Route::get('create', 'create')->name('admin.catalog.ingredient_compatibility.create');
+
+        Route::post('create', 'store')->name('admin.catalog.ingredient_compatibility.store');
+
+        Route::get('edit/{id}', 'edit')->name('admin.catalog.ingredient_compatibility.edit');
+
+        Route::put('edit/{id}', 'update')->name('admin.catalog.ingredient_compatibility.update');
+
+        Route::delete('edit/{id}', 'destroy')->name('admin.catalog.ingredient_compatibility.delete');
+
+        Route::post('mass-delete', 'massDestroy')->name('admin.catalog.ingredient_compatibility.mass_delete');
+
+        Route::get('search-products', 'searchProducts')->name('admin.catalog.ingredient_compatibility.search_products');
+    });
+
+    /**
+     * Constructor Templates routes.
+     */
+    Route::controller(ConstructorTemplateController::class)->prefix('constructor-templates')->group(function () {
+        Route::get('', 'index')->name('admin.catalog.constructor_templates.index');
+
+        Route::get('create', 'create')->name('admin.catalog.constructor_templates.create');
+
+        Route::post('create', 'store')->name('admin.catalog.constructor_templates.store');
+
+        Route::get('edit/{id}', 'edit')->name('admin.catalog.constructor_templates.edit');
+
+        Route::put('edit/{id}', 'update')->name('admin.catalog.constructor_templates.update');
+
+        Route::delete('edit/{id}', 'destroy')->name('admin.catalog.constructor_templates.delete');
+
+        Route::post('mass-delete', 'massDestroy')->name('admin.catalog.constructor_templates.mass_delete');
+
+        Route::get('search-products', 'searchProducts')->name('admin.catalog.constructor_templates.search_products');
     });
 });

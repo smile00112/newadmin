@@ -200,10 +200,50 @@ return [
         'name'  => 'admin::app.acl.edit',
         'route' => 'admin.catalog.families.edit',
         'sort'  => 2,
-    ], [
+    ],     [
         'key'   => 'catalog.families.delete',
         'name'  => 'admin::app.acl.delete',
         'route' => 'admin.catalog.families.delete',
+        'sort'  => 3,
+    ], [
+        'key'   => 'catalog.ingredient_compatibility',
+        'name'  => 'admin::app.catalog.ingredient-compatibility.index.title',
+        'route' => 'admin.catalog.ingredient_compatibility.index',
+        'sort'  => 5,
+    ], [
+        'key'   => 'catalog.ingredient_compatibility.create',
+        'name'  => 'admin::app.acl.create',
+        'route' => 'admin.catalog.ingredient_compatibility.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'catalog.ingredient_compatibility.edit',
+        'name'  => 'admin::app.acl.edit',
+        'route' => 'admin.catalog.ingredient_compatibility.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'catalog.ingredient_compatibility.delete',
+        'name'  => 'admin::app.acl.delete',
+        'route' => 'admin.catalog.ingredient_compatibility.delete',
+        'sort'  => 3,
+    ], [
+        'key'   => 'catalog.constructor_templates',
+        'name'  => 'admin::app.catalog.constructor-templates.index.title',
+        'route' => 'admin.catalog.constructor_templates.index',
+        'sort'  => 6,
+    ], [
+        'key'   => 'catalog.constructor_templates.create',
+        'name'  => 'admin::app.acl.create',
+        'route' => 'admin.catalog.constructor_templates.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'catalog.constructor_templates.edit',
+        'name'  => 'admin::app.acl.edit',
+        'route' => 'admin.catalog.constructor_templates.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'catalog.constructor_templates.delete',
+        'name'  => 'admin::app.acl.delete',
+        'route' => 'admin.catalog.constructor_templates.delete',
         'sort'  => 3,
     ],
 

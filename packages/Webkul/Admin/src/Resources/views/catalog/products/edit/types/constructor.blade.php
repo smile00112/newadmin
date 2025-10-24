@@ -494,6 +494,23 @@
                 <!-- Modal Content -->
                 <x-slot:content>
                     <div class="space-y-4">
+                        <!-- Template Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                @lang('admin::app.catalog.products.edit.types.constructor.from-template')
+                            </label>
+                            <select
+                                v-model="selectedTemplateId"
+                                @change="loadTemplateData"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            >
+                                <option value="">@lang('admin::app.catalog.products.edit.types.constructor.select-template')</option>
+                                @foreach($constructorGroupTemplates as $template)
+                                    <option value="{{ $template->id }}">{{ $template->template_name }} - {{ $template->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- Group Name -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -627,6 +644,48 @@
                             <label for="hidden" class="text-sm font-medium text-gray-700 dark:text-gray-300">
                                 @lang('admin::app.catalog.products.edit.types.constructor.hidden')
                             </label>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="double_portions"
+                                    v-model="groupForm.double_portions"
+                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label for="double_portions" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    @lang('admin::app.catalog.products.edit.types.constructor.double-portions')
+                                </label>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="half_portions"
+                                    v-model="groupForm.half_portions"
+                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label for="half_portions" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    @lang('admin::app.catalog.products.edit.types.constructor.half-portions')
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Incompatibility Template -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                @lang('admin::app.catalog.products.edit.types.constructor.incompatibility-template')
+                            </label>
+                            <select
+                                v-model="groupForm.ingredients_incompatibilities_id"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            >
+                                <option value="">@lang('admin::app.catalog.products.edit.types.constructor.select-template')</option>
+                                @foreach($incompatibilityTemplates as $template)
+                                    <option value="{{ $template->id }}">{{ $template->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <!-- Sort Order -->
@@ -775,6 +834,7 @@
                     editingIndex: null,
                     isEditGroupMode: false,
                     editingGroupIndex: null,
+                    selectedTemplateId: '',
                     form: {
                         visible: true,
                         required: false,
@@ -797,6 +857,9 @@
                         zero_price: true,
                         required: false,
                         hidden: false,
+                        double_portions: false,
+                        half_portions: false,
+                        ingredients_incompatibilities_id: null,
                         sort: 0,
                         products: []
                     }
@@ -941,6 +1004,9 @@
                         zero_price: true,
                         required: false,
                         hidden: false,
+                        double_portions: false,
+                        half_portions: false,
+                        ingredients_incompatibilities_id: null,
                         sort: 0,
                         products: []
                     };
@@ -988,6 +1054,57 @@
                         'multiple': '@lang('admin::app.catalog.products.edit.types.constructor.checked-type-multiple')'
                     };
                     return types[type] || type;
+                },
+
+                async loadTemplateData() {
+                    if (!this.selectedTemplateId) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`{{ route('admin.catalog.products.constructor_group_template', '') }}/${this.selectedTemplateId}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to load template');
+                        }
+
+                        const result = await response.json();
+                        const templateData = result.data;
+
+                        // Populate group form with template data
+                        this.groupForm = {
+                            name: templateData.name || '',
+                            field_type: templateData.field_type || 'checkbox',
+                            checked_type: templateData.checked_type || 'once',
+                            quantity_min: templateData.quantity_min || 0,
+                            quantity_max: templateData.quantity_max || 0,
+                            show_title: templateData.show_title || false,
+                            opened_by_default: templateData.opened_by_default || false,
+                            zero_price: templateData.zero_price || false,
+                            required: templateData.required || false,
+                            hidden: templateData.hidden || false,
+                            double_portions: templateData.double_portions || false,
+                            half_portions: templateData.half_portions || false,
+                            ingredients_incompatibilities_id: templateData.ingredients_incompatibilities_id || null,
+                            sort: templateData.sort || 0,
+                            products: templateData.products || []
+                        };
+
+                        // Show success message
+                        this.$emitter.emit('add-flash', {
+                            type: 'success',
+                            message: '@lang('admin::app.catalog.products.edit.types.constructor.template-loaded')'
+                        });
+
+                        // Reset template selection
+                        this.selectedTemplateId = '';
+                    } catch (error) {
+                        console.error('Error loading template:', error);
+                        this.$emitter.emit('add-flash', {
+                            type: 'error',
+                            message: error.message
+                        });
+                    }
                 }
             }
         });

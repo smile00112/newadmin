@@ -44,6 +44,8 @@ class ProductController extends Controller
         protected ProductInventoryRepository $productInventoryRepository,
         protected ProductRepository $productRepository,
         protected CustomerRepository $customerRepository,
+        protected \Webkul\Product\Repositories\ProductIngredientsIncompatibilityTemplateRepository $incompatibilityTemplateRepository,
+        protected \Webkul\Product\Repositories\ProductConstructorGroupTemplateRepository $constructorGroupTemplateRepository,
     ) {}
 
     /**
@@ -138,8 +140,20 @@ class ProductController extends Controller
     public function edit(int $id)
     {
         $product = $this->productRepository->findOrFail($id);
+        
+        // Load incompatibility templates for constructor type
+        $incompatibilityTemplates = $this->incompatibilityTemplateRepository
+            ->where('active', 1)
+            ->orderBy('name')
+            ->get();
+        
+        // Load constructor group templates
+        $constructorGroupTemplates = $this->constructorGroupTemplateRepository
+            ->with('products')
+            ->orderBy('template_name')
+            ->get();
 
-        return view('admin::catalog.products.edit', compact('product'));
+        return view('admin::catalog.products.edit', compact('product', 'incompatibilityTemplates', 'constructorGroupTemplates'));
     }
 
     /**
@@ -324,6 +338,60 @@ class ProductController extends Controller
     }
 
     /**
+     * Get constructor group template data.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getConstructorGroupTemplate(int $id): JsonResponse
+    {
+        $locale = app()->getLocale();
+        $channel = core()->getCurrentChannelCode();
+        
+        $template = $this->constructorGroupTemplateRepository->findOrFail($id);
+        
+        // Load products with images and flat data
+        $template->load(['products' => function ($query) use ($locale, $channel) {
+            $query->with('images')
+                  ->join('product_flat', 'products.id', '=', 'product_flat.product_id')
+                  ->where('product_flat.locale', $locale)
+                  ->where('product_flat.channel', $channel)
+                  ->select('products.id', 'products.sku', 'product_flat.name');
+        }]);
+        
+        // Transform products to include pivot data
+        $products = $template->products->map(function ($product) {
+            return [
+                'id'      => $product->id,
+                'name'    => $product->name,
+                'sku'     => $product->sku,
+                'sort'    => $product->pivot->sort ?? 0,
+                'default' => (bool) ($product->pivot->default ?? false),
+                'images'  => $product->images ?? [],
+            ];
+        });
+        
+        return new JsonResponse([
+            'data' => [
+                'name'                            => $template->name,
+                'field_type'                      => $template->field_type,
+                'checked_type'                    => $template->checked_type,
+                'quantity_min'                    => $template->quantity_min,
+                'quantity_max'                    => $template->quantity_max,
+                'show_title'                      => $template->show_title,
+                'opened_by_default'               => $template->opened_by_default,
+                'zero_price'                      => $template->zero_price,
+                'required'                        => $template->required,
+                'hidden'                          => $template->hidden,
+                'double_portions'                 => $template->double_portions,
+                'half_portions'                   => $template->half_portions,
+                'ingredients_incompatibilities_id' => $template->ingredients_incompatibilities_id,
+                'sort'                            => $template->sort,
+                'products'                        => $products,
+            ],
+        ]);
+    }
+
+    /**
      * Result of search product.
      *
      * @return \Illuminate\Http\JsonResponse
@@ -331,12 +399,7 @@ class ProductController extends Controller
     public function search()
     {
         $query = trim(request('query'));
-
-        if (empty($query)) {
-            return response()->json([
-                'data' => [],
-            ]);
-        }
+        $limit = request('limit', 30);
 
         $searchEngine = 'database';
 
@@ -355,10 +418,11 @@ class ProductController extends Controller
 
         $params = [
             'index'      => $indexNames ?? null,
-            'name'       => request('query'),
+            'name'       => $query ?: null,
             'sort'       => 'created_at',
             'order'      => 'desc',
             'channel_id' => $channelId,
+            'limit'      => $limit,
         ];
 
         if (request()->has('type')) {

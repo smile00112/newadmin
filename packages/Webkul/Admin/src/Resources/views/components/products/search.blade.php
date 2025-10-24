@@ -192,12 +192,44 @@
             methods: {
                 openDrawer() {
                     this.$refs.searchProductDrawer.open();
+                    
+                    // Load initial products if search is empty
+                    if (this.searchTerm.length === 0 && this.searchedProducts.length === 0) {
+                        this.loadInitialProducts();
+                    }
+                },
+
+                loadInitialProducts() {
+                    this.isSearching = true;
+
+                    let self = this;
+
+                    @php
+                        $searchRoute = !$attributes->has(':search-ingredients') ? route('admin.catalog.products.search') : route('admin.catalog.products.search', ['type' => 'ingredient']);
+                    @endphp
+                    this.$axios.get("{{ $searchRoute }}", {
+                            params: {
+                                ...{query: '', limit: 30},
+                                ...this.queryParams
+                            }
+                        })
+                        .then(function(response) {
+                            self.isSearching = false;
+                            self.searchedProducts = response.data.data;
+                        })
+                        .catch(function (error) {
+                            self.isSearching = false;
+                        });
                 },
 
                 search() {
+                    if (this.searchTerm.length === 0) {
+                        this.loadInitialProducts();
+                        return;
+                    }
+
                     if (this.searchTerm.length <= 1) {
                         this.searchedProducts = [];
-
                         return;
                     }
 
@@ -222,6 +254,7 @@
                             self.searchedProducts = response.data.data;
                         })
                         .catch(function (error) {
+                            self.isSearching = false;
                         });
                 },
 

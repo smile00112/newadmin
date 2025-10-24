@@ -106,7 +106,7 @@
                         <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                             @{{ record.created_at }}
                         </p>
-                        
+
                         <p v-html="record.status"></p>
                     </div>
 

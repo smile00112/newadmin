@@ -37,5 +37,8 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
         \Webkul\Product\Models\ProductConstructor::class,
         \Webkul\Product\Models\ProductConstructorGroup::class,
         \Webkul\Product\Models\ProductConstructorGroupProduct::class,
+        \Webkul\Product\Models\ProductIngredientsIncompatibilityTemplate::class,
+        \Webkul\Product\Models\ProductIngredientsIncompatibility::class,
+        \Webkul\Product\Models\ProductConstructorGroupTemplate::class,
     ];
 }
