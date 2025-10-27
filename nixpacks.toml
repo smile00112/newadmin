@@ -30,6 +30,9 @@ cmds = [
 #    "chown -R www-data:www-data /var/www/html/.env",
 #    "chmod -R 755 /var/www/html/.env",
 #    "mv /app/.env.example /app/.env",
+    "chmod -R 775 /app /app/.env.example",
+    "chown -R www-data:www-data /app /app/.env.example",
+    "mv /app/.env.example /app/.env",
     "..."
 ]
 
