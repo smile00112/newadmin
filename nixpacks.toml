@@ -29,7 +29,7 @@ cmds = [
 #    "touch /var/www/html/.env",
 #    "chown -R www-data:www-data /var/www/html/.env",
 #    "chmod -R 755 /var/www/html/.env",
-    "rename /var/www/html/.env.example /var/www/html/.env",
+    "mv /app/.env.example /app/.env",
     "..."
 ]
 
