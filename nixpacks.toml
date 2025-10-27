@@ -14,6 +14,16 @@ cmds = [
     "chmod +x /assets/start.sh",
     "ls -la /assets/start.sh",
     "echo '=== End debug ==='",
+    # Создаем директории для логов
+    "mkdir -p /var/www/html/storage/logs/",
+    "touch /var/www/html/storage/logs/redis-worker.log",
+    "touch /var/www/html/storage/logs/broadcastable-worker.log",
+    "touch /var/www/html/storage/logs/default-worker.log",
+    "touch /var/www/html/storage/logs/reverb.log",
+
+    # Устанавливаем правильные права
+    "chown -R www-data:www-data /var/www/html/storage/",
+    "chmod -R 755 /var/www/html/storage/logs/",
     "..."
 ]
 
