@@ -26,9 +26,9 @@ cmds = [
     "chmod -R 755 /var/www/html/storage/logs/",
 
     # Cодаём .env файл
-    "touch /var/www/html/.env",
-    "chown -R www-data:www-data /var/www/html/.env",
-    "chmod -R 755 /var/www/html/.env",
+#    "touch /var/www/html/.env",
+#    "chown -R www-data:www-data /var/www/html/.env",
+#    "chmod -R 755 /var/www/html/.env",
 
     "..."
 ]
