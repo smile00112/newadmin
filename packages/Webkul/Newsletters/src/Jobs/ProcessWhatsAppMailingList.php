@@ -40,8 +40,8 @@ class ProcessWhatsAppMailingList implements ShouldQueue
 
         // Process customers in batches of 1000
         $mailingList->customerNumbers()
-            ->whereNull('unsubscribed_at')
-            ->chunk(1000, function ($customers) use ($mailingList, $whatsappService) {
+           // ->whereNull('unsubscribed_at')
+            ->chunk(100, function ($customers) use ($mailingList, $whatsappService) {
                 ProcessWhatsAppBatch::dispatch($mailingList->id, $customers->pluck('id')->toArray())
                     ->onQueue('whatsapp-batch');
             });

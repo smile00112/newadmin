@@ -36,6 +36,17 @@ return [
             'sending' => 'Sending',
             'sent' => 'Sent',
             'failed' => 'Failed',
+            'progress' => 'Progress',
+            'start-mailing' => 'Start Mailing',
+            'start-confirm' => 'Are you sure you want to start this mailing campaign?',
+            'mailing-started' => 'Mailing campaign started successfully.',
+            'mailing-start-failed' => 'Failed to start mailing campaign.',
+            'no-whatsapp-instances' => 'No WhatsApp instances configured for this mailing list.',
+            'no-customer-numbers' => 'No customer numbers found for this mailing list.',
+            'mailing-hours-from' => 'Mailing Hours From',
+            'mailing-hours-to' => 'Mailing Hours To',
+            'message-delay' => 'Message Delay (seconds)',
+            'message-delay-hint' => 'Delay between messages in seconds (1-3600)',
         ],
 
         'customer-numbers' => [
@@ -73,6 +84,7 @@ return [
             'loading-chat' => 'Loading chat history...',
             'chat-history-error' => 'Failed to load chat history',
             'chat-history-failed' => 'Could not load chat history',
+            'chat-history-unavailable' => 'Chat history is currently unavailable. Please try again later.',
             'search-failed' => 'Search failed',
             'no-whatsapp-instance' => 'Customer has no WhatsApp instance',
             'no-chat-history' => 'No chat history available',
@@ -84,6 +96,7 @@ return [
             'message-sent-success' => 'Message sent successfully',
             'message-sent-failed' => 'Failed to send message',
             'message-empty-error' => 'Please enter a message',
+            'update-failed' => 'Failed to update customer number',
         ],
 
         'stop-list' => [
@@ -144,6 +157,18 @@ return [
             'no-whatsapp-instances' => 'No WhatsApp instances found.',
             'no-customer-numbers' => 'No customer numbers found.',
         ],
+
+        'messages' => [
+            'title' => 'Messages',
+            'incoming-message' => 'Incoming Message',
+            'whatsapp-instance' => 'WhatsApp Instance',
+            'status' => 'Status',
+            'new-message' => 'New Message',
+            'yes' => 'Yes',
+            'no' => 'No',
+            'no-messages' => 'No messages found',
+            'no-messages-description' => 'Messages will appear here when customers send replies.',
+        ],
     ],
 
     'sidebar' => [
@@ -153,6 +178,7 @@ return [
         'customer-numbers' => 'Customer Numbers',
         'stop-list' => 'Stop List',
         'unified' => 'Unified Management',
+        'messages' => 'Messages',
     ],
 
     'common' => [

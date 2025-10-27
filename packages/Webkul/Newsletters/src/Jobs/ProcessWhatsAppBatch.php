@@ -58,7 +58,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
             }
 
             // Send individual message
-            SendWhatsAppMessage::dispatch($instance->id, $customer->phone_number, $mailingList->message_text)
+            SendWhatsAppMessage::dispatch($instance->id, $customer->phone_number, $whatsappService->makeRandomMessage($mailingList->message_text))
                 ->onQueue('whatsapp-send');
         }
     }

@@ -31,6 +31,20 @@ class CustomerNumberController extends Controller
     }
 
     /**
+     * Display messages list.
+     */
+    public function messages()
+    {
+        $messages = $this->customerNumberRepository
+            ->with(['mailingList', 'whatsAppInstance'])
+            ->orderBy('incoming_message', 'desc')
+            ->orderBy('id', 'desc')
+            ->paginate(50);
+
+        return view('newsletters::admin.messages.index', compact('messages'));
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -81,21 +95,45 @@ class CustomerNumberController extends Controller
      */
     public function update(Request $request, int $id)
     {
-        $this->validate($request, [
+        $customerNumber = $this->customerNumberRepository->findOrFail($id);
+        
+        $rules = [
             'phone_number' => [
                 'required',
                 'string',
                 'max:20',
                 'regex:/^\+?[1-9]\d{1,14}$/',
                 Rule::unique('newsletters_customer_numbers')
-                    ->where('mailing_list_id', $request->mailing_list_id)
+                    ->where('mailing_list_id', $customerNumber->mailing_list_id)
                     ->ignore($id),
             ],
-            'name' => 'required|string|max:255',
-            'mailing_list_id' => 'required|exists:newsletters_mailing_lists,id',
-        ]);
+            'name' => 'sometimes|string|max:255',
+        ];
+        
+        // Add mailing_list_id validation only if it's present in the request
+        if ($request->has('mailing_list_id')) {
+            $rules['mailing_list_id'] = 'required|exists:newsletters_mailing_lists,id';
+        }
+        
+        $this->validate($request, $rules);
 
-        $customerNumber = $this->customerNumberRepository->update($request->all(), $id);
+        $data = $request->only(['phone_number', 'name', 'delivered', 'viewed']);
+        
+        // Keep the original mailing_list_id if not provided in request
+        if ($request->has('mailing_list_id')) {
+            $data['mailing_list_id'] = $request->mailing_list_id;
+        }
+        
+        $customerNumber = $this->customerNumberRepository->update($data, $id);
+
+        // Return JSON for AJAX requests
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => trans('newsletters::app.admin.customer-numbers.update-success'),
+                'customer_number' => $customerNumber,
+            ]);
+        }
 
         session()->flash('success', trans('newsletters::app.admin.customer-numbers.update-success'));
 
@@ -222,9 +260,10 @@ class CustomerNumberController extends Controller
 
             if(!$customerNumber->whatsAppInstance){
                 return response()->json([
-                    'success' => false,
-                    'message' => trans('newsletters::app.admin.customer-numbers.no-whatsapp-instance'),
-                ], 500);
+                    'success' => true,
+                    'chat_history' => trans('newsletters::app.admin.customer-numbers.no-whatsapp-instance'),
+                    'customer_number' => $customerNumber,
+                ]);
             }
 
             // Clear incoming_message flag when chat history is viewed
@@ -241,9 +280,17 @@ class CustomerNumberController extends Controller
                 ]);
             }
 
-            $chatHistory = $this->whatsAppMailingService->getChatHistory($customerNumber->whatsAppInstance, $customerNumber->phone_number);
-            // This is a placeholder implementation
-            //$chatHistory = [];
+            try {
+                $chatHistory = $this->whatsAppMailingService->getChatHistory($customerNumber->whatsAppInstance, $customerNumber->phone_number);
+            } catch (\Exception $e) {
+                Log::warning('Failed to retrieve chat history from WhatsApp service', [
+                    'customer_number_id' => $customerNumber->id,
+                    'error' => $e->getMessage(),
+                ]);
+                
+                // Return empty chat history instead of error
+                $chatHistory = trans('newsletters::app.admin.customer-numbers.chat-history-unavailable');
+            }
 
             return response()->json([
                 'success' => true,
@@ -253,13 +300,14 @@ class CustomerNumberController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Failed to retrieve chat history', [
-                'customer_number_id' => $request->customer_number_id,
+                'customer_id' => $request->customer_id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => trans('newsletters::app.admin.customer-numbers.chat-history-failed'),
+                'message' => trans('newsletters::app.admin.customer-numbers.chat-history-failed') . ': ' . $e->getMessage(),
             ], 500);
         }
     }

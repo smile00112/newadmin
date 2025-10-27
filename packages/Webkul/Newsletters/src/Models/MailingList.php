@@ -25,6 +25,9 @@ class MailingList extends Model
     protected $fillable = [
         'message_text',
         'active',
+        'mailing_hours_from',
+        'mailing_hours_to',
+        'message_delay',
         //'start_at'
     ];
 
@@ -34,7 +37,8 @@ class MailingList extends Model
      */
     protected $casts = [
         'active' => 'boolean',
-        'start_at' => 'datetime'
+        'start_at' => 'datetime',
+        'message_delay' => 'integer',
     ];
 
     /**

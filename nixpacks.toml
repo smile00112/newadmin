@@ -72,16 +72,38 @@ stderr_logfile=/var/log/worker-phpfpm.log
 "worker-laravel.conf" = '''
 [program:worker-laravel]
 process_name=%(program_name)s_%(process_num)02d
-command=bash -c 'exec php /app/artisan queue:work --sleep=3 --tries=3 --max-time=3600'
+command=bash -c 'exec php /app/artisan queue:work --queue=default --sleep=3 --tries=3 --max-time=3600'
 autostart=true
 autorestart=true
 stopasgroup=true
 killasgroup=true
-numprocs=12 # To reduce memory/CPU usage, change to 2.
+numprocs=1 # To reduce memory/CPU usage, change to 2.
 startsecs=0
 stopwaitsecs=3600
 stdout_logfile=/var/log/worker-laravel.log
 stderr_logfile=/var/log/worker-laravel.log
+
+[program:laravel-redis-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/html/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,default,whatsapp-batch,whatsapp-send
+autostart=true
+autorestart=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/html/storage/logs/redis-worker.log
+'''
+
+
+"reverd-laravel.conf" = '''
+[program:laravel-reverb]
+command=php /var/www/html/artisan reverb:start
+process_name=%(program_name)s_%(process_num)02d
+autostart=true
+autorestart=true
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/www/html/storage/logs/reverb.log
 '''
 
 "php-fpm.conf" = '''

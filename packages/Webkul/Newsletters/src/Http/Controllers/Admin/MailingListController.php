@@ -71,6 +71,9 @@ class MailingListController extends Controller
             'message_text' => 'required|string',
             'active' => 'boolean',
             'start_at' => 'nullable|date|after:now',
+            'mailing_hours_from' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
+            'mailing_hours_to' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
+            'message_delay' => 'nullable|integer|min:1|max:3600',
 
             // WhatsApp Instances validation
             'whatsapp_instances.*.link_name' => 'required|string|max:255',
@@ -89,8 +92,11 @@ class MailingListController extends Controller
             // Create mailing list first
             $mailingListData = [
                 'message_text' => $request->input('message_text'),
-                'active' => $request->input('active', true),
+                'active' => (bool) $request->input('active', false),
                 'start_at' => $request->input('start_at'),
+                'mailing_hours_from' => $request->input('mailing_hours_from'),
+                'mailing_hours_to' => $request->input('mailing_hours_to'),
+                'message_delay' => $request->input('message_delay', 5),
             ];
 
             Log::info('Creating mailing list', [
@@ -276,15 +282,18 @@ class MailingListController extends Controller
             'message_text' => 'required|string',
             'active' => 'boolean',
             'start_at' => 'nullable|date',
+            'mailing_hours_from' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
+            'mailing_hours_to' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
+            'message_delay' => 'nullable|integer|min:1|max:3600',
 
             // WhatsApp Instances validation
-            'whatsapp_instances.*.link_name' => 'required|string|max:255',
-            'whatsapp_instances.*.login' => 'required|string|max:255',
-            'whatsapp_instances.*.password' => 'required|string|max:255',
+            'whatsapp_instances.*.link_name' => 'nullable|string|max:255',
+            'whatsapp_instances.*.login' => 'nullable|string|max:255',
+            'whatsapp_instances.*.password' => 'nullable|string|max:255',
 
-            // Customer Numbers validation
-            'customer_numbers.*.phone_number' => 'required|string|max:20',
-            'customer_numbers.*.name' => 'required|string|max:255',
+            // Customer Numbers validation - nullable because we filter them later
+            'customer_numbers.*.phone_number' => 'nullable|string|max:20',
+            'customer_numbers.*.name' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -294,8 +303,11 @@ class MailingListController extends Controller
             // Update mailing list
             $mailingListData = [
                 'message_text' => $request->input('message_text'),
-                'active' => $request->input('active', true),
+                'active' => (bool) $request->input('active', false),
                 'start_at' => $request->input('start_at'),
+                'mailing_hours_from' => $request->input('mailing_hours_from'),
+                'mailing_hours_to' => $request->input('mailing_hours_to'),
+                'message_delay' => $request->input('message_delay', 5),
             ];
 
             Log::info('Updating mailing list', [
@@ -401,8 +413,9 @@ class MailingListController extends Controller
                 $customerNumbers = $request->input('customer_numbers');
                 
                 // Filter out empty entries and validate required fields
+                // Note: We need phone_number and name, but id is optional (new customers won't have it)
                 $validCustomers = array_filter($customerNumbers, function($customer) {
-                    return !empty($customer['id']) && !empty($customer['phone_number']) && !empty($customer['name']);
+                    return !empty($customer['phone_number']) && !empty($customer['name']);
                 });
 
                 Log::info('Processing customer numbers for update', [
@@ -435,9 +448,27 @@ class MailingListController extends Controller
                             'mailing_list_id' => $id,
                         ]);
 
-                        // Prepare update data (exclude ID from update)
-                        $updateData = $customerData;
-                        unset($updateData['id']);
+                        // Prepare update data (exclude ID and empty/null fields that shouldn't be updated)
+                        $updateData = [
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'mailing_list_id' => $id,
+                        ];
+                        
+                        // Only include these fields if they are explicitly set and not empty
+                        if (isset($customerData['delivered'])) {
+                            $updateData['delivered'] = (bool)$customerData['delivered'];
+                        }
+                        if (isset($customerData['viewed'])) {
+                            $updateData['viewed'] = (bool)$customerData['viewed'];
+                        }
+                        if (isset($customerData['incoming_message'])) {
+                            $updateData['incoming_message'] = (bool)$customerData['incoming_message'];
+                        }
+                        // Only update whatsapp_instance_id if it's explicitly provided and not empty
+                        if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
+                            $updateData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
+                        }
                         
                         $this->customerNumberRepository->update($updateData, $existingCustomer->id);
                         $processedCustomerIds[] = $existingCustomer->id;
@@ -449,7 +480,7 @@ class MailingListController extends Controller
                             'mailing_list_id' => $id,
                         ]);
                     } else {
-                        // Create new customer (should not happen in normal flow, but keeping for safety)
+                        // Create new customer
                         Log::info('Creating new customer number', [
                             'customer_index' => $index,
                             'phone_number' => $customerData['phone_number'],
@@ -457,7 +488,22 @@ class MailingListController extends Controller
                             'mailing_list_id' => $id,
                         ]);
 
-                        $customer = $this->customerNumberRepository->create($customerData);
+                        // Prepare create data
+                        $createData = [
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'mailing_list_id' => $id,
+                            'delivered' => false,
+                            'viewed' => false,
+                            'incoming_message' => false,
+                        ];
+                        
+                        // Add whatsapp_instance_id if provided
+                        if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
+                            $createData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
+                        }
+
+                        $customer = $this->customerNumberRepository->create($createData);
                         $processedCustomerIds[] = $customer->id;
 
                         Log::info('Customer number created successfully', [
@@ -679,34 +725,47 @@ class MailingListController extends Controller
     {
         $mailingList = $this->mailingListRepository->findOrFail($id);
 
-        if (!$mailingList->active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mailing list is not active'
-            ], 400);
-        }
-
         if ($mailingList->whatsappInstances()->count() === 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'No WhatsApp instances configured for this mailing list'
+                'message' => trans('newsletters::app.admin.mailing-lists.no-whatsapp-instances')
             ], 400);
         }
 
         if ($mailingList->customerNumbers()->count() === 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'No customer numbers found for this mailing list'
+                'message' => trans('newsletters::app.admin.mailing-lists.no-customer-numbers')
             ], 400);
         }
 
-        // Dispatch the mailing job
-        ProcessWhatsAppMailingList::dispatch($id);
+        try {
+            // Activate mailing list and dispatch the job
+            $this->mailingListRepository->update(['active' => true], $id);
+            
+            Log::info('Starting mailing list', [
+                'mailing_list_id' => $id,
+                'user_id' => auth()->id(),
+            ]);
+            
+            // Dispatch the mailing job
+            ProcessWhatsAppMailingList::dispatch($id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'WhatsApp mailing campaign started successfully'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => trans('newsletters::app.admin.mailing-lists.mailing-started')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to start mailing list', [
+                'mailing_list_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.mailing-lists.mailing-start-failed')
+            ], 500);
+        }
     }
 
     public function testMailing(int $id)

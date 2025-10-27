@@ -60,10 +60,69 @@
                         @enderror
                     </div>
 
+                <!-- Mailing Schedule Settings -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="mailing_hours_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.mailing-hours-from') }}
+                        </label>
+                        <input
+                            type="time"
+                            name="mailing_hours_from"
+                            id="mailing_hours_from"
+                            value="{{ old('mailing_hours_from', $mailingList->mailing_hours_from) }}"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="09:00"
+                        >
+                        @error('mailing_hours_from')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="mailing_hours_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.mailing-hours-to') }}
+                        </label>
+                        <input
+                            type="time"
+                            name="mailing_hours_to"
+                            id="mailing_hours_to"
+                            value="{{ old('mailing_hours_to', $mailingList->mailing_hours_to) }}"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="18:00"
+                        >
+                        @error('mailing_hours_to')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="message_delay" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.message-delay') }}
+                        </label>
+                        <input
+                            type="number"
+                            name="message_delay"
+                            id="message_delay"
+                            value="{{ old('message_delay', $mailingList->message_delay ?? 5) }}"
+                            min="1"
+                            max="3600"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="5"
+                        >
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.mailing-lists.message-delay-hint') }}</p>
+                        @error('message_delay')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Active Status -->
                     <div class="flex items-center">
                         <label class="flex items-center space-x-3">
+                            <!-- Hidden input to ensure 0 is sent when checkbox is unchecked -->
+                            <input type="hidden" name="active" value="0">
                             <input
                                 type="checkbox"
                                 name="active"
@@ -152,8 +211,10 @@
                             <input type="hidden" name="customer_numbers[{{ $index }}][delivered]" value="{{ $customer->delivered ? '1' : '0' }}">
                             <input type="hidden" name="customer_numbers[{{ $index }}][viewed]" value="{{ $customer->viewed ? '1' : '0' }}">
                             <input type="hidden" name="customer_numbers[{{ $index }}][incoming_message]" value="{{ $customer->incoming_message ? '1' : '0' }}">
-                            <input type="hidden" name="customer_numbers[{{ $index }}][whatsapp_instance_id]" value="{{ $customer->whatsapp_instance_id }}">
-                            <div class="customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ $customer->incoming_message ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700' : '' }}">
+                            @if($customer->whatsapp_instance_id)
+                                <input type="hidden" name="customer_numbers[{{ $index }}][whatsapp_instance_id]" value="{{ $customer->whatsapp_instance_id }}">
+                            @endif
+                            <div data-customer-id="{{ $customer->id }}" class="customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ $customer->incoming_message ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700' : '' }}">
                                 <div class="flex items-center space-x-4 flex-1">
                                     <div class="flex-shrink-0">
                                         @if($customer->incoming_message)
@@ -500,7 +561,7 @@
                     </div>
 
                     <!-- Reply Message Section -->
-                    <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div id="replyMessageSection" class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.admin.customer-numbers.reply-message') }}
                         </label>
@@ -861,6 +922,7 @@
         // Load chat history via API
         function loadChatHistory(customerId, phoneNumber) {
             const chatTextarea = document.getElementById('editChatHistory');
+            const replySection = document.getElementById('replyMessageSection');
 
             // Check if textarea exists
             if (!chatTextarea) {
@@ -871,6 +933,11 @@
             // Show loading state
             chatTextarea.value = '';
             chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.loading-chat") }}';
+            
+            // Show reply section initially
+            if (replySection) {
+                replySection.style.display = 'block';
+            }
 
             // Get CSRF token safely
             const csrfTokenElement = document.querySelector('meta[name="csrf-token"]');
@@ -896,38 +963,109 @@
                 return response.json();
             })
             .then(data => {
-                if (data.success) {
-                    chatTextarea.value = data.chat_history || '{{ __("newsletters::app.admin.customer-numbers.no-chat-history") }}';
+                if (data.success && data.chat_history) {
+                    // Check if chat history is an error message or empty
+                    const isError = data.chat_history.includes('{{ __("newsletters::app.admin.customer-numbers.no-whatsapp-instance") }}') ||
+                                   data.chat_history.includes('{{ __("newsletters::app.admin.customer-numbers.chat-history-unavailable") }}') ||
+                                   data.chat_history.includes('недоступна') ||
+                                   data.chat_history.includes('не найдена');
+                    
+                    chatTextarea.value = data.chat_history;
                     chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.chat-with-client") }}';
+                    
+                    // Hide reply section if chat loading failed
+                    if (replySection && isError) {
+                        replySection.style.display = 'none';
+                    }
                 } else {
-                    chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
+                    chatTextarea.value = data.message || '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
+                    
+                    // Hide reply section on error
+                    if (replySection) {
+                        replySection.style.display = 'none';
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error loading chat history:', error);
-                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
+                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}\n\n' + 
+                                    '{{ __("newsletters::app.admin.customer-numbers.chat-history-unavailable") }}';
+                
+                // Hide reply section on error
+                if (replySection) {
+                    replySection.style.display = 'none';
+                }
             });
         }
 
         function saveCustomerChanges() {
+            const customerId = document.getElementById('editCustomerId').value;
             const formData = {
-                customer_id: document.getElementById('editCustomerId').value,
                 phone_number: document.getElementById('editPhoneNumber').value,
                 name: document.getElementById('editCustomerName').value,
-                delivered: document.getElementById('editDelivered').value,
-                viewed: document.getElementById('editViewed').value
+                delivered: document.getElementById('editDelivered').value === 'true',
+                viewed: document.getElementById('editViewed').value === 'true'
             };
 
-            // Here you would typically make an AJAX call to save the changes
-            // For now, we'll show an alert and close the modal
             console.log('Saving customer changes:', formData);
-            alert('{{ __("newsletters::app.admin.customer-numbers.update-success") }}');
-            closeCustomerEditModal();
 
-            // In a real implementation, you would:
-            // 1. Make an AJAX call to update the customer
-            // 2. Update the display in the list
-            // 3. Show success/error messages
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            if (!csrfToken) {
+                alert('Security token not found. Please refresh the page.');
+                return;
+            }
+
+            // Make AJAX call to save changes
+            fetch(`{{ url('admin/newsletters/customer-numbers/edit') }}/${customerId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(data.message || '{{ __("newsletters::app.admin.customer-numbers.update-success") }}');
+                    
+                    // Update the display in the list
+                    const customerCard = document.querySelector(`[data-customer-id="${customerId}"]`);
+                    if (customerCard) {
+                        // Update phone number display
+                        const phoneElement = customerCard.querySelector('.text-lg.font-semibold');
+                        if (phoneElement) {
+                            phoneElement.textContent = formData.phone_number;
+                        }
+                        
+                        // Update name display
+                        const nameElement = customerCard.querySelector('.text-sm.text-gray-600');
+                        if (nameElement) {
+                            nameElement.textContent = formData.name;
+                        }
+                    }
+                    
+                    closeCustomerEditModal();
+                    
+                    // Reload page to refresh all data
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert(data.message || '{{ __("newsletters::app.admin.customer-numbers.update-failed") }}');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving customer changes:', error);
+                alert('{{ __("newsletters::app.admin.customer-numbers.update-failed") }}: ' + error.message);
+            });
         }
 
         /**
@@ -1025,15 +1163,50 @@
 
         function deleteCustomerNumber(customerId) {
             if (confirm('{{ __("newsletters::app.admin.customer-numbers.delete-confirm") }}')) {
-                // Here you would typically make an AJAX call to delete the customer
-                // For now, we'll show an alert
                 console.log('Deleting customer:', customerId);
-                alert('{{ __("newsletters::app.admin.customer-numbers.delete-success") }}');
+                
+                // Get CSRF token
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    alert('Security token not found. Please refresh the page.');
+                    return;
+                }
 
-                // In a real implementation, you would:
-                // 1. Make an AJAX call to delete the customer
-                // 2. Remove the row from the display
-                // 3. Show success/error messages
+                // Make AJAX call to delete the customer
+                fetch(`{{ url('admin/newsletters/customer-numbers') }}/${customerId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        
+                        // Remove the row from display
+                        const customerRow = document.querySelector(`[data-customer-id="${customerId}"]`);
+                        if (customerRow) {
+                            customerRow.remove();
+                        }
+                        
+                        // Reload page to refresh all data
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting customer:', error);
+                    alert('{{ __("newsletters::app.admin.customer-numbers.delete-failed") }}: ' + error.message);
+                });
             }
         }
 

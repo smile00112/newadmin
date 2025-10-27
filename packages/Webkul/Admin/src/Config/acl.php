@@ -859,6 +859,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Newsletters
+    |--------------------------------------------------------------------------
+    |
+    | All ACLs related to newsletters will be placed here.
+    |
+    */
+    [
+        'key'   => 'newsletters',
+        'name'  => 'newsletters::app.sidebar.newsletters',
+        'route' => 'admin.newsletters.mailing-lists.index',
+        'sort'  => 7,
+    ], [
+        'key'   => 'newsletters.mailing-lists',
+        'name'  => 'newsletters::app.sidebar.mailing-lists',
+        'route' => 'admin.newsletters.mailing-lists.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.messages',
+        'name'  => 'newsletters::app.sidebar.messages',
+        'route' => 'admin.newsletters.messages.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.stop-list',
+        'name'  => 'newsletters::app.sidebar.stop-list',
+        'route' => 'admin.newsletters.stop-list.index',
+        'sort'  => 3,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuration
     |--------------------------------------------------------------------------
     |

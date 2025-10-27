@@ -270,6 +270,12 @@ return [
         'route'      => 'admin.newsletters.stop-list.index',
         'sort'       => 4,
         'icon'       => '',
+    ], [
+        'key'        => 'newsletters.messages',
+        'name'       => 'newsletters::app.sidebar.messages',
+        'route'      => 'admin.newsletters.messages.index',
+        'sort'       => 3,
+        'icon'       => '',
     ],
 //    [
 //        'key'        => 'newsletters.whatsapp-instances',

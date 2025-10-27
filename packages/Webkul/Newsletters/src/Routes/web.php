@@ -49,6 +49,7 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::put('edit/{id}', 'update')->name('admin.newsletters.mailing-lists.update');
         Route::delete('{id}', 'destroy')->name('admin.newsletters.mailing-lists.destroy');
         Route::post('{id}/send', 'send')->name('admin.newsletters.mailing-lists.send');
+        Route::post('{id}/start', 'startMailing')->name('admin.newsletters.mailing-lists.start');
     });
 
     Route::controller(MailingListController::class)->prefix('test')->group(function () {
@@ -81,6 +82,13 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::put('edit/{id}', 'update')->name('admin.newsletters.stop-list.update');
         Route::delete('{id}', 'destroy')->name('admin.newsletters.stop-list.destroy');
         Route::post('check', 'check')->name('admin.newsletters.stop-list.check');
+    });
+
+    /**
+     * Messages routes.
+     */
+    Route::controller(CustomerNumberController::class)->prefix('messages')->group(function () {
+        Route::get('', 'messages')->name('admin.newsletters.messages.index');
     });
 
     /**

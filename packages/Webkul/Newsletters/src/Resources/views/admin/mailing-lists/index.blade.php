@@ -49,9 +49,9 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.numbers_count') }}
                         </th>
-                        {{--numbers_delivered column--}}
+                        {{--Progress column--}}
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.common.fields.sent_count') }}
+                            {{ __('newsletters::app.admin.mailing-lists.progress') }}
                         </th>
                         {{--incoming_message column--}}
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -93,8 +93,22 @@
                                 {{ $mailingList->customerNumbers->count() }}
                             </td>
 
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="sent_count">
-                                {{ $mailingList->numbers_delivered }}
+                            <td class="px-6 py-4 text-sm" data-field="progress">
+                                @php
+                                    $totalNumbers = $mailingList->customerNumbers->count();
+                                    $sentNumbers = $mailingList->numbers_delivered;
+                                    $progressPercentage = $totalNumbers > 0 ? round(($sentNumbers / $totalNumbers) * 100) : 0;
+                                @endphp
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[100px]">
+                                        <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                             style="width: {{ $progressPercentage }}%"
+                                             data-progress="{{ $progressPercentage }}"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400 min-w-[80px]" data-field="progress-text">
+                                        <span data-field="sent_count">{{ $sentNumbers }}</span> / {{ $totalNumbers }} ({{ $progressPercentage }}%)
+                                    </span>
+                                </div>
                             </td>
 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="incoming_count">
@@ -106,6 +120,14 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
+                                    @if(!$mailingList->active)
+                                        <button onclick="startMailing({{ $mailingList->id }})"
+                                                class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                                title="{{ __('newsletters::app.admin.mailing-lists.start-mailing') }}"
+                                                id="start-btn-{{ $mailingList->id }}">
+                                            <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-arrow-left bg-[#B5DCB4]"></span>
+                                        </button>
+                                    @endif
                                     <a href="{{ route('admin.newsletters.mailing-lists.edit', $mailingList->id) }}"
                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="{{ __('newsletters::app.common.actions.edit') }}">
                                         <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-edit"></span>
@@ -171,13 +193,10 @@
             // Find the row and update the cells
             const row = document.querySelector(`tr[data-mailing-list-id="${mailingListId}"]`);
             if (row) {
-                // Update sent_count column (7th column)
-                const sentCountCell = row.querySelector('[data-field="sent_count"]');
-                if (sentCountCell) {
-                    sentCountCell.textContent = stats.sent_count;
-                }
+                // Update progress bar
+                updateProgressBar(row, stats.sent_count, stats.total_count);
 
-                // Update incoming_count column (8th column)
+                // Update incoming_count column
                 const incomingCountCell = row.querySelector('[data-field="incoming_count"]');
                 if (incomingCountCell) {
                     incomingCountCell.textContent = stats.incoming_count || '-';
@@ -192,9 +211,28 @@
                 }, 2000);
 
                 // Show notification
-                showNotification(`Stats updated for mailing list #${mailingListId}`);
+                showNotification(`Отправлено ${stats.sent_count} из ${stats.total_count} сообщений`);
             }
         });
+
+        // Update progress bar function
+        function updateProgressBar(row, sentCount, totalCount) {
+            const progressCell = row.querySelector('[data-field="progress"]');
+            if (!progressCell) return;
+
+            const progressBar = progressCell.querySelector('[data-progress]');
+            const progressText = progressCell.querySelector('[data-field="progress-text"]');
+            const sentCountSpan = progressCell.querySelector('[data-field="sent_count"]');
+
+            if (progressBar && progressText && sentCountSpan) {
+                const percentage = totalCount > 0 ? Math.round((sentCount / totalCount) * 100) : 0;
+
+                progressBar.style.width = percentage + '%';
+                progressBar.setAttribute('data-progress', percentage);
+                sentCountSpan.textContent = sentCount;
+                progressText.innerHTML = `<span data-field="sent_count">${sentCount}</span> / ${totalCount} (${percentage}%)`;
+            }
+        }
 
         // Show notification function
         function showNotification(message) {
@@ -223,10 +261,80 @@
     </script>
 
     <script>
+        function startMailing(id) {
+            if (confirm('{{ __("newsletters::app.admin.mailing-lists.start-confirm") }}')) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                const startButton = document.getElementById('start-btn-' + id);
+
+                if (!csrfToken) {
+                    console.error('CSRF token not found!');
+                    alert('Security token not found. Please refresh the page and try again.');
+                    return;
+                }
+
+                // Disable button and show loading state
+                if (startButton) {
+                    startButton.disabled = true;
+                    startButton.style.opacity = '0.5';
+                }
+
+                fetch('{{ route("admin.newsletters.mailing-lists.start", ":id") }}'.replace(':id', id), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message);
+
+                        // Hide start button after successful start
+                        if (startButton) {
+                            startButton.style.display = 'none';
+                        }
+
+                        // Update active status badge
+                        const row = document.querySelector(`tr[data-mailing-list-id="${id}"]`);
+                        if (row) {
+                            const statusBadge = row.querySelector('td:nth-child(3) span');
+                            if (statusBadge) {
+                                statusBadge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800';
+                                statusBadge.textContent = '{{ __("newsletters::app.admin.mailing-lists.is-active") }}';
+                            }
+                        }
+                    } else {
+                        alert(data.message);
+                        if (startButton) {
+                            startButton.disabled = false;
+                            startButton.style.opacity = '1';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || '{{ __("newsletters::app.admin.mailing-lists.mailing-start-failed") }}');
+                    if (startButton) {
+                        startButton.disabled = false;
+                        startButton.style.opacity = '1';
+                    }
+                });
+            }
+        }
+
         function deleteMailingList(id) {
             if (confirm('{{ __("newsletters::app.admin.mailing-lists.delete-confirm") }}')) {
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
-                
+
                 if (!csrfToken) {
                     console.error('CSRF token not found!');
                     alert('Security token not found. Please refresh the page and try again.');

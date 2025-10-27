@@ -32,7 +32,7 @@ class CustomerNumber extends Model
         'new_message',
         'mailing_list_id',
         'whatsapp_instance_id',
-        'unsubscribed_at',
+        //'unsubscribed_at',
         'incoming_message'
         //'metadata',
     ];
@@ -41,7 +41,7 @@ class CustomerNumber extends Model
         'delivered' => 'boolean',
         'viewed' => 'boolean',
         'incoming_message' => 'boolean',
-        'unsubscribed_at' => 'datetime',
+        //'unsubscribed_at' => 'datetime',
         //'metadata' => 'array',
     ];
 

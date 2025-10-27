@@ -9,7 +9,7 @@ return [
             'delete-success' => 'WhatsApp экземпляр успешно удален.',
             'delete-failed' => 'WhatsApp экземпляр не может быть удален.',
             'delete-confirm' => 'Вы уверены, что хотите удалить этот WhatsApp экземпляр?',
-            'link-name' => 'Название ссылки',
+            'link-name' => 'Ccылка',
             'login' => 'Логин',
             'password' => 'Пароль',
             'mailing-list' => 'Список рассылки',
@@ -39,6 +39,17 @@ return [
             'failed' => 'Ошибка',
             'is-active' => 'Активен',
             'not-active' => 'Не активен',
+            'progress' => 'Прогресс',
+            'start-mailing' => 'Запустить рассылку',
+            'start-confirm' => 'Вы уверены, что хотите запустить эту рассылку?',
+            'mailing-started' => 'Рассылка успешно запущена.',
+            'mailing-start-failed' => 'Не удалось запустить рассылку.',
+            'no-whatsapp-instances' => 'Для этого списка рассылки не настроены WhatsApp экземпляры.',
+            'no-customer-numbers' => 'Для этого списка рассылки не найдены номера клиентов.',
+            'mailing-hours-from' => 'Часы рассылки от',
+            'mailing-hours-to' => 'Часы рассылки до',
+            'message-delay' => 'Задержка между сообщениями (сек)',
+            'message-delay-hint' => 'Задержка между сообщениями в секундах (1-3600)',
         ],
 
         'customer-numbers' => [
@@ -68,6 +79,7 @@ return [
             'chat-with-client' => 'Чат с клиентом',
             'chat-history-error' => 'Ошибка загрузки чата',
             'chat-history-failed' => 'Не удалось загрузить историю чата',
+            'chat-history-unavailable' => 'История чата в данный момент недоступна. Пожалуйста, попробуйте позже.',
             'search-failed' => 'Ошибка поиска',
             'no-whatsapp-instance' => 'У клиента нет WhatsApp инстанса',
             'incoming' => 'Входящее сообщение',
@@ -88,6 +100,7 @@ return [
             'message-sent-success' => 'Сообщение успешно отправлено',
             'message-sent-failed' => 'Не удалось отправить сообщение',
             'message-empty-error' => 'Введите текст сообщения',
+            'update-failed' => 'Не удалось обновить номер клиента',
 
         ],
 
@@ -129,6 +142,18 @@ return [
             'no-whatsapp-instances' => 'WhatsApp экземпляры не найдены.',
             'no-customer-numbers' => 'Номера клиентов не найдены.',
         ],
+
+        'messages' => [
+            'title' => 'Сообщения',
+            'incoming-message' => 'Входящее сообщение',
+            'whatsapp-instance' => 'WhatsApp экземпляр',
+            'status' => 'Статус',
+            'new-message' => 'Новое сообщение',
+            'yes' => 'Да',
+            'no' => 'Нет',
+            'no-messages' => 'Сообщения не найдены',
+            'no-messages-description' => 'Сообщения будут отображаться здесь, когда клиенты отправят ответы.',
+        ],
     ],
 
     'sidebar' => [
@@ -138,6 +163,7 @@ return [
         'customer-numbers' => 'Номера клиентов',
         'stop-list' => 'Стоп-лист',
         'unified' => 'Унифицированное управление',
+        'messages' => 'Сообщения',
     ],
 
     'common' => [
