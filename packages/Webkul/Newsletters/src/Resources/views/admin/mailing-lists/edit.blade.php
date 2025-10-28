@@ -1447,7 +1447,8 @@
                 console.log('Parsed fields:', fields);
 
                 if (fields.length >= 2) {
-                    const phone_number = fields[0] ? fields[0].trim() : '';
+                    const phone_number_raw = fields[0] ? fields[0].trim() : '';
+                    const phone_number = sanitizePhoneNumber(phone_number_raw);
                     const name = fields[1] ? fields[1].trim() : '';
 
                     console.log('Extracted data:', { phone_number, name });
@@ -1526,6 +1527,12 @@
 
             result.push(current);
             return result;
+        }
+
+        // Remove + - ( ) spaces and any non-digit characters from phone
+        function sanitizePhoneNumber(phone) {
+            if (!phone) return '';
+            return phone.replace(/[^\d]/g, '');
         }
 
         // User Numbers Management Functions

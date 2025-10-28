@@ -147,95 +147,204 @@
 
 {!! view_render_event('bagisto.admin.layout.vue-app-mount.before') !!}
 
-{{--@include('newsletters::admin.layouts.fcm-scripts')--}}
-<!--
+<!-- FCM Push Notifications -->
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
 <script>
-    // Firebase configuration from JSON file
-    {{--const firebaseConfig = @json($firebaseConfig);--}}
-    const firebaseConfig = {
-        apiKey: "AIzaSyBZEJmlJwm18F2nzDkO-PJF2B-sTzUpYE0",
-        authDomain: "couriers-3473b.firebaseapp.com",
-        projectId: "couriers-3473b",
-        storageBucket: "couriers-3473b.appspot.com",
-        messagingSenderId: "353175461051",
-        appId: "1:353175461051:web:d716ecec53b59845939d9e"
-    };
+    // FCM Initialization - wrapped to avoid conflicts
+    (function() {
+        'use strict';
+        //TODO get from .env
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDVdd39ZOOiMP9j2C9t-Ikglvc1fgbbfS8",
+            authDomain: "couriers-3473b.firebaseapp.com",
+            projectId: "couriers-3473b",
+            storageBucket: "couriers-3473b.appspot.com",
+            messagingSenderId: "353175461051",
+            appId: "1:353175461051:web:d716ecec53b59845939d9e"
+        };
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+        // VAPID Key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
+        const VAPID_KEY = "1952201";
 
-    // Initialize Firebase Cloud Messaging
-    const messaging = firebase.messaging();
+        // FCM Service Class
+        class FCMService {
+            constructor() {
+                this.messaging = null;
+                this.vapidKey = VAPID_KEY;
+            }
 
-    // FCM Token Management
-    class FCMService {
-        constructor() {
-            this.messaging = messaging;
-            {{--this.vapidKey = @json($vapidKey);--}}
-                this.vapidKey = "1952201";
-            this.init();
-        }
+            async init() {
+                try {
+                    // Detailed browser support check
+                    console.log('FCM: Checking browser support...');
+                    console.log('  - Service Worker support:', 'serviceWorker' in navigator);
+                    console.log('  - PushManager support:', 'PushManager' in window);
+                    console.log('  - Notification support:', 'Notification' in window);
+                    console.log('  - Current protocol:', window.location.protocol);
+                    console.log('  - Current hostname:', window.location.hostname);
+                    console.log('  - Current URL:', window.location.href);
+                    console.log('  - Is secure context:', window.isSecureContext);
 
-        async init() {
-            try {
-                // Register service worker
-                if ('serviceWorker' in navigator) {
-                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                    console.log('Service Worker registered:', registration);
-                }
+                    // Check secure context FIRST (это главная проблема!)
+                    const isLocalhost = window.location.hostname === 'localhost' ||
+                                       window.location.hostname === '127.0.0.1' ||
+                                       window.location.hostname === '[::1]';
 
-                // Request permission
-                const permission = await Notification.requestPermission();
+                    if (!window.isSecureContext && !isLocalhost) {
+                        console.error('❌ FCM: Push notifications require HTTPS or localhost');
+                        console.error('');
+                        console.error('🔧 Текущий URL:', window.location.href);
+                        console.error('');
+                        console.error('✅ Решение:');
+                        console.error('   Вместо:', window.location.href);
+                        console.error('   Используйте: http://localhost' + window.location.pathname);
+                        console.error('');
+                        console.error('   Или настройте HTTPS в Laragon');
+                        return;
+                    }
 
-                if (permission === 'granted') {
-                    // Get FCM token
-                    const token = await this.messaging.getToken({
-                        vapidKey: this.vapidKey
+                    // Check if notifications are supported
+                    if (!('Notification' in window)) {
+                        console.error('FCM: Notifications are not supported in this browser');
+                        return;
+                    }
+
+                    // Service Worker should be available in secure context
+                    if (!('serviceWorker' in navigator)) {
+                        console.error('FCM: Service Worker is not available');
+                        console.error('Это странно для Chromium браузера в secure context');
+                        console.error('Попробуйте:');
+                        console.error('  1. Обновить браузер');
+                        console.error('  2. Проверить chrome://flags/');
+                        console.error('  3. Использовать обычный Chrome/Edge');
+                        return;
+                    }
+
+                    console.log('✅ FCM: Browser support check passed');
+
+                    // Initialize Firebase
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                        console.log('✅ FCM: Firebase initialized');
+                    } else {
+                        console.log('FCM: Firebase already initialized');
+                    }
+
+                    this.messaging = firebase.messaging();
+                    console.log('✅ FCM: Messaging service created');
+
+                    // Register service worker
+                    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                        scope: '/'
                     });
+                    console.log('✅ FCM: Service Worker registered');
 
-                    if (token) {
-                        console.log('FCM Token:', token);
-                        // Send token to server
-                        await this.sendTokenToServer(token);
+                    // Wait for service worker to be ready
+                    await navigator.serviceWorker.ready;
+
+                    // Request notification permission
+                    const permission = await Notification.requestPermission();
+                    console.log('FCM: Permission status:', permission);
+
+                    if (permission === 'granted') {
+                        // Get FCM token with service worker registration
+                        const token = await this.messaging.getToken({
+                            vapidKey: this.vapidKey,
+                            serviceWorkerRegistration: registration
+                        });
+
+                        if (token) {
+                            console.log('✅ FCM Token obtained:', token.substring(0, 20) + '...');
+                            await this.sendTokenToServer(token);
+
+                            // Listen for foreground messages
+                            this.setupMessageListener();
+                        } else {
+                            console.warn('FCM: No registration token available');
+                        }
+                    } else if (permission === 'denied') {
+                        console.warn('FCM: Notification permission denied');
+                    }
+                } catch (error) {
+                    console.error('FCM initialization error:', error);
+                    if (error.code === 'messaging/token-subscribe-failed') {
+                        console.error('FCM: Check VAPID key configuration');
                     }
                 }
-            } catch (error) {
-                console.error('FCM initialization error:', error);
             }
-        }
 
-        async sendTokenToServer(token) {
-            try {
-                const response = await fetch('{{ route("admin.fcm.token") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        fcm_token: token,
-                        user_id: {{ auth()->guard('admin')->id() }}
-                    })
+            setupMessageListener() {
+                this.messaging.onMessage((payload) => {
+                    console.log('📩 FCM: Message received (foreground)', payload);
+
+                    const notificationTitle = payload.notification?.title || 'Новое уведомление';
+                    const notificationOptions = {
+                        body: payload.notification?.body || '',
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico',
+                        tag: payload.data?.type || 'default',
+                        requireInteraction: false,
+                        data: payload.data
+                    };
+
+                    // Show notification if page is visible
+                    if (document.visibilityState === 'visible') {
+                        new Notification(notificationTitle, notificationOptions);
+                    }
                 });
+            }
 
-                if (response.ok) {
-                    console.log('FCM token saved successfully');
+            async sendTokenToServer(token) {
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (!csrfToken) {
+                        console.error('FCM: CSRF token not found');
+                        return;
+                    }
+
+                    console.log('FCM: Sending token to server...');
+
+                    const response = await fetch('{{ route("admin.fcm.token") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            fcm_token: token
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        console.log('✅ FCM: Token saved to server successfully');
+                        console.log('Admin:', data.admin);
+                    } else {
+                        console.error('FCM: Failed to save token', data);
+                    }
+                } catch (error) {
+                    console.error('FCM: Error saving token to server:', error);
                 }
-            } catch (error) {
-                console.error('Error saving FCM token:', error);
             }
         }
-    }
 
-    // Initialize FCM when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        new FCMService();
-    });
-
+        // Initialize FCM after page load (after Vue mounts)
+        window.addEventListener('load', function() {
+            // Delay to ensure Vue app is mounted
+            setTimeout(function() {
+                const fcmService = new FCMService();
+                fcmService.init().catch(err => {
+                    console.error('FCM: Failed to initialize:', err);
+                });
+            }, 1000);
+        });
+    })();
 </script>
--->
+
 <script>
     /**
      * Load event, the purpose of using the event is to mount the application

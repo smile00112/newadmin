@@ -187,7 +187,8 @@ class CustomerNumberController extends Controller
                 try {
                     $data = array_combine($header, $row);
 
-                    $phoneNumber = trim($data['phone_number'] ?? '');
+                    $rawPhone = trim($data['phone_number'] ?? '');
+                    $phoneNumber = preg_replace('/[^0-9]/', '', $rawPhone);
                     $name = trim($data['name'] ?? '');
 
                     // Skip empty rows
