@@ -7,6 +7,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\MailingListController;
 use Webkul\Newsletters\Http\Controllers\Admin\CustomerNumberController;
 use Webkul\Newsletters\Http\Controllers\Admin\StopListController;
 use Webkul\Newsletters\Http\Controllers\Admin\UnifiedNewsletterController;
+use Webkul\Newsletters\Http\Controllers\Admin\ContactGroupController;
 
 //TODO add custom middleware to greenapi webhook routes
 Route::group(['prefix' => 'newsletters'], function () {
@@ -100,5 +101,20 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::get('edit/{id}', 'edit')->name('admin.newsletters.unified.edit');
         Route::put('edit/{id}', 'update')->name('admin.newsletters.unified.update');
         Route::delete('{id}', 'destroy')->name('admin.newsletters.unified.destroy');
+    });
+
+    /**
+     * Contact Groups routes.
+     */
+    Route::controller(ContactGroupController::class)->prefix('contact-groups')->group(function () {
+        Route::get('', 'index')->name('admin.newsletters.contact-groups.index');
+        Route::get('create', 'create')->name('admin.newsletters.contact-groups.create');
+        Route::post('create', 'store')->name('admin.newsletters.contact-groups.store');
+        Route::get('edit/{id}', 'edit')->name('admin.newsletters.contact-groups.edit');
+        Route::put('edit/{id}', 'update')->name('admin.newsletters.contact-groups.update');
+        Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-groups.destroy');
+        Route::get('{groupId}/contacts', 'contacts')->name('admin.newsletters.contact-groups.contacts');
+        Route::post('csv/preview', 'previewCsv')->name('admin.newsletters.contact-groups.csv.preview');
+        Route::post('{groupId}/import', 'importContacts')->name('admin.newsletters.contact-groups.import');
     });
 });

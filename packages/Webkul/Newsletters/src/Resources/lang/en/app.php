@@ -169,6 +169,30 @@ return [
             'no-messages' => 'No messages found',
             'no-messages-description' => 'Messages will appear here when customers send replies.',
         ],
+
+        'contact-groups' => [
+            'title' => 'Contact Groups',
+            'create-title' => 'Create Contact Group',
+            'edit-title' => 'Edit Contact Group',
+            'name' => 'Name',
+            'description' => 'Description',
+            'group' => 'Group',
+            'contacts_count' => 'Contacts Count',
+            'contacts' => 'contacts',
+            'no-groups' => 'No contact groups found.',
+            'create-success' => 'Contact group created successfully.',
+            'update-success' => 'Contact group updated successfully.',
+            'delete-success' => 'Contact group and all its contacts deleted successfully.',
+            'delete-confirm' => 'Are you sure you want to delete this group? This will also delete all contacts in the group.',
+        ],
+
+        'contacts' => [
+            'full-name' => 'Full Name',
+            'phone' => 'Phone',
+            'email' => 'Email',
+            'orders-count' => 'Orders Count',
+            'no-contacts' => 'No contacts found.',
+        ],
     ],
 
     'sidebar' => [
@@ -179,6 +203,7 @@ return [
         'stop-list' => 'Stop List',
         'unified' => 'Unified Management',
         'messages' => 'Messages',
+        'contact-groups' => 'Contact Groups',
     ],
 
     'common' => [

@@ -32,6 +32,9 @@ class CustomerNumber extends Model
         'new_message',
         'mailing_list_id',
         'whatsapp_instance_id',
+        'contact_id',
+        'status',
+        'sent_at',
         //'unsubscribed_at',
         'incoming_message'
         //'metadata',
@@ -41,6 +44,7 @@ class CustomerNumber extends Model
         'delivered' => 'boolean',
         'viewed' => 'boolean',
         'incoming_message' => 'boolean',
+        'sent_at' => 'datetime',
         //'unsubscribed_at' => 'datetime',
         //'metadata' => 'array',
     ];
@@ -59,5 +63,13 @@ class CustomerNumber extends Model
     public function whatsAppInstance(): belongsTo
     {
         return $this->belongsTo(VacapInstance::class, 'whatsapp_instance_id', 'id', 'whatsapp_instance_id');
+    }
+
+    /**
+     * Get the contact that owns the customer number.
+     */
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(NewslettersContact::class, 'contact_id');
     }
 }

@@ -885,6 +885,11 @@ return [
         'name'  => 'newsletters::app.sidebar.stop-list',
         'route' => 'admin.newsletters.stop-list.index',
         'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.contact-groups',
+        'name'  => 'newsletters::app.sidebar.contact-groups',
+        'route' => 'admin.newsletters.contact-groups.index',
+        'sort'  => 4,
     ],
 
     /*
