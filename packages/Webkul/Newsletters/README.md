@@ -227,6 +227,10 @@ $stopList = app(\Webkul\Newsletters\Repositories\StopListRepository::class)->cre
 For technical support or questions about the newsletters module, please refer to the documentation or contact the development team.
 
 
+## Zametki
+php artisan queue:work redis --queue=whatsapp-mailing,broadcastable,default,whatsapp_mailing,whatsapp-batch,whatsapp-send
+
+
 
 
 

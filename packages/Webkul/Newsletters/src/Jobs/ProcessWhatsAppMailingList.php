@@ -38,12 +38,111 @@ class ProcessWhatsAppMailingList implements ShouldQueue
             return;
         }
 
-        // Process customers in batches of 1000
+        // Check if we should start mailing based on time constraints
+        if (!$this->shouldStartMailing($mailingList)) {
+            // Reschedule job if time constraints not met
+            $delay = $this->calculateDelayForMailing($mailingList);
+            if ($delay > 0) {
+                Log::info("Mailing list rescheduled due to time constraints", [
+                    'mailing_list_id' => $this->mailingListId,
+                    'delay_seconds' => $delay,
+                    'rescheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
+                ]);
+                
+                ProcessWhatsAppMailingList::dispatch($this->mailingListId)
+                    ->delay(now()->addSeconds($delay));
+                return;
+            }
+        }
+
+        // Process customers in batches
+        $delay = $mailingList->message_delay ?? 5;
+        $batchIndex = 0;
+        
         $mailingList->customerNumbers()
            // ->whereNull('unsubscribed_at')
-            ->chunk(100, function ($customers) use ($mailingList, $whatsappService) {
+            ->chunk(100, function ($customers) use ($mailingList, &$batchIndex, $delay) {
                 ProcessWhatsAppBatch::dispatch($mailingList->id, $customers->pluck('id')->toArray())
+                    ->delay(now()->addSeconds($batchIndex * $delay))
                     ->onQueue('whatsapp-batch');
+                $batchIndex++;
             });
+    }
+
+    /**
+     * Check if mailing should start based on time constraints.
+     */
+    protected function shouldStartMailing($mailingList): bool
+    {
+        $now = now();
+
+        // Check start_at
+        if ($mailingList->start_at) {
+            $startAt = \Carbon\Carbon::parse($mailingList->start_at);
+            if ($startAt->isFuture()) {
+                return false;
+            }
+        }
+
+        // Check mailing_hours_from and mailing_hours_to
+        if ($mailingList->mailing_hours_from) {
+            $currentTime = $now->format('H:i');
+            $fromTime = $mailingList->mailing_hours_from;
+            $toTime = $mailingList->mailing_hours_to;
+
+            if ($currentTime < $fromTime) {
+                return false;
+            }
+
+            if ($toTime && $currentTime > $toTime) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Calculate delay in seconds if mailing should be postponed.
+     */
+    protected function calculateDelayForMailing($mailingList): int
+    {
+        $now = now();
+        $delay = 0;
+
+        // Check start_at
+        if ($mailingList->start_at) {
+            $startAt = \Carbon\Carbon::parse($mailingList->start_at);
+            if ($startAt->isFuture()) {
+                $secondsUntilStart = $now->diffInSeconds($startAt, false);
+                if ($secondsUntilStart > 0) {
+                    $delay = max($delay, $secondsUntilStart);
+                }
+            }
+        }
+
+        // Check mailing_hours_from
+        if ($mailingList->mailing_hours_from) {
+            $currentTime = $now->format('H:i');
+            $fromTime = $mailingList->mailing_hours_from;
+            $toTime = $mailingList->mailing_hours_to;
+
+            if ($currentTime < $fromTime) {
+                $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                if ($secondsUntilFrom > 0) {
+                    $delay = max($delay, $secondsUntilFrom);
+                }
+            } elseif ($toTime && $currentTime > $toTime) {
+                // If current time is after mailing_hours_to, schedule for tomorrow
+                $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
+                if ($secondsUntilFrom > 0) {
+                    $delay = max($delay, $secondsUntilFrom);
+                }
+            }
+        }
+
+        return (int) $delay;
     }
 }

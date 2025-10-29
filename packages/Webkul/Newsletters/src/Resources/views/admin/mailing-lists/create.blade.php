@@ -55,7 +55,7 @@
                                 type="checkbox"
                                 name="active"
                                 value="1"
-                                {{ old('active', true) ? 'checked' : '' }}
+{{--                                {{ old('active', true) ? 'checked' : '' }}--}}
                                 class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
                             >
                             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -84,6 +84,63 @@
                         @enderror
                     </div>
                     </div>
+
+                <!-- Mailing Schedule Settings -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="mailing_hours_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.mailing-hours-from') }}
+                        </label>
+                        <input
+                            type="time"
+                            name="mailing_hours_from"
+                            id="mailing_hours_from"
+                            value="{{ old('mailing_hours_from') }}"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="09:00"
+                        >
+                        @error('mailing_hours_from')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="mailing_hours_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.mailing-hours-to') }}
+                        </label>
+                        <input
+                            type="time"
+                            name="mailing_hours_to"
+                            id="mailing_hours_to"
+                            value="{{ old('mailing_hours_to') }}"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="18:00"
+                        >
+                        @error('mailing_hours_to')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="message_delay" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.message-delay') }}
+                        </label>
+                        <input
+                            type="number"
+                            name="message_delay"
+                            id="message_delay"
+                            value="{{ old('message_delay', 5) }}"
+                            min="1"
+                            max="3600"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="5"
+                        >
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.mailing-lists.message-delay-hint') }}</p>
+                        @error('message_delay')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
             </div>
         </div>
 

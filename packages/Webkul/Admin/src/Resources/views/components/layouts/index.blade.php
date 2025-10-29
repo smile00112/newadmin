@@ -156,27 +156,27 @@
         'use strict';
         //TODO get from .env
         // Firebase configuration
-        const firebaseConfig = {
+    const firebaseConfig = {
             apiKey: "AIzaSyDVdd39ZOOiMP9j2C9t-Ikglvc1fgbbfS8",
-            authDomain: "couriers-3473b.firebaseapp.com",
-            projectId: "couriers-3473b",
-            storageBucket: "couriers-3473b.appspot.com",
-            messagingSenderId: "353175461051",
-            appId: "1:353175461051:web:d716ecec53b59845939d9e"
-        };
+        authDomain: "couriers-3473b.firebaseapp.com",
+        projectId: "couriers-3473b",
+        storageBucket: "couriers-3473b.appspot.com",
+        messagingSenderId: "353175461051",
+        appId: "1:353175461051:web:d716ecec53b59845939d9e"
+    };
 
         // VAPID Key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
         const VAPID_KEY = "1952201";
 
         // FCM Service Class
-        class FCMService {
-            constructor() {
+    class FCMService {
+        constructor() {
                 this.messaging = null;
                 this.vapidKey = VAPID_KEY;
-            }
+        }
 
-            async init() {
-                try {
+        async init() {
+            try {
                     // Detailed browser support check
                     console.log('FCM: Checking browser support...');
                     console.log('  - Service Worker support:', 'serviceWorker' in navigator);
@@ -245,19 +245,19 @@
                     await navigator.serviceWorker.ready;
 
                     // Request notification permission
-                    const permission = await Notification.requestPermission();
+                const permission = await Notification.requestPermission();
                     console.log('FCM: Permission status:', permission);
 
-                    if (permission === 'granted') {
+                if (permission === 'granted') {
                         // Get FCM token with service worker registration
-                        const token = await this.messaging.getToken({
+                    const token = await this.messaging.getToken({
                             vapidKey: this.vapidKey,
                             serviceWorkerRegistration: registration
-                        });
+                    });
 
-                        if (token) {
+                    if (token) {
                             console.log('✅ FCM Token obtained:', token.substring(0, 20) + '...');
-                            await this.sendTokenToServer(token);
+                        await this.sendTokenToServer(token);
 
                             // Listen for foreground messages
                             this.setupMessageListener();
@@ -294,10 +294,10 @@
                         new Notification(notificationTitle, notificationOptions);
                     }
                 });
-            }
+        }
 
-            async sendTokenToServer(token) {
-                try {
+        async sendTokenToServer(token) {
+            try {
                     const csrfToken = document.querySelector('meta[name="csrf-token"]');
                     if (!csrfToken) {
                         console.error('FCM: CSRF token not found');
@@ -306,17 +306,17 @@
 
                     console.log('FCM: Sending token to server...');
 
-                    const response = await fetch('{{ route("admin.fcm.token") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
+                const response = await fetch('{{ route("admin.fcm.token") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': csrfToken.getAttribute('content')
-                        },
-                        body: JSON.stringify({
+                    },
+                    body: JSON.stringify({
                             fcm_token: token
-                        })
-                    });
+                    })
+                });
 
                     const data = await response.json();
 

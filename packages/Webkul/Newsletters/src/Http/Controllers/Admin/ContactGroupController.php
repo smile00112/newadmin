@@ -150,14 +150,24 @@ class ContactGroupController extends Controller
             'file' => 'required|file|mimes:csv,txt',
             'delimiter' => 'nullable|string|max:1',
             'has_header' => 'nullable|boolean',
-            'mapping' => 'required|array',
+            'mapping' => 'required|string',
         ]);
 
         try {
             $file = $request->file('file');
             $delimiter = $request->input('delimiter', ',');
             $hasHeader = $request->boolean('has_header');
-            $mapping = $request->input('mapping');
+            
+            // Parse mapping JSON string
+            $mappingJson = $request->input('mapping');
+            $mapping = json_decode($mappingJson, true);
+            
+            if (!is_array($mapping)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.contacts.import-failed') . ': Invalid mapping format'
+                ], 400);
+            }
 
             $csvData = array_map(function($line) use ($delimiter) {
                 return str_getcsv($line, $delimiter);

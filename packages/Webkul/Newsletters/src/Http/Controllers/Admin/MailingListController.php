@@ -748,8 +748,22 @@ class MailingListController extends Controller
                 'user_id' => auth()->id(),
             ]);
             
-            // Dispatch the mailing job
-            ProcessWhatsAppMailingList::dispatch($id);
+            // Calculate delay based on mailing list parameters
+            $delay = $this->calculateMailingDelay($mailingList);
+            
+            // Dispatch the mailing job with delay if needed
+            if ($delay > 0) {
+                ProcessWhatsAppMailingList::dispatch($id)
+                    ->delay(now()->addSeconds($delay));
+                    
+                Log::info('Mailing list scheduled with delay', [
+                    'mailing_list_id' => $id,
+                    'delay_seconds' => $delay,
+                    'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
+                ]);
+            } else {
+                ProcessWhatsAppMailingList::dispatch($id);
+            }
 
             return response()->json([
                 'success' => true,
@@ -766,6 +780,53 @@ class MailingListController extends Controller
                 'message' => trans('newsletters::app.admin.mailing-lists.mailing-start-failed')
             ], 500);
         }
+    }
+
+    /**
+     * Calculate delay in seconds based on mailing list parameters.
+     */
+    protected function calculateMailingDelay($mailingList): int
+    {
+        $now = now();
+        $delay = 0;
+
+        // Check start_at (datetime)
+        if ($mailingList->start_at) {
+            $startAt = \Carbon\Carbon::parse($mailingList->start_at);
+            if ($startAt->isFuture()) {
+                $secondsUntilStart = $now->diffInSeconds($startAt, false);
+                if ($secondsUntilStart > 0) {
+                    $delay = max($delay, $secondsUntilStart);
+                }
+            }
+        }
+
+        // Check mailing_hours_from (time)
+        if ($mailingList->mailing_hours_from) {
+            $currentTime = $now->format('H:i');
+            $fromTime = $mailingList->mailing_hours_from;
+            $toTime = $mailingList->mailing_hours_to;
+
+            // Если текущее время меньше времени начала рассылки
+            if ($currentTime < $fromTime) {
+                // Вычисляем секунды до начала времени рассылки
+                $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                if ($secondsUntilFrom > 0) {
+                    $delay = max($delay, $secondsUntilFrom);
+                }
+            } elseif ($toTime && $currentTime > $toTime) {
+                // Если текущее время больше времени окончания - переносим на завтра
+                $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
+                if ($secondsUntilFrom > 0) {
+                    $delay = max($delay, $secondsUntilFrom);
+                }
+            }
+            // Если текущее время в диапазоне mailing_hours_from - mailing_hours_to, delay = 0 (можно начинать)
+        }
+
+        return (int) $delay;
     }
 
     public function testMailing(int $id)
