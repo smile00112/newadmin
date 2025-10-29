@@ -15,20 +15,20 @@ cmds = [
     "ls -la /assets/start.sh",
     "echo '=== End debug ==='",
     # Создаем директории для логов
-    "mkdir -p /var/www/html/storage/logs/",
-    "touch /var/www/html/storage/logs/redis-worker.log",
-    "touch /var/www/html/storage/logs/broadcastable-worker.log",
-    "touch /var/www/html/storage/logs/default-worker.log",
-    "touch /var/www/html/storage/logs/reverb.log",
+    "mkdir -p /app/storage/logs/",
+    "touch /app/storage/logs/redis-worker.log",
+    "touch /app/storage/logs/broadcastable-worker.log",
+    "touch /app/storage/logs/default-worker.log",
+    "touch /app/storage/logs/reverb.log",
 
     # Устанавливаем правильные права
-    "chown -R www-data:www-data /var/www/html/storage/",
-    "chmod -R 755 /var/www/html/storage/logs/",
+    "chown -R www-data:www-data /app/storage/",
+    "chmod -R 755 /app/storage/logs/",
 
     # Cодаём .env файл
-#    "touch /var/www/html/.env",
-#    "chown -R www-data:www-data /var/www/html/.env",
-#    "chmod -R 755 /var/www/html/.env",
+#    "touch /app/.env",
+#    "chown -R www-data:www-data /app/.env",
+#    "chmod -R 755 /app/.env",
 #    "mv /app/.env.example /app/.env",
     "chmod -R 775 /app /app/.env.example",
     "chown -R www-data:www-data /app /app/.env.example",
@@ -111,25 +111,27 @@ stderr_logfile=/var/log/worker-laravel.log
 
 [program:laravel-redis-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/html/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,default,whatsapp-batch,whatsapp-send
+command=php /app/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,default,whatsapp-batch,whatsapp-send
 autostart=true
 autorestart=true
 user=www-data
 numprocs=1
 redirect_stderr=true
-stdout_logfile=/var/www/html/storage/logs/redis-worker.log
+stdout_logfile=/app/storage/logs/redis-worker.log
+
+
 '''
 
 
 "reverd-laravel.conf" = '''
 [program:laravel-reverb]
-command=php /var/www/html/artisan reverb:start
+command=php /app/artisan reverb:start
 process_name=%(program_name)s_%(process_num)02d
 autostart=true
 autorestart=true
 user=www-data
 redirect_stderr=true
-stdout_logfile=/var/www/html/storage/logs/reverb.log
+stdout_logfile=/app/storage/logs/reverb.log
 '''
 
 "php-fpm.conf" = '''
