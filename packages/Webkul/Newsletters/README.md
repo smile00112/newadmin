@@ -219,7 +219,7 @@ $stopList = app(\Webkul\Newsletters\Repositories\StopListRepository::class)->cre
 - Template management
 - Analytics and reporting
 - Bulk operations
-- Webhook support
+- Webhook support  POST /newsletters/hook/webhook
 - Multi-language support
 
 ## Support

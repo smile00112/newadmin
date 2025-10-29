@@ -37,9 +37,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Принудительно используем HTTPS в production
-        if ($this->app->environment('production')) {
-            URL::forceScheme('https');
-        }
+//        if ($this->app->environment('production')) {
+//            URL::forceScheme('https');
+//        }
+        URL::forceScheme('https');
 
         ParallelTesting::setUpTestDatabase(function (string $database, int $token) {
             Artisan::call('db:seed');
