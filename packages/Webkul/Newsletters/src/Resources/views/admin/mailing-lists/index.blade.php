@@ -171,9 +171,17 @@
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         // Initialize Pusher with Reverb configuration
+        // For local development, always use localhost for WebSocket connections
+        const wsHost = '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}';
+        const isLocal = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' || 
+                       window.location.hostname.includes('.test') || 
+                       window.location.hostname.includes('.local');
+        const finalWsHost = isLocal ? 'localhost' : wsHost;
+        
         const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
             cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
-            wsHost: '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}',
+            wsHost: finalWsHost,
             wsPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
             wssPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
             forceTLS: {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }},
