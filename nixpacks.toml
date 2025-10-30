@@ -121,8 +121,8 @@ stdout_logfile=/var/log/redis-worker.log
 
 [program:laravel-reverb]
 process_name=%(program_name)s_%(process_num)02d
-#command=bash -c 'exec php /app/artisan reverb:start --host=0.0.0.0 --port=8080'
-command=bash -c 'exec php /app/artisan reverb:start --host=0.0.0.0 --port=443'
+command=bash -c 'exec php /app/artisan reverb:start --host=0.0.0.0 --port=8080'
+#command=bash -c 'exec php /app/artisan reverb:start --host=0.0.0.0 --port=443'
 autostart=true
 autorestart=true
 stopasgroup=true
@@ -132,7 +132,6 @@ numprocs=1
 redirect_stderr=true
 stdout_logfile=/var/log/reverb.log
 stopwaitsecs=30
-environment=APP_ENV="production"
 '''
 
 "php-fpm.conf" = '''

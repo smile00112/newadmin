@@ -276,13 +276,14 @@ return [
         'route'      => 'admin.newsletters.messages.index',
         'sort'       => 3,
         'icon'       => '',
-    ], [
-        'key'        => 'newsletters.contact-groups',
-        'name'       => 'newsletters::app.sidebar.contact-groups',
-        'route'      => 'admin.newsletters.contact-groups.index',
-        'sort'       => 5,
-        'icon'       => '',
     ],
+//    [
+//        'key'        => 'newsletters.contact-groups',
+//        'name'       => 'newsletters::app.sidebar.contact-groups',
+//        'route'      => 'admin.newsletters.contact-groups.index',
+//        'sort'       => 5,
+//        'icon'       => '',
+//    ],
 //    [
 //        'key'        => 'newsletters.whatsapp-instances',
 //        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
