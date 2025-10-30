@@ -47,7 +47,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 'mailing_hours_from' => $mailingList->mailing_hours_from,
                 'mailing_hours_to' => $mailingList->mailing_hours_to,
             ]);
-            
+
             // Reschedule batch for next day if outside mailing hours
             if ($mailingList->mailing_hours_from) {
                 $delay = $this->calculateDelayUntilNextMailingHour($mailingList);
@@ -79,7 +79,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
                     ProcessWhatsAppBatch::dispatch($this->mailingListId, $remainingCustomers)
                         ->delay(now()->addSeconds($delay))
                         ->onQueue('whatsapp-batch');
-                        
+
                     Log::info("Remaining messages scheduled for next mailing hour", [
                         'mailing_list_id' => $this->mailingListId,
                         'remaining_count' => count($remainingCustomers),
@@ -99,10 +99,10 @@ class ProcessWhatsAppBatch implements ShouldQueue
             }
 
             // Send individual message with delay based on message_delay
-            SendWhatsAppMessage::dispatch($instance->id, $customer->phone_number, $whatsappService->makeRandomMessage($mailingList->message_text))
+            SendWhatsAppMessage::dispatch($instance->id, $customer, $whatsappService->makeRandomMessage($mailingList->message_text))
                 ->delay(now()->addSeconds($messageIndex * $messageDelay))
                 ->onQueue('whatsapp-send');
-                
+
             $messageIndex++;
         }
     }

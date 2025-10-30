@@ -19,13 +19,14 @@ class SendWhatsAppMessage implements ShouldQueue
     public $tries = 3;
 
     protected $instanceId;
-    protected $phoneNumber;
+    protected $customer;
     protected $message;
 
-    public function __construct(int $instanceId, string $phoneNumber, string $message)
+    public function __construct(int $instanceId, $customer, string $message)
     {
+        $this->customer = $customer;
         $this->instanceId = $instanceId;
-        $this->phoneNumber = $phoneNumber;
+        //$this->phoneNumber = $phoneNumber;
         $this->message = $message;
         $this->onQueue('whatsapp-send');
     }
@@ -33,18 +34,30 @@ class SendWhatsAppMessage implements ShouldQueue
     public function handle(WhatsAppMailingService $whatsappService)
     {
         $instance = VacapInstance::findOrFail($this->instanceId);
-        
-        $success = $whatsappService->sendMessage($instance, $this->phoneNumber, $this->message);
-        
-        if ($success) {
+
+        $message_id = $whatsappService->sendMessage($instance, $this->customer->phone_number, $this->message);
+
+
+        if ($message_id) {
             Log::info("WhatsApp message sent successfully", [
                 'instance_id' => $this->instanceId,
-                'phone' => $this->phoneNumber
+                'phone' => $this->customer->phone_number,
+                'message_id' => $message_id
             ]);
+
+            //привязываем инстанс к сообщению
+            //присваиваем сообщению номер из greenapi
+            $this->customer->update([
+                'greenapi_chat_id' => $message_id,
+                'whatsapp_instance_id' => $instance->id
+            ]);
+
+            //заносим в стоп лист
+            \Webkul\Newsletters\Models\StopList::create(['phone_number' => $this->customer->phone_number]);
         } else {
             Log::error("Failed to send WhatsApp message", [
                 'instance_id' => $this->instanceId,
-                'phone' => $this->phoneNumber
+                'phone' => $this->customer->phone_number
             ]);
             throw new \Exception("Failed to send WhatsApp message");
         }
