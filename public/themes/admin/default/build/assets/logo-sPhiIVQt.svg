@@ -1,6 +1,5 @@
 <svg width="180" height="40" xmlns="http://www.w3.org/2000/svg">
     <g>
-        <title>Layer 1</title>
         <text transform="matrix(1.06912 0 0 0.92419 -24.8143 3.8769)" stroke="#000" xml:space="preserve" text-anchor="start" font-family="Noto Sans JP" font-size="31" id="svg_3" y="28" x="28" stroke-width="0" fill="#000000">NewsLetters</text>
         <rect stroke="#000" opacity="0.62" id="svg_4" height="25" width="26" y="13" x="129.5" stroke-width="0" fill="#d33232"/>
         <rect opacity="0.4" id="svg_6" height="29" width="30" y="3" x="32.5" stroke-width="0" stroke="#000" fill="#5f00bf"/>

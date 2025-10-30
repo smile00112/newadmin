@@ -332,8 +332,16 @@
     "file": "assets/icon-options-B9pp5RQf.svg",
     "src": "src/Resources/assets/images/icon-options.svg"
   },
+  "src/Resources/assets/images/logo-newsletters.svg": {
+    "file": "assets/logo-sPhiIVQt.svg",
+    "src": "src/Resources/assets/images/logo.svg"
+  },
+  "src/Resources/assets/images/logo-surprise.svg": {
+    "file": "assets/logo-surprise-Ca9G4RjW.svg",
+    "src": "src/Resources/assets/images/logo-surprise.svg"
+  },
   "src/Resources/assets/images/logo.svg": {
-    "file": "assets/logo-CKoGu4Ns.svg",
+    "file": "assets/logo-sPhiIVQt.svg",
     "src": "src/Resources/assets/images/logo.svg"
   },
   "src/Resources/assets/images/product-placeholders/front.svg": {
