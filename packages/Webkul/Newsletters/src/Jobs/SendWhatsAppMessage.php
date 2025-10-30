@@ -36,9 +36,7 @@ class SendWhatsAppMessage implements ShouldQueue
 
         try {
             $instance = VacapInstance::findOrFail($this->instanceId);
-
             $message_id = $whatsappService->sendMessage($instance, $this->customer->phone_number, $this->message);
-
         }
         catch (\Exception $e) {
             Log::error("!Failed to send WhatsApp message!", [

@@ -54,28 +54,28 @@
         </v-dark>
 
         <!-- Visit Shop Link -->
-        <a
-            href="{{ route('shop.home.index') }}"
-            target="_blank"
-            class="hidden sm:flex"
-        >
-            <span
-                class="icon-store cursor-pointer rounded-md p-1.5 text-xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 sm:text-2xl"
-                title="@lang('admin::app.components.layouts.header.visit-shop')"
-            >
-            </span>
-        </a>
+{{--        <a--}}
+{{--            href="{{ route('shop.home.index') }}"--}}
+{{--            target="_blank"--}}
+{{--            class="hidden sm:flex"--}}
+{{--        >--}}
+{{--            <span--}}
+{{--                class="icon-store cursor-pointer rounded-md p-1.5 text-xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 sm:text-2xl"--}}
+{{--                title="@lang('admin::app.components.layouts.header.visit-shop')"--}}
+{{--            >--}}
+{{--            </span>--}}
+{{--        </a>--}}
 
        <!-- Notification Component -->
-        <v-notifications {{ $attributes }}>
-            <span class="relative flex">
-                <span
-                    class="icon-notification cursor-pointer rounded-md p-1.5 text-xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 sm:text-2xl"
-                    title="@lang('admin::app.components.layouts.header.notifications')"
-                >
-                </span>
-            </span>
-        </v-notifications>
+{{--        <v-notifications {{ $attributes }}>--}}
+{{--            <span class="relative flex">--}}
+{{--                <span--}}
+{{--                    class="icon-notification cursor-pointer rounded-md p-1.5 text-xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950 sm:text-2xl"--}}
+{{--                    title="@lang('admin::app.components.layouts.header.notifications')"--}}
+{{--                >--}}
+{{--                </span>--}}
+{{--            </span>--}}
+{{--        </v-notifications>--}}
 
         <!-- Admin profile -->
         <x-admin::dropdown position="bottom-{{ core()->getCurrentLocale()->direction === 'ltr' ? 'right' : 'left' }}">
