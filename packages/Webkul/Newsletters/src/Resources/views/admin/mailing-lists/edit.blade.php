@@ -635,14 +635,22 @@
                        window.location.hostname === '127.0.0.1' || 
                        window.location.hostname.includes('.test') || 
                        window.location.hostname.includes('.local');
-        const finalWsHost = isLocal ? 'localhost' : wsHost;
+        
+        // Для локальной разработки используем localhost, для продакшена - текущий домен
+        const finalWsHost = isLocal ? 'localhost' : (wsHost || window.location.hostname);
+        
+        // Для продакшена в Coolify порты должны быть стандартными (80/443), не 8080
+        // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
+        const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
+        const wssPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 443;
+        const useTLS = {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }} || !isLocal;
         
         const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
             cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
             wsHost: finalWsHost,
-            wsPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
-            wssPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
-            forceTLS: {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }},
+            wsPort: wsPort,
+            wssPort: wssPort,
+            forceTLS: useTLS,
             enabledTransports: ['ws', 'wss'],
         });
         const channel = pusher.subscribe('mailing-lists-stats');
