@@ -97,6 +97,7 @@ class MailingListController extends Controller
                 'mailing_hours_from' => $request->input('mailing_hours_from'),
                 'mailing_hours_to' => $request->input('mailing_hours_to'),
                 'message_delay' => $request->input('message_delay', 5),
+                'status' => 'created',
             ];
 
             Log::info('Creating mailing list', [
@@ -220,7 +221,7 @@ class MailingListController extends Controller
     {
         $mailingList = $this->mailingListRepository->findOrFail($id);
         $whatsappInstances = $this->vacapInstanceRepository->where('mailing_list_id', $id)->get();
-        
+
         // Get customer numbers with sorting and pagination
         $customerNumbers = $this->customerNumberRepository
             ->where('mailing_list_id', $id)
@@ -228,16 +229,16 @@ class MailingListController extends Controller
             ->orderBy('id', 'desc') // then by id desc
             ->limit(50)
             ->get();
-            
+
         $totalCustomerNumbers = $this->customerNumberRepository->where('mailing_list_id', $id)->count();
-        
+
         // Get admin users and customers for user numbers
         $adminUsers = \Webkul\User\Models\Admin::select('id', 'name', 'email')->get();
         $customers = \Webkul\Customer\Models\Customer::select('id', 'first_name', 'last_name', 'email', 'phone')->get();
-        
+
         // Combine admin users and customers into a unified user numbers array
         $userNumbers = collect();
-        
+
         // Add admin users
         foreach ($adminUsers as $admin) {
             $userNumbers->push((object)[
@@ -247,7 +248,7 @@ class MailingListController extends Controller
                 'type' => 'admin'
             ]);
         }
-        
+
         // Add customers
         foreach ($customers as $customer) {
             $userNumbers->push((object)[
@@ -343,12 +344,12 @@ class MailingListController extends Controller
 
                 foreach ($validInstances as $index => $instanceData) {
                     $instanceData['mailing_list_id'] = $id;
-                    
+
                     // Check if this is an update (has ID) or new instance
                     if (isset($instanceData['id']) && !empty($instanceData['id']) && $existingInstances->has($instanceData['id'])) {
                         // Update existing instance
                         $existingInstance = $existingInstances->get($instanceData['id']);
-                        
+
                         Log::info('Updating existing WhatsApp instance', [
                             'instance_id' => $existingInstance->id,
                             'instance_index' => $index,
@@ -389,7 +390,7 @@ class MailingListController extends Controller
 
                 // Delete instances that were not in the request (removed by user)
                 $instancesToDelete = $existingInstances->whereNotIn('id', $processedInstanceIds);
-                
+
                 if ($instancesToDelete->count() > 0) {
                     Log::info('Deleting removed WhatsApp instances', [
                         'mailing_list_id' => $id,
@@ -398,7 +399,7 @@ class MailingListController extends Controller
 
                     foreach ($instancesToDelete as $instanceToDelete) {
                         $this->vacapInstanceRepository->delete($instanceToDelete->id);
-                        
+
                         Log::info('WhatsApp instance deleted', [
                             'instance_id' => $instanceToDelete->id,
                             'link_name' => $instanceToDelete->link_name,
@@ -411,7 +412,7 @@ class MailingListController extends Controller
             // Update customer numbers
             if ($request->has('customer_numbers')) {
                 $customerNumbers = $request->input('customer_numbers');
-                
+
                 // Filter out empty entries and validate required fields
                 // Note: We need phone_number and name, but id is optional (new customers won't have it)
                 $validCustomers = array_filter($customerNumbers, function($customer) {
@@ -430,12 +431,12 @@ class MailingListController extends Controller
 
                 foreach ($validCustomers as $index => $customerData) {
                     $customerData['mailing_list_id'] = $id;
-                    
+
                     // Check if this is an update (has ID) or new customer
                     if (isset($customerData['id']) && !empty($customerData['id']) && $existingCustomers->has($customerData['id'])) {
                         // Update existing customer
                         $existingCustomer = $existingCustomers->get($customerData['id']);
-                        
+
                         Log::info('Updating existing customer number', [
                             'customer_id' => $existingCustomer->id,
                             'customer_index' => $index,
@@ -454,7 +455,7 @@ class MailingListController extends Controller
                             'name' => $customerData['name'],
                             'mailing_list_id' => $id,
                         ];
-                        
+
                         // Only include these fields if they are explicitly set and not empty
                         if (isset($customerData['delivered'])) {
                             $updateData['delivered'] = (bool)$customerData['delivered'];
@@ -469,7 +470,7 @@ class MailingListController extends Controller
                         if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
                             $updateData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
                         }
-                        
+
                         $this->customerNumberRepository->update($updateData, $existingCustomer->id);
                         $processedCustomerIds[] = $existingCustomer->id;
 
@@ -497,7 +498,7 @@ class MailingListController extends Controller
                             'viewed' => false,
                             'incoming_message' => false,
                         ];
-                        
+
                         // Add whatsapp_instance_id if provided
                         if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
                             $createData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
@@ -517,7 +518,7 @@ class MailingListController extends Controller
 
                 // Delete customers that were not in the request (removed by user)
                 $customersToDelete = $existingCustomers->whereNotIn('id', $processedCustomerIds);
-                
+
                 if ($customersToDelete->count() > 0) {
                     Log::info('Deleting removed customer numbers', [
                         'mailing_list_id' => $id,
@@ -526,7 +527,7 @@ class MailingListController extends Controller
 
                     foreach ($customersToDelete as $customerToDelete) {
                         $this->customerNumberRepository->delete($customerToDelete->id);
-                        
+
                         Log::info('Customer number deleted', [
                             'customer_id' => $customerToDelete->id,
                             'phone_number' => $customerToDelete->phone_number,
@@ -689,7 +690,7 @@ class MailingListController extends Controller
             ]);
 
             $this->mailingListRepository->update([
-                'status' => 'sent',
+                'status' => 'completed',
                 'sent_at' => now(),
                 'sent_count' => $customersCount,
             ], $id);
@@ -699,6 +700,11 @@ class MailingListController extends Controller
                 'sent_count' => $customersCount,
                 'sent_at' => now(),
             ]);
+
+            // Транслируем complete, добавляем поле status
+            broadcast(new \Webkul\Newsletters\Events\MailingListStatsUpdated($id, [
+                'status' => 'completed',
+            ]));
 
             return response()->json([
                 'message' => trans('newsletters::app.admin.mailing-lists.send-success'),
@@ -723,9 +729,12 @@ class MailingListController extends Controller
 
     public function startMailing(int $id)
     {
+        Log::info('Запуск метода startMailing', ['mailing_list_id' => $id]);
         $mailingList = $this->mailingListRepository->findOrFail($id);
+        Log::info('MailingList найден', ['mailing_list_id' => $id, 'active' => $mailingList->active, 'status' => $mailingList->status]);
 
         if ($mailingList->whatsappInstances()->count() === 0) {
+            Log::warning('Нет whatsapp инстансов для рассылки', ['mailing_list_id' => $id]);
             return response()->json([
                 'success' => false,
                 'message' => trans('newsletters::app.admin.mailing-lists.no-whatsapp-instances')
@@ -733,6 +742,7 @@ class MailingListController extends Controller
         }
 
         if ($mailingList->customerNumbers()->count() === 0) {
+            Log::warning('Нет customerNumbers для рассылки', ['mailing_list_id' => $id]);
             return response()->json([
                 'success' => false,
                 'message' => trans('newsletters::app.admin.mailing-lists.no-customer-numbers')
@@ -740,41 +750,51 @@ class MailingListController extends Controller
         }
 
         try {
-            // Activate mailing list and dispatch the job
-            $this->mailingListRepository->update(['active' => true], $id);
-            
-            Log::info('Starting mailing list', [
-                'mailing_list_id' => $id,
-                'user_id' => auth()->id(),
-            ]);
-            
+            Log::info('Перед обновлением статуса/активности', ['mailing_list_id' => $id]);
+            $this->mailingListRepository->update(['active' => true, 'status' => 'pending'], $id);
+
+            Log::info('MailingList активирован и выставлен статус pending', ['mailing_list_id' => $id]);
+
             // Calculate delay based on mailing list parameters
             $delay = $this->calculateMailingDelay($mailingList);
-            
+            Log::info('Значение delay для рассылки', ['mailing_list_id' => $id, 'delay' => $delay]);
+
             // Dispatch the mailing job with delay if needed
             if ($delay > 0) {
+                Log::info('Диспетчеризация ProcessWhatsAppMailingList с отложенным стартом', ['mailing_list_id' => $id, 'delay' => $delay]);
                 ProcessWhatsAppMailingList::dispatch($id)
                     ->delay(now()->addSeconds($delay));
-                    
+
                 Log::info('Mailing list scheduled with delay', [
                     'mailing_list_id' => $id,
                     'delay_seconds' => $delay,
                     'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
                 ]);
             } else {
+                Log::info('Диспетчеризация ProcessWhatsAppMailingList БЕЗ задержки', ['mailing_list_id' => $id]);
                 ProcessWhatsAppMailingList::dispatch($id);
+                Log::info('Mailing list scheduled just now', [
+                    'mailing_list_id' => $id
+                ]);
             }
+
+            // Транслируем begin, добавляем поле status
+            broadcast(new \Webkul\Newsletters\Events\MailingListStatsUpdated($id, [
+                'status' => 'pending',
+            ]));
+            Log::info('MailingList статус pending транслирован через сокет', ['mailing_list_id' => $id]);
 
             return response()->json([
                 'success' => true,
                 'message' => trans('newsletters::app.admin.mailing-lists.mailing-started')
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to start mailing list', [
+            Log::error('Ошибка запуска рассылки', [
                 'mailing_list_id' => $id,
-                'error' => $e->getMessage(),
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
             ]);
-            
             return response()->json([
                 'success' => false,
                 'message' => trans('newsletters::app.admin.mailing-lists.mailing-start-failed')

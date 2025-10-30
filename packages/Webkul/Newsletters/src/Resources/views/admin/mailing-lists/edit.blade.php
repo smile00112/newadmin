@@ -119,25 +119,25 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Active Status -->
-                    <div class="flex items-center">
-                        <label class="flex items-center space-x-3">
-                            <!-- Hidden input to ensure 0 is sent when checkbox is unchecked -->
-                            <input type="hidden" name="active" value="0">
-                            <input
-                                type="checkbox"
-                                name="active"
-                                value="1"
-                                {{ old('active', $mailingList->active) ? 'checked' : '' }}
-                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                            >
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {{ __('newsletters::app.admin.mailing-lists.active') }}
-                            </span>
-                        </label>
-                        @error('active')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
+{{--                    <div class="flex items-center">--}}
+{{--                        <label class="flex items-center space-x-3">--}}
+{{--                            <!-- Hidden input to ensure 0 is sent when checkbox is unchecked -->--}}
+{{--                            <input type="hidden" name="active" value="0">--}}
+{{--                            <input--}}
+{{--                                type="checkbox"--}}
+{{--                                name="active"--}}
+{{--                                value="1"--}}
+{{--                                {{ old('active', $mailingList->active) ? 'checked' : '' }}--}}
+{{--                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"--}}
+{{--                            >--}}
+{{--                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">--}}
+{{--                                {{ __('newsletters::app.admin.mailing-lists.active') }}--}}
+{{--                            </span>--}}
+{{--                        </label>--}}
+{{--                        @error('active')--}}
+{{--                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>--}}
+{{--                        @enderror--}}
+{{--                    </div>--}}
 
                     <!-- Start At -->
 {{--                    <div>--}}
@@ -330,7 +330,7 @@
                                             <span class="text-red-500">*</span>
                                         </label>
                                         <input
-                                            type="password"
+                                            type="text"
                                             name="whatsapp_instances[{{ $index }}][password]"
                                             value="{{ old('whatsapp_instances.' . $index . '.password', $instance->password) }}"
                                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
@@ -933,7 +933,7 @@
             // Show loading state
             chatTextarea.value = '';
             chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.loading-chat") }}';
-            
+
             // Show reply section initially
             if (replySection) {
                 replySection.style.display = 'block';
@@ -969,17 +969,17 @@
                                    data.chat_history.includes('{{ __("newsletters::app.admin.customer-numbers.chat-history-unavailable") }}') ||
                                    data.chat_history.includes('недоступна') ||
                                    data.chat_history.includes('не найдена');
-                    
+
                     chatTextarea.value = data.chat_history;
                     chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.chat-with-client") }}';
-                    
+
                     // Hide reply section if chat loading failed
                     if (replySection && isError) {
                         replySection.style.display = 'none';
                     }
                 } else {
                     chatTextarea.value = data.message || '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
-                    
+
                     // Hide reply section on error
                     if (replySection) {
                         replySection.style.display = 'none';
@@ -988,9 +988,9 @@
             })
             .catch(error => {
                 console.error('Error loading chat history:', error);
-                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}\n\n' + 
+                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}\n\n' +
                                     '{{ __("newsletters::app.admin.customer-numbers.chat-history-unavailable") }}';
-                
+
                 // Hide reply section on error
                 if (replySection) {
                     replySection.style.display = 'none';
@@ -1035,7 +1035,7 @@
             .then(data => {
                 if (data.success) {
                     alert(data.message || '{{ __("newsletters::app.admin.customer-numbers.update-success") }}');
-                    
+
                     // Update the display in the list
                     const customerCard = document.querySelector(`[data-customer-id="${customerId}"]`);
                     if (customerCard) {
@@ -1044,16 +1044,16 @@
                         if (phoneElement) {
                             phoneElement.textContent = formData.phone_number;
                         }
-                        
+
                         // Update name display
                         const nameElement = customerCard.querySelector('.text-sm.text-gray-600');
                         if (nameElement) {
                             nameElement.textContent = formData.name;
                         }
                     }
-                    
+
                     closeCustomerEditModal();
-                    
+
                     // Reload page to refresh all data
                     setTimeout(() => {
                         location.reload();
@@ -1120,7 +1120,7 @@
                     showReplyStatus(data.message, 'success');
                     // Clear message field
                     document.getElementById('replyMessageText').value = '';
-                    
+
                     // Reload chat history to show sent message
                     const phoneNumber = document.getElementById('editPhoneNumber').value;
                     loadChatHistory(customerId, phoneNumber);
@@ -1146,15 +1146,15 @@
             const statusDiv = document.getElementById('replyMessageStatus');
             statusDiv.textContent = message;
             statusDiv.className = 'mt-2 text-sm ';
-            
+
             if (type === 'success') {
                 statusDiv.className += 'text-green-600 dark:text-green-400';
             } else {
                 statusDiv.className += 'text-red-600 dark:text-red-400';
             }
-            
+
             statusDiv.classList.remove('hidden');
-            
+
             // Hide after 5 seconds
             setTimeout(() => {
                 statusDiv.classList.add('hidden');
@@ -1164,7 +1164,7 @@
         function deleteCustomerNumber(customerId) {
             if (confirm('{{ __("newsletters::app.admin.customer-numbers.delete-confirm") }}')) {
                 console.log('Deleting customer:', customerId);
-                
+
                 // Get CSRF token
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
                 if (!csrfToken) {
@@ -1190,13 +1190,13 @@
                 .then(data => {
                     if (data.message) {
                         alert(data.message);
-                        
+
                         // Remove the row from display
                         const customerRow = document.querySelector(`[data-customer-id="${customerId}"]`);
                         if (customerRow) {
                             customerRow.remove();
                         }
-                        
+
                         // Reload page to refresh all data
                         setTimeout(() => {
                             location.reload();

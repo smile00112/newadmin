@@ -50,6 +50,9 @@ return [
             'mailing-hours-to' => 'Часы рассылки до',
             'message-delay' => 'Задержка между сообщениями (сек)',
             'message-delay-hint' => 'Задержка между сообщениями в секундах (1-3600)',
+            'created' => 'Ожидает запуска',
+            'pending' => 'В очереди',
+            'completed' => 'Завершена',
         ],
 
         'customer-numbers' => [

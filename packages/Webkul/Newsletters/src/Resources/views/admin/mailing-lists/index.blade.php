@@ -39,8 +39,11 @@
                             {{ __('newsletters::app.admin.mailing-lists.message-text') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.admin.mailing-lists.active') }}
+                            {{ __('newsletters::app.admin.mailing-lists.status') }}
                         </th>
+{{--                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
+{{--                            {{ __('newsletters::app.admin.mailing-lists.active') }}--}}
+{{--                        </th>--}}
 {{--                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
 {{--                            {{ __('newsletters::app.admin.mailing-lists.start-at') }}--}}
 {{--                        </th>--}}
@@ -57,6 +60,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.incoming_count') }}
                         </th>
+
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.created_at') }}
                         </th>
@@ -76,11 +80,16 @@
                                     {{ Str::limit($mailingList->message_text, 50) }}
                                 </a>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $mailingList->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                    {{ $mailingList->active ? __('newsletters::app.admin.mailing-lists.is-active') : __('newsletters::app.admin.mailing-lists.not-active') }}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="status">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                    {{ __('newsletters::app.admin.mailing-lists.' . ($mailingList->status ?? '-')) }}
                                 </span>
                             </td>
+{{--                            <td class="px-6 py-4 whitespace-nowrap">--}}
+{{--                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $mailingList->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">--}}
+{{--                                    {{ $mailingList->active ? __('newsletters::app.admin.mailing-lists.is-active') : __('newsletters::app.admin.mailing-lists.not-active') }}--}}
+{{--                                </span>--}}
+{{--                            </td>--}}
 {{--                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">--}}
 {{--                                @php--}}
 {{--                                //dd($mailingList->start_at);--}}
@@ -114,6 +123,8 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="incoming_count">
                                 {{ $mailingList->incoming_messages_count ?: '-'}}
                             </td>
+
+
 
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                 {{ $mailingList->created_at->format('Y-m-d H:i') }}
@@ -212,6 +223,23 @@
 
                 // Show notification
                 showNotification(`Отправлено ${stats.sent_count} из ${stats.total_count} сообщений`);
+            }
+            // Обновление статуса рассылки через сокет
+            if (typeof data.status !== 'undefined') {
+                const statusCell = row.querySelector('[data-field="status"] span');
+                if (statusCell) {
+                    const statusLabels = {
+                        created: "Создана",
+                        pending: "В очереди",
+                        completed: "Завершена",
+                        draft: "Черновик",
+                        sending: "Отправка",
+                        sent: "Отправлено",
+                        failed: "Ошибка"
+                    };
+                    statusCell.textContent = statusLabels[data.status] ?? data.status;
+                    statusCell.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-200';
+                }
             }
         });
 

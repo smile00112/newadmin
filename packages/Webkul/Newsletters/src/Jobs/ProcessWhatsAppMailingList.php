@@ -28,8 +28,36 @@ class ProcessWhatsAppMailingList implements ShouldQueue
 
     public function handle(WhatsAppMailingService $whatsappService)
     {
-        $mailingList = MailingList::with(['whatsappInstances', 'customerNumbers'])
-            ->findOrFail($this->mailingListId);
+
+
+
+        try {
+            Log::warning("search mailing list", [
+                "id" => $this->mailingListId
+            ] );
+
+            $mailingList = MailingList::with(['whatsappInstances', 'customerNumbers'])
+                ->findOrFail($this->mailingListId);
+        }
+        catch (\Exception $e) {
+            Log::error("Failed to find mailing list", [
+                'mailing_list_id' => $this->mailingListId,
+                'error' => $e->getMessage(),
+            ]);
+            return;
+        }
+
+        $delay = 0;
+        $mailingList->customerNumbers()
+            // ->whereNull('unsubscribed_at')
+            ->chunk(100, function ($customers) use ($mailingList, &$batchIndex, $delay) {
+                ProcessWhatsAppBatch::dispatch($mailingList->id, $customers->pluck('id')->toArray())
+                    //->delay(now()->addSeconds($batchIndex * $delay))
+                    ->onQueue('whatsapp-batch');
+                $batchIndex++;
+            });
+        return;
+
 
         if (!$mailingList->active || $mailingList->whatsappInstances->isEmpty()) {
             Log::warning("Mailing list is inactive or has no WhatsApp instances", [
@@ -48,7 +76,7 @@ class ProcessWhatsAppMailingList implements ShouldQueue
                     'delay_seconds' => $delay,
                     'rescheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
                 ]);
-                
+
                 ProcessWhatsAppMailingList::dispatch($this->mailingListId)
                     ->delay(now()->addSeconds($delay));
                 return;
@@ -58,7 +86,13 @@ class ProcessWhatsAppMailingList implements ShouldQueue
         // Process customers in batches
         $delay = $mailingList->message_delay ?? 5;
         $batchIndex = 0;
-        
+
+
+        Log::info(
+            "ProcessWhatsAppMailingList try send",
+            $mailingList->customerNumbers()->chunk(100)->toArray()
+        );
+
         $mailingList->customerNumbers()
            // ->whereNull('unsubscribed_at')
             ->chunk(100, function ($customers) use ($mailingList, &$batchIndex, $delay) {
