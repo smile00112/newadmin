@@ -82,6 +82,8 @@ class HooksController extends Controller
      */
     private function handleIncomingMessage(string $chatId, array $messageData): void
     {
+
+
         // Extract phone number from chatId (remove @c.us suffix)
         $phoneNumber = str_replace('@c.us', '', $chatId);
 
@@ -90,6 +92,14 @@ class HooksController extends Controller
             ->where('phone_number', $phoneNumber)
             ->orderBy('id', 'desc')
             ->first();
+
+
+        Log::info("handleIncomingMessage", [
+            'chatId' => $chatId,
+            'phone_number' => $phoneNumber,
+            '$customerNumber' => $customerNumber,
+        ]);
+
 
         if ($customerNumber) {
             // Update incoming_message status
@@ -120,6 +130,12 @@ class HooksController extends Controller
         $customerNumber = DB::table('newsletters_customer_numbers')
             ->where('greenapi_chat_id', $phoneNumber)
             ->first();
+
+        Log::info("handleOutgoingMessageStatus", [
+            'chatId' => $chatId,
+            'phone_number' => $phoneNumber,
+            '$customerNumber' => $customerNumber,
+        ]);
 
         if ($customerNumber) {
             switch ($status):
