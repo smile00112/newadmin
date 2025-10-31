@@ -10,7 +10,7 @@
 
         <div class="flex items-center gap-x-2.5">
             <a href="{{ route('admin.newsletters.stop-list.create') }}" class="primary-button">
-                {{ __('admin::app.datagrid.add') }}
+                {{ __('newsletters::app.admin.stop-list.create') }}
             </a>
         </div>
     </div>
@@ -19,16 +19,16 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Phone Number</th>
-                    <th>Created At</th>
-                    <th>Actions</th>
+                    <th>{{ __('newsletters::app.admin.stop-list.table.id') }}</th>
+                    <th>{{ __('newsletters::app.admin.stop-list.table.phone-number') }}</th>
+                    <th>{{ __('newsletters::app.admin.stop-list.table.created-at') }}</th>
+                    <th>{{ __('newsletters::app.admin.stop-list.table.actions') }}</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td colspan="4" class="text-center">
-                        <p>No blocked phone numbers found. <a href="{{ route('admin.newsletters.stop-list.create') }}">Add your first blocked number</a></p>
+                        <p>{{ __('newsletters::app.admin.stop-list.no-numbers-found') }} <a href="{{ route('admin.newsletters.stop-list.create') }}">{{ __('newsletters::app.admin.stop-list.add-first-number') }}</a></p>
                     </td>
                 </tr>
             </tbody>
