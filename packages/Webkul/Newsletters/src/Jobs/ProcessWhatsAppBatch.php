@@ -70,6 +70,14 @@ class ProcessWhatsAppBatch implements ShouldQueue
         $messageIndex = 0;
 
         foreach ($customers as $customer) {
+            //проверка стоит ли номер в стопе
+            if(\Webkul\Newsletters\Models\StopList::where('phone_number', $customer->phone_number)->exists()){
+                Log::error('Number in stopList', [
+                    'phone' => $customer->phone_number
+                ]);
+                continue;
+            }
+
             // Check if we're still within mailing hours before sending each message
             if ($messageIndex > 0 && !$this->isWithinMailingHours($mailingList, $messageIndex * $messageDelay)) {
                 // If sending this message would exceed mailing hours, schedule remaining for tomorrow

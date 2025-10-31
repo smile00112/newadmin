@@ -31,7 +31,7 @@ class SendWhatsAppMessage implements ShouldQueue
 
     public function handle(WhatsAppMailingService $whatsappService)
     {
-        $customer = CustomerNumber::findOrFail($this->customerId);
+        $customer = CustomerNumber::find($this->customerId);
 
         //временный лог
         Log::info("SendWhatsAppMessage handle", [
@@ -39,6 +39,15 @@ class SendWhatsAppMessage implements ShouldQueue
             'customer' => $customer,
             'message' => $this->message
         ]);
+
+        if(!$customer){
+            Log::info("SendWhatsAppMessage handle ERROR", [
+                'instance_id' => $this->instanceId,
+                'customer' => $customer,
+                'message' => $this->message
+            ]);
+            return;
+        }
 
         try {
             $instance = VacapInstance::findOrFail($this->instanceId);
