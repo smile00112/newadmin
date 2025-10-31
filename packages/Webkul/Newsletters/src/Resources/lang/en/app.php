@@ -257,6 +257,7 @@ return [
             'add' => 'Add',
             'manage' => 'Manage',
             'apply' => 'Apply',
+            'next' => 'Next',
         ],
         'messages' => [
             'success' => 'Operation completed successfully!',
