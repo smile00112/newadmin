@@ -19,13 +19,13 @@ class SendWhatsAppMessage implements ShouldQueue
     public $timeout = 60;
     public $tries = 3;
 
-    protected int $instanceId;
-    protected CustomerNumber $customer;
-    protected string $message;
-
-    public function __construct(int $instanceId, CustomerNumber $customer, string $message)
+    public function __construct(
+        protected int $instanceId,
+        protected CustomerNumber $customer,
+        protected string $message
+    )
     {
-        //property promotion
+        //...property promotion)
         $this->onQueue('whatsapp-send');
     }
 
