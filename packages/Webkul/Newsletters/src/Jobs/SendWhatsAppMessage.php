@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Webkul\Newsletters\Models\VacapInstance;
+use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Services\WhatsAppMailingService;
 use Illuminate\Support\Facades\Log;
 
@@ -18,11 +19,11 @@ class SendWhatsAppMessage implements ShouldQueue
     public $timeout = 60;
     public $tries = 3;
 
-    protected $instanceId;
-    protected $customer;
-    protected $message;
+    protected int $instanceId;
+    protected CustomerNumber $customer;
+    protected string $message;
 
-    public function __construct(int $instanceId, $customer, string $message)
+    public function __construct(int $instanceId, CustomerNumber $customer, string $message)
     {
         $this->customer = $customer;
         $this->instanceId = $instanceId;
@@ -33,6 +34,11 @@ class SendWhatsAppMessage implements ShouldQueue
 
     public function handle(WhatsAppMailingService $whatsappService)
     {
+        Log::info("SendWhatsAppMessage handle", [
+            'instance_id' => $this->instanceId,
+            'customer' => $this->customer,
+            'message' => $this->message
+        ]);
 
         try {
             $instance = VacapInstance::findOrFail($this->instanceId);
@@ -41,7 +47,7 @@ class SendWhatsAppMessage implements ShouldQueue
         catch (\Exception $e) {
             Log::error("!Failed to send WhatsApp message!", [
                 'instance_id' => $this->instanceId,
-                'phone' => $this->customer->phone_number,
+                'customer' => $this->customer,
                 'error' => $e->getMessage()
             ]);
             throw new \Exception("Failed to send WhatsApp message");

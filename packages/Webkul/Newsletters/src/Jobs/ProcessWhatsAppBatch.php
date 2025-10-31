@@ -99,7 +99,8 @@ class ProcessWhatsAppBatch implements ShouldQueue
             }
 
             // Send individual message with delay based on message_delay
-            SendWhatsAppMessage::dispatch($instance->id, $customer, $whatsappService->makeRandomMessage($mailingList->message_text))
+            $randomWhatsappInstance = $whatsappService->makeRandomMessage($mailingList->message_text);
+            SendWhatsAppMessage::dispatch($instance->id, $customer, $randomWhatsappInstance)
                 ->delay(now()->addSeconds($messageIndex * $messageDelay))
                 ->onQueue('whatsapp-send');
 
