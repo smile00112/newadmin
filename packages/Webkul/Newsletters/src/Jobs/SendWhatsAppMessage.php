@@ -21,7 +21,7 @@ class SendWhatsAppMessage implements ShouldQueue
 
     public function __construct(
         protected int $instanceId,
-        protected CustomerNumber $customer,
+        protected int $customerId,
         protected string $message
     )
     {
@@ -31,21 +31,23 @@ class SendWhatsAppMessage implements ShouldQueue
 
     public function handle(WhatsAppMailingService $whatsappService)
     {
+        $customer = CustomerNumber::findOrFail($this->customerId);
+
         //временный лог
         Log::info("SendWhatsAppMessage handle", [
             'instance_id' => $this->instanceId,
-            'customer' => $this->customer,
+            'customer' => $customer,
             'message' => $this->message
         ]);
 
         try {
             $instance = VacapInstance::findOrFail($this->instanceId);
-            $message_id = $whatsappService->sendMessage($instance, $this->customer->phone_number, $this->message);
+            $message_id = $whatsappService->sendMessage($instance, $customer->phone_number, $this->message);
         }
         catch (\Exception $e) {
             Log::error("!Failed to send WhatsApp message!", [
                 'instance_id' => $this->instanceId,
-                'customer' => $this->customer,
+                'customer' => $customer,
                 'error' => $e->getMessage()
             ]);
             throw new \Exception("Failed to send WhatsApp message");
@@ -55,23 +57,24 @@ class SendWhatsAppMessage implements ShouldQueue
         if ($message_id) {
             Log::info("WhatsApp message sent successfully", [
                 'instance_id' => $this->instanceId,
-                'phone' => $this->customer->phone_number,
+                'phone' => $customer->phone_number,
                 'message_id' => $message_id
             ]);
 
             //привязываем инстанс к сообщению
             //присваиваем сообщению номер из greenapi
-            $this->customer->update([
+            $customer->update([
                 'greenapi_chat_id' => $message_id,
                 'whatsapp_instance_id' => $instance->id
             ]);
 
             //заносим в стоп лист
-            \Webkul\Newsletters\Models\StopList::create(['phone_number' => $this->customer->phone_number]);
+            \Webkul\Newsletters\Models\StopList::create(['phone_number' => $customer->phone_number]);
+
         } else {
             Log::error("Failed to send WhatsApp message", [
                 'instance_id' => $this->instanceId,
-                'phone' => $this->customer->phone_number
+                'phone' => $customer->phone_number
             ]);
             throw new \Exception("Failed to send WhatsApp message");
         }
