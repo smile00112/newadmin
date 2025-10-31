@@ -12,7 +12,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\ContactGroupController;
 //TODO add custom middleware to greenapi webhook routes
 Route::group(['prefix' => 'newsletters'], function () {
     Route::controller(HooksController::class)->prefix('hook')->group(function () {
-        Route::get('webhook', 'get_hook')->name('admin.newsletters.hook');
+        Route::get('webhook', 'get_hook')->name('admin.newsletters.hook_g');
         Route::post('webhook', 'get_hook')->name('admin.newsletters.hook');
     });
 });
