@@ -185,7 +185,9 @@
         // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
         const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
         const wssPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 443;
-        const useTLS = {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }} || !isLocal;
+        // Для локальной разработки всегда используем ws:// (forceTLS: false)
+        // Для продакшена используем настройку из конфига
+        const useTLS = isLocal ? false : ({{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }});
         
         const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
             cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',

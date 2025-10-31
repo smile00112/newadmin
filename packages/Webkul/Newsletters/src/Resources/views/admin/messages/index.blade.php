@@ -254,12 +254,30 @@
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         // Initialize Pusher with Reverb configuration
+        // For local development, always use localhost for WebSocket connections
+        const wsHost = '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}';
+        const isLocal = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' || 
+                       window.location.hostname.includes('.test') || 
+                       window.location.hostname.includes('.local');
+        
+        // Для локальной разработки используем localhost, для продакшена - текущий домен
+        const finalWsHost = isLocal ? 'localhost' : (wsHost || window.location.hostname);
+        
+        // Для продакшена в Coolify порты должны быть стандартными (80/443), не 8080
+        // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
+        const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
+        const wssPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 443;
+        // Для локальной разработки всегда используем ws:// (forceTLS: false)
+        // Для продакшена используем настройку из конфига
+        const useTLS = isLocal ? false : ({{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }});
+        
         const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
             cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
-            wsHost: '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}',
-            wsPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
-            wssPort: {{ config('broadcasting.connections.reverb.options.port', 8080) }},
-            forceTLS: {{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }},
+            wsHost: finalWsHost,
+            wsPort: wsPort,
+            wssPort: wssPort,
+            forceTLS: useTLS,
             enabledTransports: ['ws', 'wss'],
         });
 

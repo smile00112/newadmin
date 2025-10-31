@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -49,9 +50,15 @@ class HooksController extends Controller
             // типы хуков
             switch ($messageType) {
                 case 'incomingMessageReceived': //входящее сообщение
+                    Log::info("GreenAPI hook TYPE:", [
+                        'body' => '//входящее сообщение',
+                    ]);
                     $this->handleIncomingMessage($senderData['sender'], $messageData);
                     break;
                 case 'outgoingMessageStatus':   //статус отправленного сообщения
+                    Log::info("GreenAPI hook TYPE:", [
+                        'body' => '//статус отправленного сообщения',
+                    ]);
                     $this->handleOutgoingMessageStatus($idMessage, $status);
                     break;
                 default:
@@ -147,6 +154,12 @@ class HooksController extends Controller
                 'status' => $status,
             ]);
         }
+
+        Log::error("Message not found", [
+            'phone_number' => $phoneNumber,
+            'mailing_list_id' => $customerNumber->mailing_list_id,
+            'status' => $status,
+        ]);
     }
 
     /**
@@ -196,6 +209,49 @@ class HooksController extends Controller
     }
 
     /**
+     * Test route to broadcast stats update by MailingList id.
+     */
+    public function testBroadcastStatsUpdate(int $id): JsonResponse
+    {
+        try {
+            // Verify MailingList exists
+            $mailingList = $this->mailingListRepository->find($id);
+
+            if (!$mailingList) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "MailingList with id {$id} not found"
+                ], 404);
+            }
+
+            // Call broadcastStatsUpdate
+            $this->broadcastStatsUpdate($id);
+
+            Log::info("Test broadcast stats update called", [
+                'mailing_list_id' => $id
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Stats update broadcasted successfully',
+                'mailing_list_id' => $id
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error in testBroadcastStatsUpdate:", [
+                'mailing_list_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Broadcast stats update for a mailing list.
      */
     private function broadcastStatsUpdate(int $mailingListId): void
@@ -231,6 +287,14 @@ class HooksController extends Controller
                     'viewed_count' => (int) $mailingList->numbers_viewed,
                     'total_count' => (int) $mailingList->customerNumbers->count()
                 ];
+
+                Log::info("DATA to broacast", [
+                    'sent_count' => (int) $mailingList->numbers_delivered,
+                    'incoming_count' => (int) $mailingList->incoming_messages_count,
+                    'viewed_count' => (int) $mailingList->numbers_viewed,
+                    'total_count' => (int) $mailingList->customerNumbers->count(),
+                    '$mailingListId' => $mailingListId
+                ]);
 
                 // Broadcast the update
                 broadcast(new MailingListStatsUpdated($mailingListId, $stats));

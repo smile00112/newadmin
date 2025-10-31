@@ -14,6 +14,7 @@ Route::group(['prefix' => 'newsletters'], function () {
     Route::controller(HooksController::class)->prefix('hook')->group(function () {
         Route::get('webhook', 'get_hook')->name('admin.newsletters.hook_g');
         Route::post('webhook', 'get_hook')->name('admin.newsletters.hook');
+        Route::get('test-broadcast/{id}', 'testBroadcastStatsUpdate')->name('admin.newsletters.hook.test_broadcast');
     });
 });
 
