@@ -25,10 +25,7 @@ class SendWhatsAppMessage implements ShouldQueue
 
     public function __construct(int $instanceId, CustomerNumber $customer, string $message)
     {
-        $this->customer = $customer;
-        $this->instanceId = $instanceId;
-        //$this->phoneNumber = $phoneNumber;
-        $this->message = $message;
+        //property promotion
         $this->onQueue('whatsapp-send');
     }
 
