@@ -36,7 +36,9 @@ class CustomerNumber extends Model
         'status',
         'sent_at',
         //'unsubscribed_at',
-        'incoming_message'
+        'incoming_message',
+        'sending',
+        'send_error'
         //'metadata',
     ];
 
@@ -44,6 +46,8 @@ class CustomerNumber extends Model
         'delivered' => 'boolean',
         'viewed' => 'boolean',
         'incoming_message' => 'boolean',
+        'sending' => 'boolean',
+        'send_error' => 'boolean',
         'sent_at' => 'datetime',
         //'unsubscribed_at' => 'datetime',
         //'metadata' => 'array',

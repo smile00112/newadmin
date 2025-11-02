@@ -52,6 +52,7 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::delete('{id}', 'destroy')->name('admin.newsletters.mailing-lists.destroy');
         Route::post('{id}/send', 'send')->name('admin.newsletters.mailing-lists.send');
         Route::post('{id}/start', 'startMailing')->name('admin.newsletters.mailing-lists.start');
+        Route::post('{id}/pause', 'pauseMailing')->name('admin.newsletters.mailing-lists.pause');
     });
 
     Route::controller(MailingListController::class)->prefix('test')->group(function () {

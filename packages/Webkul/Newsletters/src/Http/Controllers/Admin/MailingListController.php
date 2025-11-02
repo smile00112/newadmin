@@ -741,7 +741,10 @@ class MailingListController extends Controller
 
         try {
             // Activate mailing list and dispatch the job
-            $this->mailingListRepository->update(['active' => true], $id);
+            $this->mailingListRepository->update([
+                'active' => true,
+                'status' => 'pending'
+            ], $id);
 
             Log::info('Starting mailing list', [
                 'mailing_list_id' => $id,
@@ -778,6 +781,39 @@ class MailingListController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => trans('newsletters::app.admin.mailing-lists.mailing-start-failed')
+            ], 500);
+        }
+    }
+
+    public function pauseMailing(int $id)
+    {
+        try {
+            $mailingList = $this->mailingListRepository->findOrFail($id);
+
+            // Pause mailing list: set active to false and status to paused
+            $this->mailingListRepository->update([
+                'active' => false,
+                'status' => 'paused'
+            ], $id);
+
+            Log::info('Pausing mailing list', [
+                'mailing_list_id' => $id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => trans('newsletters::app.admin.mailing-lists.mailing-paused')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to pause mailing list', [
+                'mailing_list_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.mailing-lists.mailing-pause-failed')
             ], 500);
         }
     }

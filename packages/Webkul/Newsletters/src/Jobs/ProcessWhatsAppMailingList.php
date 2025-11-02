@@ -28,6 +28,11 @@ class ProcessWhatsAppMailingList implements ShouldQueue
 
     public function handle(WhatsAppMailingService $whatsappService)
     {
+        Log::info('ProcessWhatsAppMailingList INFO', [
+            'mailing_list_id' => $this->mailingListId,
+            'all_lists' => MailingList::all(),
+        ]);
+
         $mailingList = MailingList::with(['whatsappInstances', 'customerNumbers'])
             ->findOrFail($this->mailingListId);
 
@@ -48,7 +53,7 @@ class ProcessWhatsAppMailingList implements ShouldQueue
                     'delay_seconds' => $delay,
                     'rescheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
                 ]);
-                
+
                 ProcessWhatsAppMailingList::dispatch($this->mailingListId)
                     ->delay(now()->addSeconds($delay));
                 return;
@@ -58,13 +63,18 @@ class ProcessWhatsAppMailingList implements ShouldQueue
         // Process customers in batches
         $delay = $mailingList->message_delay ?? 5;
         $batchIndex = 0;
-        
+
         $mailingList->customerNumbers()
            // ->whereNull('unsubscribed_at')
             ->chunk(100, function ($customers) use ($mailingList, &$batchIndex, $delay) {
                 ProcessWhatsAppBatch::dispatch($mailingList->id, $customers->pluck('id')->toArray())
                     ->delay(now()->addSeconds($batchIndex * $delay))
                     ->onQueue('whatsapp-batch');
+
+                $mailingList->update([
+                    'status' => 'pending'
+                ]);
+
                 $batchIndex++;
             });
     }

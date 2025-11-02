@@ -127,6 +127,13 @@
                                                 id="start-btn-{{ $mailingList->id }}">
                                             <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-arrow-left bg-[#B5DCB4]"></span>
                                         </button>
+                                    @else
+                                        <button onclick="pauseMailing({{ $mailingList->id }})"
+                                                class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                title="{{ __('newsletters::app.admin.mailing-lists.pause-mailing') }}"
+                                                id="pause-btn-{{ $mailingList->id }}">
+                                            <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-pause bg-[#FFD700]"></span>
+                                        </button>
                                     @endif
                                     <a href="{{ route('admin.newsletters.mailing-lists.edit', $mailingList->id) }}"
                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300" title="{{ __('newsletters::app.common.actions.edit') }}">
@@ -321,8 +328,22 @@
                             startButton.style.display = 'none';
                         }
 
-                        // Update active status badge
+                        // Show pause button
                         const row = document.querySelector(`tr[data-mailing-list-id="${id}"]`);
+                        if (row) {
+                            const actionsCell = row.querySelector('td:last-child .flex');
+                            if (actionsCell) {
+                                const pauseButton = document.createElement('button');
+                                pauseButton.onclick = () => pauseMailing(id);
+                                pauseButton.className = 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300';
+                                pauseButton.title = '{{ __("newsletters::app.admin.mailing-lists.pause-mailing") }}';
+                                pauseButton.id = 'pause-btn-' + id;
+                                pauseButton.innerHTML = '<span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-pause bg-[#FFD700]"></span>';
+                                actionsCell.insertBefore(pauseButton, actionsCell.firstChild);
+                            }
+                        }
+
+                        // Update active status badge
                         if (row) {
                             const statusBadge = row.querySelector('td:nth-child(3) span');
                             if (statusBadge) {
@@ -344,6 +365,90 @@
                     if (startButton) {
                         startButton.disabled = false;
                         startButton.style.opacity = '1';
+                    }
+                });
+            }
+        }
+
+        function pauseMailing(id) {
+            if (confirm('{{ __("newsletters::app.admin.mailing-lists.pause-confirm") }}')) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                const pauseButton = document.getElementById('pause-btn-' + id);
+
+                if (!csrfToken) {
+                    console.error('CSRF token not found!');
+                    alert('Security token not found. Please refresh the page and try again.');
+                    return;
+                }
+
+                // Disable button and show loading state
+                if (pauseButton) {
+                    pauseButton.disabled = true;
+                    pauseButton.style.opacity = '0.5';
+                }
+
+                fetch('{{ route("admin.newsletters.mailing-lists.pause", ":id") }}'.replace(':id', id), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message);
+
+                        // Hide pause button after successful pause
+                        if (pauseButton) {
+                            pauseButton.style.display = 'none';
+                        }
+
+                        // Show start button
+                        const row = document.querySelector(`tr[data-mailing-list-id="${id}"]`);
+                        if (row) {
+                            const actionsCell = row.querySelector('td:last-child .flex');
+                            if (actionsCell) {
+                                const startButton = document.createElement('button');
+                                startButton.onclick = () => startMailing(id);
+                                startButton.className = 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300';
+                                startButton.title = '{{ __("newsletters::app.admin.mailing-lists.start-mailing") }}';
+                                startButton.id = 'start-btn-' + id;
+                                startButton.innerHTML = '<span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-arrow-left bg-[#B5DCB4]"></span>';
+                                actionsCell.insertBefore(startButton, actionsCell.firstChild);
+                            }
+                        }
+
+                        // Update active status badge
+                        if (row) {
+                            const statusBadge = row.querySelector('td:nth-child(3) span');
+                            if (statusBadge) {
+                                statusBadge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800';
+                                statusBadge.textContent = '{{ __("newsletters::app.admin.mailing-lists.not-active") }}';
+                            }
+                        }
+                    } else {
+                        alert(data.message);
+                        if (pauseButton) {
+                            pauseButton.disabled = false;
+                            pauseButton.style.opacity = '1';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || '{{ __("newsletters::app.admin.mailing-lists.mailing-pause-failed") }}');
+                    if (pauseButton) {
+                        pauseButton.disabled = false;
+                        pauseButton.style.opacity = '1';
                     }
                 });
             }

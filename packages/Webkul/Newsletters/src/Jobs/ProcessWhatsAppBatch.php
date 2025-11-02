@@ -33,9 +33,17 @@ class ProcessWhatsAppBatch implements ShouldQueue
     public function handle(WhatsAppMailingService $whatsappService)
     {
         $mailingList = MailingList::with('whatsappInstances')->findOrFail($this->mailingListId);
-        $customers = CustomerNumber::whereIn('id', $this->customerIds)->get();
+        $customers = CustomerNumber::whereIn('id', $this->customerIds)->where('sending', false)->get();
 
         if ($customers->isEmpty()) {
+            Log::info("Batch processing postponed due to mailing hours", [
+                'message' => 'news letters complete',
+                'mailing_list_id' => $this->mailingListId
+            ]);
+
+            $mailingList->update([
+                'status' => 'completed'
+            ]);
             return;
         }
 
@@ -75,6 +83,10 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 Log::error('Number in stopList', [
                     'phone' => $customer->phone_number
                 ]);
+
+                $customer->update([
+                    'send_error' => true
+                ]);
                 continue;
             }
 
@@ -105,6 +117,11 @@ class ProcessWhatsAppBatch implements ShouldQueue
                     ->onQueue('whatsapp-batch');
                 continue;
             }
+
+            Log::info("Start Sending message to customer", [
+                'customer_id' => $customer->id,
+                'mailing_list_id' => $this->mailingListId,
+            ]);
 
             // Send individual message with delay based on message_delay
             $randomWhatsappInstance = $whatsappService->makeRandomMessage($mailingList->message_text);

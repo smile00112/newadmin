@@ -21,7 +21,9 @@ class StopListController extends Controller
      */
     public function index()
     {
-        return view('newsletters::admin.stop-list.index');
+        $stopList = $this->stopListRepository->orderBy('id', 'desc')->all();
+
+        return view('newsletters::admin.stop-list.index', compact('stopList'));
     }
 
     /**

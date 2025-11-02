@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('mailing_hours_from', 5)->nullable()->after('start_at')->comment('Время начала рассылки (формат HH:MM)');
             $table->string('mailing_hours_to', 5)->nullable()->after('mailing_hours_from')->comment('Время окончания рассылки (формат HH:MM)');
             $table->integer('message_delay')->unsigned()->default(5)->after('mailing_hours_to')->comment('Задержка между сообщениями в секундах');
+            $table->string('status')->nullable()->default('created')->after('message_delay')->comment('статус рассылки');//created/pending/completed/paused
         });
     }
 
@@ -24,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('newsletters_mailing_lists', function (Blueprint $table) {
-            $table->dropColumn(['mailing_hours_from', 'mailing_hours_to', 'message_delay']);
+            $table->dropColumn(['mailing_hours_from', 'mailing_hours_to', 'message_delay', 'status']);
         });
     }
 };
