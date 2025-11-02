@@ -31,7 +31,7 @@ class MailingListController extends Controller
     {
         $mailingLists = $this->mailingListRepository->with('customerNumbers')->withCount([
             'customerNumbers as numbers_delivered' => function ($query) {
-                $query->where('delivered', true);
+                $query->where('sending', true)->orWhere('send_error', true);
             },
             'customerNumbers as numbers_viewed' => function ($query) {
                 $query->where('viewed', true);
@@ -765,6 +765,11 @@ class MailingListController extends Controller
                     'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
                 ]);
             } else {
+
+                Log::info('Starting mailing list without delay', [
+                    'mailing_list_id' => $id,
+                ]);
+
                 ProcessWhatsAppMailingList::dispatch($id);
             }
 

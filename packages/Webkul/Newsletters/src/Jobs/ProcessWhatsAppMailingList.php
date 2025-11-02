@@ -34,6 +34,7 @@ class ProcessWhatsAppMailingList implements ShouldQueue
         ]);
 
         $mailingList = MailingList::with(['whatsappInstances', 'customerNumbers'])
+            ->where('active', true)
             ->findOrFail($this->mailingListId);
 
         if (!$mailingList->active || $mailingList->whatsappInstances->isEmpty()) {

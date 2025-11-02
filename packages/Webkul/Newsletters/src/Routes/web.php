@@ -85,6 +85,8 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::put('edit/{id}', 'update')->name('admin.newsletters.stop-list.update');
         Route::delete('{id}', 'destroy')->name('admin.newsletters.stop-list.destroy');
         Route::post('check', 'check')->name('admin.newsletters.stop-list.check');
+        Route::post('mass-destroy', 'massDestroy')->name('admin.newsletters.stop-list.mass-destroy');
+        Route::delete('destroy-all', 'destroyAll')->name('admin.newsletters.stop-list.destroy-all');
     });
 
     /**

@@ -32,8 +32,14 @@ class ProcessWhatsAppBatch implements ShouldQueue
 
     public function handle(WhatsAppMailingService $whatsappService)
     {
+        Log::info("Start ProcessWhatsAppBatch", [
+            'message' => $this->mailingListId,
+        ]);
+
         $mailingList = MailingList::with('whatsappInstances')->findOrFail($this->mailingListId);
         $customers = CustomerNumber::whereIn('id', $this->customerIds)->where('sending', false)->get();
+
+
 
         if ($customers->isEmpty()) {
             Log::info("Batch processing postponed due to mailing hours", [

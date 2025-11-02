@@ -31,7 +31,7 @@ class HooksController extends Controller
      */
     public function get_hook(Request $request)
     {
-        Log::info("GreenAPI hook received:", [
+        Log::info("HOOK__GreenAPI hook received:", [
             'body' => $request->all(),
         ]);
 
@@ -50,25 +50,25 @@ class HooksController extends Controller
             // типы хуков
             switch ($messageType) {
                 case 'incomingMessageReceived': //входящее сообщение
-                    Log::info("GreenAPI hook TYPE:", [
+                    Log::info("HOOK__GreenAPI hook TYPE:", [
                         'body' => '//входящее сообщение',
                     ]);
                     $this->handleIncomingMessage($senderData['sender'], $messageData);
                     break;
                 case 'outgoingMessageStatus':   //статус отправленного сообщения
-                    Log::info("GreenAPI hook TYPE:", [
+                    Log::info("HOOK__GreenAPI hook TYPE:", [
                         'body' => '//статус отправленного сообщения',
                     ]);
                     $this->handleOutgoingMessageStatus($idMessage, $status);
                     break;
                 default:
-                    Log::info("Unhandled webhook type: {$messageType}");
+                    Log::info("HOOK__Unhandled webhook type: {$messageType}");
             }
 
             return response()->json(['status' => 'success']);
 
         } catch (\Exception $e) {
-            Log::error("Error processing webhook:", [
+            Log::error("HOOK__Error processing webhook:", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -94,7 +94,7 @@ class HooksController extends Controller
             ->first();
 
 
-        Log::info("handleIncomingMessage", [
+        Log::info("HOOK__handleIncomingMessage", [
             'chatId' => $chatId,
             'phone_number' => $phoneNumber,
             '$customerNumber' => $customerNumber,
@@ -113,7 +113,7 @@ class HooksController extends Controller
             // Broadcast stats update
             $this->broadcastStatsUpdate($customerNumber->mailing_list_id);
 
-            Log::info("Incoming message processed", [
+            Log::info("HOOK__Incoming message processed", [
                 'phone_number' => $phoneNumber,
                 'mailing_list_id' => $customerNumber->mailing_list_id
             ]);
@@ -131,7 +131,7 @@ class HooksController extends Controller
             ->where('greenapi_chat_id', $phoneNumber)
             ->first();
 
-        Log::info("handleOutgoingMessageStatus", [
+        Log::info("HOOK__handleOutgoingMessageStatus", [
             'chatId' => $chatId,
             'phone_number' => $phoneNumber,
             '$customerNumber' => $customerNumber,
@@ -164,14 +164,14 @@ class HooksController extends Controller
             // Broadcast stats update
             $this->broadcastStatsUpdate($customerNumber->mailing_list_id);
 
-            Log::info("Message delivery status updated", [
+            Log::info("HOOK__Message delivery status updated", [
                 'phone_number' => $phoneNumber,
                 'mailing_list_id' => $customerNumber->mailing_list_id,
                 'status' => $status,
             ]);
         }
 
-        Log::error("Message not found", [
+        Log::error("HOOK__Message not found", [
             'phone_number' => $phoneNumber,
             'mailing_list_id' => $customerNumber->mailing_list_id,
             'status' => $status,
@@ -243,7 +243,7 @@ class HooksController extends Controller
             // Call broadcastStatsUpdate
             $this->broadcastStatsUpdate($id);
 
-            Log::info("Test broadcast stats update called", [
+            Log::info("HOOK__Test broadcast stats update called", [
                 'mailing_list_id' => $id
             ]);
 
@@ -254,7 +254,7 @@ class HooksController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Error in testBroadcastStatsUpdate:", [
+            Log::error("HOOK__Error in testBroadcastStatsUpdate:", [
                 'mailing_list_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -276,7 +276,7 @@ class HooksController extends Controller
             // Get updated stats from database
             $mailingList = $this->mailingListRepository->with('customerNumbers')->withCount([
                 'customerNumbers as numbers_delivered' => function ($query) {
-                    $query->where('delivered', true);
+                    $query->where('sending', true)->orWhere('send_error', true);
                 },
                 'customerNumbers as numbers_viewed' => function ($query) {
                     $query->where('viewed', true);
@@ -304,7 +304,7 @@ class HooksController extends Controller
                     'total_count' => (int) $mailingList->customerNumbers->count()
                 ];
 
-                Log::info("DATA to broacast", [
+                Log::info("HOOK__DATA to broacast", [
                     'sent_count' => (int) $mailingList->numbers_delivered,
                     'incoming_count' => (int) $mailingList->incoming_messages_count,
                     'viewed_count' => (int) $mailingList->numbers_viewed,
@@ -315,13 +315,13 @@ class HooksController extends Controller
                 // Broadcast the update
                 broadcast(new MailingListStatsUpdated($mailingListId, $stats));
 
-                Log::info('Mailing list stats broadcasted from webhook', [
+                Log::info('HOOK__Mailing list stats broadcasted from webhook', [
                     'mailing_list_id' => $mailingListId,
                     'stats' => $stats
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Failed to broadcast mailing list stats from webhook', [
+            Log::error('HOOK__Failed to broadcast mailing list stats from webhook', [
                 'mailing_list_id' => $mailingListId,
                 'error' => $e->getMessage()
             ]);

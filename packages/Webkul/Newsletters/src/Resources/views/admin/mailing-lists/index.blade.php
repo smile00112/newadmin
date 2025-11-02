@@ -46,9 +46,9 @@
 {{--                        </th>--}}
 
 
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.common.fields.numbers_count') }}
-                        </th>
+{{--                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
+{{--                            {{ __('newsletters::app.common.fields.numbers_count') }}--}}
+{{--                        </th>--}}
                         {{--Progress column--}}
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.mailing-lists.progress') }}
@@ -89,9 +89,9 @@
 {{--                            </td>--}}
 
 
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {{ $mailingList->customerNumbers->count() }}
-                            </td>
+{{--                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">--}}
+{{--                                {{ $mailingList->customerNumbers->count() }}--}}
+{{--                            </td>--}}
 
                             <td class="px-6 py-4 text-sm" data-field="progress">
                                 @php
@@ -177,68 +177,100 @@
     <!-- Include Laravel Echo and Pusher -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
-        // Initialize Pusher with Reverb configuration
-        // For local development, always use localhost for WebSocket connections
-        const wsHost = '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}';
-        const isLocal = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' || 
-                       window.location.hostname.includes('.test') || 
-                       window.location.hostname.includes('.local');
-        
-        // Для локальной разработки используем localhost, для продакшена - текущий домен
-        const finalWsHost = isLocal ? 'localhost' : (wsHost || window.location.hostname);
-        
-        // Для продакшена в Coolify порты должны быть стандартными (80/443), не 8080
-        // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
-        const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
-        const wssPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 443;
-        // Для локальной разработки всегда используем ws:// (forceTLS: false)
-        // Для продакшена используем настройку из конфига
-        const useTLS = isLocal ? false : ({{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }});
-        
-        const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
-            cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
-            wsHost: finalWsHost,
-            wsPort: wsPort,
-            wssPort: wssPort,
-            forceTLS: useTLS,
-            enabledTransports: ['ws', 'wss'],
-        });
+        // Initialize Pusher with Reverb configuration only if Reverb is configured
+        const reverbKey = '{{ config('broadcasting.connections.reverb.key') }}';
 
-        // Subscribe to mailing lists stats channel
-        const channel = pusher.subscribe('mailing-lists-stats');
+        if (reverbKey && reverbKey !== '') {
+            try {
+                // For local development, always use localhost for WebSocket connections
+                const wsHost = '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}';
+                const isLocal = window.location.hostname === 'localhost' ||
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.hostname.includes('.test') ||
+                               window.location.hostname.includes('.local');
 
-        // Listen for stats updates
-        channel.bind('stats-updated', function(data) {
-            console.log('Stats updated:', data);
+                // Для локальной разработки используем localhost, для продакшена - текущий домен
+                const finalWsHost = isLocal ? 'localhost' : (wsHost || window.location.hostname);
 
-            const mailingListId = data.mailing_list_id;
-            const stats = data.stats;
+                // Для продакшена в Coolify порты должны быть стандартными (80/443), не 8080
+                // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
+                const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
+                const wssPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 443;
+                // Для локальной разработки всегда используем ws:// (forceTLS: false)
+                // Для продакшена используем настройку из конфига
+                const useTLS = isLocal ? false : ({{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }});
 
-            // Find the row and update the cells
-            const row = document.querySelector(`tr[data-mailing-list-id="${mailingListId}"]`);
-            if (row) {
-                // Update progress bar
-                updateProgressBar(row, stats.sent_count, stats.total_count);
+                const pusher = new Pusher(reverbKey, {
+                    cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
+                    wsHost: finalWsHost,
+                    wsPort: wsPort,
+                    wssPort: wssPort,
+                    forceTLS: useTLS,
+                    enabledTransports: ['ws', 'wss'],
+                    disableStats: true,
+                });
 
-                // Update incoming_count column
-                const incomingCountCell = row.querySelector('[data-field="incoming_count"]');
-                if (incomingCountCell) {
-                    incomingCountCell.textContent = stats.incoming_count || '-';
+                // Handle connection errors silently
+                pusher.connection.bind('error', function(err) {
+                    // Suppress error messages if connection fails (Reverb might not be running)
+                    // Only log if in debug mode
+                    if (window.location.hostname === 'localhost' || window.location.hostname.includes('.test')) {
+                        console.warn('WebSocket connection unavailable. Real-time updates disabled.');
+                    }
+                });
+
+                // Handle connection state changes
+                pusher.connection.bind('connected', function() {
+                    // Subscribe only after successful connection
+                    try {
+                        const channel = pusher.subscribe('mailing-lists-stats');
+
+                        // Listen for stats updates
+                        channel.bind('stats-updated', function(data) {
+                            console.log('Stats updated:', data);
+
+                            const mailingListId = data.mailing_list_id;
+                            const stats = data.stats;
+
+                            // Find the row and update the cells
+                            const row = document.querySelector(`tr[data-mailing-list-id="${mailingListId}"]`);
+                            if (row) {
+                                // Update progress bar
+                                updateProgressBar(row, stats.sent_count, stats.total_count);
+
+                                // Update incoming_count column
+                                const incomingCountCell = row.querySelector('[data-field="incoming_count"]');
+                                if (incomingCountCell) {
+                                    incomingCountCell.textContent = stats.incoming_count || '-';
+                                }
+
+                                // Add visual feedback
+                                row.style.backgroundColor = '#f0f9ff';
+                                row.style.transition = 'background-color 0.3s ease';
+
+                                setTimeout(() => {
+                                    row.style.backgroundColor = '';
+                                }, 2000);
+
+                                // Show notification
+                                showNotification(`Отправлено ${stats.sent_count} из ${stats.total_count} сообщений`);
+                            }
+                        });
+                    } catch (e) {
+                        // Subscription failed, ignore silently
+                        if (window.location.hostname === 'localhost' || window.location.hostname.includes('.test')) {
+                            console.warn('Failed to subscribe to WebSocket channel:', e);
+                        }
+                    }
+                });
+
+            } catch (e) {
+                // Pusher initialization failed, ignore silently
+                if (window.location.hostname === 'localhost' || window.location.hostname.includes('.test')) {
+                    console.warn('WebSocket initialization failed. Real-time updates disabled.');
                 }
-
-                // Add visual feedback
-                row.style.backgroundColor = '#f0f9ff';
-                row.style.transition = 'background-color 0.3s ease';
-
-                setTimeout(() => {
-                    row.style.backgroundColor = '';
-                }, 2000);
-
-                // Show notification
-                showNotification(`Отправлено ${stats.sent_count} из ${stats.total_count} сообщений`);
             }
-        });
+        }
 
         // Update progress bar function
         function updateProgressBar(row, sentCount, totalCount) {
@@ -273,16 +305,6 @@
                 notification.remove();
             }, 3000);
         }
-
-        // Handle connection errors
-        pusher.connection.bind('error', function(err) {
-            console.error('Pusher connection error:', err);
-        });
-
-        // Handle connection state changes
-        pusher.connection.bind('state_change', function(states) {
-            console.log('Pusher connection state:', states.current);
-        });
     </script>
 
     <script>

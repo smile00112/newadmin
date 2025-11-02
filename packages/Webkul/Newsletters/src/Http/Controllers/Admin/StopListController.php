@@ -114,4 +114,55 @@ class StopListController extends Controller
                 : trans('newsletters::app.admin.stop-list.phone-not-blocked'),
         ]);
     }
+
+    /**
+     * Mass delete selected resources.
+     */
+    public function massDestroy(Request $request)
+    {
+        $this->validate($request, [
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:newsletters_stop_list,id',
+        ]);
+
+        try {
+            $deletedCount = 0;
+            foreach ($request->ids as $id) {
+                $this->stopListRepository->delete($id);
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'message' => trans('newsletters::app.admin.stop-list.mass-delete-success', ['count' => $deletedCount]),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => trans('newsletters::app.admin.stop-list.mass-delete-failed'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete all resources.
+     */
+    public function destroyAll()
+    {
+        try {
+            $allItems = $this->stopListRepository->all();
+            $deletedCount = 0;
+
+            foreach ($allItems as $item) {
+                $this->stopListRepository->delete($item->id);
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'message' => trans('newsletters::app.admin.stop-list.delete-all-success', ['count' => $deletedCount]),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => trans('newsletters::app.admin.stop-list.delete-all-failed'),
+            ], 500);
+        }
+    }
 }
