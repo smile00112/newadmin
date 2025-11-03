@@ -79,4 +79,23 @@ return [
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
         'redirect'      => env('GITHUB_CALLBACK_URL'),
     ],
+
+    // Firebase / FCM configuration
+    'firebase' => [
+        // VAPID key for Web Push (from .env FCM_API_VAPID_KEY preferred)
+        'vapid_key' => env('FCM_API_VAPID_KEY', env('FCM_VAPID_KEY')),
+
+        // Public web client config for Firebase initialization on the frontend
+        'client' => [
+            'apiKey'            => env('FCM_API_KEY'),
+            'authDomain'        => env('FCM_AUTH_DOMAIN'),
+            'projectId'         => env('FCM_PROJECT_ID'),
+            'storageBucket'     => env('FCM_STORAGE_BUCKET'),
+            'messagingSenderId' => env('FCM_MESSAGING_SENDER_ID'),
+            'appId'             => env('FCM_APP_ID'),
+        ],
+
+        // Path to Service Account JSON for server-side messaging
+        'credentials' => env('FCM_CREDENTIALS_PATH', base_path('firebase-credentials.json')),
+    ],
 ];

@@ -155,18 +155,11 @@
     (function() {
         'use strict';
         //TODO get from .env
-        // Firebase configuration
-    const firebaseConfig = {
-            apiKey: "AIzaSyDVdd39ZOOiMP9j2C9t-Ikglvc1fgbbfS8",
-        authDomain: "couriers-3473b.firebaseapp.com",
-        projectId: "couriers-3473b",
-        storageBucket: "couriers-3473b.appspot.com",
-        messagingSenderId: "353175461051",
-        appId: "1:353175461051:web:d716ecec53b59845939d9e"
-    };
+        // Firebase configuration from env via config/services.php
+    const firebaseConfig = @json(config('services.firebase.client'));
 
-        // VAPID Key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
-        const VAPID_KEY = "1952201";
+        // VAPID Key from env via config/services.php
+        const VAPID_KEY = "{{ config('services.firebase.vapid_key') }}";
 
         // FCM Service Class
     class FCMService {

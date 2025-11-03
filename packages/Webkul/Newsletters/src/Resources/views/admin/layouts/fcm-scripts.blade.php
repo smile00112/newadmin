@@ -10,29 +10,18 @@
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"></script>
 
 <script>
-    // Firebase configuration from JSON file
-    {{--const firebaseConfig = @json($firebaseConfig);--}}
-    const firebaseConfig = {
-        apiKey: "AIzaSyBZEJmlJwm18F2nzDkO-PJF2B-sTzUpYE0",
-        authDomain: "couriers-3473b.firebaseapp.com",
-        projectId: "couriers-3473b",
-        storageBucket: "couriers-3473b.appspot.com",
-        messagingSenderId: "353175461051",
-        appId: "1:353175461051:web:d716ecec53b59845939d9e"
-    };
+    // Firebase configuration from config/services.php
+    const firebaseConfig = @json(config('services.firebase.client'));
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // Initialize Firebase Cloud Messaging
-    const messaging = firebase.messaging();
-
     // FCM Token Management
     class FCMService {
         constructor() {
-            this.messaging = messaging;
-            {{--this.vapidKey = @json($vapidKey);--}}
-                this.vapidKey = "1952201";
+            this.messaging = firebase.messaging();
+            // VAPID key from env via config/services.php
+            this.vapidKey = "{{ config('services.firebase.vapid_key') }}";
             this.init();
         }
 

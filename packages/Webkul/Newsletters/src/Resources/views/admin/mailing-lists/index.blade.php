@@ -41,6 +41,9 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.mailing-lists.active') }}
                         </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            {{ __('newsletters::app.common.fields.status') }}
+                        </th>
 {{--                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
 {{--                            {{ __('newsletters::app.admin.mailing-lists.start-at') }}--}}
 {{--                        </th>--}}
@@ -80,6 +83,9 @@
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $mailingList->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                     {{ $mailingList->active ? __('newsletters::app.admin.mailing-lists.is-active') : __('newsletters::app.admin.mailing-lists.not-active') }}
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white" data-field="status">
+                                {{ __('newsletters::app.admin.mailing-lists.' . $mailingList->status) }}
                             </td>
 {{--                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">--}}
 {{--                                @php--}}
@@ -242,6 +248,16 @@
                                 const incomingCountCell = row.querySelector('[data-field="incoming_count"]');
                                 if (incomingCountCell) {
                                     incomingCountCell.textContent = stats.incoming_count || '-';
+                                }
+
+                                // Update status column heuristically by stats
+                                const statusCell = row.querySelector('[data-field="status"]');
+                                if (statusCell && stats && typeof stats.sent_count !== 'undefined' && typeof stats.total_count !== 'undefined') {
+                                    if (stats.total_count > 0 && stats.sent_count >= stats.total_count) {
+                                        statusCell.textContent = 'completed';
+                                    } else if (stats.sent_count > 0) {
+                                        statusCell.textContent = 'sending';
+                                    }
                                 }
 
                                 // Add visual feedback

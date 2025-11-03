@@ -64,7 +64,7 @@
                                 <div class="flex flex-col gap-1">
                                     @if($message->incoming_message)
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
-                                            <svg class="w-3 h-3 mr-1 inline-block" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg class="w-3 h-3 mr-1 inline-block h-5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
                                                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
                                             </svg>
@@ -256,14 +256,14 @@
         // Initialize Pusher with Reverb configuration
         // For local development, always use localhost for WebSocket connections
         const wsHost = '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}';
-        const isLocal = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' || 
-                       window.location.hostname.includes('.test') || 
+        const isLocal = window.location.hostname === 'localhost' ||
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname.includes('.test') ||
                        window.location.hostname.includes('.local');
-        
+
         // Для локальной разработки используем localhost, для продакшена - текущий домен
         const finalWsHost = isLocal ? 'localhost' : (wsHost || window.location.hostname);
-        
+
         // Для продакшена в Coolify порты должны быть стандартными (80/443), не 8080
         // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
         const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
@@ -271,7 +271,7 @@
         // Для локальной разработки всегда используем ws:// (forceTLS: false)
         // Для продакшена используем настройку из конфига
         const useTLS = isLocal ? false : ({{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }});
-        
+
         const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
             cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
             wsHost: finalWsHost,
@@ -284,25 +284,34 @@
         // Subscribe to customer numbers channel for real-time updates
         const channel = pusher.subscribe('customer-numbers');
 
-        // Listen for new incoming messages
-        channel.bind('message-read', function(data) {
-            console.log('Message read:', data);
+        // Listen for new incoming message and move row to top
+        channel.bind('customer-number.incoming-message', function(data) {
+            try {
+                const messageId = data.customer_number_id;
+                const tbody = document.querySelector('table tbody');
+                const row = document.querySelector(`tr[data-message-id="${messageId}"]`);
 
-            const messageId = data.customer_number_id;
-            const row = document.querySelector(`tr[data-message-id="${messageId}"]`);
-
-            if (row) {
-                // Remove green highlighting
-                row.classList.remove('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-20');
-
-                // Find and remove the "new message" badge
-                const statusCell = row.querySelector('td:nth-child(5)'); // Status column is 5th
-                if (statusCell) {
-                    const newMessageBadge = statusCell.querySelector('.bg-yellow-100');
-                    if (newMessageBadge) {
-                        newMessageBadge.remove();
-                    }
+                if (!tbody || !row) {
+                    console.warn('Row or tbody not found for incoming message', data);
+                    return;
                 }
+
+                // Mark row as having a new message (highlight)
+                row.classList.add('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-20');
+
+                // Ensure the "new message" badge exists in status column (5th td)
+                const statusCell = row.querySelector('td:nth-child(5)');
+                if (statusCell && !statusCell.querySelector('.bg-yellow-100')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
+                    badge.innerHTML = '<svg class="w-3 h-3 mr-1 inline-block h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>' + @json(__('newsletters::app.admin.messages.new-message'));
+                    statusCell.querySelector('.flex')?.prepend(badge);
+                }
+
+                // Move the row to the top of tbody
+                tbody.insertBefore(row, tbody.firstChild);
+            } catch (e) {
+                console.error('Error handling incoming-message event', e);
             }
         });
 

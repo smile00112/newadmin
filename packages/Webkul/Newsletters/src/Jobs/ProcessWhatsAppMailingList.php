@@ -33,7 +33,7 @@ class ProcessWhatsAppMailingList implements ShouldQueue
             'all_lists' => MailingList::all(),
         ]);
 
-        $mailingList = MailingList::with(['whatsappInstances', 'customerNumbers'])
+        $mailingList = MailingList::with(['whatsappInstances'])
             ->where('active', true)
             ->findOrFail($this->mailingListId);
 

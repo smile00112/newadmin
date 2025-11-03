@@ -8,11 +8,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Newsletters\Models\VacapInstance;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
 use Webkul\Newsletters\Repositories\MailingListRepository;
 use Webkul\Newsletters\Repositories\StopListRepository;
 use Webkul\Newsletters\Events\MailingListStatsUpdated;
 use Webkul\Newsletters\Repositories\VacapInstanceRepository;
+use Webkul\Newsletters\Events\CustomerNumberIncomingMessage;
 
 class HooksController extends Controller
 {
@@ -37,8 +39,8 @@ class HooksController extends Controller
 
         try {
             // Process the webhook data
-            $webhookData = $request->all();
-
+            $webhookData = $request->all()['body'];
+print_R($webhookData);
             // Extract relevant information from webhook
             $chatId = !empty($webhookData['chatId']) ?? null; //"79206003788@c.us"
             $messageType = !empty($webhookData['typeWebhook']) ? $webhookData['typeWebhook'] : null;
@@ -46,14 +48,15 @@ class HooksController extends Controller
             $idMessage = !empty($webhookData['idMessage']) ? $webhookData['idMessage'] : null; //id сообщения
             $status = !empty($webhookData['status']) ? $webhookData['status'] : null;
             $senderData = !empty($webhookData['senderData']) ? $webhookData['senderData'] : null; //
+            $instanceData = !empty($webhookData['instanceData']) ? $webhookData['instanceData'] : null; //
 
-            // типы хуков
+            // определение типа хуков
             switch ($messageType) {
                 case 'incomingMessageReceived': //входящее сообщение
                     Log::info("HOOK__GreenAPI hook TYPE:", [
                         'body' => '//входящее сообщение',
                     ]);
-                    $this->handleIncomingMessage($senderData['sender'], $messageData);
+                    $this->handleIncomingMessage($senderData['sender'], $instanceData);
                     break;
                 case 'outgoingMessageStatus':   //статус отправленного сообщения
                     Log::info("HOOK__GreenAPI hook TYPE:", [
@@ -80,18 +83,38 @@ class HooksController extends Controller
     /**
      * Handle incoming message webhook.
      */
-    private function handleIncomingMessage(string $chatId, array $messageData): void
+    private function handleIncomingMessage(string $chatId, array $instanceData): void
     {
-
-
+//        echo 22222;
         // Extract phone number from chatId (remove @c.us suffix)
         $phoneNumber = str_replace('@c.us', '', $chatId);
 
+        $idInstance = $instanceData['idInstance'];
+        if($idInstance){
+            $instance = VacapInstance::with('customerNumbers')->where('login', $idInstance)->whereHas('customerNumbers', function($q) use($phoneNumber){
+                $q->where('phone', $phoneNumber);
+            })->first();
+
+            if($instance){
+                $customerNumber = $instance->customerNumbers->count() ? $instance->customerNumbers->first() : null;
+            }
+
+        }
+//dd($instance);
+        if(!$customerNumber){
+            Log::warning("HOOK__handleIncomingMessage  customerNumber NOT found", [
+                'chatId' => $chatId,
+                'instanceData' => $instanceData,
+            ]);
+
+            return;
+        }
+
         // Find customer number by phone
-        $customerNumber = DB::table('newsletters_customer_numbers')
-            ->where('phone_number', $phoneNumber)
-            ->orderBy('id', 'desc')
-            ->first();
+//        $customerNumber = DB::table('newsletters_customer_numbers')
+//            ->where('phone_number', $phoneNumber)
+//            ->orderBy('id', 'desc')
+//            ->first();
 
 
         Log::info("HOOK__handleIncomingMessage", [
@@ -112,6 +135,18 @@ class HooksController extends Controller
 
             // Broadcast stats update
             $this->broadcastStatsUpdate($customerNumber->mailing_list_id);
+
+            // Broadcast customer number incoming message update
+            try {
+                // Ensure the model reflects latest state before broadcasting
+                $customerNumber->incoming_message = true;
+                broadcast(new CustomerNumberIncomingMessage($customerNumber));
+            } catch (\Exception $e) {
+                Log::error('HOOK__Failed to broadcast CustomerNumber incoming message', [
+                    'customer_number_id' => $customerNumber->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             Log::info("HOOK__Incoming message processed", [
                 'phone_number' => $phoneNumber,

@@ -16,3 +16,9 @@ Broadcast::channel('mailing-lists-stats', function ($user) {
     // Allow all authenticated users to listen to stats updates
     return true;
 });
+
+// Public channel for customer numbers events
+Broadcast::channel('customer-numbers', function ($user) {
+    // Allow all authenticated users to listen to customer numbers updates
+    return true;
+});
