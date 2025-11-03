@@ -73,7 +73,7 @@ class SendWhatsAppMessage implements ShouldQueue
 
 
         if ($message_id) {
-            Log::info("WhatsApp message sent successfully", [
+            Log::info("WhatsApp message sent successfully 2", [
                 'instance_id' => $this->instanceId,
                 'phone' => $customer->phone_number,
                 'message_id' => $message_id

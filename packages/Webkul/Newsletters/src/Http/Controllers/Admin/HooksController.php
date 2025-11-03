@@ -137,6 +137,7 @@ class HooksController extends Controller
             '$customerNumber' => $customerNumber,
         ]);
 
+
         if ($customerNumber) {
             switch ($status):
                 case 'read':            //сообщение просмотрено
@@ -173,7 +174,7 @@ class HooksController extends Controller
 
         Log::error("HOOK__Message not found", [
             'phone_number' => $phoneNumber,
-            'mailing_list_id' => $customerNumber->mailing_list_id,
+            'customerNumber' => $customerNumber,
             'status' => $status,
         ]);
     }
@@ -263,7 +264,7 @@ class HooksController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
-            ], 500);
+            ], 200);
         }
     }
 
