@@ -104,7 +104,7 @@ class HooksController extends Controller
 
         }
 
-        if(!empty($customerNumber)){
+        if(empty($customerNumber)){
             Log::warning("HOOK__handleIncomingMessage  customerNumber NOT found", [
                 'chatId' => $chatId,
                 'instanceData' => $instanceData,
