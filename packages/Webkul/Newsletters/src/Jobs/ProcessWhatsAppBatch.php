@@ -111,7 +111,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return;
         }
 
-        $messageDelay = $mailingList->message_delay ?? 5; // Delay between messages in seconds
+        $messageDelay = $mailingList->message_delay ?? 0; // Delay between messages in seconds
         $messageIndex = 0;
 
         foreach ($customers as $customer) {
@@ -150,7 +150,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
             if (!$whatsappService->checkRateLimit()) {
                 // If rate limit exceeded, delay the remaining messages
                 ProcessWhatsAppBatch::dispatch($this->mailingListId, [$customer->id])
-                    ->delay(now()->addSecond())
+                    ->delay(now()->addSecond($messageDelay))
                     ->onQueue('whatsapp-batch');
                 continue;
             }
