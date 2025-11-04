@@ -39,8 +39,9 @@ class HooksController extends Controller
 
         try {
             // Process the webhook data
-            $webhookData = $request->all()['body'];
-print_R($webhookData);
+            $webhookData = $request->all();
+            if(!empty($webhookData['body'])) $webhookData = $webhookData['body']; ////?????
+
             // Extract relevant information from webhook
             $chatId = !empty($webhookData['chatId']) ?? null; //"79206003788@c.us"
             $messageType = !empty($webhookData['typeWebhook']) ? $webhookData['typeWebhook'] : null;
