@@ -104,8 +104,8 @@
                             type="number"
                             name="message_delay"
                             id="message_delay"
-                            value="{{ old('message_delay', $mailingList->message_delay ?? 5) }}"
-                            min="1"
+                            value="{{ old('message_delay', $mailingList->message_delay ?? 0) }}"
+                            min="0"
                             max="3600"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             placeholder="5"
@@ -631,14 +631,14 @@
         // Initialize Pusher with Reverb configuration
         // For local development, always use localhost for WebSocket connections
         const wsHost = '{{ config('broadcasting.connections.reverb.options.host', 'localhost') }}';
-        const isLocal = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' || 
-                       window.location.hostname.includes('.test') || 
+        const isLocal = window.location.hostname === 'localhost' ||
+                       window.location.hostname === '127.0.0.1' ||
+                       window.location.hostname.includes('.test') ||
                        window.location.hostname.includes('.local');
-        
+
         // Для локальной разработки используем localhost, для продакшена - текущий домен
         const finalWsHost = isLocal ? 'localhost' : (wsHost || window.location.hostname);
-        
+
         // Для продакшена в Coolify порты должны быть стандартными (80/443), не 8080
         // Traefik проксирует WebSocket на внутренний порт 8080 автоматически
         const wsPort = isLocal ? {{ config('broadcasting.connections.reverb.options.port', 8080) }} : 80;
@@ -646,7 +646,7 @@
         // Для локальной разработки всегда используем ws:// (forceTLS: false)
         // Для продакшена используем настройку из конфига
         const useTLS = isLocal ? false : ({{ config('broadcasting.connections.reverb.options.useTLS', false) ? 'true' : 'false' }});
-        
+
         const pusher = new Pusher('{{ config('broadcasting.connections.reverb.key') }}', {
             cluster: '{{ config('broadcasting.connections.reverb.options.cluster', 'mt1') }}',
             wsHost: finalWsHost,
@@ -951,7 +951,7 @@
             // Show loading state
             chatTextarea.value = '';
             chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.loading-chat") }}';
-            
+
             // Show reply section initially
             if (replySection) {
                 replySection.style.display = 'block';
@@ -987,17 +987,17 @@
                                    data.chat_history.includes('{{ __("newsletters::app.admin.customer-numbers.chat-history-unavailable") }}') ||
                                    data.chat_history.includes('недоступна') ||
                                    data.chat_history.includes('не найдена');
-                    
+
                     chatTextarea.value = data.chat_history;
                     chatTextarea.placeholder = '{{ __("newsletters::app.admin.customer-numbers.chat-with-client") }}';
-                    
+
                     // Hide reply section if chat loading failed
                     if (replySection && isError) {
                         replySection.style.display = 'none';
                     }
                 } else {
                     chatTextarea.value = data.message || '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}';
-                    
+
                     // Hide reply section on error
                     if (replySection) {
                         replySection.style.display = 'none';
@@ -1006,9 +1006,9 @@
             })
             .catch(error => {
                 console.error('Error loading chat history:', error);
-                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}\n\n' + 
+                chatTextarea.value = '{{ __("newsletters::app.admin.customer-numbers.chat-history-error") }}\n\n' +
                                     '{{ __("newsletters::app.admin.customer-numbers.chat-history-unavailable") }}';
-                
+
                 // Hide reply section on error
                 if (replySection) {
                     replySection.style.display = 'none';
@@ -1053,7 +1053,7 @@
             .then(data => {
                 if (data.success) {
                     alert(data.message || '{{ __("newsletters::app.admin.customer-numbers.update-success") }}');
-                    
+
                     // Update the display in the list
                     const customerCard = document.querySelector(`[data-customer-id="${customerId}"]`);
                     if (customerCard) {
@@ -1062,16 +1062,16 @@
                         if (phoneElement) {
                             phoneElement.textContent = formData.phone_number;
                         }
-                        
+
                         // Update name display
                         const nameElement = customerCard.querySelector('.text-sm.text-gray-600');
                         if (nameElement) {
                             nameElement.textContent = formData.name;
                         }
                     }
-                    
+
                     closeCustomerEditModal();
-                    
+
                     // Reload page to refresh all data
                     setTimeout(() => {
                         location.reload();
@@ -1138,7 +1138,7 @@
                     showReplyStatus(data.message, 'success');
                     // Clear message field
                     document.getElementById('replyMessageText').value = '';
-                    
+
                     // Reload chat history to show sent message
                     const phoneNumber = document.getElementById('editPhoneNumber').value;
                     loadChatHistory(customerId, phoneNumber);
@@ -1164,15 +1164,15 @@
             const statusDiv = document.getElementById('replyMessageStatus');
             statusDiv.textContent = message;
             statusDiv.className = 'mt-2 text-sm ';
-            
+
             if (type === 'success') {
                 statusDiv.className += 'text-green-600 dark:text-green-400';
             } else {
                 statusDiv.className += 'text-red-600 dark:text-red-400';
             }
-            
+
             statusDiv.classList.remove('hidden');
-            
+
             // Hide after 5 seconds
             setTimeout(() => {
                 statusDiv.classList.add('hidden');
@@ -1182,7 +1182,7 @@
         function deleteCustomerNumber(customerId) {
             if (confirm('{{ __("newsletters::app.admin.customer-numbers.delete-confirm") }}')) {
                 console.log('Deleting customer:', customerId);
-                
+
                 // Get CSRF token
                 const csrfToken = document.querySelector('meta[name="csrf-token"]');
                 if (!csrfToken) {
@@ -1208,13 +1208,13 @@
                 .then(data => {
                     if (data.message) {
                         alert(data.message);
-                        
+
                         // Remove the row from display
                         const customerRow = document.querySelector(`[data-customer-id="${customerId}"]`);
                         if (customerRow) {
                             customerRow.remove();
                         }
-                        
+
                         // Reload page to refresh all data
                         setTimeout(() => {
                             location.reload();
