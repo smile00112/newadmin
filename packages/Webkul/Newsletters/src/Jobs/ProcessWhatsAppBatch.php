@@ -50,8 +50,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
 
             $mailingList->update([
                 'status' => 'completed',
-                'sent_at' => now(),
-                'sent_count' => $mailingList->customerNumbers()->count(),
+              // 'sent_at' => now(),
             ]);
 
             try {

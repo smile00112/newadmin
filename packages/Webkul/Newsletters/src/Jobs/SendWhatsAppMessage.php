@@ -89,7 +89,48 @@ class SendWhatsAppMessage implements ShouldQueue
             //заносим в стоп лист
             \Webkul\Newsletters\Models\StopList::create(['phone_number' => $customer->phone_number]);
 
-        } else {
+            //смотрим конец ли рассылки и делаем уведомления
+            $mailingList = $customer->mailingList;
+            if ($mailingList) {
+                $remainingCount = $mailingList->customerNumbers()
+                    ->where('sending', false)
+                    ->where('send_error', false)
+                    ->count();
+
+                if ($remainingCount === 0) {
+                    // Это последнее сообщение!
+                    Log::info("Last message sent for mailing list", [
+                        'mailing_list_id' => $mailingList->id,
+                        'customer_id' => $customer->id
+                    ]);
+
+                    // Обновляем статус рассылки
+                    $mailingList->update([
+                        'status' => 'completed',
+                    ]);
+
+                    // Broadcast completion event
+                    broadcast(new \Webkul\Newsletters\Events\MailingListCompleted($mailingList));
+
+                    // FCM уведомление (как в ProcessWhatsAppBatch)
+                    try {
+                        $fcm = app(\Webkul\Admin\Services\FcmNotificationService::class);
+                        if ($fcm && $fcm->isInitialized()) {
+                            $fcm->sendToAllAdmins(
+                                'Рассылка завершена',
+                                'Рассылка #' . $mailingList->id . ' завершена',
+                                ['type' => 'mailing.completed', 'mailing_list_id' => (string) $mailingList->id]
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send FCM for last message', ['error' => $e->getMessage()]);
+                    }
+                }
+            }
+
+
+
+            } else {
             Log::error("Failed to send WhatsApp message", [
                 'instance_id' => $this->instanceId,
                 'phone' => $customer->phone_number
