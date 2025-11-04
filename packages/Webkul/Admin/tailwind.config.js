@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ["./src/Resources/**/*.blade.php", "./src/Resources/**/*.js"],
+    content: [
+        "./src/Resources/**/*.blade.php", 
+        "./src/Resources/**/*.js",
+        "../../Newsletters/src/Resources/**/*.blade.php"
+    ],
 
     theme: {
         container: {
@@ -44,6 +48,8 @@ module.exports = {
     safelist: [
         {
             pattern: /icon-/,
-        }
+        },
+        'min-w-[100px]',
+        'min-w-[80px]'
     ]
 };

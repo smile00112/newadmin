@@ -106,7 +106,7 @@
                                     $progressPercentage = $totalNumbers > 0 ? round(($sentNumbers / $totalNumbers) * 100) : 0;
                                 @endphp
                                 <div class="flex items-center gap-2">
-                                    <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[100px]">
+                                    <div class="flex-1 flex-shrink-0 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[100px]">
                                         <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                                              style="width: {{ $progressPercentage }}%"
                                              data-progress="{{ $progressPercentage }}"></div>
