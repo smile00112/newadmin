@@ -113,10 +113,10 @@ class SendWhatsAppMessage implements ShouldQueue
                     // Broadcast completion event
                     broadcast(new \Webkul\Newsletters\Events\MailingListCompleted($mailingList));
 
-                    // FCM уведомление (как в ProcessWhatsAppBatch)
+                    // FCM уведомление
                     try {
                         $fcm = app(FcmNotificationService::class);
-                        if ($fcm && $fcm->isInitialized()) {
+                        if ($fcm) {
                             $fcm->sendToAllAdmins(
                                 'Рассылка завершена',
                                 'Рассылка #' . $mailingList->id . ' завершена',

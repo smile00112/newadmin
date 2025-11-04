@@ -43,46 +43,46 @@ class ProcessWhatsAppBatch implements ShouldQueue
 
 
 
-        if ($customers->isEmpty()) {
-            Log::info("Mailing list completed: no more customers to process", [
-                'mailing_list_id' => $this->mailingListId
-            ]);
-
-            $mailingList->update([
-                'status' => 'completed',
-              // 'sent_at' => now(),
-            ]);
-
-            try {
-                // Broadcast completion event
-                broadcast(new MailingListCompleted($mailingList));
-            } catch (\Exception $e) {
-                Log::error('Failed to broadcast MailingListCompleted', [
-                    'mailing_list_id' => $this->mailingListId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            try {
-                // Send FCM notification to all admins
-                $fcm = app(FcmNotificationService::class);
-                if ($fcm && $fcm->isInitialized()) {
-                    $title = 'Рассылка завершена';
-                    $body = 'Рассылка #' . $this->mailingListId . ' завершена';
-                    $fcm->sendToAllAdmins($title, $body, [
-                        'type' => 'mailing.completed',
-                        'mailing_list_id' => (string) $this->mailingListId,
-                    ]);
-                }
-            } catch (\Exception $e) {
-                Log::error('Failed to send FCM for MailingListCompleted', [
-                    'mailing_list_id' => $this->mailingListId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            return;
-        }
+//        if ($customers->isEmpty()) {
+//            Log::info("Mailing list completed: no more customers to process", [
+//                'mailing_list_id' => $this->mailingListId
+//            ]);
+//
+//            $mailingList->update([
+//                'status' => 'completed',
+//              // 'sent_at' => now(),
+//            ]);
+//
+//            try {
+//                // Broadcast completion event
+//                broadcast(new MailingListCompleted($mailingList));
+//            } catch (\Exception $e) {
+//                Log::error('Failed to broadcast MailingListCompleted', [
+//                    'mailing_list_id' => $this->mailingListId,
+//                    'error' => $e->getMessage(),
+//                ]);
+//            }
+//
+//            try {
+//                // Send FCM notification to all admins
+//                $fcm = app(FcmNotificationService::class);
+//                if ($fcm && $fcm->isInitialized()) {
+//                    $title = 'Рассылка завершена';
+//                    $body = 'Рассылка #' . $this->mailingListId . ' завершена';
+//                    $fcm->sendToAllAdmins($title, $body, [
+//                        'type' => 'mailing.completed',
+//                        'mailing_list_id' => (string) $this->mailingListId,
+//                    ]);
+//                }
+//            } catch (\Exception $e) {
+//                Log::error('Failed to send FCM for MailingListCompleted', [
+//                    'mailing_list_id' => $this->mailingListId,
+//                    'error' => $e->getMessage(),
+//                ]);
+//            }
+//
+//            return;
+//        }
 
         // Check if mailing hours allow sending
         if (!$this->isWithinMailingHours($mailingList)) {
