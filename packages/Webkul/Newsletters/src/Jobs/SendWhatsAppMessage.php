@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Webkul\Admin\Services\FcmNotificationService;
 use Webkul\Newsletters\Models\VacapInstance;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Services\WhatsAppMailingService;
@@ -114,7 +115,7 @@ class SendWhatsAppMessage implements ShouldQueue
 
                     // FCM уведомление (как в ProcessWhatsAppBatch)
                     try {
-                        $fcm = app(\Webkul\Admin\Services\FcmNotificationService::class);
+                        $fcm = app(FcmNotificationService::class);
                         if ($fcm && $fcm->isInitialized()) {
                             $fcm->sendToAllAdmins(
                                 'Рассылка завершена',
