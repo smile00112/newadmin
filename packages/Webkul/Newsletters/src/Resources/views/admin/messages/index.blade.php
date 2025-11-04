@@ -504,6 +504,11 @@
 
                     const phoneNumber = document.getElementById('editPhoneNumber').value;
                     loadChatHistory(customerId, phoneNumber);
+                    
+                    // Обновить данные через 1 секунду после отправки
+                    setTimeout(() => {
+                        loadChatHistory(customerId, phoneNumber);
+                    }, 1000);
                 } else {
                     showReplyStatus(data.message, 'error');
                 }
