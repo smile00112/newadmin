@@ -40,6 +40,6 @@ class VacapInstance extends Model
 
     public function customerNumbers(): HasMany
     {
-        return $this->hasMany(CustomerNumber::class);
+        return $this->hasMany(CustomerNumber::class, 'whatsapp_instance_id', 'id');
     }
 }

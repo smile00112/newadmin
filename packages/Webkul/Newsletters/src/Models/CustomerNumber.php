@@ -66,7 +66,7 @@ class CustomerNumber extends Model
      */
     public function whatsAppInstance(): belongsTo
     {
-        return $this->belongsTo(VacapInstance::class, 'whatsapp_instance_id', 'id', 'whatsapp_instance_id');
+        return $this->belongsTo(VacapInstance::class, 'whatsapp_instance_id', 'id');
     }
 
     /**

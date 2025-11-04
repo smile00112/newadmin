@@ -86,14 +86,16 @@ class HooksController extends Controller
      */
     private function handleIncomingMessage(string $chatId, array $instanceData): void
     {
-//        echo 22222;
+
         // Extract phone number from chatId (remove @c.us suffix)
         $phoneNumber = str_replace('@c.us', '', $chatId);
 
         $idInstance = $instanceData['idInstance'];
         if($idInstance){
-            $instance = VacapInstance::with('customerNumbers')->where('login', $idInstance)->whereHas('customerNumbers', function($q) use($phoneNumber){
-                $q->where('phone', $phoneNumber);
+            $instance = VacapInstance::with('customerNumbers')
+                //->where('login', $phoneNumber)
+                ->whereHas('customerNumbers', function($q) use($phoneNumber){
+                    $q->where('phone_number', $phoneNumber);
             })->first();
 
             if($instance){
@@ -101,7 +103,7 @@ class HooksController extends Controller
             }
 
         }
-//dd($instance);
+
         if(!$customerNumber){
             Log::warning("HOOK__handleIncomingMessage  customerNumber NOT found", [
                 'chatId' => $chatId,
