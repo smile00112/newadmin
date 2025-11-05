@@ -40,8 +40,6 @@ class MailingList extends Model
         'active' => 'boolean',
         'start_at' => 'datetime',
         'message_delay' => 'integer',
-        'mailing_hours_from' => 'datetime',
-        'mailing_hours_to' => 'datetime',
     ];
 
     /**
