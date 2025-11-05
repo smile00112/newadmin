@@ -239,3 +239,5 @@ php artisan queue:work redis --queue=whatsapp-mailing,broadcastable,default,what
 
 
 
+
+

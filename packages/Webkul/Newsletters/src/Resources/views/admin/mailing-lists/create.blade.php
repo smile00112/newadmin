@@ -49,23 +49,24 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Active Status -->
-                    <div>
-                        <label class="flex items-center space-x-3">
-                            <input
-                                type="checkbox"
-                                name="active"
-                                value="1"
+{{--                    <div>--}}
+{{--                        <label class="flex items-center space-x-3">--}}
+{{--                            <input--}}
+{{--                                type="checkbox"--}}
+{{--                                name="active"--}}
+{{--                                value="1"--}}
 {{--                                {{ old('active', true) ? 'checked' : '' }}--}}
-                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                            >
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {{ __('newsletters::app.admin.mailing-lists.active') }}
-                            </span>
-                        </label>
-                        @error('active')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
+{{--                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"--}}
+{{--                            >--}}
+{{--                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">--}}
+{{--                                {{ __('newsletters::app.admin.mailing-lists.active') }}--}}
+{{--                            </span>--}}
+{{--                        </label>--}}
+{{--                        @error('active')--}}
+{{--                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>--}}
+{{--                        @enderror--}}
+{{--                    </div>--}}
+
 
                     <!-- Start At -->
                     <div>
@@ -167,55 +168,55 @@
                 </div>
                 <div class="p-6">
                     <div id="whatsappInstancesContainer">
-                        <div class="whatsapp-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.whatsapp-instances.link-name') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="whatsapp_instances[0][link_name]"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.whatsapp-instances.login') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="whatsapp_instances[0][login]"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.whatsapp-instances.password') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="whatsapp_instances[0][password]"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                </div>
-                            </div>
-                            <div class="flex justify-end">
-                                <button type="button" onclick="removeWhatsAppInstanceRow(this)"
-                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    {{ __('newsletters::app.common.actions.delete') }}
-                                </button>
-                            </div>
-                        </div>
+{{--                        <div class="whatsapp-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">--}}
+{{--                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">--}}
+{{--                                <div>--}}
+{{--                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">--}}
+{{--                                        {{ __('newsletters::app.admin.whatsapp-instances.link-name') }}--}}
+{{--                                        <span class="text-red-500">*</span>--}}
+{{--                                    </label>--}}
+{{--                                    <input--}}
+{{--                                        type="text"--}}
+{{--                                        name="whatsapp_instances[0][link_name]"--}}
+{{--                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"--}}
+{{--                                        required--}}
+{{--                                    >--}}
+{{--                                </div>--}}
+{{--                                <div>--}}
+{{--                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">--}}
+{{--                                        {{ __('newsletters::app.admin.whatsapp-instances.login') }}--}}
+{{--                                        <span class="text-red-500">*</span>--}}
+{{--                                    </label>--}}
+{{--                                    <input--}}
+{{--                                        type="text"--}}
+{{--                                        name="whatsapp_instances[0][login]"--}}
+{{--                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"--}}
+{{--                                        required--}}
+{{--                                    >--}}
+{{--                                </div>--}}
+{{--                                <div>--}}
+{{--                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">--}}
+{{--                                        {{ __('newsletters::app.admin.whatsapp-instances.password') }}--}}
+{{--                                        <span class="text-red-500">*</span>--}}
+{{--                                    </label>--}}
+{{--                                    <input--}}
+{{--                                        type="text"--}}
+{{--                                        name="whatsapp_instances[0][password]"--}}
+{{--                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue1-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"--}}
+{{--                                        required--}}
+{{--                                    >--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                            <div class="flex justify-end">--}}
+{{--                                <button type="button" onclick="removeWhatsAppInstanceRow(this)"--}}
+{{--                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">--}}
+{{--                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">--}}
+{{--                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>--}}
+{{--                                    </svg>--}}
+{{--                                    {{ __('newsletters::app.common.actions.delete') }}--}}
+{{--                                </button>--}}
+{{--                            </div>--}}
+{{--                        </div>--}}
                     </div>
                 </div>
             </div>
@@ -241,43 +242,43 @@
                 </div>
                 <div class="p-6">
                     <div id="customerNumbersContainer">
-                        <div class="customer-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.customer-numbers.phone-number') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="customer_numbers[0][phone_number]"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        {{ __('newsletters::app.admin.customer-numbers.name') }}
-                                        <span class="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="customer_numbers[0][name]"
-                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        required
-                                    >
-                                </div>
-                            </div>
-                            <div class="flex justify-end">
-                                <button type="button" onclick="removeCustomerNumberRow(this)"
-                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    {{ __('newsletters::app.common.actions.delete') }}
-                                </button>
-                            </div>
-                        </div>
+{{--                        <div class="customer-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">--}}
+{{--                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">--}}
+{{--                                <div>--}}
+{{--                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">--}}
+{{--                                        {{ __('newsletters::app.admin.customer-numbers.phone-number') }}--}}
+{{--                                        <span class="text-red-500">*</span>--}}
+{{--                                    </label>--}}
+{{--                                    <input--}}
+{{--                                        type="text"--}}
+{{--                                        name="customer_numbers[0][phone_number]"--}}
+{{--                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"--}}
+{{--                                        required--}}
+{{--                                    >--}}
+{{--                                </div>--}}
+{{--                                <div>--}}
+{{--                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">--}}
+{{--                                        {{ __('newsletters::app.admin.customer-numbers.name') }}--}}
+{{--                                        <span class="text-red-500">*</span>--}}
+{{--                                    </label>--}}
+{{--                                    <input--}}
+{{--                                        type="text"--}}
+{{--                                        name="customer_numbers[0][name]"--}}
+{{--                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"--}}
+{{--                                        required--}}
+{{--                                    >--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                            <div class="flex justify-end">--}}
+{{--                                <button type="button" onclick="removeCustomerNumberRow(this)"--}}
+{{--                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">--}}
+{{--                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">--}}
+{{--                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>--}}
+{{--                                    </svg>--}}
+{{--                                    {{ __('newsletters::app.common.actions.delete') }}--}}
+{{--                                </button>--}}
+{{--                            </div>--}}
+{{--                        </div>--}}
                     </div>
                 </div>
             </div>
@@ -425,7 +426,7 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.admin.whatsapp-instances.password') }} <span class="text-red-500">*</span>
                         </label>
-                        <input type="password" name="whatsapp_instances[${whatsappInstanceIndex}][password]"
+                        <input type="text" name="whatsapp_instances[${whatsappInstanceIndex}][password]"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             required>
                     </div>
@@ -574,7 +575,7 @@
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         {{ __('newsletters::app.admin.whatsapp-instances.password') }} <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="password" name="whatsapp_instances[${whatsappInstanceIndex}][password]"
+                                    <input type="text" name="whatsapp_instances[${whatsappInstanceIndex}][password]"
                                         value="${password.replace(/"/g, '&quot;')}"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                         required>
@@ -628,14 +629,14 @@
                 const fields = parseCSVLine(line);
                 console.log('Parsed fields:', fields);
 
-                if (fields.length >= 2) {
+                if (fields.length >= 1) {
                     const phone_number_raw = fields[0] ? fields[0].trim() : '';
                     const phone_number = sanitizePhoneNumber(phone_number_raw);
-                    const name = fields[1] ? fields[1].trim() : '';
+                    const name = fields[1] ? fields[1].trim() : 'Нет';
 
                     console.log('Extracted data:', { phone_number, name });
 
-                    if (phone_number && name) {
+                    if (phone_number) {
                         const newRow = document.createElement('div');
                         newRow.className = 'customer-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
                         newRow.innerHTML = `
@@ -712,9 +713,16 @@
         }
 
         // Remove + - ( ) spaces and any non-digit characters from phone
+        // If phone starts with 89, replace 8 with 7 (89 -> 79)
         function sanitizePhoneNumber(phone) {
             if (!phone) return '';
-            return phone.replace(/[^\d]/g, '');
+            // Оставляем только цифры
+            let cleaned = phone.replace(/[^\d]/g, '');
+            // Если номер начинается с 89, заменяем первую цифру на 7
+            if (cleaned.startsWith('89')) {
+                cleaned = '7' + cleaned.substring(1);
+            }
+            return cleaned;
         }
     </script>
 </x-admin::layouts>

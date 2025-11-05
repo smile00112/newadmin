@@ -28,8 +28,8 @@ class MailingList extends Model
         'mailing_hours_from',
         'mailing_hours_to',
         'message_delay',
-        'status', //
-        //'start_at'
+        'start_at',
+        'status' // created, pending, completed
     ];
 
     /**
@@ -40,7 +40,8 @@ class MailingList extends Model
         'active' => 'boolean',
         'start_at' => 'datetime',
         'message_delay' => 'integer',
-
+        'mailing_hours_from' => 'datetime',
+        'mailing_hours_to' => 'datetime',
     ];
 
     /**

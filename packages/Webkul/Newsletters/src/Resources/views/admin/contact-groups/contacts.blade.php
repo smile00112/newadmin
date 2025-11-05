@@ -29,7 +29,7 @@
     </div>
 
     <!-- Import Modal -->
-    <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-10">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white dark:bg-gray-800">
             <div class="mt-3">
                 <div class="flex items-center justify-between mb-4">
@@ -84,7 +84,7 @@
                         <p class="font-medium">{{ __('newsletters::app.admin.contacts.select-columns') }}</p>
                         <p id="rowCount" class="mt-1"></p>
                     </div>
-                    
+
                     <div class="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
@@ -194,7 +194,7 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('delimiter', delimiter);
-                formData.append('has_header', hasHeader);
+                formData.append('has_header', hasHeader ? '1' : '0');
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
