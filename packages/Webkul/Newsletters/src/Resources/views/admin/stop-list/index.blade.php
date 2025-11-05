@@ -28,10 +28,10 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table">
-            <thead>
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                    <th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         <label class="flex items-center cursor-pointer">
                             <input type="checkbox"
                                    id="select-all-checkbox"
@@ -40,25 +40,25 @@
                             <span class="ml-2">{{ __('newsletters::app.admin.stop-list.select_all') }}</span>
                         </label>
                     </th>
-                    <th>{{ __('newsletters::app.admin.stop-list.table.id') }}</th>
-                    <th>{{ __('newsletters::app.admin.stop-list.table.phone-number') }}</th>
-                    <th>{{ __('newsletters::app.admin.stop-list.table.created-at') }}</th>
-                    <th>{{ __('newsletters::app.admin.stop-list.table.actions') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.stop-list.table.id') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.stop-list.table.phone-number') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.stop-list.table.created-at') }}</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.stop-list.table.actions') }}</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($stopList as $item)
                     <tr>
-                        <td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             <input type="checkbox"
                                    class="item-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                    value="{{ $item->id }}"
                                    onchange="updateDeleteButton()">
                         </td>
-                        <td>{{ $item->id }}</td>
-                        <td>{{ $item->phone_number }}</td>
-                        <td>{{ $item->created_at ? $item->created_at->format('Y-m-d H:i:s') : '-' }}</td>
-                        <td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $item->id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $item->phone_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $item->created_at ? $item->created_at->format('Y-m-d H:i:s') : '-' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             <div class="flex gap-2">
                                 <a href="{{ route('admin.newsletters.stop-list.edit', $item->id) }}"
                                    class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"

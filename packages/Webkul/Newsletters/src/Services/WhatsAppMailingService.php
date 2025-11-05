@@ -188,9 +188,15 @@ class WhatsAppMailingService
      */
     public function getRandomInstance(MailingList $mailingList): ?VacapInstance
     {
-        return $mailingList->whatsappInstances()
-            ->inRandomOrder()
-            ->first();
+        $i = $mailingList->whatsappInstances()
+            ->inRandomOrder();
+
+        Log::warning("getRandomInstance", [
+            'random_instances' => $i,
+
+        ]);
+
+        return $i->first();
     }
 
     /**
