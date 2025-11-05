@@ -35,7 +35,7 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        return view('admin::dashboard.index')->with([
+        return view('newsletters::admin.dashboard-newsletters.index')->with([
             'startDate' => $this->dashboardHelper->getStartDate(),
             'endDate'   => $this->dashboardHelper->getEndDate(),
         ]);

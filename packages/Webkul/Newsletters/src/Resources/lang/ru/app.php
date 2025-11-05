@@ -231,6 +231,12 @@ return [
             'field-favorite-dish' => 'Любимое блюдо',
             'field-store' => 'Магазин',
         ],
+
+        'dashboard' => [
+            'index' => [
+                'store-stats' => 'Статистика рассылок'
+            ]
+        ]
     ],
 
     'sidebar' => [
