@@ -103,8 +103,9 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return;
         }
 
-        $instance = $whatsappService->getRandomInstance($mailingList);
-        if (!$instance) {
+        // Get all instances for round-robin selection
+        $instances = $mailingList->whatsappInstances;
+        if ($instances->isEmpty()) {
             Log::error("No WhatsApp instance available for mailing list", [
                 'mailing_list_id' => $this->mailingListId
             ]);
@@ -113,6 +114,8 @@ class ProcessWhatsAppBatch implements ShouldQueue
 
         $messageDelay = $mailingList->message_delay ?? 0; // Delay between messages in seconds
         $messageIndex = 0;
+        $instanceCounter = 0; // Counter for round-robin instance selection
+        $instancesCount = $instances->count();
 
         foreach ($customers as $customer) {
             //проверка стоит ли номер в стопе
@@ -155,9 +158,19 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 continue;
             }
 
+            // Select instance using round-robin (cyclic selection)
+            // Instance counter increases only when we actually send a message
+            $instanceIndex = $instanceCounter % $instancesCount;
+            $instance = $instances->get($instanceIndex);
+            $instanceCounter++; // Increment for next message
+
             Log::info("Start Sending message to customer", [
                 'customer_id' => $customer->id,
                 'mailing_list_id' => $this->mailingListId,
+                'instance_id' => $instance->id,
+                'instance_index' => $instanceIndex,
+                'now' => now()->format("Y-m-d H:i:s"),
+                'now_and_delay' => now()->addSeconds($messageDelay)->format("Y-m-d H:i:s"),
             ]);
 
             // Send individual message with delay based on message_delay
@@ -167,7 +180,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 $customer->id,
                 $randomWhatsappInstance
             )
-                ->delay(now()->addSeconds($messageIndex * $messageDelay))
+                ->delay(now()->addSeconds($messageDelay))
                 ->onQueue('whatsapp-send');
 
             $messageIndex++;

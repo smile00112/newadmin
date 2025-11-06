@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" class="space-y-6">
+    <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @method('PUT')
 
@@ -58,6 +58,62 @@
                         @error('message_text')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
+                    </div>
+
+                    <!-- Media File Upload -->
+                    <div>
+                        <label for="media_file" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.media-file') }} ({{ __('newsletters::app.admin.mailing-lists.photo-or-video') }})
+                        </label>
+                        <input
+                            type="file"
+                            name="media_file"
+                            id="media_file"
+                            accept="image/*,video/*"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        >
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {{ __('newsletters::app.admin.mailing-lists.media-file-hint') }}
+                        </p>
+                        @error('media_file')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        
+                        <!-- Existing Media Display -->
+                        @if($mailingList->message_links && isset($mailingList->message_links[0]))
+                            @php
+                                $media = $mailingList->message_links[0];
+                            @endphp
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                    {{ __('newsletters::app.admin.mailing-lists.current-media') }}:
+                                </p>
+                                <div class="relative inline-block">
+                                    @if($media['type'] === 'image')
+                                        <img src="{{ $media['url'] }}" alt="Current media" class="max-w-xs max-h-48 rounded-lg">
+                                    @else
+                                        <video src="{{ $media['url'] }}" controls class="max-w-xs max-h-48 rounded-lg"></video>
+                                    @endif
+                                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $media['original_name'] ?? '' }} ({{ number_format($media['size'] / 1024, 2) }} KB)
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                        
+                        <!-- New Media Preview -->
+                        <div id="media_preview" class="mt-2 hidden">
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                {{ __('newsletters::app.admin.mailing-lists.new-media-preview') }}:
+                            </p>
+                            <div class="relative inline-block">
+                                <img id="media_preview_image" src="" alt="Preview" class="max-w-xs max-h-48 rounded-lg hidden">
+                                <video id="media_preview_video" src="" controls class="max-w-xs max-h-48 rounded-lg hidden"></video>
+                                <button type="button" onclick="removeMediaPreview()" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                                    ×
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                 <!-- Mailing Schedule Settings -->
@@ -1821,6 +1877,56 @@
                     notification.remove();
                 }, 300);
             }, 3000);
+        }
+
+        // Media file preview
+        const mediaFileInput = document.getElementById('media_file');
+        if (mediaFileInput) {
+            mediaFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const preview = document.getElementById('media_preview');
+                    const previewImage = document.getElementById('media_preview_image');
+                    const previewVideo = document.getElementById('media_preview_video');
+                    
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            previewImage.src = e.target.result;
+                            previewImage.classList.remove('hidden');
+                            previewVideo.classList.add('hidden');
+                            preview.classList.remove('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                    } else if (file.type.startsWith('video/')) {
+                        const url = URL.createObjectURL(file);
+                        previewVideo.src = url;
+                        previewVideo.classList.remove('hidden');
+                        previewImage.classList.add('hidden');
+                        preview.classList.remove('hidden');
+                    }
+                }
+            });
+        }
+
+        function removeMediaPreview() {
+            const mediaFileInput = document.getElementById('media_file');
+            const preview = document.getElementById('media_preview');
+            const previewImage = document.getElementById('media_preview_image');
+            const previewVideo = document.getElementById('media_preview_video');
+            
+            if (mediaFileInput) {
+                mediaFileInput.value = '';
+            }
+            if (preview) {
+                preview.classList.add('hidden');
+            }
+            if (previewImage) {
+                previewImage.src = '';
+            }
+            if (previewVideo) {
+                previewVideo.src = '';
+            }
         }
 
     </script>

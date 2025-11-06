@@ -11,6 +11,7 @@ use Webkul\Newsletters\Repositories\VacapInstanceRepository;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Webkul\Newsletters\Jobs\ProcessWhatsAppMailingList;
 
 class MailingListController extends Controller
@@ -74,6 +75,7 @@ class MailingListController extends Controller
             'mailing_hours_from' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'mailing_hours_to' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'message_delay' => 'nullable|integer|min:1|max:3600',
+            'media_file' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:10240', // 10MB max
 
             // WhatsApp Instances validation
             'whatsapp_instances.*.link_name' => 'required|string|max:255',
@@ -89,9 +91,34 @@ class MailingListController extends Controller
             DB::beginTransaction();
             Log::info('Database transaction started for mailing list creation');
 
+            // Handle file upload
+            $messageLinks = null;
+            if ($request->hasFile('media_file')) {
+                $file = $request->file('media_file');
+                $path = $file->store('newsletters/media', 'public');
+                $url = Storage::url($path);
+                
+                // Убеждаемся, что URL полный (начинается с http:// или https://)
+                if (!preg_match('/^https?:\/\//', $url)) {
+                    $url = url($url);
+                }
+                
+                $messageLinks = [
+                    [
+                        'type' => strpos($file->getMimeType(), 'image/') === 0 ? 'image' : 'video',
+                        'url' => $url,
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ]
+                ];
+            }
+
             // Create mailing list first
             $mailingListData = [
                 'message_text' => $request->input('message_text'),
+                'message_links' => $messageLinks,
                 'active' => (bool) $request->input('active', false),
                 'start_at' => $request->input('start_at'),
                 'mailing_hours_from' => $request->input('mailing_hours_from'),
@@ -285,6 +312,7 @@ class MailingListController extends Controller
             'mailing_hours_from' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'mailing_hours_to' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'message_delay' => 'nullable|integer|min:1|max:3600',
+            'media_file' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:10240', // 10MB max
 
             // WhatsApp Instances validation
             'whatsapp_instances.*.link_name' => 'nullable|string|max:255',
@@ -300,9 +328,42 @@ class MailingListController extends Controller
             DB::beginTransaction();
             Log::info('Database transaction started for mailing list update', ['mailing_list_id' => $id]);
 
+            // Get existing mailing list to preserve existing message_links if no new file is uploaded
+            $existingMailingList = $this->mailingListRepository->find($id);
+            $messageLinks = $existingMailingList->message_links ?? null;
+
+            // Handle file upload
+            if ($request->hasFile('media_file')) {
+                // Delete old file if exists
+                if ($messageLinks && isset($messageLinks[0]['path'])) {
+                    Storage::disk('public')->delete($messageLinks[0]['path']);
+                }
+
+                $file = $request->file('media_file');
+                $path = $file->store('newsletters/media', 'public');
+                $url = Storage::url($path);
+                
+                // Убеждаемся, что URL полный (начинается с http:// или https://)
+                if (!preg_match('/^https?:\/\//', $url)) {
+                    $url = url($url);
+                }
+                
+                $messageLinks = [
+                    [
+                        'type' => strpos($file->getMimeType(), 'image/') === 0 ? 'image' : 'video',
+                        'url' => $url,
+                        'path' => $path,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                    ]
+                ];
+            }
+
             // Update mailing list
             $mailingListData = [
                 'message_text' => $request->input('message_text'),
+                'message_links' => $messageLinks,
                 'active' => (bool) $request->input('active', false),
                 'start_at' => $request->input('start_at'),
                 'mailing_hours_from' => $request->input('mailing_hours_from'),

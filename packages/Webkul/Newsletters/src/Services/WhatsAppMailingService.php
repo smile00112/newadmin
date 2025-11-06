@@ -229,4 +229,61 @@ class WhatsAppMailingService
     {
         return $instances->random();
     }
+
+    /**
+     * Send WhatsApp media file by URL using VacapInstance
+     * 
+     * @param VacapInstance $instance
+     * @param string $phoneNumber
+     * @param string $urlFile URL ссылка на файл
+     * @param string $fileName Имя файла с расширением
+     * @param string|null $caption Подпись к файлу (опционально)
+     * @return string|null ID сообщения или null при ошибке
+     */
+    public function sendFileByUrl(
+        VacapInstance $instance,
+        string $phoneNumber,
+        string $urlFile,
+        string $fileName,
+        ?string $caption = null
+    ): ?string {
+        try {
+            $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
+            $response = $greenApiService->sendFileByUrl(
+                $phoneNumber . '@c.us',
+                $urlFile,
+                $fileName,
+                $caption
+            );
+
+            if (isset($response['idMessage'])) {
+                Log::info("WhatsApp media file sent successfully", [
+                    'instance_id' => $instance->id,
+                    'phone' => $phoneNumber,
+                    'url_file' => $urlFile,
+                    'file_name' => $fileName,
+                    'response' => $response
+                ]);
+
+                return $response['idMessage'];
+            }
+
+            Log::error("WhatsApp API error - no idMessage in response", [
+                'instance_id' => $instance->id,
+                'phone' => $phoneNumber,
+                'url_file' => $urlFile,
+                'response' => $response
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error("WhatsApp media sending failed", [
+                'instance_id' => $instance->id,
+                'phone' => $phoneNumber,
+                'url_file' => $urlFile,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
 }

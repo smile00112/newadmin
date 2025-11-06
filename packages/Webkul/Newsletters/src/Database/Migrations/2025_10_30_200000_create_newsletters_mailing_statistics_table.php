@@ -20,9 +20,9 @@ return new class extends Migration
             $table->json('meta')->nullable();
             $table->timestamps();
 
-            $table->foreign('mailing_list_id')->references('id')->on('newsletters_mailing_lists')->onDelete('cascade');
-            $table->foreign('customer_number_id')->references('id')->on('newsletters_customer_numbers')->onDelete('cascade');
-            $table->index(['mailing_list_id','customer_number_id','event_type']);
+            $table->foreign('mailing_list_id', 'mli_id_nwsml')->references('id')->on('newsletters_mailing_lists')->onDelete('cascade');
+            $table->foreign('customer_number_id', 'cni_id_nwscn')->references('id')->on('newsletters_customer_numbers')->onDelete('cascade');
+            $table->index(['mailing_list_id','customer_number_id','event_type'], ',mlid_cnid_ety');
         });
     }
 

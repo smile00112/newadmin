@@ -54,6 +54,11 @@ return [
             'mailing-hours-to' => 'Mailing Hours To',
             'message-delay' => 'Message Delay (seconds)',
             'message-delay-hint' => 'Delay between messages in seconds (1-3600)',
+            'media-file' => 'Media File',
+            'photo-or-video' => 'Photo or Video',
+            'media-file-hint' => 'Maximum file size: 10MB. Supported formats: JPG, PNG, GIF, MP4, AVI, MOV, WEBM',
+            'current-media' => 'Current Media',
+            'new-media-preview' => 'New Media Preview',
         ],
 
         'customer-numbers' => [

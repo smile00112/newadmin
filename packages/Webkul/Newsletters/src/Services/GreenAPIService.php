@@ -115,4 +115,73 @@ class GreenAPIService
         return $response->json();
 
     }
+
+    /**
+     * Отправка видео, аудио, изображения, документа по URL
+     * 
+     * @param string $chatId ID чата (например, "79876543210@c.us" для личного чата)
+     * @param string $urlFile URL ссылка на файл (должна начинаться с http:// или https://)
+     * @param string $fileName Имя файла с расширением
+     * @param string|null $caption Подпись к файлу (опционально)
+     * @param string|null $quotedMessageId ID сообщения для ответа (опционально)
+     * @return array
+     * @throws GreenApiDataValidateException validate data error
+     * @throws GreenApiRequestException request error
+     */
+    public function sendFileByUrl(
+        string $chatId,
+        string $urlFile,
+        string $fileName,
+        ?string $caption = null,
+        ?string $quotedMessageId = null
+    ): array {
+        if (empty($chatId)) {
+            throw new GreenApiDataValidateException('chatId является обязательным параметром.');
+        }
+
+        if (empty($urlFile)) {
+            throw new GreenApiDataValidateException('urlFile является обязательным параметром.');
+        }
+
+        if (empty($fileName)) {
+            throw new GreenApiDataValidateException('fileName является обязательным параметром.');
+        }
+
+        // Проверка формата URL
+        if (!preg_match('/^https?:\/\//', $urlFile)) {
+            throw new GreenApiDataValidateException('urlFile должен начинаться с http:// или https://');
+        }
+
+        // Формирование тела запроса
+        $payload = [
+            'chatId' => $chatId,
+            'urlFile' => $urlFile,
+            'fileName' => $fileName,
+        ];
+
+        if (!empty($caption)) {
+            $payload['caption'] = $caption;
+        }
+
+        if (!empty($quotedMessageId)) {
+            $payload['quotedMessageId'] = $quotedMessageId;
+        }
+
+        // Формирование URL для запроса
+        $endpoint = "{$this->apiUrl}/waInstance{$this->idInstance}/sendFileByUrl/{$this->apiTokenInstance}";
+
+        // Отправка POST-запроса
+        $response = Http::timeout(30)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+            ])
+            ->post($endpoint, $payload);
+
+        // Обработка ответа
+        if (!$response->successful()) {
+            throw new GreenApiRequestException('GreenAPIService sendFileByUrl Ошибка API: ' . $response->body(), $response->status());
+        }
+
+        return $response->json();
+    }
 }
