@@ -97,12 +97,12 @@ class MailingListController extends Controller
                 $file = $request->file('media_file');
                 $path = $file->store('newsletters/media', 'public');
                 $url = Storage::url($path);
-                
+
                 // Убеждаемся, что URL полный (начинается с http:// или https://)
                 if (!preg_match('/^https?:\/\//', $url)) {
                     $url = url($url);
                 }
-                
+
                 $messageLinks = [
                     [
                         'type' => strpos($file->getMimeType(), 'image/') === 0 ? 'image' : 'video',
@@ -342,12 +342,12 @@ class MailingListController extends Controller
                 $file = $request->file('media_file');
                 $path = $file->store('newsletters/media', 'public');
                 $url = Storage::url($path);
-                
+
                 // Убеждаемся, что URL полный (начинается с http:// или https://)
                 if (!preg_match('/^https?:\/\//', $url)) {
                     $url = url($url);
                 }
-                
+
                 $messageLinks = [
                     [
                         'type' => strpos($file->getMimeType(), 'image/') === 0 ? 'image' : 'video',
@@ -909,23 +909,43 @@ class MailingListController extends Controller
             $fromTime = $mailingList->mailing_hours_from;
             $toTime = $mailingList->mailing_hours_to;
 
-            // Если текущее время меньше времени начала рассылки
-            if ($currentTime < $fromTime) {
-                // Вычисляем секунды до начала времени рассылки
-                $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
-                $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
-                if ($secondsUntilFrom > 0) {
-                    $delay = max($delay, $secondsUntilFrom);
+            // Проверяем, переходит ли диапазон через полночь
+            $spansMidnight = $toTime && $toTime < $fromTime;
+
+            if ($spansMidnight) {
+                // Диапазон переходит через полночь (например, 10:00 - 03:00)
+                // Мы в диапазоне, если: currentTime >= fromTime ИЛИ currentTime <= toTime
+                if ($currentTime >= $fromTime || $currentTime <= $toTime) {
+                    // Текущее время в диапазоне - можно начинать сразу (delay = 0)
+                    $delay = 0;
+                } else {
+                    // Текущее время между окончанием и началом (например, 04:00 - 09:59)
+                    // Устанавливаем задержку до начала времени рассылки
+                    $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                    $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                    if ($secondsUntilFrom > 0) {
+                        $delay = max($delay, $secondsUntilFrom);
+                    }
                 }
-            } elseif ($toTime && $currentTime > $toTime) {
-                // Если текущее время больше времени окончания - переносим на завтра
-                $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($mailingList->mailing_hours_from);
-                $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
-                if ($secondsUntilFrom > 0) {
-                    $delay = max($delay, $secondsUntilFrom);
+            } else {
+                // Обычный диапазон в пределах одного дня (например, 10:00 - 18:00)
+                if ($currentTime < $fromTime) {
+                    // Вычисляем секунды до начала времени рассылки
+                    $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                    $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                    if ($secondsUntilFrom > 0) {
+                        $delay = max($delay, $secondsUntilFrom);
+                    }
+                } elseif ($toTime && $currentTime > $toTime) {
+                    // Если текущее время больше времени окончания - переносим на завтра
+                    $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($mailingList->mailing_hours_from);
+                    $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
+                    if ($secondsUntilFrom > 0) {
+                        $delay = max($delay, $secondsUntilFrom);
+                    }
                 }
+                // Если текущее время в диапазоне mailing_hours_from - mailing_hours_to, delay = 0 (можно начинать)
             }
-            // Если текущее время в диапазоне mailing_hours_from - mailing_hours_to, delay = 0 (можно начинать)
         }
 
         return (int) $delay;
@@ -936,10 +956,6 @@ class MailingListController extends Controller
 
         $mailingList = $this->mailingListRepository->findOrFail($id);
         $service = new \Webkul\Newsletters\Services\WhatsAppMailingService();
-
-        //$vacapInstance = \Webkul\Newsletters\Models\VacapInstance::find(8);
-        //$text = "{🍷|🍸|🥂|🍹|🥃|🍾} {Алкоголь на дом|Алкоголь с доставкой|Напитки с доставкой|Экспресс-сервис напитков|Сервис алкоголя} от {Синица|Синица 24/7|Синица Delivery} — {привезём быстро|напитки доставляем|доставим заказ без задержек|работаем как экспресс-служба|курьер всегда на связи}
-        //{Оригинальные напитки и проверенная классика|Классика и новинки для любой компании|Топовые бренды и любимые позиции|Только проверенные варианты в ассортименте|Бутылки на любой вкус и настроение}";
 
         foreach($mailingList->customerNumbers as $customerNumber){
             if(\Webkul\Newsletters\Models\StopList::where('phone_number', $customerNumber->phone_number)->exists()){
