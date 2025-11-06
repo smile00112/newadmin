@@ -21,6 +21,9 @@ class WhatsAppMailingService
             $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
             //'chatId' => $phone.'@c.us',
             $response = $greenApiService->sendMessage($phoneNumber.'@c.us', $message);
+            Log::info("API sendMessage RESPONCE", [
+                'response' => $response
+            ]);
 
             if ($response['idMessage']) {
                 Log::info("WhatsApp message sent successfully", [
@@ -232,13 +235,14 @@ class WhatsAppMailingService
 
     /**
      * Send WhatsApp media file by URL using VacapInstance
-     * 
+     *
      * @param VacapInstance $instance
      * @param string $phoneNumber
      * @param string $urlFile URL ссылка на файл
      * @param string $fileName Имя файла с расширением
      * @param string|null $caption Подпись к файлу (опционально)
      * @return string|null ID сообщения или null при ошибке
+     *
      */
     public function sendFileByUrl(
         VacapInstance $instance,
@@ -255,6 +259,10 @@ class WhatsAppMailingService
                 $fileName,
                 $caption
             );
+
+            Log::info("API sendFileByUrl RESPONCE", [
+                'response' => $response
+            ]);
 
             if (isset($response['idMessage'])) {
                 Log::info("WhatsApp media file sent successfully", [
