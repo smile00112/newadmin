@@ -153,7 +153,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
             if (!$whatsappService->checkRateLimit()) {
                 // If rate limit exceeded, delay the remaining messages
                 ProcessWhatsAppBatch::dispatch($this->mailingListId, [$customer->id])
-                    ->delay(now()->addSecond($messageDelay))
+                    ->delay(now()->addSeconds($messageDelay))
                     ->onQueue('whatsapp-batch');
                 continue;
             }
@@ -174,13 +174,13 @@ class ProcessWhatsAppBatch implements ShouldQueue
             ]);
 
             // Send individual message with delay based on message_delay
-            $randomWhatsappInstance = $whatsappService->makeRandomMessage($mailingList->message_text);
+            $randomMessage = $whatsappService->makeRandomMessage($mailingList->message_text);
             SendWhatsAppMessage::dispatch(
                 $instance->id,
                 $customer->id,
-                $randomWhatsappInstance
+                $randomMessage
             )
-                ->delay(now()->addSeconds($messageDelay))
+                ->delay(now()->addSeconds($messageDelay * ($messageIndex > 0 ? 1 : 0) ))
                 ->onQueue('whatsapp-send');
 
             $messageIndex++;
