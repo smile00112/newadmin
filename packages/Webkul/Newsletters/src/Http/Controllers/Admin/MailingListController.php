@@ -905,50 +905,72 @@ class MailingListController extends Controller
 
         // Check mailing_hours_from (time)
         if ($mailingList->mailing_hours_from) {
-            $currentTime = $now->format('H:i');
             $fromTime = $mailingList->mailing_hours_from;
             $toTime = $mailingList->mailing_hours_to;
 
-            // Проверяем, переходит ли диапазон через полночь
-            $spansMidnight = $toTime && $toTime < $fromTime;
-
-            if ($spansMidnight) {
-                // Диапазон переходит через полночь (например, 10:00 - 03:00)
-                // Мы в диапазоне, если: currentTime >= fromTime ИЛИ currentTime <= toTime
-                if ($currentTime >= $fromTime || $currentTime <= $toTime) {
-                    // Текущее время в диапазоне - можно начинать сразу (delay = 0)
-                    $delay = 0;
-                } else {
-                    // Текущее время между окончанием и началом (например, 04:00 - 09:59)
-                    // Устанавливаем задержку до начала времени рассылки
-                    $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
-                    $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
-                    if ($secondsUntilFrom > 0) {
-                        $delay = max($delay, $secondsUntilFrom);
-                    }
+            if (!$toTime) {
+                // Если toTime не указан, считаем что диапазон не переходит через полночь
+                $hoursFromToday = $now->copy()->setTimeFromTimeString($fromTime);
+                $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                if ($secondsUntilFrom > 0) {
+                    $delay = max($delay, $secondsUntilFrom);
                 }
             } else {
-                // Обычный диапазон в пределах одного дня (например, 10:00 - 18:00)
-                if ($currentTime < $fromTime) {
-                    // Вычисляем секунды до начала времени рассылки
-                    $hoursFromToday = $now->copy()->setTimeFromTimeString($mailingList->mailing_hours_from);
-                    $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
-                    if ($secondsUntilFrom > 0) {
-                        $delay = max($delay, $secondsUntilFrom);
+                // Преобразуем время в минуты для корректного сравнения
+                $fromMinutes = $this->timeToMinutes($fromTime);
+                $toMinutes = $this->timeToMinutes($toTime);
+                $currentMinutes = $now->hour * 60 + $now->minute;
+
+                // Проверяем, переходит ли диапазон через полночь
+                $spansMidnight = $toMinutes < $fromMinutes;
+
+                if ($spansMidnight) {
+                    // Диапазон переходит через полночь (например, 10:00 - 03:00)
+                    // Мы в диапазоне, если: currentMinutes >= fromMinutes ИЛИ currentMinutes <= toMinutes
+                    if ($currentMinutes >= $fromMinutes || $currentMinutes <= $toMinutes) {
+                        // Текущее время в диапазоне - можно начинать сразу (delay = 0)
+                        $delay = 0;
+                    } else {
+                        // Текущее время между окончанием и началом (например, 04:00 - 09:59)
+                        // Устанавливаем задержку до начала времени рассылки
+                        $hoursFromToday = $now->copy()->setTimeFromTimeString($fromTime);
+                        $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                        if ($secondsUntilFrom > 0) {
+                            $delay = max($delay, $secondsUntilFrom);
+                        }
                     }
-                } elseif ($toTime && $currentTime > $toTime) {
-                    // Если текущее время больше времени окончания - переносим на завтра
-                    $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($mailingList->mailing_hours_from);
-                    $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
-                    if ($secondsUntilFrom > 0) {
-                        $delay = max($delay, $secondsUntilFrom);
+                } else {
+                    // Обычный диапазон в пределах одного дня (например, 10:00 - 18:00)
+                    if ($currentMinutes < $fromMinutes) {
+                        // Вычисляем секунды до начала времени рассылки
+                        $hoursFromToday = $now->copy()->setTimeFromTimeString($fromTime);
+                        $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                        if ($secondsUntilFrom > 0) {
+                            $delay = max($delay, $secondsUntilFrom);
+                        }
+                    } elseif ($currentMinutes > $toMinutes) {
+                        // Если текущее время больше времени окончания - переносим на завтра
+                        $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($fromTime);
+                        $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
+                        if ($secondsUntilFrom > 0) {
+                            $delay = max($delay, $secondsUntilFrom);
+                        }
                     }
+                    // Если текущее время в диапазоне mailing_hours_from - mailing_hours_to, delay = 0 (можно начинать)
                 }
-                // Если текущее время в диапазоне mailing_hours_from - mailing_hours_to, delay = 0 (можно начинать)
             }
         }
 
         return (int) $delay;
+    }
+
+    /**
+     * Преобразует время в формате "H:i" в минуты от начала дня
+     */
+    protected function timeToMinutes(string $time): int
+    {
+        [$hours, $minutes] = explode(':', $time);
+        return (int) $hours * 60 + (int) $minutes;
     }
 
     public function testMailing(int $id)
