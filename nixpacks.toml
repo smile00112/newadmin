@@ -24,6 +24,16 @@ cmds = [
     # Устанавливаем правильные права
     "chown -R www-data:www-data /app/storage/",
     "chmod -R 755 /app/storage/logs/",
+    "chmod -R 775 /app/storage/app/public/",
+    "chown -R www-data:www-data /app/storage/app/public/",
+
+    # Создаем директорию для загруженных файлов
+    "mkdir -p /app/storage/app/public/newsletters/media",
+    "chmod -R 775 /app/storage/app/public/newsletters",
+    "chown -R www-data:www-data /app/storage/app/public/newsletters",
+
+    # Создаем символическую ссылку для storage
+    "php /app/artisan storage:link || true",
 
     # Cодаём .env файл
 #    "touch /app/.env",
@@ -42,6 +52,13 @@ cmd = '/assets/start.sh'
 [staticAssets]
 "start.sh" = '''
 #!/bin/bash
+
+# Ensure storage link exists
+php /app/artisan storage:link || true
+
+# Set proper permissions for storage
+chmod -R 775 /app/storage/app/public || true
+chown -R www-data:www-data /app/storage/app/public || true
 
 # Transform the nginx configuration
 node /assets/scripts/prestart.mjs /assets/nginx.template.conf /etc/nginx.conf
@@ -207,6 +224,19 @@ http {
 
         location = /favicon.ico { access_log off; log_not_found off; }
         location = /robots.txt  { access_log off; log_not_found off; }
+
+        # Serve storage files directly
+        location /storage {
+            $if(NIXPACKS_PHP_ROOT_DIR) (
+                alias ${NIXPACKS_PHP_ROOT_DIR}/storage;
+            ) else (
+                alias /app/public/storage;
+            )
+            try_files $uri =404;
+            expires 30d;
+            add_header Cache-Control "public, immutable";
+            access_log off;
+        }
 
         $if(IS_LARAVEL) (
             error_page 404 /index.php;
