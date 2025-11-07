@@ -115,7 +115,8 @@ stderr_logfile=/var/log/worker-phpfpm.log
 "worker-laravel.conf" = '''
 [program:worker-laravel]
 process_name=%(program_name)s_%(process_num)02d
-command=bash -c 'exec php /app/artisan queue:work redis --queue=default --sleep=3 --tries=3 --max-time=3600'
+command=bash -c 'exec php /app/artisan queue:work redis --queue=default'
+#--sleep=3 --tries=3 --max-time=3600
 autostart=true
 autorestart=true
 stopasgroup=true
@@ -128,7 +129,7 @@ stderr_logfile=/var/log/worker-laravel.log
 
 [program:laravel-redis-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=bash -c 'exec php /app/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,default,whatsapp-batch,whatsapp-send'
+command=bash -c 'exec php /app/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,whatsapp-batch,whatsapp-send'
 autostart=true
 autorestart=true
 user=www-data

@@ -889,12 +889,18 @@ class MailingListController extends Controller
      */
     protected function calculateMailingDelay($mailingList): int
     {
-        $now = now();
+        // Явно используем часовой пояс из конфигурации
+        $timezone = config('app.timezone', 'UTC');
+        $now = now()->setTimezone($timezone);
         $delay = 0;
 
         // Check start_at (datetime)
         if ($mailingList->start_at) {
             $startAt = \Carbon\Carbon::parse($mailingList->start_at);
+            // Убеждаемся, что start_at в правильном часовом поясе
+            if ($startAt->timezone->getName() !== $timezone) {
+                $startAt = $startAt->setTimezone($timezone);
+            }
             if ($startAt->isFuture()) {
                 $secondsUntilStart = $now->diffInSeconds($startAt, false);
                 if ($secondsUntilStart > 0) {
@@ -919,6 +925,7 @@ class MailingListController extends Controller
                 // Преобразуем время в минуты для корректного сравнения
                 $fromMinutes = $this->timeToMinutes($fromTime);
                 $toMinutes = $this->timeToMinutes($toTime);
+                // Используем час и минуту из объекта $now, который уже в правильном часовом поясе
                 $currentMinutes = $now->hour * 60 + $now->minute;
 
                 // Проверяем, переходит ли диапазон через полночь
