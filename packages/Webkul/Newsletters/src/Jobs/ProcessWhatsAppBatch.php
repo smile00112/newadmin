@@ -196,16 +196,38 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return true; // No time restriction
         }
 
-        $checkTime = now()->addSeconds($secondsFromNow);
-        $currentTime = $checkTime->format('H:i');
+        // Явно используем часовой пояс из конфигурации
+        $timezone = config('app.timezone', 'UTC');
+        $checkTime = now()->setTimezone($timezone)->addSeconds($secondsFromNow);
+        
         $fromTime = $mailingList->mailing_hours_from;
         $toTime = $mailingList->mailing_hours_to;
 
-        if ($currentTime < $fromTime || ($toTime && $currentTime > $toTime)) {
-            return false;
+        // Преобразуем время в минуты для корректного сравнения
+        $fromMinutes = $this->timeToMinutes($fromTime);
+        $currentMinutes = $checkTime->hour * 60 + $checkTime->minute;
+
+        if (!$toTime) {
+            // Если toTime не указан, проверяем только fromTime
+            // Можно отправлять, если текущее время >= fromTime
+            return $currentMinutes >= $fromMinutes;
         }
 
-        return true;
+        // Если toTime указан, проверяем диапазон
+        $toMinutes = $this->timeToMinutes($toTime);
+
+        // Проверяем, переходит ли диапазон через полночь
+        $spansMidnight = $toMinutes < $fromMinutes;
+
+        if ($spansMidnight) {
+            // Диапазон переходит через полночь (например, 10:00 - 03:00)
+            // Мы в диапазоне, если: currentMinutes >= fromMinutes ИЛИ currentMinutes <= toMinutes
+            return $currentMinutes >= $fromMinutes || $currentMinutes <= $toMinutes;
+        } else {
+            // Обычный диапазон в пределах одного дня (например, 10:00 - 18:00)
+            // Мы в диапазоне, если: currentMinutes >= fromMinutes И currentMinutes <= toMinutes
+            return $currentMinutes >= $fromMinutes && $currentMinutes <= $toMinutes;
+        }
     }
 
     /**
@@ -217,8 +239,78 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return 0;
         }
 
-        $now = now();
-        $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($mailingList->mailing_hours_from);
-        return (int) $now->diffInSeconds($hoursFromTomorrow, false);
+        // Явно используем часовой пояс из конфигурации
+        $timezone = config('app.timezone', 'UTC');
+        $now = now()->setTimezone($timezone);
+        $delay = 0;
+
+        $fromTime = $mailingList->mailing_hours_from;
+        $toTime = $mailingList->mailing_hours_to;
+
+        if (!$toTime) {
+            // Если toTime не указан, считаем что диапазон не переходит через полночь
+            $hoursFromToday = $now->copy()->setTimeFromTimeString($fromTime);
+            $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+            if ($secondsUntilFrom > 0) {
+                $delay = $secondsUntilFrom;
+            } else {
+                // Если время уже прошло сегодня, переносим на завтра
+                $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($fromTime);
+                $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
+                if ($secondsUntilFrom > 0) {
+                    $delay = $secondsUntilFrom;
+                }
+            }
+        } else {
+            // Преобразуем время в минуты для корректного сравнения
+            $fromMinutes = $this->timeToMinutes($fromTime);
+            $toMinutes = $this->timeToMinutes($toTime);
+            $currentMinutes = $now->hour * 60 + $now->minute;
+
+            // Проверяем, переходит ли диапазон через полночь
+            $spansMidnight = $toMinutes < $fromMinutes;
+
+            if ($spansMidnight) {
+                // Диапазон переходит через полночь (например, 10:00 - 03:00)
+                // Если мы вне диапазона, вычисляем задержку до начала
+                if (!($currentMinutes >= $fromMinutes || $currentMinutes <= $toMinutes)) {
+                    // Текущее время между окончанием и началом (например, 04:00 - 09:59)
+                    // Устанавливаем задержку до начала времени рассылки
+                    $hoursFromToday = $now->copy()->setTimeFromTimeString($fromTime);
+                    $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                    if ($secondsUntilFrom > 0) {
+                        $delay = $secondsUntilFrom;
+                    }
+                }
+            } else {
+                // Обычный диапазон в пределах одного дня (например, 10:00 - 18:00)
+                if ($currentMinutes < $fromMinutes) {
+                    // Вычисляем секунды до начала времени рассылки
+                    $hoursFromToday = $now->copy()->setTimeFromTimeString($fromTime);
+                    $secondsUntilFrom = $now->diffInSeconds($hoursFromToday, false);
+                    if ($secondsUntilFrom > 0) {
+                        $delay = $secondsUntilFrom;
+                    }
+                } elseif ($currentMinutes > $toMinutes) {
+                    // Если текущее время больше времени окончания - переносим на завтра
+                    $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($fromTime);
+                    $secondsUntilFrom = $now->diffInSeconds($hoursFromTomorrow, false);
+                    if ($secondsUntilFrom > 0) {
+                        $delay = $secondsUntilFrom;
+                    }
+                }
+            }
+        }
+
+        return (int) $delay;
+    }
+
+    /**
+     * Преобразует время в формате "H:i" в минуты от начала дня
+     */
+    protected function timeToMinutes(string $time): int
+    {
+        [$hours, $minutes] = explode(':', $time);
+        return (int) $hours * 60 + (int) $minutes;
     }
 }
