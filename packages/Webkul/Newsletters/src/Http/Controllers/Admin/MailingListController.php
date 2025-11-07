@@ -907,6 +907,10 @@ class MailingListController extends Controller
                     $delay = max($delay, $secondsUntilStart);
                 }
             }
+
+            Log::info("calculateMailingDelay 1111", [
+                '$delay' => $delay,
+            ]);
         }
 
         // Check mailing_hours_from (time)
@@ -921,6 +925,11 @@ class MailingListController extends Controller
                 if ($secondsUntilFrom > 0) {
                     $delay = max($delay, $secondsUntilFrom);
                 }
+                Log::info("calculateMailingDelay 222 111", [
+                    '$delay' => $delay,
+                    '$hoursFromToday' => $hoursFromToday,
+                    '$secondsUntilFrom' => $secondsUntilFrom,
+                ]);
             } else {
                 // Преобразуем время в минуты для корректного сравнения
                 $fromMinutes = $this->timeToMinutes($fromTime);
@@ -937,6 +946,10 @@ class MailingListController extends Controller
                     if ($currentMinutes >= $fromMinutes || $currentMinutes <= $toMinutes) {
                         // Текущее время в диапазоне - можно начинать сразу (delay = 0)
                         $delay = 0;
+                        Log::info("calculateMailingDelay 222 222 111 000", [
+                            '$delay' => $delay,
+
+                        ]);
                     } else {
                         // Текущее время между окончанием и началом (например, 04:00 - 09:59)
                         // Устанавливаем задержку до начала времени рассылки
@@ -945,7 +958,14 @@ class MailingListController extends Controller
                         if ($secondsUntilFrom > 0) {
                             $delay = max($delay, $secondsUntilFrom);
                         }
+                        Log::info("calculateMailingDelay 222 222 111", [
+                            '$delay' => $delay,
+                            '$hoursFromToday' => $hoursFromToday,
+                            '$secondsUntilFrom' => $secondsUntilFrom,
+                        ]);
+
                     }
+
                 } else {
                     // Обычный диапазон в пределах одного дня (например, 10:00 - 18:00)
                     if ($currentMinutes < $fromMinutes) {
@@ -955,6 +975,12 @@ class MailingListController extends Controller
                         if ($secondsUntilFrom > 0) {
                             $delay = max($delay, $secondsUntilFrom);
                         }
+
+                        Log::info("calculateMailingDelay 222 222 2222 111", [
+                            '$delay' => $delay,
+                            '$hoursFromToday' => $hoursFromToday,
+                            '$secondsUntilFrom' => $secondsUntilFrom,
+                        ]);
                     } elseif ($currentMinutes > $toMinutes) {
                         // Если текущее время больше времени окончания - переносим на завтра
                         $hoursFromTomorrow = $now->copy()->addDay()->setTimeFromTimeString($fromTime);
@@ -962,6 +988,12 @@ class MailingListController extends Controller
                         if ($secondsUntilFrom > 0) {
                             $delay = max($delay, $secondsUntilFrom);
                         }
+
+                        Log::info("calculateMailingDelay 222 222 222", [
+                            '$delay' => $delay,
+                            '$hoursFromTomorrow' => $hoursFromTomorrow,
+                            '$secondsUntilFrom' => $secondsUntilFrom,
+                        ]);
                     }
                     // Если текущее время в диапазоне mailing_hours_from - mailing_hours_to, delay = 0 (можно начинать)
                 }
