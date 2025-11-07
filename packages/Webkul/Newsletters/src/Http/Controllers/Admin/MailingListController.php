@@ -962,6 +962,7 @@ class MailingListController extends Controller
                             '$delay' => $delay,
                             '$hoursFromToday' => $hoursFromToday,
                             '$secondsUntilFrom' => $secondsUntilFrom,
+                            '$currentMinutes' => $currentMinutes,
                         ]);
 
                     }

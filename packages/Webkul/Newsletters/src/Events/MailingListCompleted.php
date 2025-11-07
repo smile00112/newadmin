@@ -55,9 +55,3 @@ class MailingListCompleted implements ShouldBroadcast
         return 'broadcastable';
     }
 }
-
-
-
-
-
-

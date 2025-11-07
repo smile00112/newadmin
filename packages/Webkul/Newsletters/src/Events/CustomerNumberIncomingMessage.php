@@ -66,9 +66,3 @@ class CustomerNumberIncomingMessage implements ShouldBroadcast
         return 'broadcastable';
     }
 }
-
-
-
-
-
-
