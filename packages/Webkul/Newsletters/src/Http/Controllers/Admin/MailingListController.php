@@ -889,6 +889,7 @@ class MailingListController extends Controller
      */
     protected function calculateMailingDelay($mailingList): int
     {
+        //TODO - вынести в отдельный сервис
         // Явно используем часовой пояс из конфигурации
         $timezone = config('app.timezone', 'UTC');
         $now = now()->setTimezone($timezone);
