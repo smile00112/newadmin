@@ -117,6 +117,9 @@ class ProcessWhatsAppBatch implements ShouldQueue
         $instanceCounter = 0; // Counter for round-robin instance selection
         $instancesCount = $instances->count();
 
+        // Фиксируем базовое время для всех сообщений в этом батче
+        $baseTime = now();
+
         foreach ($customers as $customer) {
             //проверка стоит ли номер в стопе
             if(\Webkul\Newsletters\Models\StopList::where('phone_number', $customer->phone_number)->exists()){
@@ -137,13 +140,13 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 if (!empty($remainingCustomers)) {
                     $delay = $this->calculateDelayUntilNextMailingHour($mailingList);
                     ProcessWhatsAppBatch::dispatch($this->mailingListId, $remainingCustomers)
-                        ->delay(now()->addSeconds($delay))
+                        ->delay($baseTime->copy()->addSeconds($delay))
                         ->onQueue('whatsapp-batch');
 
                     Log::info("Remaining messages scheduled for next mailing hour", [
                         'mailing_list_id' => $this->mailingListId,
                         'remaining_count' => count($remainingCustomers),
-                        'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
+                        'scheduled_at' => $baseTime->copy()->addSeconds($delay)->toDateTimeString(),
                     ]);
                 }
                 break;
@@ -153,7 +156,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
             if (!$whatsappService->checkRateLimit()) {
                 // If rate limit exceeded, delay the remaining messages
                 ProcessWhatsAppBatch::dispatch($this->mailingListId, [$customer->id])
-                    ->delay(now()->addSeconds($messageDelay))
+                    ->delay($baseTime->copy()->addSeconds($messageDelay))
                     ->onQueue('whatsapp-batch');
                 continue;
             }
@@ -169,8 +172,9 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 'mailing_list_id' => $this->mailingListId,
                 'instance_id' => $instance->id,
                 'instance_index' => $instanceIndex,
+                'messageIndex' => $messageIndex,
                 'now' => now()->format("Y-m-d H:i:s"),
-                'now_and_delay' => now()->addSeconds($messageDelay)->format("Y-m-d H:i:s"),
+                'now_and_delay' => $baseTime->copy()->addSeconds($messageDelay * $messageIndex)->format("Y-m-d H:i:s"),
             ]);
 
             // Send individual message with delay based on message_delay
@@ -180,7 +184,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 $customer->id,
                 $randomMessage
             )
-                ->delay(now()->addSeconds($messageDelay * ($messageIndex > 0 ? 1 : 0) ))
+                ->delay($baseTime->copy()->addSeconds($messageDelay * $messageIndex ))
                 ->onQueue('whatsapp-send');
 
             $messageIndex++;
@@ -199,7 +203,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
         // Явно используем часовой пояс из конфигурации
         $timezone = config('app.timezone', 'UTC');
         $checkTime = now()->setTimezone($timezone)->addSeconds($secondsFromNow);
-        
+
         $fromTime = $mailingList->mailing_hours_from;
         $toTime = $mailingList->mailing_hours_to;
 
