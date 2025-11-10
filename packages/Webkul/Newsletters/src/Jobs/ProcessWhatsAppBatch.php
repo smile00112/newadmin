@@ -114,6 +114,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
 
         $messageDelay = $mailingList->message_delay ?? 0; // Delay between messages in seconds
         $messageIndex = 0;
+        $messageDelayIndex = 0;
         $instanceCounter = 0; // Counter for round-robin instance selection
         $instancesCount = $instances->count();
 
@@ -173,8 +174,9 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 'instance_id' => $instance->id,
                 'instance_index' => $instanceIndex,
                 'messageIndex' => $messageIndex,
+                'messageDelayIndex' => $messageDelayIndex,
                 'now' => now()->format("Y-m-d H:i:s"),
-                'now_and_delay' => $baseTime->copy()->addSeconds($messageDelay * $messageIndex)->format("Y-m-d H:i:s"),
+                'now_and_delay' => $baseTime->copy()->addSeconds($messageDelay * $messageDelayIndex)->format("Y-m-d H:i:s"),
             ]);
 
             // Send individual message with delay based on message_delay
@@ -188,6 +190,10 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 ->onQueue('whatsapp-send');
 
             $messageIndex++;
+            //увеличиваем $messageDelayIndex только после отправки по сообщению всем инстансам
+            //это надо чтобы задержка была только между сообщениями инстанса
+            //между сообщениями разных инстансов, задержки быть не должно
+            if( $instanceIndex === 0 && $instanceCounter > 1)  $messageDelayIndex++;
         }
     }
 
