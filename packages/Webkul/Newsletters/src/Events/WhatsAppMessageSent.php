@@ -21,7 +21,7 @@ class WhatsAppMessageSent implements ShouldBroadcast
     public function __construct(
         int $mailingListId,
         int $customerId,
-        int $instanceId,
+        int|null $instanceId,
         string $messageId
     ) {
         $this->mailingListId = $mailingListId;
