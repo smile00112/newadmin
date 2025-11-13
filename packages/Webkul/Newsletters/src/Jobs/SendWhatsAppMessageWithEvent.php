@@ -49,7 +49,6 @@ class SendWhatsAppMessageWithEvent implements ShouldQueue
         }
 
         try {
-            $customer->update(['sending' => true]);
 
             $instance = VacapInstance::findOrFail($this->instanceId);
             $mailingList = $customer->mailingList ?? MailingList::findOrFail($this->mailingListId);
@@ -89,7 +88,7 @@ class SendWhatsAppMessageWithEvent implements ShouldQueue
                 $customer->update([
                     'greenapi_chat_id' => $message_id,
                     'whatsapp_instance_id' => $instance->id,
-                    'sending' => false,
+                    'sending' => true,
                     'delivered' => true,
                 ]);
 
@@ -113,7 +112,7 @@ class SendWhatsAppMessageWithEvent implements ShouldQueue
                 ]);
             } else {
                 $customer->update([
-                    'sending' => false,
+                    'sending' => true,
                     'send_error' => true,
                 ]);
 

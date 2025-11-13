@@ -33,9 +33,9 @@ class HooksController extends Controller
      */
     public function get_hook(Request $request)
     {
-        Log::info("HOOK__GreenAPI hook received:", [
-            'body' => $request->all(),
-        ]);
+//        Log::info("HOOK__GreenAPI hook received:", [
+//            'body' => $request->all(),
+//        ]);
 
         try {
             // Process the webhook data
@@ -54,28 +54,28 @@ class HooksController extends Controller
             // определение типа хуков
             switch ($messageType) {
                 case 'incomingMessageReceived': //входящее сообщение
-                    Log::info("HOOK__GreenAPI hook TYPE:", [
-                        'body' => '//входящее сообщение',
-                    ]);
+//                    Log::info("HOOK__GreenAPI hook TYPE:", [
+//                        'body' => '//входящее сообщение',
+//                    ]);
                     $this->handleIncomingMessage($senderData['sender'], $instanceData);
                     break;
                 case 'outgoingMessageStatus':   //статус отправленного сообщения
-                    Log::info("HOOK__GreenAPI hook TYPE:", [
-                        'body' => '//статус отправленного сообщения',
-                    ]);
+//                    Log::info("HOOK__GreenAPI hook TYPE:", [
+//                        'body' => '//статус отправленного сообщения',
+//                    ]);
                     $this->handleOutgoingMessageStatus($idMessage, $status);
                     break;
                 default:
-                    Log::info("HOOK__Unhandled webhook type: {$messageType}");
+//                    Log::info("HOOK__Unhandled webhook type: {$messageType}");
             }
 
             return response()->json(['status' => 'success']);
 
         } catch (\Exception $e) {
-            Log::error("HOOK__Error processing webhook:", [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+//            Log::error("HOOK__Error processing webhook:", [
+//                'error' => $e->getMessage(),
+//                'trace' => $e->getTraceAsString()
+//            ]);
 
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
@@ -112,10 +112,10 @@ class HooksController extends Controller
         }
 
         if(empty($customerNumber)){
-            Log::warning("HOOK__handleIncomingMessage  customerNumber NOT found", [
-                'chatId' => $chatId,
-                'instanceData' => $instanceData,
-            ]);
+//            Log::warning("HOOK__handleIncomingMessage  customerNumber NOT found", [
+//                'chatId' => $chatId,
+//                'instanceData' => $instanceData,
+//            ]);
 
             return;
         }
@@ -127,11 +127,11 @@ class HooksController extends Controller
 //            ->first();
 
 
-        Log::info("HOOK__handleIncomingMessage", [
-            'chatId' => $chatId,
-            'phone_number' => $phoneNumber,
-            '$customerNumber' => $customerNumber,
-        ]);
+//        Log::info("HOOK__handleIncomingMessage", [
+//            'chatId' => $chatId,
+//            'phone_number' => $phoneNumber,
+//            '$customerNumber' => $customerNumber,
+//        ]);
 
 
         if ($customerNumber) {
@@ -158,10 +158,10 @@ class HooksController extends Controller
                 ]);
             }
 
-            Log::info("HOOK__Incoming message processed", [
-                'phone_number' => $phoneNumber,
-                'mailing_list_id' => $customerNumber->mailing_list_id
-            ]);
+//            Log::info("HOOK__Incoming message processed", [
+//                'phone_number' => $phoneNumber,
+//                'mailing_list_id' => $customerNumber->mailing_list_id
+//            ]);
         }
     }
 
@@ -176,11 +176,11 @@ class HooksController extends Controller
             ->where('greenapi_chat_id', $phoneNumber)
             ->first();
 
-        Log::info("HOOK__handleOutgoingMessageStatus", [
-            'chatId' => $chatId,
-            'phone_number' => $phoneNumber,
-            '$customerNumber' => $customerNumber,
-        ]);
+//        Log::info("HOOK__handleOutgoingMessageStatus", [
+//            'chatId' => $chatId,
+//            'phone_number' => $phoneNumber,
+//            '$customerNumber' => $customerNumber,
+//        ]);
 
 
         if ($customerNumber) {
@@ -210,18 +210,18 @@ class HooksController extends Controller
             // Broadcast stats update
             $this->broadcastStatsUpdate($customerNumber->mailing_list_id);
 
-            Log::info("HOOK__Message delivery status updated", [
-                'phone_number' => $phoneNumber,
-                'mailing_list_id' => $customerNumber->mailing_list_id,
-                'status' => $status,
-            ]);
+//            Log::info("HOOK__Message delivery status updated", [
+//                'phone_number' => $phoneNumber,
+//                'mailing_list_id' => $customerNumber->mailing_list_id,
+//                'status' => $status,
+//            ]);
         }
 
-        Log::error("HOOK__Message not found", [
-            'phone_number' => $phoneNumber,
-            'customerNumber' => $customerNumber,
-            'status' => $status,
-        ]);
+//        Log::error("HOOK__Message not found", [
+//            'phone_number' => $phoneNumber,
+//            'customerNumber' => $customerNumber,
+//            'status' => $status,
+//        ]);
     }
 
     /**
@@ -289,9 +289,9 @@ class HooksController extends Controller
             // Call broadcastStatsUpdate
             $this->broadcastStatsUpdate($id);
 
-            Log::info("HOOK__Test broadcast stats update called", [
-                'mailing_list_id' => $id
-            ]);
+//            Log::info("HOOK__Test broadcast stats update called", [
+//                'mailing_list_id' => $id
+//            ]);
 
             return response()->json([
                 'status' => 'success',
@@ -350,13 +350,13 @@ class HooksController extends Controller
                     'total_count' => (int) $mailingList->customerNumbers->count()
                 ];
 
-                Log::info("HOOK__DATA to broacast", [
-                    'sent_count' => (int) $mailingList->numbers_delivered,
-                    'incoming_count' => (int) $mailingList->incoming_messages_count,
-                    'viewed_count' => (int) $mailingList->numbers_viewed,
-                    'total_count' => (int) $mailingList->customerNumbers->count(),
-                    '$mailingListId' => $mailingListId
-                ]);
+//                Log::info("HOOK__DATA to broacast", [
+//                    'sent_count' => (int) $mailingList->numbers_delivered,
+//                    'incoming_count' => (int) $mailingList->incoming_messages_count,
+//                    'viewed_count' => (int) $mailingList->numbers_viewed,
+//                    'total_count' => (int) $mailingList->customerNumbers->count(),
+//                    '$mailingListId' => $mailingListId
+//                ]);
 
                 // Broadcast the update
                 broadcast(new MailingListStatsUpdated($mailingListId, $stats));
