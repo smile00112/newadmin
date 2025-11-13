@@ -111,8 +111,8 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
                 broadcast(new WhatsAppMessageSent(
                     $mailingList->id,
                     $customer->id,
-                    null
-
+                    null,
+                    ''
                 ));
 
                 continue;
