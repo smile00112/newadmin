@@ -100,8 +100,15 @@ class HooksController extends Controller
 
             if($instance){
                 $customerNumber = $instance->customerNumbers->count() ? $instance->customerNumbers->first() : null;
-            }
 
+                //добавляем прикперлённый номер телефона к инстансу
+                $instancePhoneNumber = str_replace('@c.us', '', $instanceData['wid']);
+                if($instancePhoneNumber){
+                    $instance->update([
+                        'phone' => $instancePhoneNumber
+                    ]);
+                }
+            }
         }
 
         if(empty($customerNumber)){

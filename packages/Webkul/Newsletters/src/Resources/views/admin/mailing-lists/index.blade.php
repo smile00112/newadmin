@@ -229,10 +229,11 @@
                 pusher.connection.bind('connected', function() {
                     // Subscribe only after successful connection
                     try {
-                        const channel = pusher.subscribe('mailing-lists-stats');
+                        // Subscribe to general stats channel
+                        const statsChannel = pusher.subscribe('mailing-lists-stats');
 
-                        // Listen for stats updates
-                        channel.bind('stats-updated', function(data) {
+                        // Listen for stats updates (from Observer)
+                        statsChannel.bind('stats-updated', function(data) {
                             console.log('Stats updated:', data);
 
                             const mailingListId = data.mailing_list_id;
@@ -270,6 +271,63 @@
 
                                 // Show notification
                                 showNotification(`Отправлено ${stats.sent_count} из ${stats.total_count} сообщений`);
+                            }
+                        });
+
+                        // Subscribe to individual mailing list channels for message.sent events
+                        // Get all mailing list IDs from the page
+                        const mailingListRows = document.querySelectorAll('tr[data-mailing-list-id]');
+                        mailingListRows.forEach(function(row) {
+                            const mailingListId = row.getAttribute('data-mailing-list-id');
+                            if (mailingListId) {
+                                try {
+                                    const mailingListChannel = pusher.subscribe('mailing-list.' + mailingListId);
+
+                                    // Listen for individual message sent events
+                                    mailingListChannel.bind('message.sent', function(data) {
+                                        console.log('Message sent event:', data);
+
+                                        // Increment sent count immediately for faster UI update
+                                        const row = document.querySelector(`tr[data-mailing-list-id="${data.mailing_list_id}"]`);
+                                        if (row) {
+                                            const progressCell = row.querySelector('[data-field="progress"]');
+                                            if (progressCell) {
+                                                const sentCountSpan = progressCell.querySelector('[data-field="sent_count"]');
+                                                const progressText = progressCell.querySelector('[data-field="progress-text"]');
+                                                const progressBar = progressCell.querySelector('[data-progress]');
+
+                                                if (sentCountSpan && progressText && progressBar) {
+                                                    // Get current values
+                                                    const currentSent = parseInt(sentCountSpan.textContent) || 0;
+                                                    const totalText = progressText.textContent.match(/\/(\d+)/);
+                                                    const total = totalText ? parseInt(totalText[1]) : 0;
+
+                                                    // Increment sent count
+                                                    const newSent = currentSent + 1;
+                                                    const percentage = total > 0 ? Math.round((newSent / total) * 100) : 0;
+
+                                                    // Update UI immediately
+                                                    progressBar.style.width = percentage + '%';
+                                                    progressBar.setAttribute('data-progress', percentage);
+                                                    sentCountSpan.textContent = newSent;
+                                                    progressText.innerHTML = `<span data-field="sent_count">${newSent}</span> / ${total} (${percentage}%)`;
+
+                                                    // Add visual feedback
+                                                    row.style.backgroundColor = '#f0f9ff';
+                                                    row.style.transition = 'background-color 0.3s ease';
+
+                                                    setTimeout(() => {
+                                                        row.style.backgroundColor = '';
+                                                    }, 1000);
+                                                }
+                                            }
+                                        }
+                                    });
+                                } catch (e) {
+                                    if (window.location.hostname === 'localhost' || window.location.hostname.includes('.test')) {
+                                        console.warn('Failed to subscribe to mailing list channel:', mailingListId, e);
+                                    }
+                                }
                             }
                         });
                     } catch (e) {

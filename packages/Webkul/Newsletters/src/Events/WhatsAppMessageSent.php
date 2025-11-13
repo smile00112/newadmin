@@ -7,21 +7,28 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Webkul\Newsletters\Models\MailingList;
 
-class MailingListCompleted implements ShouldBroadcast
+class WhatsAppMessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $mailingListId;
-    public ?string $completedAt;
-    public ?int $sentCount;
+    public int $customerId;
+    public int $instanceId;
+    public string $messageId;
+    public string $sentAt;
 
-    public function __construct(MailingList $mailingList)
-    {
-        $this->mailingListId = $mailingList->id;
-        $this->completedAt = now()->toISOString();
-        $this->sentCount = $mailingList->sent_count ?? null;
+    public function __construct(
+        int $mailingListId,
+        int $customerId,
+        int $instanceId,
+        string $messageId
+    ) {
+        $this->mailingListId = $mailingListId;
+        $this->customerId = $customerId;
+        $this->instanceId = $instanceId;
+        $this->messageId = $messageId;
+        $this->sentAt = now()->toISOString();
     }
 
     public function broadcastOn(): array
@@ -33,15 +40,17 @@ class MailingListCompleted implements ShouldBroadcast
 
     public function broadcastAs(): string
     {
-        return 'mailing-list.completed';
+        return 'message.sent';
     }
 
     public function broadcastWith(): array
     {
         return [
             'mailing_list_id' => $this->mailingListId,
-            'completed_at' => $this->completedAt,
-            'sent_count' => $this->sentCount,
+            'customer_id' => $this->customerId,
+            'instance_id' => $this->instanceId,
+            'message_id' => $this->messageId,
+            'sent_at' => $this->sentAt,
         ];
     }
 
@@ -55,6 +64,4 @@ class MailingListCompleted implements ShouldBroadcast
         return 'broadcastable';
     }
 }
-
-
 

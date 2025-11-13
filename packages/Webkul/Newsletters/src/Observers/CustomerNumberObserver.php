@@ -23,7 +23,14 @@ class CustomerNumberObserver
     public function updated(CustomerNumber $customerNumber): void
     {
         // Check if delivered or incoming_message status changed
-        if ($customerNumber->isDirty(['delivered', 'incoming_message', 'viewed'])) {
+        if ($customerNumber->isDirty(['delivered', 'incoming_message', 'viewed', 'sending'])) {
+            Log::info('CustomerNumber updated, broadcasting stats', [
+                'customer_id' => $customerNumber->id,
+                'mailing_list_id' => $customerNumber->mailing_list_id,
+                'dirty_fields' => $customerNumber->getDirty(),
+                'delivered_changed' => $customerNumber->isDirty('delivered'),
+            ]);
+            
             $this->broadcastStatsUpdate($customerNumber->mailing_list_id);
         }
     }

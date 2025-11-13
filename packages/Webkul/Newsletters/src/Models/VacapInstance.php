@@ -28,6 +28,7 @@ class VacapInstance extends Model
         'login',
         'password',
         'mailing_list_id',
+        'phone',
     ];
 
     /**

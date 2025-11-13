@@ -5,6 +5,7 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Newsletters\Jobs\ProcessWhatsAppBatchByInstances;
 use Webkul\Newsletters\Models\StopList;
 use Webkul\Newsletters\Repositories\MailingListRepository;
 use Webkul\Newsletters\Repositories\VacapInstanceRepository;
@@ -814,25 +815,52 @@ class MailingListController extends Controller
 
             // Calculate delay based on mailing list parameters
             $delay = $this->calculateMailingDelay($mailingList);
+            // Список id клиентов
+            $customerIds = $mailingList->customerNumbers()
+                ->where('sending', false)
+                ->where('send_error', false)
+                ->pluck('id')
+                ->toArray();
 
             // Dispatch the mailing job with delay if needed
             if ($delay > 0) {
-                ProcessWhatsAppMailingList::dispatch($id)
-                    ->delay(now()->addSeconds($delay));
+                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0)
+                    ->delay(now()->addSeconds($delay))
+                    ->onQueue('whatsapp-batch-instances');
 
                 Log::info('Mailing list scheduled with delay', [
                     'mailing_list_id' => $id,
                     'delay_seconds' => $delay,
+                    'customers_count' => count($customerIds),
                     'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
                 ]);
             } else {
+                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0)
+                    ->onQueue('whatsapp-batch-instances');
 
                 Log::info('Starting mailing list without delay', [
                     'mailing_list_id' => $id,
+                    'customers_count' => count($customerIds),
                 ]);
-
-                ProcessWhatsAppMailingList::dispatch($id);
             }
+
+//            if ($delay > 0) {
+//                ProcessWhatsAppMailingList::dispatch($id)
+//                    ->delay(now()->addSeconds($delay));
+//
+//                Log::info('Mailing list scheduled with delay', [
+//                    'mailing_list_id' => $id,
+//                    'delay_seconds' => $delay,
+//                    'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
+//                ]);
+//            } else {
+//
+//                Log::info('Starting mailing list without delay', [
+//                    'mailing_list_id' => $id,
+//                ]);
+//
+//                ProcessWhatsAppMailingList::dispatch($id);
+//            }
 
             return response()->json([
                 'success' => true,

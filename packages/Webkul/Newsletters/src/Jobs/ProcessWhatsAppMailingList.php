@@ -61,22 +61,16 @@ class ProcessWhatsAppMailingList implements ShouldQueue
             }
         }
 
-        // Process customers in batches
-        $delay = $mailingList->message_delay ?? 5;
-        $batchIndex = 0;
-
+        // Вместо старой логики с ProcessWhatsAppBatch, используем новую:
         $mailingList->customerNumbers()
-           // ->whereNull('unsubscribed_at')
-            ->chunk(100, function ($customers) use ($mailingList, &$batchIndex, $delay) {
-                ProcessWhatsAppBatch::dispatch($mailingList->id, $customers->pluck('id')->toArray())
-                    ->delay(now()->addSeconds($batchIndex * $delay))
-                    ->onQueue('whatsapp-batch');
-
-                $mailingList->update([
-                    'status' => 'pending'
-                ]);
-
-                $batchIndex++;
+            ->where('sending', false)
+            ->where('send_error', false)
+            ->chunk(100, function ($customers) use ($mailingList) {
+                $customerIds = $customers->pluck('id')->toArray();
+                
+                // Используем новый job для обработки по инстансам
+                ProcessWhatsAppBatchByInstances::dispatch($mailingList->id, $customerIds, 0)
+                    ->onQueue('whatsapp-batch-instances');
             });
     }
 
