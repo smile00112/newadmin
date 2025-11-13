@@ -14,7 +14,7 @@ class WhatsAppMessageSent implements ShouldBroadcast
 
     public int $mailingListId;
     public int $customerId;
-    public int $instanceId;
+    public int|null $instanceId;
     public string $messageId;
     public string $sentAt;
 
