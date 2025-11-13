@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Webkul\Newsletters\Events\MailingListStatsUpdated;
 use Webkul\Newsletters\Events\WhatsAppMessageSent;
 use Webkul\Newsletters\Models\MailingList;
 use Webkul\Newsletters\Models\CustomerNumber;
@@ -106,14 +107,39 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
                     'customer_id' => $customer->id,
                 ]);
 
-                $customer->update(['send_error' => true]);
+                $customer->update([
+                    'sending' => true,
+                    'send_error' => true
+                ]);
 
-                broadcast(new WhatsAppMessageSent(
-                    $mailingList->id,
-                    $customer->id,
-                    null,
-                    ''
-                ));
+
+                $mailingListStats = $mailingList->with('customerNumbers')->withCount([
+                    'customerNumbers as numbers_delivered' => function ($query) {
+                        $query->where('sending', true)->orWhere('send_error', true);
+                    },
+                    'customerNumbers as numbers_viewed' => function ($query) {
+                        $query->where('viewed', true);
+                    },
+                    'customerNumbers as incoming_messages_count' => function ($query) {
+                        $query->where('incoming_message', true);
+                    }
+                ])->find($mailingList->id);
+
+                $stats = [
+                    'sent_count' => (int) $mailingListStats->numbers_delivered,
+                    'incoming_count' => (int) $mailingListStats->incoming_messages_count,
+                    'viewed_count' => (int) $mailingListStats->numbers_viewed,
+                    'total_count' => (int) $mailingListStats->customerNumbers->count()
+                ];
+
+                broadcast(new MailingListStatsUpdated($mailingList->id, $stats));
+
+//                broadcast(new WhatsAppMessageSent(
+//                    $mailingList->id,
+//                    $customer->id,
+//                    null,
+//                    ''
+//                ));
 
                 continue;
             }
