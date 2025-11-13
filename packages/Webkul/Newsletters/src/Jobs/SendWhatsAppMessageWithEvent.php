@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Webkul\Admin\Services\FcmNotificationService;
 use Webkul\Newsletters\Events\MailingListStatsUpdated;
 use Webkul\Newsletters\Models\VacapInstance;
 use Webkul\Newsletters\Models\CustomerNumber;
@@ -146,6 +147,71 @@ class SendWhatsAppMessageWithEvent implements ShouldQueue
 
             broadcast(new MailingListStatsUpdated($mailingList->id, $stats));
 
+
+
+            //смотрим конец ли рассылки и делаем уведомления
+            $mailingList = $customer->mailingList;
+            $remaining_customer_numbers_count = 0;
+            if ($mailingList) {
+                try {
+                    $remaining_customer_numbers_count = CustomerNumber::where('mailing_list_id', $mailingList->id)
+                        ->where('sending', false)
+                        ->where('send_error', false)
+                        ->count();
+                }
+                catch (\Exception $e) {
+
+                    Log::error("ERROR remaining_customer_numbers_count", [
+                        'total' => $remaining_customer_numbers_count,
+                        'error' => $e->getMessage()
+                    ]);
+
+                }
+
+                $remainingCount = $mailingList->customerNumbers()
+                    ->where('sending', false)
+                    ->where('send_error', false)
+                    ->count();
+
+                Log::info("Last message sent for CHECK", [
+                    'tatal' => $mailingList->customerNumbers()
+                        ->count(),
+                    'remaining' => $mailingList->customerNumbers()
+                        ->where('sending', false)
+                        ->where('send_error', false)
+                        ->count()
+                ]);
+
+                if ($remainingCount === 0) {
+                    // Это последнее сообщение!
+                    Log::info("Last message sent for mailing list", [
+                        'mailing_list_id' => $mailingList->id,
+                        'customer_id' => $customer->id
+                    ]);
+
+                    // Обновляем статус рассылки
+                    $mailingList->update([
+                        'status' => 'completed',
+                    ]);
+
+                    // Broadcast completion event
+                    broadcast(new \Webkul\Newsletters\Events\MailingListCompleted($mailingList));
+
+                    // FCM уведомление
+                    try {
+                        $fcm = app(FcmNotificationService::class);
+                        if ($fcm) {
+                            $fcm->sendToAllAdmins(
+                                'Рассылка завершена',
+                                'Рассылка #' . $mailingList->id . ' завершена',
+                                ['type' => 'mailing.completed', 'mailing_list_id' => (string) $mailingList->id]
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send FCM for last message', ['error' => $e->getMessage()]);
+                    }
+                }
+            }
 
         } catch (\Exception $e) {
             $customer->update([
