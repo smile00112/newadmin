@@ -14,6 +14,7 @@ return [
             'password' => 'apiTokenInstance',
             'mailing-list' => 'Список рассылки',
             'no-instances' => 'WhatsApp инстансы не найдены.',
+            'instance-phone' => 'Телефон инстанса',
         ],
 
         'mailing-lists' => [

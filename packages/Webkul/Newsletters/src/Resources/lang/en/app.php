@@ -14,6 +14,7 @@ return [
             'password' => 'Password',
             'mailing-list' => 'Mailing List',
             'no-instances' => 'No WhatsApp instances found.',
+            'instance-phone' => 'Instance Phone',
         ],
 
         'mailing-lists' => [

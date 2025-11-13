@@ -252,6 +252,7 @@ class MailingListController extends Controller
         // Get customer numbers with sorting and pagination
         $customerNumbers = $this->customerNumberRepository
             ->where('mailing_list_id', $id)
+            ->with('whatsAppInstance')
             ->orderBy('incoming_message', 'desc') // incoming_message = 1 first
             ->orderBy('id', 'desc') // then by id desc
             ->limit(50)

@@ -287,6 +287,11 @@
                                 <div>
                                                 <span class="font-medium text-gray-900 dark:text-white phone-number">{{ $customer->phone_number }}</span>
                                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.phone-number') }}</div>
+                                                @if($customer->whatsAppInstance && $customer->whatsAppInstance->phone)
+                                                    <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                        {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}: <span class="font-medium">{{ $customer->whatsAppInstance->phone }}</span>
+                                                    </div>
+                                                @endif
                                 </div>
                                             <div>
                                                 <span class="font-medium {{ $customer->delivered ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
@@ -304,7 +309,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <button type="button" onclick="openCustomerEditModal({{ $customer->id }}, '{{ $customer->phone_number }}', '{{ $customer->name }}', {{ $customer->delivered ? 'true' : 'false' }}, {{ $customer->viewed ? 'true' : 'false' }})"
+                                    <button type="button" onclick="openCustomerEditModal({{ $customer->id }}, '{{ $customer->phone_number }}', '{{ $customer->name }}', {{ $customer->delivered ? 'true' : 'false' }}, {{ $customer->viewed ? 'true' : 'false' }}, '{{ $customer->whatsAppInstance && $customer->whatsAppInstance->phone ? $customer->whatsAppInstance->phone : '' }}')"
                                         class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
                                         title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -577,6 +582,15 @@
 
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}
+                        </label>
+                        <input type="text" id="editInstancePhone" name="instance_phone"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-100 dark:bg-gray-600 dark:text-gray-300"
+                            readonly>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.admin.customer-numbers.name') }}
                         </label>
                         <input type="text" id="editCustomerName" name="name"
@@ -820,7 +834,7 @@
                     'X-CSRF-TOKEN': csrfToken
                 },
                 body: JSON.stringify({
-                    search_term: searchTerm,
+                    query: searchTerm,
                     mailing_list_id: {{ $mailingList->id }}
                 })
             })
@@ -874,6 +888,11 @@
                                     <div>
                                         <span class="font-medium text-gray-900 dark:text-white phone-number">${customer.phone_number}</span>
                                         <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.phone-number') }}</div>
+                                        ${(customer.whatsAppInstance || customer.whatsapp_instance) && (customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone) ? `
+                                            <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}: <span class="font-medium">${customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone}</span>
+                                            </div>
+                                        ` : ''}
                                     </div>
                                     <div>
                                         <span class="font-medium ${customer.delivered ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
@@ -892,7 +911,7 @@
                         </div>
                         <div class="flex items-center space-x-2">
                             <span class="text-xs text-gray-500 dark:text-gray-400">ID: ${customer.id}</span>
-                            <button type="button" onclick="openCustomerEditModal(${customer.id}, '${customer.phone_number}', '${customer.name}', ${customer.delivered}, ${customer.viewed})"
+                            <button type="button" onclick="openCustomerEditModal(${customer.id}, '${customer.phone_number}', '${customer.name}', ${customer.delivered}, ${customer.viewed}, '${(customer.whatsAppInstance || customer.whatsapp_instance)?.phone || ''}')"
                                 class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
                                 title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -953,10 +972,11 @@
         }
 
         // Customer Edit Modal Functions
-        function openCustomerEditModal(id, phoneNumber, name, delivered, viewed) {
+        function openCustomerEditModal(id, phoneNumber, name, delivered, viewed, instancePhone = '') {
             // Check if modal elements exist
             const editCustomerId = document.getElementById('editCustomerId');
             const editPhoneNumber = document.getElementById('editPhoneNumber');
+            const editInstancePhone = document.getElementById('editInstancePhone');
             const editCustomerName = document.getElementById('editCustomerName');
             const editDelivered = document.getElementById('editDelivered');
             const editViewed = document.getElementById('editViewed');
@@ -970,6 +990,9 @@
 
             editCustomerId.value = id;
             editPhoneNumber.value = phoneNumber;
+            if (editInstancePhone) {
+                editInstancePhone.value = instancePhone || '-';
+            }
             editCustomerName.value = name;
             editDelivered.value = delivered ? '1' : '0';
             editViewed.value = viewed ? '1' : '0';

@@ -21,6 +21,9 @@
                             {{ __('newsletters::app.admin.customer-numbers.phone-number') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.customer-numbers.name') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -46,6 +49,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
                                 {{ $message->phone_number }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                @if($message->whatsAppInstance && $message->whatsAppInstance->phone)
+                                    <span class="font-medium">{{ $message->whatsAppInstance->phone }}</span>
+                                @else
+                                    <span class="text-gray-400 dark:text-gray-500">-</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                 {{ $message->name ?? '-' }}
@@ -102,7 +112,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button type="button"
-                                    onclick="openCustomerEditModal({{ $message->id }}, '{{ $message->phone_number }}', '{{ $message->name ?? '' }}', {{ $message->delivered ? 'true' : 'false' }}, {{ $message->viewed ? 'true' : 'false' }})"
+                                    onclick="openCustomerEditModal({{ $message->id }}, '{{ $message->phone_number }}', '{{ $message->name ?? '' }}', {{ $message->delivered ? 'true' : 'false' }}, {{ $message->viewed ? 'true' : 'false' }}, '{{ $message->whatsAppInstance && $message->whatsAppInstance->phone ? $message->whatsAppInstance->phone : '' }}')"
                                     class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                     title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
                                     <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-edit"></span>
@@ -111,7 +121,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -163,6 +173,15 @@
                         <input type="text" id="editPhoneNumber" name="phone_number"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}
+                        </label>
+                        <input type="text" id="editInstancePhone" name="instance_phone"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-100 dark:bg-gray-600 dark:text-gray-300"
+                            readonly>
                     </div>
 
                     <div class="mb-4">
@@ -326,9 +345,10 @@
         });
 
         // Customer Edit Modal Functions
-        function openCustomerEditModal(id, phoneNumber, name, delivered, viewed) {
+        function openCustomerEditModal(id, phoneNumber, name, delivered, viewed, instancePhone = '') {
             const editCustomerId = document.getElementById('editCustomerId');
             const editPhoneNumber = document.getElementById('editPhoneNumber');
+            const editInstancePhone = document.getElementById('editInstancePhone');
             const editCustomerName = document.getElementById('editCustomerName');
             const editDelivered = document.getElementById('editDelivered');
             const editViewed = document.getElementById('editViewed');
@@ -342,6 +362,9 @@
 
             editCustomerId.value = id;
             editPhoneNumber.value = phoneNumber;
+            if (editInstancePhone) {
+                editInstancePhone.value = instancePhone || '-';
+            }
             editCustomerName.value = name;
             editDelivered.value = delivered ? '1' : '0';
             editViewed.value = viewed ? '1' : '0';

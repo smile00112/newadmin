@@ -337,11 +337,12 @@ class CustomerNumberController extends Controller
                 $query->where('mailing_list_id', $request->mailing_list_id);
             }
             
-            $results = $query->with('mailingList')->limit(20)->get();
+            $results = $query->with(['mailingList', 'whatsAppInstance'])->limit(20)->get();
             
             return response()->json([
                 'success' => true,
                 'results' => $results,
+                'count' => $results->count(),
             ]);
             
         } catch (\Exception $e) {
