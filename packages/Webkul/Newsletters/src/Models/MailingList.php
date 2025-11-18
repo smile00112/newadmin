@@ -28,9 +28,11 @@ class MailingList extends Model
         'active',
         'mailing_hours_from',
         'mailing_hours_to',
-        'message_delay',
+        'message_delay_from',
+        'message_delay_to',
         'start_at',
-        'status' // created, pending, completed
+        'status', // created, pending, completed
+        'max_messages_per_instance'
     ];
 
     /**
@@ -40,8 +42,10 @@ class MailingList extends Model
     protected $casts = [
         'active' => 'boolean',
         'start_at' => 'datetime',
-        'message_delay' => 'integer',
+        'message_delay_from' => 'integer',
+        'message_delay_to' => 'integer',
         'message_links' => 'array',
+        'max_messages_per_instance' => 'integer',
     ];
 
     /**

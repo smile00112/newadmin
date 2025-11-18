@@ -103,12 +103,41 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return;
         }
 
-        // Get all active instances for round-robin selection
-        $instances = $mailingList->whatsappInstances()->where('active', true)->get();
+        // Get all active and non-blocked instances for round-robin selection
+        $instances = $mailingList->whatsappInstances()
+            ->where('active', true)
+            ->where('blocked', false)
+            ->get()
+            ->filter(function ($instance) use ($mailingList) {
+                // Check if instance has reached the limit
+                if ($mailingList->max_messages_per_instance) {
+                    return $instance->sending_message_count < $mailingList->max_messages_per_instance;
+                }
+                return true;
+            });
         if ($instances->isEmpty()) {
             Log::error("No active WhatsApp instance available for mailing list", [
                 'mailing_list_id' => $this->mailingListId
             ]);
+            
+            // Проверяем, есть ли вообще инстансы у рассылки
+            $allInstances = $mailingList->whatsappInstances()->where('active', true)->get();
+            
+            // Если есть активные инстансы, но все заблокированы, переносим на 00:01
+            if ($allInstances->isNotEmpty()) {
+                $delayUntilReset = $this->calculateDelayUntilResetTime();
+                
+                Log::info("All instances blocked, rescheduling batch until reset time (00:01)", [
+                    'mailing_list_id' => $this->mailingListId,
+                    'delay_seconds' => $delayUntilReset,
+                    'rescheduled_at' => now()->addSeconds($delayUntilReset)->toDateTimeString(),
+                ]);
+                
+                ProcessWhatsAppBatch::dispatch($this->mailingListId, $this->customerIds)
+                    ->delay(now()->addSeconds($delayUntilReset))
+                    ->onQueue('whatsapp-batch');
+            }
+            
             return;
         }
 
@@ -395,5 +424,28 @@ class ProcessWhatsAppBatch implements ShouldQueue
     {
         [$hours, $minutes] = explode(':', $time);
         return (int) $hours * 60 + (int) $minutes;
+    }
+
+    /**
+     * Вычисляет задержку до следующего времени сброса блокировок (00:01)
+     * 
+     * @return int Задержка в секундах
+     */
+    protected function calculateDelayUntilResetTime(): int
+    {
+        $timezone = config('app.timezone', 'UTC');
+        $now = now()->setTimezone($timezone);
+        
+        // Время сброса блокировок: 00:01
+        $resetTime = $now->copy()->setTime(0, 1, 0);
+        
+        // Если текущее время уже прошло 00:01 сегодня, переносим на завтра
+        if ($now->greaterThanOrEqualTo($resetTime)) {
+            $resetTime->addDay();
+        }
+        
+        $delay = $now->diffInSeconds($resetTime, false);
+        
+        return max(0, (int) $delay);
     }
 }

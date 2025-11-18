@@ -75,7 +75,9 @@ class MailingListController extends Controller
             'start_at' => 'nullable|date|after:now',
             'mailing_hours_from' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'mailing_hours_to' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
-            'message_delay' => 'nullable|integer|min:1|max:3600',
+            'message_delay_from' => 'nullable|integer|min:1|max:3600',
+            'message_delay_to' => 'nullable|integer|min:1|max:3600',
+            'max_messages_per_instance' => 'nullable|integer|min:1',
             'media_file' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:10240', // 10MB max
 
             // WhatsApp Instances validation
@@ -124,7 +126,9 @@ class MailingListController extends Controller
                 'start_at' => $request->input('start_at'),
                 'mailing_hours_from' => $request->input('mailing_hours_from'),
                 'mailing_hours_to' => $request->input('mailing_hours_to'),
-                'message_delay' => $request->input('message_delay', 5),
+                'message_delay_from' => $request->input('message_delay_from', 5),
+                'message_delay_to' => $request->input('message_delay_to', 5),
+                'max_messages_per_instance' => $request->input('max_messages_per_instance'),
             ];
 
             Log::info('Creating mailing list', [
@@ -313,7 +317,8 @@ class MailingListController extends Controller
             'start_at' => 'nullable|date',
             'mailing_hours_from' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'mailing_hours_to' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
-            'message_delay' => 'nullable|integer|min:1|max:3600',
+            'message_delay_from' => 'nullable|integer|min:1|max:3600',
+            'message_delay_to' => 'nullable|integer|min:1|max:3600',
             'media_file' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,webm|max:10240', // 10MB max
 
             // WhatsApp Instances validation
@@ -370,7 +375,9 @@ class MailingListController extends Controller
                 'start_at' => $request->input('start_at'),
                 'mailing_hours_from' => $request->input('mailing_hours_from'),
                 'mailing_hours_to' => $request->input('mailing_hours_to'),
-                'message_delay' => $request->input('message_delay', 5),
+                'message_delay_from' => $request->input('message_delay_from', 5),
+                'message_delay_to' => $request->input('message_delay_to', 5),
+                'max_messages_per_instance' => $request->input('max_messages_per_instance'),
             ];
 
             Log::info('Updating mailing list', [

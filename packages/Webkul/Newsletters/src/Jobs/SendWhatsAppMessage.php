@@ -56,8 +56,26 @@ class SendWhatsAppMessage implements ShouldQueue
                 'sending' => true
             ]);
 
-            $instance = VacapInstance::where('active', true)->findOrFail($this->instanceId);
+            $instance = VacapInstance::where('active', true)
+                ->where('blocked', false)
+                ->findOrFail($this->instanceId);
             $mailingList = $customer->mailingList;
+            
+            // Проверяем лимит перед отправкой
+            if ($mailingList && $mailingList->max_messages_per_instance) {
+                if ($instance->sending_message_count >= $mailingList->max_messages_per_instance) {
+                    Log::warning('Instance blocked, cannot send message', [
+                        'instance_id' => $instance->id,
+                        'sending_message_count' => $instance->sending_message_count,
+                        'max_messages_per_instance' => $mailingList->max_messages_per_instance,
+                    ]);
+                    $instance->update(['blocked' => true]);
+                    $customer->update([
+                        'send_error' => true
+                    ]);
+                    return;
+                }
+            }
 
             $message_id = null;
 
@@ -146,6 +164,23 @@ class SendWhatsAppMessage implements ShouldQueue
                 'greenapi_chat_id' => $message_id,
                 'whatsapp_instance_id' => $instance->id
             ]);
+
+            // Увеличиваем счетчик отправленных сообщений для инстанса
+            $instance->increment('sending_message_count');
+            
+            // Проверяем лимит и блокируем инстанс при превышении
+            if ($mailingList && $mailingList->max_messages_per_instance) {
+                $instance->refresh(); // Обновляем данные инстанса после increment
+                if ($instance->sending_message_count >= $mailingList->max_messages_per_instance) {
+                    $instance->update(['blocked' => true]);
+                    Log::warning('Instance blocked due to message limit exceeded', [
+                        'instance_id' => $instance->id,
+                        'sending_message_count' => $instance->sending_message_count,
+                        'max_messages_per_instance' => $mailingList->max_messages_per_instance,
+                        'mailing_list_id' => $mailingList->id,
+                    ]);
+                }
+            }
 
             //заносим в стоп лист
             \Webkul\Newsletters\Models\StopList::create(['phone_number' => $customer->phone_number]);

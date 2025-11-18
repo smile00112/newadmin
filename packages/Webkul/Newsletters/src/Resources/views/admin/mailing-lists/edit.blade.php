@@ -117,7 +117,7 @@
                     </div>
 
                 <!-- Mailing Schedule Settings -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
                         <label for="mailing_hours_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.admin.mailing-lists.mailing-hours-from') }}
@@ -153,21 +153,60 @@
                     </div>
 
                     <div>
-                        <label for="message_delay" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {{ __('newsletters::app.admin.mailing-lists.message-delay') }}
+                        <label for="message_delay_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.message-delay-from') }}
                         </label>
                         <input
                             type="number"
-                            name="message_delay"
-                            id="message_delay"
-                            value="{{ old('message_delay', $mailingList->message_delay ?? 0) }}"
-                            min="0"
+                            name="message_delay_from"
+                            id="message_delay_from"
+                            value="{{ old('message_delay_from', $mailingList->message_delay_from ?? 5) }}"
+                            min="1"
                             max="3600"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             placeholder="5"
                         >
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.mailing-lists.message-delay-hint') }}</p>
-                        @error('message_delay')
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.mailing-lists.message-delay-from-hint') }}</p>
+                        @error('message_delay_from')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="message_delay_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.message-delay-to') }}
+                        </label>
+                        <input
+                            type="number"
+                            name="message_delay_to"
+                            id="message_delay_to"
+                            value="{{ old('message_delay_to', $mailingList->message_delay_to ?? 5) }}"
+                            min="1"
+                            max="3600"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="5"
+                        >
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.mailing-lists.message-delay-to-hint') }}</p>
+                        @error('message_delay_to')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="max_messages_per_instance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.max-messages-per-instance') }}
+                        </label>
+                        <input
+                            type="number"
+                            name="max_messages_per_instance"
+                            id="max_messages_per_instance"
+                            value="{{ old('max_messages_per_instance', $mailingList->max_messages_per_instance) }}"
+                            min="1"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder=""
+                        >
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.mailing-lists.max-messages-per-instance-hint') }}</p>
+                        @error('max_messages_per_instance')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>

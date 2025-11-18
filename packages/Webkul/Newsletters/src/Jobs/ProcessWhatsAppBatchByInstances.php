@@ -44,8 +44,11 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
 
         $mailingList = MailingList::with('whatsappInstances')->findOrFail($this->mailingListId);
 
-        // Check for active instances
-        $activeInstances = $mailingList->whatsappInstances()->where('active', true)->get();
+        // Check for active and non-blocked instances
+        $activeInstances = $mailingList->whatsappInstances()
+            ->where('active', true)
+            ->where('blocked', false)
+            ->get();
         if (!$mailingList->active || $activeInstances->isEmpty()) {
             Log::warning("Mailing list is inactive or has no active WhatsApp instances", [
                 'mailing_list_id' => $this->mailingListId
@@ -69,8 +72,45 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
             return;
         }
 
-        $instances = $mailingList->whatsappInstances()->where('active', true)->get();
+        // Get active and non-blocked instances, filtering by max_messages_per_instance limit
+        $instances = $mailingList->whatsappInstances()
+            ->where('active', true)
+            ->where('blocked', false)
+            ->get()
+            ->filter(function ($instance) use ($mailingList) {
+                // Check if instance has reached the limit
+                if ($mailingList->max_messages_per_instance) {
+                    return $instance->sending_message_count < $mailingList->max_messages_per_instance;
+                }
+                return true;
+            });
         $instancesCount = $instances->count();
+        
+        if ($instancesCount === 0) {
+            Log::warning("All instances are blocked or reached message limit", [
+                'mailing_list_id' => $this->mailingListId
+            ]);
+            
+            // Проверяем, есть ли вообще инстансы у рассылки
+            $allInstances = $mailingList->whatsappInstances()->where('active', true)->get();
+            
+            // Если есть активные инстансы, но все заблокированы, переносим на 00:01
+            if ($allInstances->isNotEmpty()) {
+                $delayUntilReset = $this->calculateDelayUntilResetTime();
+                
+                Log::info("All instances blocked, rescheduling batch until reset time (00:01)", [
+                    'mailing_list_id' => $this->mailingListId,
+                    'delay_seconds' => $delayUntilReset,
+                    'rescheduled_at' => now()->addSeconds($delayUntilReset)->toDateTimeString(),
+                ]);
+                
+                ProcessWhatsAppBatchByInstances::dispatch($this->mailingListId, $this->customerIds, $this->batchIndex)
+                    ->delay(now()->addSeconds($delayUntilReset))
+                    ->onQueue('whatsapp-batch-instances');
+            }
+            
+            return;
+        }
         $customers = CustomerNumber::whereIn('id', $this->customerIds)
             ->where('sending', false)
             ->where('send_error', false)
@@ -156,8 +196,17 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
                 continue;
             }
 
-            // Выбираем инстанс по кругу
-            $instance = $instances->get($instanceIndex % $instancesCount);
+            // Выбираем инстанс по кругу (только незаблокированные и не превысившие лимит)
+            $availableInstances = $instances->values();
+            if ($availableInstances->isEmpty()) {
+                Log::warning('No available instances for customer', [
+                    'customer_id' => $customer->id,
+                ]);
+                $remainingCustomers->push($customer);
+                continue;
+            }
+            
+            $instance = $availableInstances->get($instanceIndex % $instancesCount);
             $instanceIndex++;
 
             // Генерируем случайное сообщение
@@ -341,5 +390,28 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
     {
         [$hours, $minutes] = explode(':', $time);
         return (int) $hours * 60 + (int) $minutes;
+    }
+
+    /**
+     * Вычисляет задержку до следующего времени сброса блокировок (00:01)
+     * 
+     * @return int Задержка в секундах
+     */
+    protected function calculateDelayUntilResetTime(): int
+    {
+        $timezone = config('app.timezone', 'UTC');
+        $now = now()->setTimezone($timezone);
+        
+        // Время сброса блокировок: 00:01
+        $resetTime = $now->copy()->setTime(0, 1, 0);
+        
+        // Если текущее время уже прошло 00:01 сегодня, переносим на завтра
+        if ($now->greaterThanOrEqualTo($resetTime)) {
+            $resetTime->addDay();
+        }
+        
+        $delay = $now->diffInSeconds($resetTime, false);
+        
+        return max(0, (int) $delay);
     }
 }

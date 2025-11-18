@@ -2,10 +2,12 @@
 
 namespace Webkul\Newsletters\Providers;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Observers\CustomerNumberObserver;
 use Webkul\Newsletters\Console\Commands\TestWebSocketBroadcast;
+use Webkul\Newsletters\Console\Commands\ResetBlockedInstances;
 
 class ModuleServiceProvider extends ServiceProvider
 {
@@ -32,6 +34,11 @@ class ModuleServiceProvider extends ServiceProvider
 
         // Register model observers
         CustomerNumber::observe(CustomerNumberObserver::class);
+
+        // Register scheduled tasks
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('newsletters:reset-blocked-instances')->dailyAt('00:00');
+        });
     }
 
     /**
@@ -65,6 +72,7 @@ class ModuleServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 TestWebSocketBroadcast::class,
+                ResetBlockedInstances::class,
             ]);
         }
     }
