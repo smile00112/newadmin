@@ -886,10 +886,15 @@ return [
         'route' => 'admin.newsletters.stop-list.index',
         'sort'  => 3,
     ], [
+        'key'   => 'newsletters.reports',
+        'name'  => 'newsletters::app.sidebar.reports',
+        'route' => 'admin.newsletters.reports.index',
+        'sort'  => 4,
+    ], [
         'key'   => 'newsletters.contact-groups',
         'name'  => 'newsletters::app.sidebar.contact-groups',
         'route' => 'admin.newsletters.contact-groups.index',
-        'sort'  => 4,
+        'sort'  => 5,
     ],
 
     /*

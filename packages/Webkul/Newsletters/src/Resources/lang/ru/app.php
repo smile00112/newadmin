@@ -92,7 +92,7 @@ return [
             'delivered' => 'Доставлено',
             'not-viewed' => 'Не просмотрено',
             'viewed' => 'Просмотрено',
-            'search-placeholder' => 'Поиск по номеру',
+            'search-placeholder' => 'Поиск по номеру телефона',
             'chat-with-client' => 'Чат с клиентом',
             'chat-history-error' => 'Ошибка загрузки чата',
             'chat-history-failed' => 'Не удалось загрузить историю чата',
@@ -242,6 +242,21 @@ return [
             'index' => [
                 'store-stats' => 'Статистика рассылок'
             ]
+        ],
+
+        'reports' => [
+            'title' => 'Отчеты',
+            'description' => 'Статистика отправленных, полученных и прочитанных сообщений',
+            'messages-stats' => [
+                'title' => 'Статистика сообщений',
+                'sent' => 'Отправлено',
+                'received' => 'Получено',
+                'incoming' => 'Входящие',
+                'read' => 'Прочитано'
+            ],
+            'mailing-lists-stats' => [
+                'title' => 'Статистика рассылок'
+            ]
         ]
     ],
 
@@ -253,6 +268,7 @@ return [
         'stop-list' => 'Стоп-лист',
         'unified' => 'Унифицированное управление',
         'messages' => 'Сообщения',
+        'reports' => 'Отчеты',
         'contact-groups' => 'Группы контактов',
     ],
 

@@ -276,6 +276,12 @@ return [
         'route'      => 'admin.newsletters.messages.index',
         'sort'       => 3,
         'icon'       => '',
+    ], [
+        'key'        => 'newsletters.reports',
+        'name'       => 'newsletters::app.sidebar.reports',
+        'route'      => 'admin.newsletters.reports.index',
+        'sort'       => 5,
+        'icon'       => '',
     ],
 //    [
 //        'key'        => 'newsletters.contact-groups',

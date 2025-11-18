@@ -271,12 +271,30 @@
                                 <input type="hidden" name="customer_numbers[{{ $index }}][whatsapp_instance_id]" value="{{ $customer->whatsapp_instance_id }}">
                             @endif
                             <div data-customer-id="{{ $customer->id }}" class="customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 {{ $customer->incoming_message ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700' : '' }}">
-                                <div class="flex items-center space-x-4 flex-1">
+                                    <div class="flex items-center space-x-4 flex-1">
                                     <div class="flex-shrink-0">
                                         @if($customer->incoming_message)
-                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                                {{ __('newsletters::app.admin.customer-numbers.incoming') }}
-                                            </span>
+                                            @php
+                                                $chatPayload = [
+                                                    'id' => $customer->id,
+                                                    'phone_number' => $customer->phone_number,
+                                                    'name' => $customer->name,
+                                                    'instance_phone' => $customer->whatsAppInstance ? ($customer->whatsAppInstance->phone ?: $customer->whatsAppInstance->login) : '',
+                                                ];
+                                            @endphp
+                                            <button
+                                                type="button"
+                                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:focus:ring-yellow-600"
+                                                data-chat-trigger
+                                                data-chat-payload='@json($chatPayload, JSON_UNESCAPED_UNICODE)'
+                                                title="{{ __('newsletters::app.admin.customer-numbers.chat-with-client') }}"
+                                            >
+                                                <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                                                </svg>
+                                                {{ __('newsletters::app.admin.messages.new-message') }}
+                                            </button>
                                         @endif
                                     </div>
                                     <div class="flex-1 min-w-0">
@@ -287,9 +305,9 @@
                                 <div>
                                                 <span class="font-medium text-gray-900 dark:text-white phone-number">{{ $customer->phone_number }}</span>
                                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.phone-number') }}</div>
-                                                @if($customer->whatsAppInstance && $customer->whatsAppInstance->phone)
+                                                @if($customer->whatsAppInstance)
                                                     <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                        {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}: <span class="font-medium">{{ $customer->whatsAppInstance->phone }}</span>
+                                                        {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}: <span class="font-medium">{{ $customer->whatsAppInstance->phone ?: $customer->whatsAppInstance->login }}</span>
                                                     </div>
                                                 @endif
                                 </div>
@@ -309,7 +327,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <button type="button" onclick="openCustomerEditModal({{ $customer->id }}, '{{ $customer->phone_number }}', '{{ $customer->name }}', {{ $customer->delivered ? 'true' : 'false' }}, {{ $customer->viewed ? 'true' : 'false' }}, '{{ $customer->whatsAppInstance && $customer->whatsAppInstance->phone ? $customer->whatsAppInstance->phone : '' }}')"
+                                    <button type="button" onclick="openCustomerEditModal({{ $customer->id }}, '{{ $customer->phone_number }}', '{{ $customer->name }}', {{ $customer->delivered ? 'true' : 'false' }}, {{ $customer->viewed ? 'true' : 'false' }}, '{{ $customer->whatsAppInstance ? ($customer->whatsAppInstance->phone ?: $customer->whatsAppInstance->login) : '' }}')"
                                         class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
                                         title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -552,6 +570,8 @@
             </div>
         </div>
     </div>
+
+    @include('newsletters::admin.components.chat-modal')
 
     <!-- Customer Edit Modal -->
     <div id="customerEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden" style="z-index: 9999;" onclick="closeCustomerEditModal()">
@@ -873,14 +893,33 @@
 
             let html = '';
             results.forEach((customer, index) => {
+                const chatPayload = {
+                    id: customer.id,
+                    phone_number: customer.phone_number,
+                    name: customer.name || '',
+                    instance_phone: (customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone || customer.whatsAppInstance?.login || customer.whatsapp_instance?.login || ''),
+                };
+
+                const payloadAttr = JSON.stringify(chatPayload).replace(/'/g, '&#39;');
+
                 html += `
                     <div class="customer-number-row flex items-center justify-between p-3 mb-2 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 ${customer.incoming_message ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700' : ''}">
                         <div class="flex items-center space-x-4 flex-1">
                             <div class="flex-shrink-0">
                                 ${customer.incoming_message ? `
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                        {{ __('newsletters::app.admin.customer-numbers.incoming') }}
-                                    </span>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:focus:ring-yellow-600"
+                                        data-chat-trigger
+                                        data-chat-payload='${payloadAttr}'
+                                        title="{{ __('newsletters::app.admin.customer-numbers.chat-with-client') }}"
+                                    >
+                                        <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                                        </svg>
+                                        {{ __('newsletters::app.admin.messages.new-message') }}
+                                    </button>
                                 ` : ''}
                             </div>
                             <div class="flex-1 min-w-0">
@@ -888,9 +927,9 @@
                                     <div>
                                         <span class="font-medium text-gray-900 dark:text-white phone-number">${customer.phone_number}</span>
                                         <div class="text-xs text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.customer-numbers.phone-number') }}</div>
-                                        ${(customer.whatsAppInstance || customer.whatsapp_instance) && (customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone) ? `
+                                        ${(customer.whatsAppInstance || customer.whatsapp_instance) ? `
                                             <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                                {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}: <span class="font-medium">${customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone}</span>
+                                                {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}: <span class="font-medium">${(customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone) || (customer.whatsAppInstance?.login || customer.whatsapp_instance?.login)}</span>
                                             </div>
                                         ` : ''}
                                     </div>
@@ -911,7 +950,7 @@
                         </div>
                         <div class="flex items-center space-x-2">
                             <span class="text-xs text-gray-500 dark:text-gray-400">ID: ${customer.id}</span>
-                            <button type="button" onclick="openCustomerEditModal(${customer.id}, '${customer.phone_number}', '${customer.name}', ${customer.delivered}, ${customer.viewed}, '${(customer.whatsAppInstance || customer.whatsapp_instance)?.phone || ''}')"
+                            <button type="button" onclick="openCustomerEditModal(${customer.id}, '${customer.phone_number}', '${customer.name}', ${customer.delivered}, ${customer.viewed}, '${(customer.whatsAppInstance || customer.whatsapp_instance) ? ((customer.whatsAppInstance?.phone || customer.whatsapp_instance?.phone) || (customer.whatsAppInstance?.login || customer.whatsapp_instance?.login)) : ''}')"
                                 class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500"
                                 title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -65,6 +65,10 @@ class HooksController extends Controller
 //                    ]);
                     $this->handleOutgoingMessageStatus($idMessage, $status);
                     break;
+                case 'stateInstanceChanged':    //изменение состояния инстанса
+                    $stateInstance = !empty($webhookData['stateInstance']) ? $webhookData['stateInstance'] : null;
+                    $this->handleStateInstanceChanged($instanceData, $stateInstance);
+                    break;
                 default:
 //                    Log::info("HOOK__Unhandled webhook type: {$messageType}");
             }
@@ -311,6 +315,61 @@ class HooksController extends Controller
                 'message' => $e->getMessage()
             ], 200);
         }
+    }
+
+    /**
+     * Handle state instance changed webhook.
+     * Updates the active status of the instance based on its state.
+     */
+    private function handleStateInstanceChanged(?array $instanceData, ?string $stateInstance): void
+    {
+        if (empty($instanceData) || empty($instanceData['idInstance'])) {
+            Log::warning("HOOK__handleStateInstanceChanged: Missing instanceData or idInstance", [
+                'instanceData' => $instanceData,
+                'stateInstance' => $stateInstance,
+            ]);
+            return;
+        }
+
+        $idInstance = $instanceData['idInstance'];
+
+        // Find instance by phone (wid) or login
+        // Try to find by phone first (wid from instanceData)
+        $instance = null;
+
+        if (!empty($instanceData['wid'])) {
+            $instancePhoneNumber = str_replace('@c.us', '', $instanceData['wid']);
+            $instance = VacapInstance::where('phone', $instancePhoneNumber)->first();
+        }
+
+        // If not found by phone, try to find by login (idInstance might match login)
+        if (!$instance && !empty($idInstance)) {
+            $instance = VacapInstance::where('login', (string)$idInstance)->first();
+        }
+
+        if (!$instance) {
+            Log::warning("HOOK__handleStateInstanceChanged: Instance not found", [
+                'idInstance' => $idInstance,
+                'instanceData' => $instanceData,
+                'stateInstance' => $stateInstance,
+            ]);
+            return;
+        }
+
+        // Determine active status based on stateInstance
+        // active = true only when stateInstance === 'authorized'
+        $active = ($stateInstance === 'authorized');
+
+        $instance->update([
+            'active' => $active,
+        ]);
+
+        Log::info("HOOK__State instance changed", [
+            'instance_id' => $instance->id,
+            'idInstance' => $idInstance,
+            'stateInstance' => $stateInstance,
+            'active' => $active,
+        ]);
     }
 
     /**

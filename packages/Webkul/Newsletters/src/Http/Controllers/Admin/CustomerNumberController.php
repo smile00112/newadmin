@@ -33,15 +33,51 @@ class CustomerNumberController extends Controller
     /**
      * Display messages list.
      */
-    public function messages()
+    public function messages(Request $request)
     {
-        $messages = $this->customerNumberRepository
+        $query = $this->customerNumberRepository->newQuery();
+        
+        // Search by phone number if provided
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where('phone_number', 'like', '%' . $searchTerm . '%');
+        }
+        
+        // Sorting
+        $sortBy = $request->get('sort_by', 'id');
+        $sortDir = $request->get('sort_dir', 'desc');
+        
+        // Validate sort_by field
+        $allowedSortFields = ['id', 'phone_number', 'created_at', 'mailing_list_id'];
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'id';
+        }
+        
+        // Validate sort direction
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'desc';
+        }
+        
+        // Handle sorting by mailing_list_id (need to join with mailing_lists table)
+        if ($sortBy === 'mailing_list_id') {
+            $query->leftJoin('newsletters_mailing_lists', 'newsletters_customer_numbers.mailing_list_id', '=', 'newsletters_mailing_lists.id')
+                  ->select('newsletters_customer_numbers.*')
+                  ->orderBy('newsletters_mailing_lists.message_text', $sortDir);
+        } else {
+            $query->orderBy($sortBy, $sortDir);
+        }
+        
+        // Always prioritize incoming messages
+        if ($sortBy !== 'incoming_message') {
+            $query->orderBy('incoming_message', 'desc');
+        }
+        
+        $messages = $query
             ->with(['mailingList', 'whatsAppInstance'])
-            ->orderBy('incoming_message', 'desc')
-            ->orderBy('id', 'desc')
-            ->paginate(50);
+            ->paginate(50)
+            ->appends($request->query());
 
-        return view('newsletters::admin.messages.index', compact('messages'));
+        return view('newsletters::admin.messages.index', compact('messages', 'sortBy', 'sortDir'));
     }
 
     /**

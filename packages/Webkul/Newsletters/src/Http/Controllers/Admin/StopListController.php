@@ -19,11 +19,25 @@ class StopListController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $stopList = $this->stopListRepository->orderBy('id', 'desc')->all();
+        $sortBy = $request->get('sort_by', 'id');
+        $sortDir = $request->get('sort_dir', 'desc');
+        
+        // Validate sort_by field
+        $allowedSortFields = ['id', 'phone_number', 'created_at'];
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = 'id';
+        }
+        
+        // Validate sort direction
+        if (!in_array($sortDir, ['asc', 'desc'])) {
+            $sortDir = 'desc';
+        }
+        
+        $stopList = $this->stopListRepository->orderBy($sortBy, $sortDir)->all();
 
-        return view('newsletters::admin.stop-list.index', compact('stopList'));
+        return view('newsletters::admin.stop-list.index', compact('stopList', 'sortBy', 'sortDir'));
     }
 
     /**

@@ -103,10 +103,10 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return;
         }
 
-        // Get all instances for round-robin selection
-        $instances = $mailingList->whatsappInstances;
+        // Get all active instances for round-robin selection
+        $instances = $mailingList->whatsappInstances()->where('active', true)->get();
         if ($instances->isEmpty()) {
-            Log::error("No WhatsApp instance available for mailing list", [
+            Log::error("No active WhatsApp instance available for mailing list", [
                 'mailing_list_id' => $this->mailingListId
             ]);
             return;

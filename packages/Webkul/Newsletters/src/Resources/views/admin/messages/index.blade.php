@@ -9,16 +9,67 @@
         </h1>
     </div>
 
+    <!-- Search Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6 p-4">
+        <form method="GET" action="{{ route('admin.newsletters.messages.index') }}" class="flex items-center gap-4">
+            <div class="flex-1">
+                <input type="text" 
+                    name="search" 
+                    id="phoneSearchInput"
+                    value="{{ request('search') }}"
+                    placeholder="{{ __('newsletters::app.admin.customer-numbers.search-placeholder') }}"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white">
+            </div>
+            <button type="submit"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                {{ __('newsletters::app.common.actions.search') }}
+            </button>
+            @if(request('search'))
+                <a href="{{ route('admin.newsletters.messages.index') }}"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-500">
+                    {{ __('newsletters::app.common.actions.reset') }}
+                </a>
+            @endif
+        </form>
+    </div>
+
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.common.fields.id') }}
+                        @php
+                            $currentSortBy = $sortBy ?? 'id';
+                            $currentSortDir = $sortDir ?? 'desc';
+                        @endphp
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                            @php
+                                $isActive = $currentSortBy === 'id';
+                                $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
+                            @endphp
+                            <a href="{{ route('admin.newsletters.messages.index', array_merge(request()->query(), ['sort_by' => 'id', 'sort_dir' => $nextDir])) }}" 
+                               class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                                {{ __('newsletters::app.common.fields.id') }}
+                                @if($isActive)
+                                    <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                @endif
+                            </a>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.admin.customer-numbers.phone-number') }}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                            @php
+                                $isActive = $currentSortBy === 'phone_number';
+                                $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
+                            @endphp
+                            <a href="{{ route('admin.newsletters.messages.index', array_merge(request()->query(), ['sort_by' => 'phone_number', 'sort_dir' => $nextDir])) }}" 
+                               class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                                {{ __('newsletters::app.admin.customer-numbers.phone-number') }}
+                                @if($isActive)
+                                    <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                @endif
+                            </a>
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.whatsapp-instances.instance-phone') }}
@@ -26,14 +77,34 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.customer-numbers.name') }}
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.admin.customer-numbers.mailing-list') }}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                            @php
+                                $isActive = $currentSortBy === 'mailing_list_id';
+                                $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
+                            @endphp
+                            <a href="{{ route('admin.newsletters.messages.index', array_merge(request()->query(), ['sort_by' => 'mailing_list_id', 'sort_dir' => $nextDir])) }}" 
+                               class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                                {{ __('newsletters::app.admin.customer-numbers.mailing-list') }}
+                                @if($isActive)
+                                    <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                @endif
+                            </a>
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.messages.status') }}
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.common.fields.created_at') }}
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                            @php
+                                $isActive = $currentSortBy === 'created_at';
+                                $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
+                            @endphp
+                            <a href="{{ route('admin.newsletters.messages.index', array_merge(request()->query(), ['sort_by' => 'created_at', 'sort_dir' => $nextDir])) }}" 
+                               class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                                {{ __('newsletters::app.common.fields.created_at') }}
+                                @if($isActive)
+                                    <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                @endif
+                            </a>
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.actions') }}
@@ -44,23 +115,36 @@
                     @forelse($messages as $message)
                         <tr data-message-id="{{ $message->id }}"
                             class="{{ $message->incoming_message ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-20' : '' }} hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 {{ $message->id }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium">
-                                {{ $message->phone_number }}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <a href="{{ route('admin.newsletters.customer-numbers.edit', $message->id) }}"
+                                   class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                    {{ $message->phone_number }}
+                                </a>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                @if($message->whatsAppInstance && $message->whatsAppInstance->phone)
-                                    <span class="font-medium">{{ $message->whatsAppInstance->phone }}</span>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                @if($message->whatsAppInstance)
+                                    <a href="{{ route('admin.newsletters.customer-numbers.edit', $message->id) }}"
+                                       class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                        <span class="font-medium">{{ $message->whatsAppInstance->phone ?: $message->whatsAppInstance->login }}</span>
+                                    </a>
                                 @else
                                     <span class="text-gray-400 dark:text-gray-500">-</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {{ $message->name ?? '-' }}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                @if($message->name)
+                                    <a href="{{ route('admin.newsletters.customer-numbers.edit', $message->id) }}"
+                                       class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                        {{ $message->name }}
+                                    </a>
+                                @else
+                                    -
+                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 @if($message->mailingList)
                                     <a href="{{ route('admin.newsletters.mailing-lists.edit', $message->mailingList->id) }}"
                                        class="text-blue-600 hover:text-blue-900 dark:text-blue-400">
@@ -70,16 +154,30 @@
                                     -
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-6 py-4 whitespace-nowrap hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 <div class="flex flex-col gap-1">
                                     @if($message->incoming_message)
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                                        @php
+                                            $chatPayload = [
+                                                'id' => $message->id,
+                                                'phone_number' => $message->phone_number,
+                                                'name' => $message->name ?? '',
+                                                'instance_phone' => $message->whatsAppInstance ? ($message->whatsAppInstance->phone ?: $message->whatsAppInstance->login) : '',
+                                            ];
+                                        @endphp
+                                        <button
+                                            type="button"
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400 dark:focus:ring-yellow-600"
+                                            data-chat-trigger
+                                            data-chat-payload='@json($chatPayload, JSON_UNESCAPED_UNICODE)'
+                                            title="{{ __('newsletters::app.admin.customer-numbers.chat-with-client') }}"
+                                        >
                                             <svg class="w-3 h-3 mr-1 inline-block h-5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
                                                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
                                             </svg>
                                             {{ __('newsletters::app.admin.messages.new-message') }}
-                                        </span>
+                                        </button>
                                     @endif
                                     @if($message->delivered)
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
@@ -107,12 +205,12 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 {{ $message->created_at ? $message->created_at->format('d.m.Y H:i') : '-' }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                 <button type="button"
-                                    onclick="openCustomerEditModal({{ $message->id }}, '{{ $message->phone_number }}', '{{ $message->name ?? '' }}', {{ $message->delivered ? 'true' : 'false' }}, {{ $message->viewed ? 'true' : 'false' }}, '{{ $message->whatsAppInstance && $message->whatsAppInstance->phone ? $message->whatsAppInstance->phone : '' }}')"
+                                    onclick="openCustomerEditModal({{ $message->id }}, '{{ $message->phone_number }}', '{{ $message->name ?? '' }}', {{ $message->delivered ? 'true' : 'false' }}, {{ $message->viewed ? 'true' : 'false' }}, '{{ $message->whatsAppInstance ? ($message->whatsAppInstance->phone ?: $message->whatsAppInstance->login) : '' }}')"
                                     class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                     title="{{ __('newsletters::app.admin.customer-numbers.edit-button-caption') }}">
                                     <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-edit"></span>
@@ -147,6 +245,8 @@
             </div>
         @endif
     </div>
+
+    @include('newsletters::admin.components.chat-modal')
 
     <!-- Customer Edit Modal -->
     <div id="customerEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden" style="z-index: 9999;" onclick="closeCustomerEditModal()">
@@ -266,6 +366,35 @@
         }
         #customerEditModal .modal-content {
             z-index: 10000 !important;
+        }
+        
+        /* Подсвечивание столбцов при наведении */
+        .sortable-column {
+            position: relative;
+        }
+        
+        .sortable-column:hover {
+            background-color: rgba(0, 0, 0, 0.1) !important;
+        }
+        
+        .dark .sortable-column:hover {
+            background-color: rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        table tbody tr:hover td {
+            background-color: rgba(249, 250, 251, 0.5);
+        }
+        
+        table tbody tr:hover td:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark table tbody tr:hover td {
+            background-color: rgba(31, 41, 55, 0.5);
+        }
+        
+        .dark table tbody tr:hover td:hover {
+            background-color: rgba(59, 130, 246, 0.2);
         }
     </style>
 

@@ -232,6 +232,21 @@ return [
             'field-favorite-dish' => 'Favorite Dish',
             'field-store' => 'Store',
         ],
+
+        'reports' => [
+            'title' => 'Reports',
+            'description' => 'Statistics of sent, received and read messages',
+            'messages-stats' => [
+                'title' => 'Messages Statistics',
+                'sent' => 'Sent',
+                'received' => 'Received',
+                'incoming' => 'Incoming',
+                'read' => 'Read'
+            ],
+            'mailing-lists-stats' => [
+                'title' => 'Mailing Lists Statistics'
+            ]
+        ],
     ],
 
     'sidebar' => [
@@ -242,6 +257,7 @@ return [
         'stop-list' => 'Stop List',
         'unified' => 'Unified Management',
         'messages' => 'Messages',
+        'reports' => 'Reports',
         'contact-groups' => 'Contact Groups',
     ],
 

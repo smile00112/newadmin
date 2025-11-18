@@ -29,7 +29,25 @@ class VacapInstance extends Model
         'password',
         'mailing_list_id',
         'phone',
+        'active',
     ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
+    /**
+     * Scope a query to only include active instances.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('active', true);
+    }
 
     /**
      * Get the mailing list that owns the whatsapp instance.

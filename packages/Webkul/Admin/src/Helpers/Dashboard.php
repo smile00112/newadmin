@@ -5,6 +5,7 @@ namespace Webkul\Admin\Helpers;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Webkul\Admin\Helpers\Reporting\Customer;
 use Webkul\Admin\Helpers\Reporting\Product;
 use Webkul\Admin\Helpers\Reporting\Sale;
@@ -170,5 +171,146 @@ class Dashboard
     public function getDateRange(): string
     {
         return $this->getStartDate()->format('d M').' - '.$this->getEndDate()->format('d M');
+    }
+
+    /**
+     * Returns messages statistics by day.
+     */
+    public function getMessagesStats(): array
+    {
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
+        
+        // Get all days in the range
+        $days = [];
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
+            $days[] = [
+                'date' => $currentDate->format('Y-m-d'),
+                'label' => $currentDate->format('d M'),
+                'dayOfYear' => $currentDate->dayOfYear,
+            ];
+            $currentDate->addDay();
+        }
+
+        // Get sent messages (delivered = true OR sending = true OR send_error = true)
+        $sentMessages = DB::table('newsletters_customer_numbers')
+            ->select(
+                DB::raw('DATE(COALESCE(sent_at, created_at)) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where(function ($query) {
+                $query->where('delivered', true)
+                    ->orWhere('sending', true)
+                    ->orWhere('send_error', true);
+            })
+            ->whereBetween(DB::raw('DATE(COALESCE(sent_at, created_at))'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Get delivered messages (delivered = true)
+        $deliveredMessages = DB::table('newsletters_customer_numbers')
+            ->select(
+                DB::raw('DATE(updated_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('delivered', true)
+            ->whereBetween(DB::raw('DATE(updated_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Get incoming messages (incoming_message = true)
+        $incomingMessages = DB::table('newsletters_customer_numbers')
+            ->select(
+                DB::raw('DATE(updated_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('incoming_message', true)
+            ->whereBetween(DB::raw('DATE(updated_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Get read messages (viewed = true)
+        $readMessages = DB::table('newsletters_customer_numbers')
+            ->select(
+                DB::raw('DATE(updated_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('viewed', true)
+            ->whereBetween(DB::raw('DATE(updated_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Build the over_time array
+        $overTime = [];
+        foreach ($days as $day) {
+            $sentItem = $sentMessages->get($day['date']);
+            $deliveredItem = $deliveredMessages->get($day['date']);
+            $incomingItem = $incomingMessages->get($day['date']);
+            $readItem = $readMessages->get($day['date']);
+            
+            $overTime[] = [
+                'label' => $day['label'],
+                'sent' => $sentItem ? (int) $sentItem->count : 0,
+                'received' => $deliveredItem ? (int) $deliveredItem->count : 0,
+                'incoming' => $incomingItem ? (int) $incomingItem->count : 0,
+                'read' => $readItem ? (int) $readItem->count : 0,
+            ];
+        }
+
+        return [
+            'over_time' => $overTime,
+        ];
+    }
+
+    /**
+     * Returns mailing lists statistics by day.
+     */
+    public function getMailingListsStats(): array
+    {
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
+        
+        // Get all days in the range
+        $days = [];
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
+            $days[] = [
+                'date' => $currentDate->format('Y-m-d'),
+                'label' => $currentDate->format('d M'),
+                'dayOfYear' => $currentDate->dayOfYear,
+            ];
+            $currentDate->addDay();
+        }
+
+        // Get mailing lists count by day
+        $mailingLists = DB::table('newsletters_mailing_lists')
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->whereBetween(DB::raw('DATE(created_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Build the over_time array
+        $overTime = [];
+        foreach ($days as $day) {
+            $mailingListItem = $mailingLists->get($day['date']);
+            
+            $overTime[] = [
+                'label' => $day['label'],
+                'count' => $mailingListItem ? (int) $mailingListItem->count : 0,
+            ];
+        }
+
+        return [
+            'over_time' => $overTime,
+        ];
     }
 }

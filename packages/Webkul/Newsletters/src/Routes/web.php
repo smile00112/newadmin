@@ -8,6 +8,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\CustomerNumberController;
 use Webkul\Newsletters\Http\Controllers\Admin\StopListController;
 use Webkul\Newsletters\Http\Controllers\Admin\UnifiedNewsletterController;
 use Webkul\Newsletters\Http\Controllers\Admin\ContactGroupController;
+use Webkul\Newsletters\Http\Controllers\Admin\ReportsController;
 
 //TODO add custom middleware to greenapi webhook routes
 Route::group(['prefix' => 'newsletters'], function () {
@@ -120,5 +121,13 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-groups.destroy');
         Route::get('{groupId}/contacts', 'contacts')->name('admin.newsletters.contact-groups.contacts');
         Route::post('{groupId}/import', 'importContacts')->name('admin.newsletters.contact-groups.import');
+    });
+
+    /**
+     * Reports routes.
+     */
+    Route::controller(ReportsController::class)->prefix('reports')->group(function () {
+        Route::get('', 'index')->name('admin.newsletters.reports.index');
+        Route::get('stats', 'stats')->name('admin.newsletters.reports.stats');
     });
 });

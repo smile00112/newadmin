@@ -45,6 +45,18 @@
                 this.prepare();
             },
 
+            watch: {
+                labels() {
+                    this.updateChart();
+                },
+                datasets: {
+                    handler() {
+                        this.updateChart();
+                    },
+                    deep: true
+                }
+            },
+
             methods: {
                 prepare() {
                     if (this.chart) {
@@ -87,6 +99,16 @@
                             }
                         }
                     });
+                },
+
+                updateChart() {
+                    if (this.chart) {
+                        this.chart.data.labels = this.labels;
+                        this.chart.data.datasets = this.datasets;
+                        this.chart.update();
+                    } else {
+                        this.prepare();
+                    }
                 }
             }
         });
