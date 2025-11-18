@@ -192,6 +192,7 @@ class WhatsAppMailingService
     public function getRandomInstance(MailingList $mailingList): ?VacapInstance
     {
         $i = $mailingList->whatsappInstances()
+            ->where('active', true)
             ->inRandomOrder();
 
         Log::warning("getRandomInstance", [

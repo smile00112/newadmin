@@ -112,7 +112,8 @@ class ProcessWhatsAppBatch implements ShouldQueue
             return;
         }
 
-        $messageDelay = $mailingList->message_delay ?? 0; // Delay between messages in seconds
+        // Получаем максимальную задержку для проверки времени рассылки
+        $maxMessageDelay = $this->calculateMaxMessageDelay($mailingList);
         $messageIndex = 0;
         $messageDelayIndex = 0;
         $instanceCounter = 0; // Counter for round-robin instance selection
@@ -120,6 +121,7 @@ class ProcessWhatsAppBatch implements ShouldQueue
 
         // Фиксируем базовое время для всех сообщений в этом батче
         $baseTime = now();
+        $totalDelay = 0; // Накопительная задержка для расчета времени отправки
 
         foreach ($customers as $customer) {
             //проверка стоит ли номер в стопе
@@ -135,7 +137,8 @@ class ProcessWhatsAppBatch implements ShouldQueue
             }
 
             // Check if we're still within mailing hours before sending each message
-            if ($messageIndex > 0 && !$this->isWithinMailingHours($mailingList, $messageIndex * $messageDelay)) {
+            // Используем максимальную задержку для проверки, чтобы не превысить время рассылки
+            if ($messageIndex > 0 && !$this->isWithinMailingHours($mailingList, $totalDelay + $maxMessageDelay)) {
                 // If sending this message would exceed mailing hours, schedule remaining for tomorrow
                 $remainingCustomers = $customers->slice($messageIndex)->pluck('id')->toArray();
                 if (!empty($remainingCustomers)) {
@@ -156,8 +159,9 @@ class ProcessWhatsAppBatch implements ShouldQueue
             // Check rate limit before each message
             if (!$whatsappService->checkRateLimit()) {
                 // If rate limit exceeded, delay the remaining messages
+                $rateLimitDelay = $this->calculateMessageDelay($mailingList);
                 ProcessWhatsAppBatch::dispatch($this->mailingListId, [$customer->id])
-                    ->delay($baseTime->copy()->addSeconds($messageDelay))
+                    ->delay($baseTime->copy()->addSeconds($rateLimitDelay))
                     ->onQueue('whatsapp-batch');
                 continue;
             }
@@ -168,6 +172,10 @@ class ProcessWhatsAppBatch implements ShouldQueue
             $instance = $instances->get($instanceIndex);
             $instanceCounter++; // Increment for next message
 
+            // Вычисляем задержку для текущего сообщения
+            $currentMessageDelay = $this->calculateMessageDelay($mailingList);
+            $totalDelay += $currentMessageDelay;
+
             Log::info("Start Sending message to customer", [
                 'customer_id' => $customer->id,
                 'mailing_list_id' => $this->mailingListId,
@@ -175,18 +183,20 @@ class ProcessWhatsAppBatch implements ShouldQueue
                 'instance_index' => $instanceIndex,
                 'messageIndex' => $messageIndex,
                 'messageDelayIndex' => $messageDelayIndex,
+                'currentMessageDelay' => $currentMessageDelay,
+                'totalDelay' => $totalDelay,
                 'now' => now()->format("Y-m-d H:i:s"),
-                'now_and_delay' => $baseTime->copy()->addSeconds($messageDelay * $messageDelayIndex)->format("Y-m-d H:i:s"),
+                'scheduled_at' => $baseTime->copy()->addSeconds($totalDelay)->format("Y-m-d H:i:s"),
             ]);
 
-            // Send individual message with delay based on message_delay
+            // Send individual message with delay based on calculated delay
             $randomMessage = $whatsappService->makeRandomMessage($mailingList->message_text);
             SendWhatsAppMessage::dispatch(
                 $instance->id,
                 $customer->id,
                 $randomMessage
             )
-                ->delay($baseTime->copy()->addSeconds($messageDelay * $messageIndex ))
+                ->delay($baseTime->copy()->addSeconds($totalDelay))
                 ->onQueue('whatsapp-send');
 
             $messageIndex++;
@@ -313,6 +323,69 @@ class ProcessWhatsAppBatch implements ShouldQueue
         }
 
         return (int) $delay;
+    }
+
+    /**
+     * Вычисляет задержку между сообщениями на основе настроек mailing list
+     * 
+     * Логика:
+     * - Если заполнено только message_delay_to (и не заполнено message_delay_from) - используется message_delay_to
+     * - Если заполнены оба поля - случайное значение из интервала [message_delay_from, message_delay_to]
+     * - Если заполнено только message_delay_from - используется message_delay_from
+     */
+    protected function calculateMessageDelay($mailingList): int
+    {
+        $delayFrom = $mailingList->message_delay_from;
+        $delayTo = $mailingList->message_delay_to;
+        
+        // Если заполнено только message_delay_to
+        if ($delayTo && !$delayFrom) {
+            return (int) $delayTo;
+        }
+        
+        // Если заполнены оба поля - случайное значение из интервала
+        if ($delayFrom && $delayTo) {
+            // Убеждаемся, что from <= to
+            $min = min((int) $delayFrom, (int) $delayTo);
+            $max = max((int) $delayFrom, (int) $delayTo);
+            return rand($min, $max);
+        }
+        
+        // Если заполнено только message_delay_from
+        if ($delayFrom && !$delayTo) {
+            return (int) $delayFrom;
+        }
+        
+        // По умолчанию возвращаем 0 секунд (как было раньше)
+        return 0;
+    }
+
+    /**
+     * Вычисляет максимальную задержку для проверки времени рассылки
+     * Используется для определения, не превысит ли отправка время рассылки
+     */
+    protected function calculateMaxMessageDelay($mailingList): int
+    {
+        $delayFrom = $mailingList->message_delay_from;
+        $delayTo = $mailingList->message_delay_to;
+        
+        // Если заполнено только message_delay_to
+        if ($delayTo && !$delayFrom) {
+            return (int) $delayTo;
+        }
+        
+        // Если заполнены оба поля - берем максимальное значение
+        if ($delayFrom && $delayTo) {
+            return max((int) $delayFrom, (int) $delayTo);
+        }
+        
+        // Если заполнено только message_delay_from
+        if ($delayFrom && !$delayTo) {
+            return (int) $delayFrom;
+        }
+        
+        // По умолчанию возвращаем 0 секунд
+        return 0;
     }
 
     /**

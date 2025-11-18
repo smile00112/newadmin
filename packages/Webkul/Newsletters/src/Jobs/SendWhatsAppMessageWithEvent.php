@@ -52,7 +52,7 @@ class SendWhatsAppMessageWithEvent implements ShouldQueue
 
         try {
 
-            $instance = VacapInstance::findOrFail($this->instanceId);
+            $instance = VacapInstance::where('active', true)->findOrFail($this->instanceId);
             $mailingList = $customer->mailingList ?? MailingList::findOrFail($this->mailingListId);
 
             $message_id = null;

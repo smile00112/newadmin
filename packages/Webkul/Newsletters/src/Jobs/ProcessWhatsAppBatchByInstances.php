@@ -44,8 +44,10 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
 
         $mailingList = MailingList::with('whatsappInstances')->findOrFail($this->mailingListId);
 
-        if (!$mailingList->active || $mailingList->whatsappInstances->isEmpty()) {
-            Log::warning("Mailing list is inactive or has no WhatsApp instances", [
+        // Check for active instances
+        $activeInstances = $mailingList->whatsappInstances()->where('active', true)->get();
+        if (!$mailingList->active || $activeInstances->isEmpty()) {
+            Log::warning("Mailing list is inactive or has no active WhatsApp instances", [
                 'mailing_list_id' => $this->mailingListId
             ]);
             return;
@@ -67,7 +69,7 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
             return;
         }
 
-        $instances = $mailingList->whatsappInstances;
+        $instances = $mailingList->whatsappInstances()->where('active', true)->get();
         $instancesCount = $instances->count();
         $customers = CustomerNumber::whereIn('id', $this->customerIds)
             ->where('sending', false)
@@ -173,7 +175,7 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
 
         // Если есть оставшиеся клиенты, создаем следующую партию с задержкой
         if ($remainingCustomers->isNotEmpty()) {
-            $messageDelay = $mailingList->message_delay ?? 5;
+            $messageDelay = $this->calculateMessageDelay($mailingList);
             $nextBatchIndex = $this->batchIndex + 1;
             $remainingCustomerIds = $remainingCustomers->pluck('id')->toArray();
 
@@ -295,6 +297,41 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
         }
 
         return (int) $delay;
+    }
+
+    /**
+     * Вычисляет задержку между сообщениями на основе настроек mailing list
+     * 
+     * Логика:
+     * - Если заполнено только message_delay_to (и не заполнено message_delay_from) - используется message_delay_to
+     * - Если заполнены оба поля - случайное значение из интервала [message_delay_from, message_delay_to]
+     * - Если заполнено только message_delay_from - используется message_delay_from
+     */
+    protected function calculateMessageDelay($mailingList): int
+    {
+        $delayFrom = $mailingList->message_delay_from;
+        $delayTo = $mailingList->message_delay_to;
+        
+        // Если заполнено только message_delay_to
+        if ($delayTo && !$delayFrom) {
+            return (int) $delayTo;
+        }
+        
+        // Если заполнены оба поля - случайное значение из интервала
+        if ($delayFrom && $delayTo) {
+            // Убеждаемся, что from <= to
+            $min = min((int) $delayFrom, (int) $delayTo);
+            $max = max((int) $delayFrom, (int) $delayTo);
+            return rand($min, $max);
+        }
+        
+        // Если заполнено только message_delay_from
+        if ($delayFrom && !$delayTo) {
+            return (int) $delayFrom;
+        }
+        
+        // По умолчанию возвращаем 5 секунд
+        return 5;
     }
 
     /**

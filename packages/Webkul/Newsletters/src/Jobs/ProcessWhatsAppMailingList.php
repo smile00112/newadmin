@@ -37,8 +37,10 @@ class ProcessWhatsAppMailingList implements ShouldQueue
             ->where('active', true)
             ->findOrFail($this->mailingListId);
 
-        if (!$mailingList->active || $mailingList->whatsappInstances->isEmpty()) {
-            Log::warning("Mailing list is inactive or has no WhatsApp instances", [
+        // Check for active instances
+        $activeInstances = $mailingList->whatsappInstances()->where('active', true)->get();
+        if (!$mailingList->active || $activeInstances->isEmpty()) {
+            Log::warning("Mailing list is inactive or has no active WhatsApp instances", [
                 'mailing_list_id' => $this->mailingListId
             ]);
             return;

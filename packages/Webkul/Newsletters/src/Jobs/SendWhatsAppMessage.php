@@ -56,7 +56,7 @@ class SendWhatsAppMessage implements ShouldQueue
                 'sending' => true
             ]);
 
-            $instance = VacapInstance::findOrFail($this->instanceId);
+            $instance = VacapInstance::where('active', true)->findOrFail($this->instanceId);
             $mailingList = $customer->mailingList;
 
             $message_id = null;
