@@ -30,6 +30,8 @@ class VacapInstance extends Model
         'mailing_list_id',
         'phone',
         'active',
+        'sending_message_count',
+        'blocked',
     ];
 
     /**
@@ -39,6 +41,8 @@ class VacapInstance extends Model
      */
     protected $casts = [
         'active' => 'boolean',
+        'sending_message_count' => 'integer',
+        'blocked' => 'boolean',
     ];
 
     /**
@@ -47,6 +51,14 @@ class VacapInstance extends Model
     public function scopeActive($query)
     {
         return $query->where('active', true);
+    }
+
+    /**
+     * Scope a query to only include non-blocked instances.
+     */
+    public function scopeNotBlocked($query)
+    {
+        return $query->where('blocked', false);
     }
 
     /**

@@ -20,6 +20,7 @@ cmds = [
     "touch /app/storage/logs/broadcastable-worker.log",
     "touch /app/storage/logs/default-worker.log",
     "touch /app/storage/logs/reverb.log",
+    "touch /app/storage/logs/laravel-scheduler.log",
 
     # Устанавливаем правильные права
     "chown -R www-data:www-data /app/storage/",
@@ -149,6 +150,18 @@ numprocs=1
 redirect_stderr=true
 stdout_logfile=/var/log/reverb.log
 stopwaitsecs=30
+
+[program:laravel-scheduler]
+process_name=%(program_name)s_%(process_num)02d
+command=bash -c 'while true; do php /app/artisan schedule:run --verbose --no-interaction & sleep 60; done'
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/log/laravel-scheduler.log
 '''
 
 "php-fpm.conf" = '''
