@@ -283,20 +283,34 @@ return [
         'sort'       => 5,
         'icon'       => '',
     ],
-//    [
-//        'key'        => 'newsletters.contact-groups',
-//        'name'       => 'newsletters::app.sidebar.contact-groups',
-//        'route'      => 'admin.newsletters.contact-groups.index',
-//        'sort'       => 5,
-//        'icon'       => '',
-//    ],
-//    [
-//        'key'        => 'newsletters.whatsapp-instances',
-//        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
-//        'route'      => 'admin.newsletters.whatsapp-instances.index',
-//        'sort'       => 6,
-//        'icon'       => '',
-//    ],
+    [
+        'key'        => 'newsletters.contact-groups',
+        'name'       => 'newsletters::app.sidebar.contact-groups',
+        'route'      => 'admin.newsletters.contact-groups.index',
+        'sort'       => 5,
+        'icon'       => '',
+    ],
+    [
+        'key'        => 'newsletters.whatsapp-instances',
+        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
+        'route'      => 'admin.newsletters.whatsapp-instances.index',
+        'sort'       => 6,
+        'icon'       => '',
+    ],
+    [
+        'key'        => 'newsletters.contact-groups',
+        'name'       => 'newsletters::app.sidebar.contact-groups',
+        'route'      => 'admin.newsletters.contact-groups.index',
+        'sort'       => 5,
+        'icon'       => '',
+    ],
+    [
+        'key'        => 'newsletters.whatsapp-instances',
+        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
+        'route'      => 'admin.newsletters.whatsapp-instances.index',
+        'sort'       => 6,
+        'icon'       => '',
+    ],
 
     /**
      * Reporting.

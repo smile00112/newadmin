@@ -51,8 +51,147 @@
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                        {{ __('newsletters::app.admin.contact-groups.has-external-integration') }}
+                    </h3>
+                    
+                    <div class="mb-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" 
+                                   name="has_external_integration" 
+                                   id="has_external_integration"
+                                   value="1"
+                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                   {{ old('has_external_integration', $group->has_external_integration) ? 'checked' : '' }}
+                                   onchange="toggleExternalIntegrationFields()">
+                            <span class="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                                {{ __('newsletters::app.admin.contact-groups.has-external-integration') }}
+                            </span>
+                        </label>
+                        @error('has_external_integration')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div id="external-integration-fields" class="space-y-4 {{ old('has_external_integration', $group->has_external_integration) ? '' : 'hidden' }}">
+                        <div>
+                            <label for="request_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.contact-groups.request-url') }}
+                            </label>
+                            <input type="url" 
+                                   name="request_url" 
+                                   id="request_url" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                   value="{{ old('request_url', $group->request_url) }}"
+                                   placeholder="https://example.com/api/contacts">
+                            @error('request_url')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="request_token" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.contact-groups.request-token') }}
+                            </label>
+                            <input type="text" 
+                                   name="request_token" 
+                                   id="request_token" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                   value="{{ old('request_token', $group->request_token) }}"
+                                   placeholder="Введите токен для авторизации">
+                            @error('request_token')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="auto_request_frequency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.contact-groups.auto-request-frequency') }}
+                            </label>
+                            <select name="auto_request_frequency" 
+                                    id="auto_request_frequency" 
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                                <option value="">{{ __('newsletters::app.common.actions.select') }}</option>
+                                <option value="86400" {{ old('auto_request_frequency', $group->auto_request_frequency) == '86400' || old('auto_request_frequency', $group->auto_request_frequency) == 86400 ? 'selected' : '' }}>
+                                    {{ __('newsletters::app.admin.contact-groups.frequency-daily') }}
+                                </option>
+                                <option value="172800" {{ old('auto_request_frequency', $group->auto_request_frequency) == '172800' || old('auto_request_frequency', $group->auto_request_frequency) == 172800 ? 'selected' : '' }}>
+                                    {{ __('newsletters::app.admin.contact-groups.frequency-every-2-days') }}
+                                </option>
+                                <option value="259200" {{ old('auto_request_frequency', $group->auto_request_frequency) == '259200' || old('auto_request_frequency', $group->auto_request_frequency) == 259200 ? 'selected' : '' }}>
+                                    {{ __('newsletters::app.admin.contact-groups.frequency-every-3-days') }}
+                                </option>
+                                <option value="604800" {{ old('auto_request_frequency', $group->auto_request_frequency) == '604800' || old('auto_request_frequency', $group->auto_request_frequency) == 604800 ? 'selected' : '' }}>
+                                    {{ __('newsletters::app.admin.contact-groups.frequency-weekly') }}
+                                </option>
+                            </select>
+                            @error('auto_request_frequency')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ __('newsletters::app.admin.contact-groups.external-import.title') }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ __('newsletters::app.admin.contact-groups.external-import.description') }}
+                                    </p>
+                                </div>
+                                <button type="button"
+                                        class="primary-button w-full lg:w-auto"
+                                        onclick="runExternalImport()">
+                                    {{ __('newsletters::app.admin.contact-groups.external-import.start-button') }}
+                                </button>
+                            </div>
+
+                            <div id="external-import-progress" class="hidden mt-4">
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                    <div id="external-import-progress-bar"
+                                         class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                                         style="width: 0%;"></div>
+                                </div>
+                                <div class="mt-2 text-sm text-gray-600 dark:text-gray-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <span id="external-import-status"
+                                          data-idle="{{ __('newsletters::app.admin.contact-groups.external-import.status-idle') }}"
+                                          data-preparing="{{ __('newsletters::app.admin.contact-groups.external-import.status-preparing') }}"
+                                          data-page-template="{{ __('newsletters::app.admin.contact-groups.external-import.status-page', ['current' => '__CURRENT__', 'total' => '__TOTAL__']) }}"
+                                          data-success="{{ __('newsletters::app.admin.contact-groups.external-import.status-success') }}"
+                                          data-error="{{ __('newsletters::app.admin.contact-groups.external-import.status-error', ['message' => '__MESSAGE__']) }}">
+                                        {{ __('newsletters::app.admin.contact-groups.external-import.status-idle') }}
+                                    </span>
+                                    <span id="external-import-summary" class="text-sm text-gray-500 dark:text-gray-400"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        @push('scripts')
+        <script>
+            function toggleExternalIntegrationFields() {
+                const checkbox = document.getElementById('has_external_integration');
+                const fields = document.getElementById('external-integration-fields');
+                
+                if (checkbox.checked) {
+                    fields.classList.remove('hidden');
+                } else {
+                    fields.classList.add('hidden');
+                }
+            }
+
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                toggleExternalIntegrationFields();
+            });
+        </script>
+        @endpush
 
         <div class="flex items-center justify-end gap-x-2.5">
             <a href="{{ route('admin.newsletters.contact-groups.index') }}" class="secondary-button">
@@ -63,6 +202,14 @@
             </button>
         </div>
     </form>
+
+    <!-- Contacts Table -->
+    <div class="mt-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            {{ __('newsletters::app.admin.contacts.title') }}
+        </h2>
+        @include('newsletters::admin.components.contacts-table', ['contactGroupId' => $group->id])
+    </div>
 
     <!-- Import Modal -->
     <div id="importModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-10">
@@ -78,14 +225,19 @@
                 </div>
 
                 <!-- Step 1: Upload File -->
-                <div id="uploadStep" class="space-y-4">
-                    <div>
+                <div id="uploadStep" class="space-y-4 columns-2 sm:columns-1">
+                    <div class="">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.common.fields.csv_file') }} <span class="text-red-500">*</span>
                         </label>
                         <input type="file" id="csvFile" accept=".csv,.txt" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
                     </div>
-
+{{--                    <div>--}}
+{{--                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"> Формат CSV </label><div id="formatInfo" class="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded border">--}}
+{{--                            <p class="mb-1 text-xs font-medium">newsletters::app.admin.contacts.csv_format_customers:</p>--}}
+{{--                            <code class="block text-xs font-mono">phone_number,name,email</code>--}}
+{{--                        </div>--}}
+{{--                    </div>--}}
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -160,6 +312,178 @@
 
     @push('scripts')
     <script>
+        let externalImportState = {
+            running: false,
+            currentPage: 1,
+            totalPages: null,
+            imported: 0,
+            skipped: 0,
+        };
+
+        function getExternalImportElements() {
+            return {
+                progress: document.getElementById('external-import-progress'),
+                progressBar: document.getElementById('external-import-progress-bar'),
+                status: document.getElementById('external-import-status'),
+                summary: document.getElementById('external-import-summary'),
+            };
+        }
+
+        function showExternalImportProgressState(stateKey, extraMessage = '') {
+            const { progress, status } = getExternalImportElements();
+
+            if (!progress || !status) {
+                return;
+            }
+
+            progress.classList.remove('hidden');
+
+            const template = status.dataset[stateKey];
+
+            if (template) {
+                status.textContent = template.replace('__MESSAGE__', extraMessage);
+            }
+        }
+
+        function updateExternalImportProgress(currentPage, totalPages) {
+            const { progress, progressBar, status } = getExternalImportElements();
+
+            if (!progress || !progressBar || !status) {
+                return;
+            }
+
+            progress.classList.remove('hidden');
+
+            const safeTotal = Math.max(totalPages || 1, 1);
+            const percentage = Math.min(100, Math.round((currentPage / safeTotal) * 100));
+            progressBar.style.width = percentage + '%';
+
+            const template = status.dataset.pageTemplate;
+            if (template) {
+                status.textContent = template.replace('__CURRENT__', currentPage).replace('__TOTAL__', safeTotal);
+            }
+        }
+
+        function updateExternalImportSummary(state) {
+            const { summary } = getExternalImportElements();
+
+            if (!summary) {
+                return;
+            }
+
+            summary.textContent = '{{ __('newsletters::app.admin.contact-groups.external-import.summary') }}'
+                .replace('__IMPORTED__', state.imported)
+                .replace('__SKIPPED__', state.skipped);
+        }
+
+        function finalizeExternalImport(isSuccess, message = '') {
+            const { status } = getExternalImportElements();
+
+            if (!status) {
+                return;
+            }
+
+            if (isSuccess) {
+                status.textContent = status.dataset.success;
+            } else {
+                status.textContent = status.dataset.error.replace('__MESSAGE__', message);
+            }
+        }
+
+        async function runExternalImport() {
+            if (externalImportState.running) {
+                return;
+            }
+
+            const integrationCheckbox = document.getElementById('has_external_integration');
+            const requestUrlInput = document.getElementById('request_url');
+            const requestTokenInput = document.getElementById('request_token');
+
+            const hasIntegration = integrationCheckbox ? integrationCheckbox.checked : false;
+            const requestUrl = requestUrlInput ? requestUrlInput.value.trim() : '';
+            const requestToken = requestTokenInput ? requestTokenInput.value.trim() : '';
+
+            if (!hasIntegration) {
+                alert('{{ __('newsletters::app.admin.contact-groups.external-import.integration-disabled') }}');
+                return;
+            }
+
+            if (!requestUrl || !requestToken) {
+                alert('{{ __('newsletters::app.admin.contact-groups.external-import.fill-fields') }}');
+                return;
+            }
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+
+            if (!csrfToken) {
+                alert('CSRF token not found. Please refresh the page.');
+                return;
+            }
+
+            externalImportState = {
+                running: true,
+                currentPage: 1,
+                totalPages: null,
+                imported: 0,
+                skipped: 0,
+            };
+
+            showExternalImportProgressState('preparing');
+            updateExternalImportSummary(externalImportState);
+
+            const token = csrfToken.getAttribute('content');
+
+            try {
+                while (true) {
+                    const response = await fetch('{{ route('admin.newsletters.contact-groups.external-import', $group->id) }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            page: externalImportState.currentPage,
+                            request_url: requestUrl,
+                            request_token: requestToken,
+                        }),
+                        credentials: 'same-origin',
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || data.details || 'Request failed');
+                    }
+
+                    const currentPage = data.page || externalImportState.currentPage;
+                    const totalPages = data.total_pages || externalImportState.totalPages || currentPage;
+
+                    externalImportState.totalPages = totalPages;
+                    externalImportState.imported += data.imported || 0;
+                    externalImportState.skipped += data.skipped || 0;
+
+                    updateExternalImportProgress(currentPage, totalPages);
+                    updateExternalImportSummary(externalImportState);
+
+                    if (currentPage >= totalPages) {
+                        finalizeExternalImport(true);
+                        break;
+                    }
+
+                    externalImportState.currentPage = currentPage + 1;
+                }
+
+                alert('{{ __('newsletters::app.admin.contact-groups.external-import.completed') }}'.replace('__IMPORTED__', externalImportState.imported));
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (error) {
+                finalizeExternalImport(false, error.message);
+                alert('{{ __('newsletters::app.admin.contact-groups.external-import.failed') }}'.replace('__ERROR__', error.message));
+            } finally {
+                externalImportState.running = false;
+            }
+        }
+
         const contactFields = {
             'full_name': '{{ __('newsletters::app.admin.contacts.field-full-name') }}',
             'phone': '{{ __('newsletters::app.admin.contacts.field-phone') }}',
@@ -283,6 +607,98 @@
             }
         }
 
+        // Функция нормализации строк для сравнения
+        function normalizeString(str) {
+            if (!str) return '';
+            return str.toString()
+                .toLowerCase()
+                .trim()
+                .replace(/[_\s\-\.]/g, '') // Убираем подчеркивания, пробелы, дефисы, точки
+                .replace(/[а-яё]/g, function(match) {
+                    // Транслитерация русских букв
+                    const translit = {
+                        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+                        'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
+                        'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+                        'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+                        'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
+                        'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+                        'э': 'e', 'ю': 'yu', 'я': 'ya'
+                    };
+                    return translit[match] || match;
+                });
+        }
+
+        // Функция автоматического сопоставления полей
+        function autoMapField(field, fieldLabel, csvHeaders, usedIndices) {
+            // Создаем список вариантов для сопоставления
+            const matchVariants = [
+                field, // Название поля модели (например, "full_name", "phone")
+                fieldLabel, // Перевод поля (например, "ФИО", "Телефон")
+                field.replace(/_/g, ' '), // Название с пробелами (например, "full name")
+                field.replace(/_/g, ''), // Название без подчеркиваний (например, "fullname")
+            ];
+
+            // Нормализуем все варианты
+            const normalizedVariants = matchVariants.map(v => normalizeString(v));
+
+            let bestMatchIndex = -1;
+            let bestMatchScore = 0;
+            const matches = []; // Массив всех совпадений с их оценками
+
+            // Ищем все совпадения среди заголовков CSV
+            csvHeaders.forEach((header, index) => {
+                const normalizedHeader = normalizeString(header);
+                let score = 0;
+                const isUsed = usedIndices && usedIndices.has(index);
+                
+                // Проверяем точное совпадение
+                if (normalizedVariants.includes(normalizedHeader)) {
+                    score = 100;
+                } else if (!isUsed) {
+                    // Проверяем частичное совпадение только для неиспользованных индексов
+                    normalizedVariants.forEach(variant => {
+                        if (variant && normalizedHeader) {
+                            // Если заголовок начинается с варианта или наоборот
+                            if (normalizedHeader.startsWith(variant) || variant.startsWith(normalizedHeader)) {
+                                score = Math.max(score, 80);
+                            }
+                            
+                            // Если заголовок содержит вариант или наоборот
+                            if (normalizedHeader.includes(variant) || variant.includes(normalizedHeader)) {
+                                score = Math.max(score, 60);
+                            }
+                            
+                            // Если есть общие слова (для составных названий)
+                            const headerWords = normalizedHeader.split(/\s+/).filter(w => w.length > 0);
+                            const variantWords = variant.split(/\s+/).filter(w => w.length > 0);
+                            const commonWords = headerWords.filter(w => variantWords.includes(w));
+                            if (commonWords.length > 0) {
+                                score = Math.max(score, 40 + commonWords.length * 10);
+                            }
+                        }
+                    });
+                }
+                
+                if (score >= 40) {
+                    matches.push({ index, score, isUsed });
+                    if (score > bestMatchScore && !isUsed) {
+                        bestMatchScore = score;
+                        bestMatchIndex = index;
+                    }
+                }
+            });
+
+            // Если есть точное совпадение, используем его (даже если индекс уже использован)
+            const exactMatch = matches.find(m => m.score === 100);
+            if (exactMatch) {
+                return exactMatch.index;
+            }
+
+            // Возвращаем лучшее частичное совпадение среди неиспользованных
+            return bestMatchIndex >= 0 ? bestMatchIndex : null;
+        }
+
         function showMappingStep(rowCount) {
             document.getElementById('uploadStep').classList.add('hidden');
             document.getElementById('mappingStep').classList.remove('hidden');
@@ -291,6 +707,9 @@
 
             const mappingTable = document.getElementById('mappingTable');
             mappingTable.innerHTML = '';
+
+            // Отслеживаем уже использованные индексы CSV, чтобы избежать дублирования
+            const usedIndices = new Set();
 
             Object.keys(contactFields).forEach(field => {
                 const row = document.createElement('tr');
@@ -320,6 +739,13 @@
                     option.textContent = header;
                     select.appendChild(option);
                 });
+
+                // Автоматическое сопоставление
+                const autoMappedIndex = autoMapField(field, contactFields[field], csvHeaders, usedIndices);
+                if (autoMappedIndex !== null) {
+                    select.value = autoMappedIndex;
+                    usedIndices.add(autoMappedIndex);
+                }
 
                 selectCell.appendChild(select);
                 row.appendChild(selectCell);
@@ -382,7 +808,41 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    alert(data.message + (data.skipped > 0 ? ' Пропущено: ' + data.skipped : ''));
+                    let message = data.message;
+                    
+                    // Add detailed information if available
+                    if (data.total_rows !== undefined) {
+                        message += '\n\nВсего строк обработано: ' + data.total_rows;
+                    }
+                    
+                    if (data.skipped > 0 && data.skipped_reasons) {
+                        const reasons = [];
+                        if (data.skipped_reasons.empty_name > 0) {
+                            reasons.push('Без имени: ' + data.skipped_reasons.empty_name);
+                        }
+                        if (data.skipped_reasons.empty_phone > 0) {
+                            reasons.push('Без телефона: ' + data.skipped_reasons.empty_phone);
+                        }
+                        if (data.skipped_reasons.duplicate > 0) {
+                            reasons.push('Дубликаты: ' + data.skipped_reasons.duplicate);
+                        }
+                        if (data.skipped_reasons.error > 0) {
+                            reasons.push('Ошибки: ' + data.skipped_reasons.error);
+                        }
+                        
+                        if (reasons.length > 0) {
+                            message += '\nПропущено (' + data.skipped + '): ' + reasons.join(', ');
+                        }
+                    }
+                    
+                    if (data.errors && data.errors.length > 0) {
+                        message += '\n\nОшибки:\n' + data.errors.slice(0, 10).join('\n');
+                        if (data.errors.length > 10) {
+                            message += '\n... и ещё ' + (data.errors.length - 10) + ' ошибок';
+                        }
+                    }
+                    
+                    alert(message);
                     closeImportModal();
                     window.location.reload();
                 } else {

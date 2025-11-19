@@ -25,6 +25,10 @@ class NewslettersContactGroup extends Model
     protected $fillable = [
         'name',
         'description',
+        'has_external_integration',
+        'request_url',
+        'request_token',
+        'auto_request_frequency',
     ];
 
     /**

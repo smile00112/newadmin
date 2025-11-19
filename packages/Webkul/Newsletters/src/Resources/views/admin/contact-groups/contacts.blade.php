@@ -107,7 +107,68 @@
                         <button onclick="backToUpload()" class="secondary-button">
                             {{ __('newsletters::app.common.actions.back') }}
                         </button>
-                        <button onclick="importContacts()" class="primary-button">
+                        <button onclick="prepareImport()" class="primary-button">
+                            {{ __('newsletters::app.common.actions.next') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Import Process Preview -->
+                <div id="processStep" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+                            <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                                Источник данных
+                            </h4>
+                            <dl class="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                                <div class="flex justify-between gap-4">
+                                    <dt class="font-medium">Файл</dt>
+                                    <dd id="processFileName" class="text-right truncate max-w-[180px]">—</dd>
+                                </div>
+                                <div class="flex justify-between gap-4">
+                                    <dt class="font-medium">{{ __('newsletters::app.admin.contacts.rows-found') }}</dt>
+                                    <dd id="processRowCount" class="text-right">—</dd>
+                                </div>
+                                <div class="flex justify-between gap-4">
+                                    <dt class="font-medium">{{ __('newsletters::app.admin.contacts.delimiter') }}</dt>
+                                    <dd id="processDelimiter" class="text-right">,</dd>
+                                </div>
+                                <div class="flex justify-between gap-4">
+                                    <dt class="font-medium">{{ __('newsletters::app.admin.contacts.has-header') }}</dt>
+                                    <dd id="processHeader" class="text-right">—</dd>
+                                </div>
+                            </dl>
+                        </div>
+                        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+                            <h4 class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ __('newsletters::app.admin.contacts.select-columns') }}
+                            </h4>
+                            <ul id="processMappingList" class="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-300 max-h-48 overflow-y-auto pr-1">
+                                <li class="text-gray-400">{{ __('newsletters::app.admin.contacts.not-selected') }}</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">
+                                Прогресс импорта
+                            </span>
+                            <span id="importProgressValue" class="text-xs text-gray-500 dark:text-gray-400">0%</span>
+                        </div>
+                        <div class="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div id="importProgressBar" class="h-3 bg-indigo-600 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                        </div>
+                        <p id="importProgressStatus" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                            Ожидает запуска
+                        </p>
+                    </div>
+
+                    <div class="flex justify-end gap-x-2 pt-4">
+                        <button onclick="backToMapping()" class="secondary-button">
+                            {{ __('newsletters::app.common.actions.back') }}
+                        </button>
+                        <button onclick="startImport()" class="primary-button">
                             {{ __('newsletters::app.common.actions.import') }}
                         </button>
                     </div>
@@ -145,6 +206,10 @@
         let csvFile = null;
         let delimiter = ',';
         let hasHeader = true;
+        let rowCount = 0;
+        let preparedImportPayload = null;
+        let progressInterval = null;
+        let progressValue = 0;
 
         function openImportModal() {
             document.getElementById('importModal').classList.remove('hidden');
@@ -159,17 +224,28 @@
         function resetModal() {
             document.getElementById('uploadStep').classList.remove('hidden');
             document.getElementById('mappingStep').classList.add('hidden');
+            document.getElementById('processStep').classList.add('hidden');
             document.getElementById('loadingIndicator').classList.add('hidden');
             document.getElementById('csvFile').value = '';
             document.getElementById('delimiter').value = ',';
             document.getElementById('hasHeader').checked = true;
             csvHeaders = [];
             csvFile = null;
+            rowCount = 0;
+            preparedImportPayload = null;
+            stopProgressSimulation();
+            resetProgressUI();
+            document.getElementById('processMappingList').innerHTML = '<li class="text-gray-400">{{ __('newsletters::app.admin.contacts.not-selected') }}</li>';
+            document.getElementById('processFileName').textContent = '—';
+            document.getElementById('processRowCount').textContent = '—';
+            document.getElementById('processDelimiter').textContent = ',';
+            document.getElementById('processHeader').textContent = '—';
         }
 
         function backToUpload() {
             document.getElementById('uploadStep').classList.remove('hidden');
             document.getElementById('mappingStep').classList.add('hidden');
+            document.getElementById('processStep').classList.add('hidden');
         }
 
         async function previewCsv() {
@@ -224,14 +300,111 @@
             }
         }
 
-        function showMappingStep(rowCount) {
+        // Функция нормализации строк для сравнения
+        function normalizeString(str) {
+            if (!str) return '';
+            return str.toString()
+                .toLowerCase()
+                .trim()
+                .replace(/[_\s\-\.]/g, '') // Убираем подчеркивания, пробелы, дефисы, точки
+                .replace(/[а-яё]/g, function(match) {
+                    // Транслитерация русских букв
+                    const translit = {
+                        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+                        'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
+                        'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+                        'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+                        'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
+                        'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+                        'э': 'e', 'ю': 'yu', 'я': 'ya'
+                    };
+                    return translit[match] || match;
+                });
+        }
+
+        // Функция автоматического сопоставления полей
+        function autoMapField(field, fieldLabel, csvHeaders, usedIndices) {
+            // Создаем список вариантов для сопоставления
+            const matchVariants = [
+                field, // Название поля модели (например, "full_name", "phone")
+                fieldLabel, // Перевод поля (например, "ФИО", "Телефон")
+                field.replace(/_/g, ' '), // Название с пробелами (например, "full name")
+                field.replace(/_/g, ''), // Название без подчеркиваний (например, "fullname")
+            ];
+
+            // Нормализуем все варианты
+            const normalizedVariants = matchVariants.map(v => normalizeString(v));
+
+            let bestMatchIndex = -1;
+            let bestMatchScore = 0;
+            const matches = []; // Массив всех совпадений с их оценками
+
+            // Ищем все совпадения среди заголовков CSV
+            csvHeaders.forEach((header, index) => {
+                const normalizedHeader = normalizeString(header);
+                let score = 0;
+                const isUsed = usedIndices && usedIndices.has(index);
+                
+                // Проверяем точное совпадение
+                if (normalizedVariants.includes(normalizedHeader)) {
+                    score = 100;
+                } else if (!isUsed) {
+                    // Проверяем частичное совпадение только для неиспользованных индексов
+                    normalizedVariants.forEach(variant => {
+                        if (variant && normalizedHeader) {
+                            // Если заголовок начинается с варианта или наоборот
+                            if (normalizedHeader.startsWith(variant) || variant.startsWith(normalizedHeader)) {
+                                score = Math.max(score, 80);
+                            }
+                            
+                            // Если заголовок содержит вариант или наоборот
+                            if (normalizedHeader.includes(variant) || variant.includes(normalizedHeader)) {
+                                score = Math.max(score, 60);
+                            }
+                            
+                            // Если есть общие слова (для составных названий)
+                            const headerWords = normalizedHeader.split(/\s+/).filter(w => w.length > 0);
+                            const variantWords = variant.split(/\s+/).filter(w => w.length > 0);
+                            const commonWords = headerWords.filter(w => variantWords.includes(w));
+                            if (commonWords.length > 0) {
+                                score = Math.max(score, 40 + commonWords.length * 10);
+                            }
+                        }
+                    });
+                }
+                
+                if (score >= 40) {
+                    matches.push({ index, score, isUsed });
+                    if (score > bestMatchScore && !isUsed) {
+                        bestMatchScore = score;
+                        bestMatchIndex = index;
+                    }
+                }
+            });
+
+            // Если есть точное совпадение, используем его (даже если индекс уже использован)
+            const exactMatch = matches.find(m => m.score === 100);
+            if (exactMatch) {
+                return exactMatch.index;
+            }
+
+            // Возвращаем лучшее частичное совпадение среди неиспользованных
+            return bestMatchIndex >= 0 ? bestMatchIndex : null;
+        }
+
+        function showMappingStep(totalRows) {
             document.getElementById('uploadStep').classList.add('hidden');
             document.getElementById('mappingStep').classList.remove('hidden');
+            document.getElementById('processStep').classList.add('hidden');
 
-            document.getElementById('rowCount').textContent = '{{ __('newsletters::app.admin.contacts.rows-found') }}: ' + rowCount;
+            rowCount = totalRows;
+            document.getElementById('rowCount').textContent = '{{ __('newsletters::app.admin.contacts.rows-found') }}: ' + totalRows;
 
             const mappingTable = document.getElementById('mappingTable');
             mappingTable.innerHTML = '';
+
+            // Отслеживаем уже использованные индексы CSV, чтобы избежать дублирования
+            const usedIndices = new Set();
 
             Object.keys(contactFields).forEach(field => {
                 const row = document.createElement('tr');
@@ -262,6 +435,13 @@
                     select.appendChild(option);
                 });
 
+                // Автоматическое сопоставление
+                const autoMappedIndex = autoMapField(field, contactFields[field], csvHeaders, usedIndices);
+                if (autoMappedIndex !== null) {
+                    select.value = autoMappedIndex;
+                    usedIndices.add(autoMappedIndex);
+                }
+
                 selectCell.appendChild(select);
                 row.appendChild(selectCell);
 
@@ -269,63 +449,218 @@
             });
         }
 
-        async function importContacts() {
+        async function prepareImport() {
+            const mapping = collectMapping();
+
+            if (!validateMapping(mapping)) {
+                return;
+            }
+
+            try {
+                await persistMapping(mapping);
+            } catch (error) {
+                alert('{{ __('newsletters::app.admin.contacts.import-failed') }}: ' + error.message);
+                return;
+            }
+
+            const mappingLabels = {};
+            Object.keys(mapping).forEach(field => {
+                mappingLabels[field] = csvHeaders[mapping[field]] ?? null;
+            });
+
+            preparedImportPayload = {
+                group_id: {{ $group->id }},
+                delimiter,
+                has_header: hasHeader,
+                mapping,
+                headers: csvHeaders,
+                file_name: csvFile ? csvFile.name : null,
+                row_count: rowCount,
+                file_preview: csvFile ? { name: csvFile.name, size: csvFile.size, type: csvFile.type } : null,
+                mapping_labels: mappingLabels,
+            };
+
+            renderProcessSummary(mapping);
+            document.getElementById('mappingStep').classList.add('hidden');
+            document.getElementById('processStep').classList.remove('hidden');
+        }
+
+        function collectMapping() {
             const mapping = {};
+
             Object.keys(contactFields).forEach(field => {
                 const select = document.getElementById(`mapping_${field}`);
-                const value = select.value;
-                if (value !== '') {
-                    mapping[field] = parseInt(value);
+                if (select && select.value !== '') {
+                    mapping[field] = parseInt(select.value, 10);
                 }
             });
 
-            // Validate required fields
-            if (!mapping['full_name'] && mapping['full_name'] !== 0) {
+            return mapping;
+        }
+
+        function validateMapping(mapping) {
+            if (!mapping.hasOwnProperty('full_name')) {
                 alert('{{ __('newsletters::app.admin.contacts.field-required', ['field' => __('newsletters::app.admin.contacts.field-full-name')]) }}');
-                return;
+                return false;
             }
 
-            if (!mapping['phone'] && mapping['phone'] !== 0) {
+            if (!mapping.hasOwnProperty('phone')) {
                 alert('{{ __('newsletters::app.admin.contacts.field-required', ['field' => __('newsletters::app.admin.contacts.field-phone')]) }}');
-                return;
+                return false;
             }
 
-            document.getElementById('mappingStep').classList.add('hidden');
-            document.getElementById('loadingIndicator').classList.remove('hidden');
+            return true;
+        }
+
+        async function persistMapping(mapping) {
+            console.log('persistMapping called', {
+                mapping,
+                headers: csvHeaders,
+                groupId: {{ $group->id }},
+            });
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const url = '{{ route('admin.newsletters.contact-groups.import-mapping', $group->id) }}';
+
+            console.log('Sending request to:', url);
 
             try {
-                const formData = new FormData();
-                formData.append('file', csvFile);
-                formData.append('delimiter', delimiter);
-                formData.append('has_header', hasHeader ? 1 : 0);
-                formData.append('mapping', JSON.stringify(mapping));
+                const requestBody = {
+                    mapping,
+                    headers: csvHeaders,
+                };
 
-                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-                const response = await fetch('{{ route('admin.newsletters.contact-groups.import', $group->id) }}', {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken,
                     },
-                    body: formData
+                    body: JSON.stringify(requestBody),
                 });
 
-                const data = await response.json();
+                console.log('Response status:', response.status, response.statusText);
 
-                if (data.success) {
-                    alert(data.message + (data.skipped > 0 ? ' Пропущено: ' + data.skipped : ''));
-                    closeImportModal();
-                    window.location.reload();
-                } else {
-                    alert(data.message || '{{ __('newsletters::app.admin.contacts.import-failed') }}');
-                    document.getElementById('mappingStep').classList.remove('hidden');
+                let data;
+                try {
+                    const responseText = await response.text();
+                    console.log('Response text:', responseText);
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('Failed to parse response:', e);
+                    throw new Error('Invalid response from server: ' + e.message);
                 }
+
+                console.log('Response data:', data);
+
+                if (!response.ok) {
+                    const errorMessage = data.message || data.errors 
+                        ? JSON.stringify(data.errors || data.message) 
+                        : `Server error: ${response.status} ${response.statusText}`;
+                    throw new Error(errorMessage);
+                }
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to persist mapping');
+                }
+
+                console.log('Mapping saved successfully:', data);
             } catch (error) {
-                console.error('Error:', error);
-                alert('{{ __('newsletters::app.admin.contacts.import-failed') }}: ' + error.message);
-                document.getElementById('mappingStep').classList.remove('hidden');
-            } finally {
-                document.getElementById('loadingIndicator').classList.add('hidden');
+                console.error('Error saving mapping:', error);
+                throw error;
+            }
+        }
+
+        function renderProcessSummary(mapping) {
+            document.getElementById('processFileName').textContent = csvFile ? csvFile.name : '—';
+            document.getElementById('processRowCount').textContent = rowCount;
+            document.getElementById('processDelimiter').textContent = delimiter;
+            document.getElementById('processHeader').textContent = hasHeader ? 'Да' : 'Нет';
+
+            const mappingList = document.getElementById('processMappingList');
+            mappingList.innerHTML = '';
+
+            Object.keys(mapping).forEach(field => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between gap-2 border-b border-dashed border-gray-200 dark:border-gray-700 pb-1';
+
+                const label = document.createElement('span');
+                label.className = 'font-medium text-gray-900 dark:text-white text-sm';
+                label.textContent = contactFields[field];
+
+                const value = document.createElement('span');
+                value.className = 'text-gray-600 dark:text-gray-300 text-sm';
+                value.textContent = csvHeaders[mapping[field]] ?? '{{ __('newsletters::app.admin.contacts.not-selected') }}';
+
+                li.appendChild(label);
+                li.appendChild(value);
+
+                mappingList.appendChild(li);
+            });
+
+            if (mappingList.children.length === 0) {
+                const empty = document.createElement('li');
+                empty.className = 'text-gray-400';
+                empty.textContent = '{{ __('newsletters::app.admin.contacts.not-selected') }}';
+                mappingList.appendChild(empty);
+            }
+
+            resetProgressUI();
+        }
+
+        function backToMapping() {
+            document.getElementById('processStep').classList.add('hidden');
+            document.getElementById('mappingStep').classList.remove('hidden');
+            stopProgressSimulation();
+            resetProgressUI();
+        }
+
+        function startImport() {
+            if (!preparedImportPayload) {
+                alert('{{ __('newsletters::app.admin.contacts.please-select-file') }}');
+                return;
+            }
+
+            console.log('Prepared import payload:', preparedImportPayload);
+            simulateProgress();
+        }
+
+        function simulateProgress() {
+            stopProgressSimulation();
+            progressValue = 0;
+            updateProgressUI(progressValue, 'Запуск импорта...');
+
+            progressInterval = setInterval(() => {
+                progressValue = Math.min(progressValue + Math.floor(Math.random() * 20) + 10, 100);
+                updateProgressUI(progressValue, progressValue < 100 ? 'Идет подготовка данных...' : 'Данные готовы для отправки');
+
+                if (progressValue === 100) {
+                    stopProgressSimulation();
+                }
+            }, 600);
+        }
+
+        function updateProgressUI(value, statusText) {
+            const progressBar = document.getElementById('importProgressBar');
+            const progressValueLabel = document.getElementById('importProgressValue');
+            const progressStatus = document.getElementById('importProgressStatus');
+
+            progressBar.style.width = value + '%';
+            progressValueLabel.textContent = value + '%';
+            progressStatus.textContent = statusText;
+        }
+
+        function resetProgressUI() {
+            updateProgressUI(0, 'Ожидает запуска');
+        }
+
+        function stopProgressSimulation() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
             }
         }
     </script>

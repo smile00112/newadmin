@@ -20,9 +20,9 @@ return new class extends Migration
             $table->date('last_order_date')->nullable()->comment('Дата последнего заказа');
             $table->date('registration_date')->nullable()->comment('Дата регистрации');
             $table->date('birth_date')->nullable()->comment('Дата рождения');
-            $table->unsignedInteger('orders_count')->default(0)->comment('Количество заказов');
+            $table->unsignedInteger('orders_count')->default(0)->nullable()->comment('Количество заказов');
             $table->decimal('average_check', 10, 2)->nullable()->comment('Средний чек');
-            $table->decimal('total_check', 12, 2)->default(0)->comment('Общий чек');
+            $table->decimal('total_check', 12, 2)->default(0)->nullable()->comment('Общий чек');
             $table->decimal('average_order_rating', 3, 2)->nullable()->comment('Средняя оценка заказа');
             $table->string('favorite_category')->nullable()->comment('Любимая категория');
             $table->string('favorite_dish')->nullable()->comment('Любимое блюдо');

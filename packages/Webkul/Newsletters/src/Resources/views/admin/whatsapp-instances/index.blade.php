@@ -10,7 +10,7 @@
 
         <div class="flex items-center gap-x-2.5">
             <a href="{{ route('admin.newsletters.whatsapp-instances.create') }}" class="primary-button">
-                {{ __('admin::app.datagrid.add') }}
+                {{ __('newsletters::app.admin.datagrid.add') }}
             </a>
         </div>
     </div>

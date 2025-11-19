@@ -4,9 +4,12 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\ContactGroupRepository;
 use Webkul\Newsletters\Repositories\ContactRepository;
+use Webkul\Newsletters\Repositories\ContactImportMappingRepository;
+use Webkul\Newsletters\Models\NewslettersContact;
 
 class ContactGroupController extends Controller
 {
@@ -15,7 +18,8 @@ class ContactGroupController extends Controller
      */
     public function __construct(
         protected ContactGroupRepository $contactGroupRepository,
-        protected ContactRepository $contactRepository
+        protected ContactRepository $contactRepository,
+        protected ContactImportMappingRepository $contactImportMappingRepository
     ) {}
 
     /**
@@ -62,7 +66,21 @@ class ContactGroupController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'has_external_integration' => 'nullable|boolean',
+            'request_url' => 'nullable|string|url|max:500|required_if:has_external_integration,1',
+            'request_token' => 'nullable|string|max:255|required_if:has_external_integration,1',
+            'auto_request_frequency' => 'nullable|integer|in:86400,172800,259200,604800',
         ]);
+
+        // Convert checkbox value to boolean
+        $validated['has_external_integration'] = $request->has('has_external_integration') ? (bool) $request->input('has_external_integration') : false;
+
+        // Clear integration fields if integration is disabled
+        if (!$validated['has_external_integration']) {
+            $validated['request_url'] = null;
+            $validated['request_token'] = null;
+            $validated['auto_request_frequency'] = null;
+        }
 
         $this->contactGroupRepository->create($validated);
 
@@ -89,7 +107,21 @@ class ContactGroupController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'has_external_integration' => 'nullable|boolean',
+            'request_url' => 'nullable|string|url|max:500|required_if:has_external_integration,1',
+            'request_token' => 'nullable|string|max:255|required_if:has_external_integration,1',
+            'auto_request_frequency' => 'nullable|integer|in:86400,172800,259200,604800',
         ]);
+
+        // Convert checkbox value to boolean
+        $validated['has_external_integration'] = $request->has('has_external_integration') ? (bool) $request->input('has_external_integration') : false;
+
+        // Clear integration fields if integration is disabled
+        if (!$validated['has_external_integration']) {
+            $validated['request_url'] = null;
+            $validated['request_token'] = null;
+            $validated['auto_request_frequency'] = null;
+        }
 
         $this->contactGroupRepository->update($validated, $id);
 
@@ -129,9 +161,35 @@ class ContactGroupController extends Controller
         $delimiter = $request->input('delimiter', ',');
         $hasHeader = $request->boolean('has_header');
 
-        $csvData = array_map(function($line) use ($delimiter) {
-            return str_getcsv($line, $delimiter);
-        }, file($file->getPathname(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+        // Read CSV file line by line (same approach as importContacts)
+        $csvData = [];
+        $handle = fopen($file->getPathname(), 'r');
+        
+        if ($handle === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot read file'
+            ], 500);
+        }
+
+        while (($line = fgets($handle)) !== false) {
+            $line = trim($line);
+            
+            // Skip completely empty lines
+            if (empty($line)) {
+                continue;
+            }
+            
+            $row = str_getcsv($line, $delimiter);
+            
+            // Skip rows that are completely empty after parsing
+            if (empty(array_filter($row, function($cell) { return trim($cell) !== ''; }))) {
+                continue;
+            }
+            
+            $csvData[] = $row;
+        }
+        fclose($handle);
 
         $headers = $hasHeader && count($csvData) > 0 ? $csvData[0] : array_map(fn($i) => "Column " . ($i + 1), range(0, count($csvData[0]) - 1));
 
@@ -169,9 +227,44 @@ class ContactGroupController extends Controller
                 ], 400);
             }
 
-            $csvData = array_map(function($line) use ($delimiter) {
-                return str_getcsv($line, $delimiter);
-            }, file($file->getPathname(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES));
+            // Read CSV file line by line to handle large files and encoding issues
+            $csvData = [];
+            $handle = fopen($file->getPathname(), 'r');
+            
+            if ($handle === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.contacts.import-failed') . ': Cannot read file'
+                ], 500);
+            }
+
+            $lineNumber = 0;
+            while (($line = fgets($handle)) !== false) {
+                $lineNumber++;
+                $line = trim($line);
+                
+                // Skip completely empty lines
+                if (empty($line)) {
+                    continue;
+                }
+                
+                $row = str_getcsv($line, $delimiter);
+                
+                // Skip rows that are completely empty after parsing
+                if (empty(array_filter($row, function($cell) { return trim($cell) !== ''; }))) {
+                    continue;
+                }
+                
+                $csvData[] = $row;
+            }
+            fclose($handle);
+
+            \Log::info('CSV Import started', [
+                'group_id' => $groupId,
+                'total_lines_read' => $lineNumber,
+                'csv_rows_parsed' => count($csvData),
+                'has_header' => $hasHeader,
+            ]);
 
             if ($hasHeader && count($csvData) > 0) {
                 array_shift($csvData); // Remove header row
@@ -179,7 +272,14 @@ class ContactGroupController extends Controller
 
             $imported = 0;
             $skipped = 0;
+            $skippedReasons = [
+                'empty_name' => 0,
+                'empty_phone' => 0,
+                'duplicate' => 0,
+                'error' => 0,
+            ];
             $errors = [];
+            $totalRows = count($csvData);
 
             DB::beginTransaction();
 
@@ -203,9 +303,23 @@ class ContactGroupController extends Controller
                         }
                     }
 
-                    // Skip if required fields are empty
-                    if (empty($contactData['full_name']) || empty($contactData['phone'])) {
+                    // Check and skip if required fields are empty
+                    $skipReason = null;
+                    if (empty($contactData['full_name'])) {
+                        $skipReason = 'empty_name';
+                        $skippedReasons['empty_name']++;
+                    } elseif (empty($contactData['phone'])) {
+                        $skipReason = 'empty_phone';
+                        $skippedReasons['empty_phone']++;
+                    }
+
+                    if ($skipReason) {
                         $skipped++;
+                        \Log::debug('Contact skipped', [
+                            'row' => $index + 1,
+                            'reason' => $skipReason,
+                            'data' => $contactData,
+                        ]);
                         continue;
                     }
 
@@ -217,6 +331,11 @@ class ContactGroupController extends Controller
 
                     if ($exists) {
                         $skipped++;
+                        $skippedReasons['duplicate']++;
+                        \Log::debug('Contact skipped - duplicate', [
+                            'row' => $index + 1,
+                            'phone' => $contactData['phone'],
+                        ]);
                         continue;
                     }
 
@@ -224,27 +343,361 @@ class ContactGroupController extends Controller
                     $imported++;
 
                 } catch (\Exception $e) {
-                    $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+                    $skipped++;
+                    $skippedReasons['error']++;
+                    $errorMsg = "Row " . ($index + 1) . ": " . $e->getMessage();
+                    $errors[] = $errorMsg;
+                    \Log::error('CSV Import error', [
+                        'row' => $index + 1,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                 }
             }
 
             DB::commit();
 
+            \Log::info('CSV Import completed', [
+                'group_id' => $groupId,
+                'total_rows' => $totalRows,
+                'imported' => $imported,
+                'skipped' => $skipped,
+                'skipped_reasons' => $skippedReasons,
+                'errors_count' => count($errors),
+            ]);
+
+            $message = trans('newsletters::app.admin.contacts.import-success', ['count' => $imported]);
+            if ($skipped > 0) {
+                $message .= ' ' . trans('newsletters::app.admin.contacts.import-skipped', ['count' => $skipped]);
+                
+                // Add detailed reasons
+                $reasonMessages = [];
+                if ($skippedReasons['empty_name'] > 0) {
+                    $reasonMessages[] = trans('newsletters::app.admin.contacts.import-skipped-empty-name', ['count' => $skippedReasons['empty_name']]);
+                }
+                if ($skippedReasons['empty_phone'] > 0) {
+                    $reasonMessages[] = trans('newsletters::app.admin.contacts.import-skipped-empty-phone', ['count' => $skippedReasons['empty_phone']]);
+                }
+                if ($skippedReasons['duplicate'] > 0) {
+                    $reasonMessages[] = trans('newsletters::app.admin.contacts.import-skipped-duplicate', ['count' => $skippedReasons['duplicate']]);
+                }
+                if ($skippedReasons['error'] > 0) {
+                    $reasonMessages[] = trans('newsletters::app.admin.contacts.import-skipped-error', ['count' => $skippedReasons['error']]);
+                }
+                
+                if (!empty($reasonMessages)) {
+                    $message .= ' (' . implode(', ', $reasonMessages) . ')';
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'imported' => $imported,
                 'skipped' => $skipped,
+                'total_rows' => $totalRows,
+                'skipped_reasons' => $skippedReasons,
                 'errors' => $errors,
-                'message' => trans('newsletters::app.admin.contacts.import-success', ['count' => $imported])
+                'message' => $message
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('CSV Import failed', [
+                'group_id' => $groupId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => trans('newsletters::app.admin.contacts.import-failed') . ': ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Persist CSV mapping configuration for a contact group.
+     */
+    public function saveImportMapping(Request $request, int $groupId)
+    {
+        \Log::info('saveImportMapping called', [
+            'group_id' => $groupId,
+            'request_data' => $request->all(),
+        ]);
+
+        try {
+            $group = $this->contactGroupRepository->findOrFail($groupId);
+
+            $validated = $request->validate([
+                'mapping' => 'required|array|min:1',
+                'mapping.*' => 'required|integer|min:0',
+                'headers' => 'required|array|min:1',
+            ]);
+
+            \Log::info('Validation passed', [
+                'group_id' => $groupId,
+                'mapping_count' => count($validated['mapping']),
+                'headers_count' => count($validated['headers']),
+            ]);
+
+            $timestamp = now();
+            $records = [];
+
+            foreach ($validated['mapping'] as $modelField => $columnIndex) {
+                $csvField = $validated['headers'][$columnIndex] ?? null;
+
+                $records[] = [
+                    'contact_group_id' => $group->id,
+                    'model_field' => $modelField,
+                    'csv_field' => $csvField,
+                    'csv_index' => $columnIndex,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ];
+            }
+
+            \Log::info('Records prepared', [
+                'group_id' => $groupId,
+                'records_count' => count($records),
+                'records' => $records,
+            ]);
+
+            DB::transaction(function () use ($group, $records) {
+                // Delete existing mappings for this group using model directly
+                $model = $this->contactImportMappingRepository->getModel();
+                $deleted = $model->where('contact_group_id', $group->id)->delete();
+
+                \Log::info('Deleted existing mappings', [
+                    'group_id' => $group->id,
+                    'deleted_count' => $deleted,
+                ]);
+
+                // Insert new mappings
+                if (! empty($records)) {
+                    $inserted = $model->insert($records);
+                    \Log::info('Inserted new mappings', [
+                        'group_id' => $group->id,
+                        'records_count' => count($records),
+                        'inserted' => $inserted,
+                    ]);
+                }
+            });
+
+            \Log::info('Mapping saved successfully', ['group_id' => $groupId]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mapping saved successfully',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed', [
+                'group_id' => $groupId,
+                'errors' => $e->errors(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Failed to save import mapping', [
+                'group_id' => $groupId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save mapping: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Import contacts from an external integration endpoint page by page.
+     */
+    public function externalImport(Request $request, int $groupId)
+    {
+        $request->validate([
+            'page' => 'nullable|integer|min:1',
+            'request_url' => 'nullable|string|url|max:500',
+            'request_token' => 'nullable|string|max:255',
+        ]);
+
+        $group = $this->contactGroupRepository->findOrFail($groupId);
+
+        if (! $group->has_external_integration) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.contact-groups.external-import.integration-disabled'),
+            ], 422);
+        }
+
+        $requestUrl = $request->input('request_url', $group->request_url);
+        $requestToken = $request->input('request_token', $group->request_token);
+        $page = max(1, (int) $request->input('page', 1));
+
+        if (! $requestUrl || ! $requestToken) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.contact-groups.external-import.missing-credentials'),
+            ], 422);
+        }
+
+        try {
+            $externalResponse = Http::acceptJson()->retry(1, 200)->get($requestUrl, [
+                'token' => $requestToken,
+                'page' => $page,
+            ]);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.contact-groups.external-import.connection-error'),
+                'details' => $exception->getMessage(),
+            ], 500);
+        }
+
+        if ($externalResponse->failed()) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.contact-groups.external-import.remote-error'),
+                'details' => $externalResponse->body(),
+            ], $externalResponse->status());
+        }
+
+        $payload = $externalResponse->json();
+
+        if (! is_array($payload) || ! array_key_exists('users', $payload) || ! is_array($payload['users'])) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.contact-groups.external-import.invalid-response'),
+            ], 422);
+        }
+
+        $totalPages = max(1, (int) ($payload['total_pages'] ?? 1));
+        $currentPage = (int) ($payload['page'] ?? $page);
+
+        try {
+            [$imported, $skipped] = $this->persistExternalUsers($payload['users'], $groupId);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.contact-groups.external-import.store-error'),
+                'details' => $exception->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'page' => $currentPage,
+            'total_pages' => $totalPages,
+            'per_page' => $payload['per_page'] ?? null,
+            'total' => $payload['total'] ?? null,
+            'users_processed' => count($payload['users']),
+            'imported' => $imported,
+            'skipped' => $skipped,
+        ]);
+    }
+
+    /**
+     * Persist users fetched from an external integration.
+     */
+    protected function persistExternalUsers(array $users, int $groupId): array
+    {
+        $contactModel = new NewslettersContact();
+        $fillable = array_diff($contactModel->getFillable(), ['contact_group_id']);
+
+        $imported = 0;
+        $skipped = 0;
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($users as $user) {
+                if (! is_array($user)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $contactData = [
+                    'contact_group_id' => $groupId,
+                ];
+
+                foreach ($fillable as $field) {
+                    if (array_key_exists($field, $user)) {
+                        $contactData[$field] = $this->normalizeContactField($field, $user[$field]);
+                    }
+                }
+
+                if (empty($contactData['full_name']) || empty($contactData['phone'])) {
+                    $skipped++;
+                    continue;
+                }
+
+                $contactData['phone'] = $this->sanitizePhone((string) $contactData['phone']);
+
+                if (! $contactData['phone']) {
+                    $skipped++;
+                    continue;
+                }
+
+                $exists = $this->contactRepository->findWhere([
+                    'phone' => $contactData['phone'],
+                    'contact_group_id' => $groupId,
+                ])->first();
+
+                if ($exists) {
+                    $skipped++;
+                    continue;
+                }
+
+                $this->contactRepository->create($contactData);
+                $imported++;
+            }
+
+            DB::commit();
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+            throw $exception;
+        }
+
+        return [$imported, $skipped];
+    }
+
+    /**
+     * Normalize incoming field values before persisting.
+     */
+    protected function normalizeContactField(string $field, $value)
+    {
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        if ($value === '' || $value === null) {
+            return null;
+        }
+
+        if (in_array($field, ['last_order_date', 'registration_date', 'birth_date'], true)) {
+            $timestamp = strtotime((string) $value);
+
+            return $timestamp ? date('Y-m-d', $timestamp) : null;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Sanitize phone numbers by leaving digits only.
+     */
+    protected function sanitizePhone(?string $phone): ?string
+    {
+        if ($phone === null) {
+            return null;
+        }
+
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+
+        return $digits ?: null;
     }
 }
 
