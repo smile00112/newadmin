@@ -25,12 +25,14 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
     protected $mailingListId;
     protected $customerIds;
     protected $batchIndex;
+    protected $companyId;
 
-    public function __construct(int $mailingListId, array $customerIds, int $batchIndex = 0)
+    public function __construct(int $mailingListId, array $customerIds, int $batchIndex = 0, ?int $companyId = null)
     {
         $this->mailingListId = $mailingListId;
         $this->customerIds = $customerIds;
         $this->batchIndex = $batchIndex;
+        $this->companyId = $companyId;
         $this->onQueue('whatsapp-batch-instances');
     }
 
@@ -43,6 +45,16 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
         ]);
 
         $mailingList = MailingList::with('whatsappInstances')->findOrFail($this->mailingListId);
+
+        // Verify company access
+        if ($this->companyId !== null && $mailingList->company_id !== $this->companyId) {
+            Log::warning("Mailing list does not belong to company", [
+                'mailing_list_id' => $this->mailingListId,
+                'expected_company_id' => $this->companyId,
+                'actual_company_id' => $mailingList->company_id,
+            ]);
+            return;
+        }
 
         // Check for active and non-blocked instances
         $activeInstances = $mailingList->whatsappInstances()
@@ -65,7 +77,7 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
 
             if ($mailingList->mailing_hours_from) {
                 $delay = $this->calculateDelayUntilNextMailingHour($mailingList);
-                ProcessWhatsAppBatchByInstances::dispatch($this->mailingListId, $this->customerIds, $this->batchIndex)
+                ProcessWhatsAppBatchByInstances::dispatch($this->mailingListId, $this->customerIds, $this->batchIndex, $this->companyId)
                     ->delay(now()->addSeconds($delay))
                     ->onQueue('whatsapp-batch-instances');
             }
@@ -104,17 +116,23 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
                     'rescheduled_at' => now()->addSeconds($delayUntilReset)->toDateTimeString(),
                 ]);
                 
-                ProcessWhatsAppBatchByInstances::dispatch($this->mailingListId, $this->customerIds, $this->batchIndex)
+                ProcessWhatsAppBatchByInstances::dispatch($this->mailingListId, $this->customerIds, $this->batchIndex, $this->companyId)
                     ->delay(now()->addSeconds($delayUntilReset))
                     ->onQueue('whatsapp-batch-instances');
             }
             
             return;
         }
-        $customers = CustomerNumber::whereIn('id', $this->customerIds)
+        $customersQuery = CustomerNumber::whereIn('id', $this->customerIds)
             ->where('sending', false)
-            ->where('send_error', false)
-            ->get();
+            ->where('send_error', false);
+        
+        // Filter by company if provided
+        if ($this->companyId !== null) {
+            $customersQuery->where('company_id', $this->companyId);
+        }
+        
+        $customers = $customersQuery->get();
 
         if ($customers->isEmpty()) {
             Log::info("No customers to process in batch", [
@@ -142,8 +160,12 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
         $instanceIndex = 0;
 
         foreach ($batchCustomers as $customer) {
-            // Проверка стоп-листа
-            if (\Webkul\Newsletters\Models\StopList::where('phone_number', $customer->phone_number)->exists()) {
+            // Проверка стоп-листа (с учетом company_id)
+            $stopListQuery = \Webkul\Newsletters\Models\StopList::where('phone_number', $customer->phone_number);
+            if ($this->companyId !== null) {
+                $stopListQuery->where('company_id', $this->companyId);
+            }
+            if ($stopListQuery->exists()) {
                 Log::warning('Number in stopList', [
                     'phone' => $customer->phone_number,
                     'customer_id' => $customer->id,
@@ -238,7 +260,8 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
             ProcessWhatsAppBatchByInstances::dispatch(
                 $this->mailingListId,
                 $remainingCustomerIds,
-                $nextBatchIndex
+                $nextBatchIndex,
+                $this->companyId
             )
                 ->delay(now()->addSeconds($messageDelay))
                 ->onQueue('whatsapp-batch-instances');

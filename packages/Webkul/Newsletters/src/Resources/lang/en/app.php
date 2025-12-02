@@ -295,10 +295,32 @@ return [
                 'title' => 'Mailing Lists Statistics'
             ]
         ],
+
+        'companies' => [
+            'title' => 'Companies',
+            'create-title' => 'Create Company',
+            'edit-title' => 'Edit Company',
+            'name' => 'Name',
+            'slug' => 'Slug',
+            'description' => 'Description',
+            'status' => 'Status',
+            'is_active' => 'Active',
+            'active' => 'Active',
+            'inactive' => 'Inactive',
+            'created_at' => 'Created At',
+            'slug-placeholder' => 'auto-generated-from-name',
+            'slug-help' => 'Leave empty to auto-generate from name',
+            'create-success' => 'Company created successfully.',
+            'update-success' => 'Company updated successfully.',
+            'delete-success' => 'Company deleted successfully.',
+            'delete-failed' => 'Company can not be deleted.',
+            'delete-confirm' => 'Are you sure you want to delete this company?',
+        ],
     ],
 
     'sidebar' => [
         'newsletters' => 'Newsletters',
+        'companies' => 'Companies',
         'whatsapp-instances' => 'WhatsApp Instances',
         'mailing-lists' => 'Mailing Lists',
         'customer-numbers' => 'Customer Numbers',

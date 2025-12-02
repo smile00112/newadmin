@@ -62,3 +62,4 @@ class MailingListCompleted implements ShouldBroadcast
 
 
 
+

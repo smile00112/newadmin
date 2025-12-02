@@ -308,11 +308,33 @@ return [
             'mailing-lists-stats' => [
                 'title' => 'Статистика рассылок'
             ]
-        ]
+        ],
+
+        'companies' => [
+            'title' => 'Компании',
+            'create-title' => 'Создать компанию',
+            'edit-title' => 'Редактировать компанию',
+            'name' => 'Название',
+            'slug' => 'Идентификатор',
+            'description' => 'Описание',
+            'status' => 'Статус',
+            'is_active' => 'Активна',
+            'active' => 'Активна',
+            'inactive' => 'Неактивна',
+            'created_at' => 'Создано',
+            'slug-placeholder' => 'автоматически-из-названия',
+            'slug-help' => 'Оставьте пустым для автоматической генерации из названия',
+            'create-success' => 'Компания успешно создана.',
+            'update-success' => 'Компания успешно обновлена.',
+            'delete-success' => 'Компания успешно удалена.',
+            'delete-failed' => 'Не удалось удалить компанию.',
+            'delete-confirm' => 'Вы уверены, что хотите удалить эту компанию?',
+        ],
     ],
 
     'sidebar' => [
         'newsletters' => 'Рассылки',
+        'companies' => 'Компании',
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'mailing-lists' => 'Списки рассылки',
         'customer-numbers' => 'Номера клиентов',

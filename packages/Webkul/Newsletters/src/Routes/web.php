@@ -29,6 +29,18 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
         return 'Newsletters module is working!';
     })->name('admin.newsletters.test');
 
+    /**
+     * Companies routes.
+     */
+    Route::controller(\Webkul\Newsletters\Http\Controllers\Admin\CompanyController::class)->prefix('companies')->group(function () {
+        Route::get('', 'index')->name('admin.newsletters.companies.index');
+        Route::get('create', 'create')->name('admin.newsletters.companies.create');
+        Route::post('create', 'store')->name('admin.newsletters.companies.store');
+        Route::get('edit/{id}', 'edit')->name('admin.newsletters.companies.edit');
+        Route::put('edit/{id}', 'update')->name('admin.newsletters.companies.update');
+        Route::delete('{id}', 'destroy')->name('admin.newsletters.companies.destroy');
+    });
+
 
     /**
      * Vacap Instances routes.

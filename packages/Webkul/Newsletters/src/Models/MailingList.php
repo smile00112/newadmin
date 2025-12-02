@@ -3,6 +3,7 @@
 namespace Webkul\Newsletters\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -32,7 +33,8 @@ class MailingList extends Model
         'message_delay_to',
         'start_at',
         'status', // created, pending, completed
-        'max_messages_per_instance'
+        'max_messages_per_instance',
+        'company_id',
     ];
 
     /**
@@ -64,5 +66,19 @@ class MailingList extends Model
         return $this->hasMany(CustomerNumber::class);
     }
 
+    /**
+     * Get the company that owns the mailing list.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
 
+    /**
+     * Scope a query to only include mailing lists for a specific company.
+     */
+    public function scopeForCompany($query, $companyId)
+    {
+        return $query->where('company_id', $companyId);
+    }
 }

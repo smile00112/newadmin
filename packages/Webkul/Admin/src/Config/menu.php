@@ -259,6 +259,12 @@ return [
         'icon'       => 'icon-mail',
         'icon-class' => 'mail-icon',
     ], [
+        'key'        => 'newsletters.companies',
+        'name'       => 'newsletters::app.sidebar.companies',
+        'route'      => 'admin.newsletters.companies.index',
+        'sort'       => 1,
+        'icon'       => '',
+    ], [
         'key'        => 'newsletters.mailing-lists',
         'name'       => 'newsletters::app.sidebar.mailing-lists',
         'route'      => 'admin.newsletters.mailing-lists.index',

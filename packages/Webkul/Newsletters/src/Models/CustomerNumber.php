@@ -38,7 +38,8 @@ class CustomerNumber extends Model
         //'unsubscribed_at',
         'incoming_message',
         'sending',
-        'send_error'
+        'send_error',
+        'company_id',
         //'metadata',
     ];
 
@@ -75,5 +76,21 @@ class CustomerNumber extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(NewslettersContact::class, 'contact_id');
+    }
+
+    /**
+     * Get the company that owns the customer number.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Scope a query to only include customer numbers for a specific company.
+     */
+    public function scopeForCompany($query, $companyId)
+    {
+        return $query->where('company_id', $companyId);
     }
 }

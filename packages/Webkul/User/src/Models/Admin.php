@@ -30,6 +30,7 @@ class Admin extends Authenticatable implements AdminContract
         'role_id',
         'status',
         'fcm_token',
+        'company_id',
     ];
 
     /**
@@ -83,6 +84,16 @@ class Admin extends Authenticatable implements AdminContract
     public function role()
     {
         return $this->belongsTo(RoleProxy::modelClass());
+    }
+
+    /**
+     * Get the company that owns the admin.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function company()
+    {
+        return $this->belongsTo(\Webkul\Newsletters\Models\Company::class);
     }
 
     /**

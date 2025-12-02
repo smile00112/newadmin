@@ -159,6 +159,7 @@ class MailingListController extends Controller
 
                 foreach ($validInstances as $index => $instanceData) {
                     $instanceData['mailing_list_id'] = $mailingList->id;
+                    // company_id will be automatically set by repository
 
                     Log::info('Creating WhatsApp instance', [
                         'instance_index' => $index,
@@ -193,6 +194,7 @@ class MailingListController extends Controller
 
                 foreach ($validCustomers as $index => $customerData) {
                     $customerData['mailing_list_id'] = $mailingList->id;
+                    // company_id will be automatically set by repository
 
                     Log::info('Creating customer number', [
                         'customer_index' => $index,
@@ -830,9 +832,12 @@ class MailingListController extends Controller
                 ->pluck('id')
                 ->toArray();
 
+            // Get company_id from mailing list
+            $companyId = $mailingList->company_id;
+
             // Dispatch the mailing job with delay if needed
             if ($delay > 0) {
-                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0)
+                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0, $companyId)
                     ->delay(now()->addSeconds($delay))
                     ->onQueue('whatsapp-batch-instances');
 
@@ -843,7 +848,7 @@ class MailingListController extends Controller
                     'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
                 ]);
             } else {
-                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0)
+                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0, $companyId)
                     ->onQueue('whatsapp-batch-instances');
 
                 Log::info('Starting mailing list without delay', [

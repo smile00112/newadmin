@@ -39,6 +39,7 @@ class NewslettersContact extends Model
         'favorite_dish',
         'store',
         'contact_group_id',
+        'company_id',
     ];
 
     /**
@@ -70,6 +71,22 @@ class NewslettersContact extends Model
     public function customerNumbers(): HasMany
     {
         return $this->hasMany(CustomerNumber::class, 'contact_id');
+    }
+
+    /**
+     * Get the company that owns the contact.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Scope a query to only include contacts for a specific company.
+     */
+    public function scopeForCompany($query, $companyId)
+    {
+        return $query->where('company_id', $companyId);
     }
 }
 

@@ -32,6 +32,7 @@ class VacapInstance extends Model
         'active',
         'sending_message_count',
         'blocked',
+        'company_id',
     ];
 
     /**
@@ -72,5 +73,21 @@ class VacapInstance extends Model
     public function customerNumbers(): HasMany
     {
         return $this->hasMany(CustomerNumber::class, 'whatsapp_instance_id', 'id');
+    }
+
+    /**
+     * Get the company that owns the whatsapp instance.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Scope a query to only include instances for a specific company.
+     */
+    public function scopeForCompany($query, $companyId)
+    {
+        return $query->where('company_id', $companyId);
     }
 }

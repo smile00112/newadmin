@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('newsletters_customer_numbers', function (Blueprint $table) {
-            $table->boolean('sending')->default(false)->nullable()->after('incoming_message')->comment('Флаг отправки сообщения');
-            $table->boolean('send_error')->default(false)->nullable()->after('sending')->comment('Флаг ошибки отправки');
+            $table->unsignedBigInteger('company_id')->nullable()->after('id');
+            $table->index('company_id');
         });
     }
 
@@ -23,15 +23,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('newsletters_customer_numbers', function (Blueprint $table) {
-            $table->dropColumn(['sending', 'send_error']);
+            $table->dropIndex(['company_id']);
+            $table->dropColumn('company_id');
         });
     }
 };
-
-
-
-
-
-
-
 
