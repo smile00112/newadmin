@@ -871,30 +871,260 @@ return [
         'route' => 'admin.newsletters.mailing-lists.index',
         'sort'  => 7,
     ], [
+        'key'   => 'newsletters.companies',
+        'name'  => 'newsletters::app.acl.companies',
+        'route' => 'admin.newsletters.companies.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.companies.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.companies.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.companies.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.companies.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.companies.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.companies.destroy',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.companies.manage',
+        'name'  => 'newsletters::app.acl.manage-companies',
+        'route' => 'admin.newsletters.companies.index',
+        'sort'  => 4,
+    ], [
+        'key'   => 'newsletters.managers',
+        'name'  => 'newsletters::app.acl.managers',
+        'route' => 'admin.newsletters.managers.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.managers.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.managers.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.managers.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.managers.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.managers.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.managers.destroy',
+        'sort'  => 3,
+    ], [
         'key'   => 'newsletters.mailing-lists',
         'name'  => 'newsletters::app.sidebar.mailing-lists',
         'route' => 'admin.newsletters.mailing-lists.index',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.mailing-lists.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.mailing-lists.create',
         'sort'  => 1,
     ], [
-        'key'   => 'newsletters.messages',
-        'name'  => 'newsletters::app.sidebar.messages',
-        'route' => 'admin.newsletters.messages.index',
+        'key'   => 'newsletters.mailing-lists.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.mailing-lists.edit',
         'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.mailing-lists.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.mailing-lists.destroy',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.mailing-lists.send',
+        'name'  => 'newsletters::app.acl.send',
+        'route' => 'admin.newsletters.mailing-lists.send',
+        'sort'  => 4,
+    ], [
+        'key'   => 'newsletters.mailing-lists.start',
+        'name'  => 'newsletters::app.acl.start',
+        'route' => 'admin.newsletters.mailing-lists.start',
+        'sort'  => 5,
+    ], [
+        'key'   => 'newsletters.mailing-lists.pause',
+        'name'  => 'newsletters::app.acl.pause',
+        'route' => 'admin.newsletters.mailing-lists.pause',
+        'sort'  => 6,
+    ], [
+        'key'   => 'newsletters.whatsapp-instances',
+        'name'  => 'newsletters::app.acl.whatsapp-instances',
+        'route' => 'admin.newsletters.whatsapp-instances.index',
+        'sort'  => 4,
+    ], [
+        'key'   => 'newsletters.whatsapp-instances.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.whatsapp-instances.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.whatsapp-instances.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.whatsapp-instances.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.whatsapp-instances.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.whatsapp-instances.destroy',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.customer-numbers',
+        'name'  => 'newsletters::app.acl.customer-numbers',
+        'route' => 'admin.newsletters.customer-numbers.index',
+        'sort'  => 5,
+    ], [
+        'key'   => 'newsletters.customer-numbers.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.customer-numbers.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.customer-numbers.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.customer-numbers.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.customer-numbers.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.customer-numbers.destroy',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.customer-numbers.import',
+        'name'  => 'newsletters::app.acl.import',
+        'route' => 'admin.newsletters.customer-numbers.import',
+        'sort'  => 4,
     ], [
         'key'   => 'newsletters.stop-list',
         'name'  => 'newsletters::app.sidebar.stop-list',
         'route' => 'admin.newsletters.stop-list.index',
-        'sort'  => 3,
+        'sort'  => 6,
     ], [
-        'key'   => 'newsletters.reports',
-        'name'  => 'newsletters::app.sidebar.reports',
-        'route' => 'admin.newsletters.reports.index',
-        'sort'  => 4,
+        'key'   => 'newsletters.stop-list.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.stop-list.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.stop-list.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.stop-list.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.stop-list.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.stop-list.destroy',
+        'sort'  => 3,
     ], [
         'key'   => 'newsletters.contact-groups',
         'name'  => 'newsletters::app.sidebar.contact-groups',
         'route' => 'admin.newsletters.contact-groups.index',
-        'sort'  => 5,
+        'sort'  => 7,
+    ], [
+        'key'   => 'newsletters.contact-groups.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.contact-groups.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.contact-groups.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.contact-groups.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.contact-groups.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.contact-groups.destroy',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.contact-groups.import',
+        'name'  => 'newsletters::app.acl.import',
+        'route' => 'admin.newsletters.contact-groups.import',
+        'sort'  => 4,
+    ], [
+        'key'   => 'newsletters.contacts',
+        'name'  => 'newsletters::app.acl.contacts',
+        'route' => 'admin.newsletters.contacts.index',
+        'sort'  => 8,
+    ], [
+        'key'   => 'newsletters.contacts.view',
+        'name'  => 'newsletters::app.acl.view',
+        'route' => 'admin.newsletters.contacts.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.contacts.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.contacts.clear-group',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.messages',
+        'name'  => 'newsletters::app.sidebar.messages',
+        'route' => 'admin.newsletters.messages.index',
+        'sort'  => 9,
+    ], [
+        'key'   => 'newsletters.messages.view',
+        'name'  => 'newsletters::app.acl.view',
+        'route' => 'admin.newsletters.messages.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.messages.send',
+        'name'  => 'newsletters::app.acl.send',
+        'route' => 'admin.newsletters.customer-numbers.send-reply',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.reports',
+        'name'  => 'newsletters::app.sidebar.reports',
+        'route' => 'admin.newsletters.reports.index',
+        'sort'  => 10,
+    ], [
+        'key'   => 'newsletters.reports.view',
+        'name'  => 'newsletters::app.acl.view',
+        'route' => 'admin.newsletters.reports.index',
+        'sort'  => 1,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Account
+    |--------------------------------------------------------------------------
+    |
+    | All ACLs related to company accounts will be placed here.
+    |
+    */
+    [
+        'key'   => 'newsletters.account',
+        'name'  => 'newsletters::app.acl.account',
+        'route' => 'admin.newsletters.account.index',
+        'sort'  => 8,
+    ], [
+        'key'   => 'newsletters.account.view',
+        'name'  => 'newsletters::app.acl.view',
+        'route' => 'admin.newsletters.account.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.account.topup',
+        'name'  => 'newsletters::app.acl.topup',
+        'route' => 'admin.newsletters.account.topup',
+        'sort'  => 2,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Accounts
+    |--------------------------------------------------------------------------
+    |
+    | All ACLs related to admin account management will be placed here.
+    |
+    */
+    [
+        'key'   => 'newsletters.admin-accounts',
+        'name'  => 'newsletters::app.acl.admin-accounts',
+        'route' => 'admin.newsletters.admin-accounts.index',
+        'sort'  => 9,
+    ], [
+        'key'   => 'newsletters.admin-accounts.topup',
+        'name'  => 'newsletters::app.acl.topup',
+        'route' => 'admin.newsletters.admin-accounts.topup',
+        'sort'  => 1,
     ],
 
     /*

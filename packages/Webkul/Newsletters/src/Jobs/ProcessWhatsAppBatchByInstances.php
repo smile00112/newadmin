@@ -13,6 +13,7 @@ use Webkul\Newsletters\Models\MailingList;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Services\WhatsAppMailingService;
 use Webkul\Newsletters\Jobs\SendWhatsAppMessageWithEvent;
+use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Illuminate\Support\Facades\Log;
 
 class ProcessWhatsAppBatchByInstances implements ShouldQueue
@@ -54,6 +55,22 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
                 'actual_company_id' => $mailingList->company_id,
             ]);
             return;
+        }
+
+        // Check account balance
+        if ($mailingList->company_id) {
+            $accountRepository = app(CompanyAccountRepository::class);
+            $account = $accountRepository->getOrCreateForCompany($mailingList->company_id);
+            if ($account->balance <= 0) {
+                Log::warning("Account balance is insufficient, stopping mailing", [
+                    'mailing_list_id' => $this->mailingListId,
+                    'company_id' => $mailingList->company_id,
+                    'balance' => $account->balance,
+                ]);
+                // Update mailing list status to paused
+                $mailingList->update(['active' => false, 'status' => 'paused']);
+                return;
+            }
         }
 
         // Check for active and non-blocked instances

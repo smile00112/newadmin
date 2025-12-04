@@ -5,7 +5,9 @@ namespace Webkul\Newsletters\Providers;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Newsletters\Models\CustomerNumber;
+use Webkul\Newsletters\Models\Company;
 use Webkul\Newsletters\Observers\CustomerNumberObserver;
+use Webkul\Newsletters\Observers\CompanyObserver;
 use Webkul\Newsletters\Console\Commands\TestWebSocketBroadcast;
 use Webkul\Newsletters\Console\Commands\ResetBlockedInstances;
 
@@ -34,11 +36,27 @@ class ModuleServiceProvider extends ServiceProvider
 
         // Register model observers
         CustomerNumber::observe(CustomerNumberObserver::class);
+        Company::observe(CompanyObserver::class);
 
         // Register scheduled tasks
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('newsletters:reset-blocked-instances')->dailyAt('00:00');
         });
+
+        // Register middleware
+        $router = $this->app['router'];
+        $router->aliasMiddleware(
+            'newsletters.permission',
+            \Webkul\Newsletters\Http\Middleware\CheckNewsletterPermission::class
+        );
+        $router->aliasMiddleware(
+            'newsletters.company',
+            \Webkul\Newsletters\Http\Middleware\EnsureCompanyAccess::class
+        );
+        $router->aliasMiddleware(
+            'newsletters.account.balance',
+            \Webkul\Newsletters\Http\Middleware\CheckAccountBalance::class
+        );
     }
 
     /**

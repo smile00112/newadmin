@@ -6,10 +6,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\CompanyRepository;
+use Webkul\Newsletters\Traits\HasNewsletterRole;
 use Illuminate\Support\Str;
 
 class CompanyController extends Controller
 {
+    use HasNewsletterRole;
+
     /**
      * Create a new controller instance.
      */
@@ -22,7 +25,16 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        $companies = $this->companyRepository->all();
+        $this->requireNewsletterPermission('newsletters.companies');
+        
+        $admin = auth()->guard('admin')->user();
+        
+        // Владелец видит только свою компанию
+        if ($admin->company_id) {
+            $companies = collect([$this->companyRepository->find($admin->company_id)])->filter();
+        } else {
+            $companies = collect();
+        }
 
         return view('newsletters::admin.companies.index', compact('companies'));
     }
@@ -66,7 +78,13 @@ class CompanyController extends Controller
      */
     public function edit(int $id)
     {
+        $this->requireNewsletterPermission('newsletters.companies.edit');
+        
+        $admin = auth()->guard('admin')->user();
         $company = $this->companyRepository->findOrFail($id);
+
+        // Проверка, что компания принадлежит текущему админу
+        $this->ensureSameCompany($company->id);
 
         return view('newsletters::admin.companies.edit', compact('company'));
     }
@@ -76,6 +94,14 @@ class CompanyController extends Controller
      */
     public function update(Request $request, int $id)
     {
+        $this->requireNewsletterPermission('newsletters.companies.edit');
+        
+        $admin = auth()->guard('admin')->user();
+        $company = $this->companyRepository->findOrFail($id);
+
+        // Проверка, что компания принадлежит текущему админу
+        $this->ensureSameCompany($company->id);
+
         $this->validate($request, [
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:companies,slug,' . $id,
@@ -102,7 +128,13 @@ class CompanyController extends Controller
      */
     public function destroy(int $id)
     {
-        $this->companyRepository->findOrFail($id);
+        $this->requireNewsletterPermission('newsletters.companies.delete');
+        
+        $admin = auth()->guard('admin')->user();
+        $company = $this->companyRepository->findOrFail($id);
+
+        // Проверка, что компания принадлежит текущему админу
+        $this->ensureSameCompany($company->id);
 
         try {
             $this->companyRepository->delete($id);

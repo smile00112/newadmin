@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Company extends Model
@@ -86,6 +87,14 @@ class Company extends Model
     public function stopListEntries(): HasMany
     {
         return $this->hasMany(StopList::class);
+    }
+
+    /**
+     * Get the account for the company.
+     */
+    public function account(): HasOne
+    {
+        return $this->hasOne(CompanyAccount::class);
     }
 }
 

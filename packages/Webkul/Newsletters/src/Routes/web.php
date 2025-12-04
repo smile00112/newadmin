@@ -10,6 +10,20 @@ use Webkul\Newsletters\Http\Controllers\Admin\UnifiedNewsletterController;
 use Webkul\Newsletters\Http\Controllers\Admin\ContactGroupController;
 use Webkul\Newsletters\Http\Controllers\Admin\ContactController;
 use Webkul\Newsletters\Http\Controllers\Admin\ReportsController;
+use Webkul\Newsletters\Http\Controllers\Admin\ManagerController;
+use Webkul\Newsletters\Http\Controllers\Admin\AccountController;
+use Webkul\Newsletters\Http\Controllers\Admin\AdminAccountController;
+use Webkul\Newsletters\Http\Controllers\LandingPageController;
+
+/**
+ * Public landing page routes.
+ */
+Route::group(['prefix' => 'mailing-service'], function () {
+    Route::controller(LandingPageController::class)->group(function () {
+        Route::get('', 'index')->name('newsletters.landing.index');
+        Route::post('register', 'store')->name('newsletters.landing.register');
+    });
+});
 
 //TODO add custom middleware to greenapi webhook routes
 Route::group(['prefix' => 'newsletters'], function () {
@@ -20,7 +34,10 @@ Route::group(['prefix' => 'newsletters'], function () {
     });
 });
 
-Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']], function () {
+Route::group([
+    'prefix' => 'admin/newsletters', 
+    'middleware' => ['web', 'admin', 'newsletters.company']
+], function () {
 
     /**
      * Test route to verify module is working.
@@ -30,43 +47,90 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
     })->name('admin.newsletters.test');
 
     /**
-     * Companies routes.
+     * Companies routes (only for owners).
      */
-    Route::controller(\Webkul\Newsletters\Http\Controllers\Admin\CompanyController::class)->prefix('companies')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.companies.index');
-        Route::get('create', 'create')->name('admin.newsletters.companies.create');
-        Route::post('create', 'store')->name('admin.newsletters.companies.store');
-        Route::get('edit/{id}', 'edit')->name('admin.newsletters.companies.edit');
-        Route::put('edit/{id}', 'update')->name('admin.newsletters.companies.update');
-        Route::delete('{id}', 'destroy')->name('admin.newsletters.companies.destroy');
+    Route::middleware('newsletters.permission:newsletters.companies')->group(function () {
+        Route::controller(\Webkul\Newsletters\Http\Controllers\Admin\CompanyController::class)->prefix('companies')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.companies.index');
+            Route::middleware('newsletters.permission:newsletters.companies.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.companies.create');
+                Route::post('create', 'store')->name('admin.newsletters.companies.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.companies.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.companies.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.companies.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.companies.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.companies.destroy');
+            });
+        });
+    });
+
+    /**
+     * Managers routes (only for owners).
+     */
+    Route::middleware('newsletters.permission:newsletters.managers')->group(function () {
+        Route::controller(ManagerController::class)->prefix('managers')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.managers.index');
+            Route::middleware('newsletters.permission:newsletters.managers.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.managers.create');
+                Route::post('create', 'store')->name('admin.newsletters.managers.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.managers.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.managers.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.managers.update');
+                Route::post('{id}/permissions', 'updatePermissions')->name('admin.newsletters.managers.update-permissions');
+            });
+            Route::middleware('newsletters.permission:newsletters.managers.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.managers.destroy');
+            });
+        });
     });
 
 
     /**
      * Vacap Instances routes.
      */
-    Route::controller(VacapInstanceController::class)->prefix('whatsapp-instances')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.whatsapp-instances.index');
-        Route::get('create', 'create')->name('admin.newsletters.whatsapp-instances.create');
-        Route::post('create', 'store')->name('admin.newsletters.whatsapp-instances.store');
-        Route::get('edit/{id}', 'edit')->name('admin.newsletters.whatsapp-instances.edit');
-        Route::put('edit/{id}', 'update')->name('admin.newsletters.whatsapp-instances.update');
-        Route::delete('{id}', 'destroy')->name('admin.newsletters.whatsapp-instances.destroy');
+    Route::middleware('newsletters.permission:newsletters.whatsapp-instances')->group(function () {
+        Route::controller(VacapInstanceController::class)->prefix('whatsapp-instances')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.whatsapp-instances.index');
+            Route::middleware('newsletters.permission:newsletters.whatsapp-instances.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.whatsapp-instances.create');
+                Route::post('create', 'store')->name('admin.newsletters.whatsapp-instances.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.whatsapp-instances.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.whatsapp-instances.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.whatsapp-instances.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.whatsapp-instances.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.whatsapp-instances.destroy');
+            });
+        });
     });
 
     /**
      * Mailing Lists routes.
      */
-    Route::controller(MailingListController::class)->prefix('mailing-lists')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.mailing-lists.index');
-        Route::get('create', 'create')->name('admin.newsletters.mailing-lists.create');
-        Route::post('create', 'store')->name('admin.newsletters.mailing-lists.store');
-        Route::get('edit/{id}', 'edit')->name('admin.newsletters.mailing-lists.edit');
-        Route::put('edit/{id}', 'update')->name('admin.newsletters.mailing-lists.update');
-        Route::delete('{id}', 'destroy')->name('admin.newsletters.mailing-lists.destroy');
-        Route::post('{id}/send', 'send')->name('admin.newsletters.mailing-lists.send');
-        Route::post('{id}/start', 'startMailing')->name('admin.newsletters.mailing-lists.start');
-        Route::post('{id}/pause', 'pauseMailing')->name('admin.newsletters.mailing-lists.pause');
+    Route::middleware('newsletters.permission:newsletters.mailing-lists')->group(function () {
+        Route::controller(MailingListController::class)->prefix('mailing-lists')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.mailing-lists.index');
+            Route::middleware('newsletters.permission:newsletters.mailing-lists.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.mailing-lists.create');
+                Route::post('create', 'store')->name('admin.newsletters.mailing-lists.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.mailing-lists.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.mailing-lists.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.mailing-lists.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.mailing-lists.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.mailing-lists.destroy');
+            });
+            Route::middleware(['newsletters.permission:newsletters.mailing-lists.send', 'newsletters.account.balance'])->group(function () {
+                Route::post('{id}/send', 'send')->name('admin.newsletters.mailing-lists.send');
+                Route::post('{id}/start', 'startMailing')->name('admin.newsletters.mailing-lists.start');
+                Route::post('{id}/pause', 'pauseMailing')->name('admin.newsletters.mailing-lists.pause');
+            });
+        });
     });
 
     Route::controller(MailingListController::class)->prefix('test')->group(function () {
@@ -75,39 +139,61 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
     /**
      * Customer Numbers routes.
      */
-    Route::controller(CustomerNumberController::class)->prefix('customer-numbers')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.customer-numbers.index');
-        Route::get('create', 'create')->name('admin.newsletters.customer-numbers.create');
-        Route::post('create', 'store')->name('admin.newsletters.customer-numbers.store');
-        Route::get('edit/{id}', 'edit')->name('admin.newsletters.customer-numbers.edit');
-        Route::put('edit/{id}', 'update')->name('admin.newsletters.customer-numbers.update');
-        Route::delete('{id}', 'destroy')->name('admin.newsletters.customer-numbers.destroy');
-        Route::post('import', 'import')->name('admin.newsletters.customer-numbers.import');
-        Route::post('chat-history', 'getChatHistory')->name('admin.newsletters.customer-numbers.chat-history');
-        Route::post('search', 'search')->name('admin.newsletters.customer-numbers.search');
-        Route::post('send-reply', 'sendReply')->name('admin.newsletters.customer-numbers.send-reply');
+    Route::middleware('newsletters.permission:newsletters.customer-numbers')->group(function () {
+        Route::controller(CustomerNumberController::class)->prefix('customer-numbers')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.customer-numbers.index');
+            Route::middleware('newsletters.permission:newsletters.customer-numbers.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.customer-numbers.create');
+                Route::post('create', 'store')->name('admin.newsletters.customer-numbers.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.customer-numbers.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.customer-numbers.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.customer-numbers.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.customer-numbers.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.customer-numbers.destroy');
+            });
+            Route::middleware('newsletters.permission:newsletters.customer-numbers.import')->group(function () {
+                Route::post('import', 'import')->name('admin.newsletters.customer-numbers.import');
+            });
+            Route::post('chat-history', 'getChatHistory')->name('admin.newsletters.customer-numbers.chat-history');
+            Route::post('search', 'search')->name('admin.newsletters.customer-numbers.search');
+            Route::middleware('newsletters.permission:newsletters.messages.send')->group(function () {
+                Route::post('send-reply', 'sendReply')->name('admin.newsletters.customer-numbers.send-reply');
+            });
+        });
     });
 
     /**
      * Stop List routes.
      */
-    Route::controller(StopListController::class)->prefix('stop-list')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.stop-list.index');
-        Route::get('create', 'create')->name('admin.newsletters.stop-list.create');
-        Route::post('create', 'store')->name('admin.newsletters.stop-list.store');
-        Route::get('edit/{id}', 'edit')->name('admin.newsletters.stop-list.edit');
-        Route::put('edit/{id}', 'update')->name('admin.newsletters.stop-list.update');
-        Route::delete('destroy-all', 'destroyAll')->name('admin.newsletters.stop-list.destroy-all');
-        Route::post('mass-destroy', 'massDestroy')->name('admin.newsletters.stop-list.mass-destroy');
-        Route::delete('{id}', 'destroy')->name('admin.newsletters.stop-list.destroy');
-        Route::post('check', 'check')->name('admin.newsletters.stop-list.check');
+    Route::middleware('newsletters.permission:newsletters.stop-list')->group(function () {
+        Route::controller(StopListController::class)->prefix('stop-list')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.stop-list.index');
+            Route::middleware('newsletters.permission:newsletters.stop-list.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.stop-list.create');
+                Route::post('create', 'store')->name('admin.newsletters.stop-list.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.stop-list.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.stop-list.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.stop-list.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.stop-list.delete')->group(function () {
+                Route::delete('destroy-all', 'destroyAll')->name('admin.newsletters.stop-list.destroy-all');
+                Route::post('mass-destroy', 'massDestroy')->name('admin.newsletters.stop-list.mass-destroy');
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.stop-list.destroy');
+            });
+            Route::post('check', 'check')->name('admin.newsletters.stop-list.check');
+        });
     });
 
     /**
      * Messages routes.
      */
-    Route::controller(CustomerNumberController::class)->prefix('messages')->group(function () {
-        Route::get('', 'messages')->name('admin.newsletters.messages.index');
+    Route::middleware('newsletters.permission:newsletters.messages.view')->group(function () {
+        Route::controller(CustomerNumberController::class)->prefix('messages')->group(function () {
+            Route::get('', 'messages')->name('admin.newsletters.messages.index');
+        });
     });
 
     /**
@@ -124,34 +210,70 @@ Route::group(['prefix' => 'admin/newsletters', 'middleware' => ['web', 'admin']]
     /**
      * Contact Groups routes.
      */
-    Route::controller(ContactGroupController::class)->prefix('contact-groups')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.contact-groups.index');
-        Route::get('create', 'create')->name('admin.newsletters.contact-groups.create');
-        Route::post('create', 'store')->name('admin.newsletters.contact-groups.store');
-        Route::post('csv/preview', 'previewCsv')->name('admin.newsletters.contact-groups.csv.preview');
-        Route::get('edit/{id}', 'edit')->name('admin.newsletters.contact-groups.edit');
-        Route::put('edit/{id}', 'update')->name('admin.newsletters.contact-groups.update');
-        Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-groups.destroy');
-        Route::get('{groupId}/contacts', 'contacts')->name('admin.newsletters.contact-groups.contacts');
-        Route::post('{groupId}/import-mapping', 'saveImportMapping')->name('admin.newsletters.contact-groups.import-mapping');
-        Route::post('{groupId}/import', 'importContacts')->name('admin.newsletters.contact-groups.import');
-        Route::post('{groupId}/external-import', 'externalImport')->name('admin.newsletters.contact-groups.external-import');
+    Route::middleware('newsletters.permission:newsletters.contact-groups')->group(function () {
+        Route::controller(ContactGroupController::class)->prefix('contact-groups')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.contact-groups.index');
+            Route::middleware('newsletters.permission:newsletters.contact-groups.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.contact-groups.create');
+                Route::post('create', 'store')->name('admin.newsletters.contact-groups.store');
+            });
+            Route::post('csv/preview', 'previewCsv')->name('admin.newsletters.contact-groups.csv.preview');
+            Route::middleware('newsletters.permission:newsletters.contact-groups.edit')->group(function () {
+                Route::get('edit/{id}', 'edit')->name('admin.newsletters.contact-groups.edit');
+                Route::put('edit/{id}', 'update')->name('admin.newsletters.contact-groups.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.contact-groups.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-groups.destroy');
+            });
+            Route::get('{groupId}/contacts', 'contacts')->name('admin.newsletters.contact-groups.contacts');
+            Route::middleware('newsletters.permission:newsletters.contact-groups.import')->group(function () {
+                Route::post('{groupId}/import-mapping', 'saveImportMapping')->name('admin.newsletters.contact-groups.import-mapping');
+                Route::post('{groupId}/import', 'importContacts')->name('admin.newsletters.contact-groups.import');
+                Route::post('{groupId}/external-import', 'externalImport')->name('admin.newsletters.contact-groups.external-import');
+            });
+        });
     });
 
     /**
      * Contacts routes.
      */
-    Route::controller(ContactController::class)->prefix('contacts')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.contacts.index');
-        Route::get('get', 'getContacts')->name('admin.newsletters.contacts.get');
-        Route::delete('clear-group', 'clearGroupContacts')->name('admin.newsletters.contacts.clear-group');
+    Route::middleware('newsletters.permission:newsletters.contacts.view')->group(function () {
+        Route::controller(ContactController::class)->prefix('contacts')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.contacts.index');
+            Route::get('get', 'getContacts')->name('admin.newsletters.contacts.get');
+            Route::middleware('newsletters.permission:newsletters.contacts.delete')->group(function () {
+                Route::delete('clear-group', 'clearGroupContacts')->name('admin.newsletters.contacts.clear-group');
+            });
+        });
     });
 
     /**
      * Reports routes.
      */
-    Route::controller(ReportsController::class)->prefix('reports')->group(function () {
-        Route::get('', 'index')->name('admin.newsletters.reports.index');
-        Route::get('stats', 'stats')->name('admin.newsletters.reports.stats');
+    Route::middleware('newsletters.permission:newsletters.reports.view')->group(function () {
+        Route::controller(ReportsController::class)->prefix('reports')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.reports.index');
+            Route::get('stats', 'stats')->name('admin.newsletters.reports.stats');
+        });
+    });
+
+    /**
+     * Account routes (for company owners).
+     */
+    Route::middleware('newsletters.permission:newsletters.account.view')->group(function () {
+        Route::controller(AccountController::class)->prefix('account')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.account.index');
+            Route::middleware('newsletters.permission:newsletters.account.topup')->group(function () {
+                Route::post('topup', 'topup')->name('admin.newsletters.account.topup');
+            });
+        });
+    });
+
+    /**
+     * Admin Accounts routes (for super admins only).
+     */
+    Route::controller(AdminAccountController::class)->prefix('admin-accounts')->group(function () {
+        Route::get('', 'index')->name('admin.newsletters.admin-accounts.index');
+        Route::post('topup/{companyId}', 'topup')->name('admin.newsletters.admin-accounts.topup');
     });
 });

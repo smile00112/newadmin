@@ -10,6 +10,7 @@ use Webkul\Newsletters\Models\StopList;
 use Webkul\Newsletters\Repositories\MailingListRepository;
 use Webkul\Newsletters\Repositories\VacapInstanceRepository;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
+use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +24,8 @@ class MailingListController extends Controller
     public function __construct(
         protected MailingListRepository $mailingListRepository,
         protected VacapInstanceRepository $vacapInstanceRepository,
-        protected CustomerNumberRepository $customerNumberRepository
+        protected CustomerNumberRepository $customerNumberRepository,
+        protected CompanyAccountRepository $accountRepository
     ) {}
 
     /**
@@ -728,6 +730,17 @@ class MailingListController extends Controller
 
         $mailingList = $this->mailingListRepository->findOrFail($id);
 
+        // Check account balance
+        if ($mailingList->company_id) {
+            $account = $this->accountRepository->getOrCreateForCompany($mailingList->company_id);
+            if ($account->balance <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.account.insufficient-balance'),
+                ], 402);
+            }
+        }
+
         Log::info('Mailing list found for sending', [
             'mailing_list_id' => $mailingList->id,
             'current_status' => $mailingList->status,
@@ -796,6 +809,17 @@ class MailingListController extends Controller
     public function startMailing(int $id)
     {
         $mailingList = $this->mailingListRepository->findOrFail($id);
+
+        // Check account balance
+        if ($mailingList->company_id) {
+            $account = $this->accountRepository->getOrCreateForCompany($mailingList->company_id);
+            if ($account->balance <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.account.insufficient-balance'),
+                ], 402);
+            }
+        }
 
         if ($mailingList->whatsappInstances()->count() === 0) {
             return response()->json([
