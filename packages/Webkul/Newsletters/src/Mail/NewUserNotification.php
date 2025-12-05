@@ -8,7 +8,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Webkul\Shop\Mail\Mailable;
 use Webkul\User\Contracts\Admin;
 
-class WelcomeAdminNotification extends Mailable
+class NewUserNotification extends Mailable
 {
     /**
      * Create a new mailable instance.
@@ -16,7 +16,9 @@ class WelcomeAdminNotification extends Mailable
      * @return void
      */
     public function __construct(
-        public Admin $admin,
+        public Admin $newAdmin,
+        public string $companyName,
+        public string $plan,
         public string $password
     ) {}
 
@@ -26,11 +28,7 @@ class WelcomeAdminNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            to: [
-                //new Address($this->admin->email),
-                new Address('gorely.aleksei@yandex.ru'),
-            ],
-            subject: 'Добро пожаловать в MailingService!',
+            subject: 'Новый пользователь зарегистрирован в системе',
         );
     }
 
@@ -40,7 +38,7 @@ class WelcomeAdminNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'newsletters::emails.welcome-admin',
+            view: 'newsletters::emails.new-user-notification',
         );
     }
 }
