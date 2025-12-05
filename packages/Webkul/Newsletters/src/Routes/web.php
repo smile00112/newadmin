@@ -88,6 +88,7 @@ Route::group([
                 Route::middleware('newsletters.permission:newsletters.owners.edit')->group(function () {
                     Route::get('edit/{id}', 'edit')->name('admin.newsletters.owners.edit');
                     Route::put('edit/{id}', 'update')->name('admin.newsletters.owners.update');
+                    Route::post('{id}/resend-email', 'resendRegistrationEmail')->name('admin.newsletters.owners.resend-email');
                 });
                 Route::middleware('newsletters.permission:newsletters.owners.toggle-status')->group(function () {
                     Route::post('{id}/toggle-status', 'toggleStatus')->name('admin.newsletters.owners.toggle-status');

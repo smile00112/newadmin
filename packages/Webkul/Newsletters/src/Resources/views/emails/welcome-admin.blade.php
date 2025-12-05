@@ -3,7 +3,6 @@
         <p style="font-weight: bold;font-size: 20px;color: #121A26;line-height: 24px;margin-bottom: 24px">
             Здравствуйте, {{ $admin->name }}! 👋
         </p>
-
         <p style="font-size: 16px;color: #384860;line-height: 24px;">
             Добро пожаловать в MailingService! Мы рады, что вы присоединились к нашему сервису рассылок.
         </p>
@@ -46,4 +45,3 @@
         Ваш аккаунт уже активен и готов к использованию. Вы можете войти в систему, используя указанные выше данные для входа.
     </p>
 @endcomponent
-

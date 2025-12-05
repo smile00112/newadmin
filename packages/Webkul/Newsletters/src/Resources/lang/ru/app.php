@@ -389,6 +389,10 @@ return [
             'topup-title' => 'Пополнить счет',
             'topup-amount' => 'Сумма',
             'topup-notes' => 'Заметки',
+            'resend-email-title' => 'Отправить копию email уведомления о регистрации',
+            'resend-email-confirm' => 'Вы уверены, что хотите отправить копию email уведомления о регистрации?',
+            'email-resent-success' => 'Копия email уведомления о регистрации успешно отправлена.',
+            'email-resent-failed' => 'Не удалось отправить копию email уведомления о регистрации.',
         ],
 
         'account' => [

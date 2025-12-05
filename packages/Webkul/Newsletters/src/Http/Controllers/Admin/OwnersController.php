@@ -37,7 +37,7 @@ class OwnersController extends Controller
     public function index()
     {
         $this->requireNewsletterPermission('newsletters.owners.view');
-        
+
         // Получить всех админов с ролью permission_type 'all' и company_id (owners)
         $owners = $this->adminRepository
             ->getModel()
@@ -57,7 +57,7 @@ class OwnersController extends Controller
     public function create()
     {
         $this->requireNewsletterPermission('newsletters.owners.create');
-        
+
         // Получить все компании для выбора
         $companies = $this->companyRepository->all();
 
@@ -70,7 +70,7 @@ class OwnersController extends Controller
     public function store(Request $request)
     {
         $this->requireNewsletterPermission('newsletters.owners.create');
-        
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:admins,email',
@@ -94,7 +94,7 @@ class OwnersController extends Controller
         if ($data['company_option'] === 'new') {
             // Создаем новую компанию
             $companySlug = Str::slug($data['company_name']);
-            
+
             // Проверяем уникальность slug
             $slugCounter = 1;
             $originalSlug = $companySlug;
@@ -149,9 +149,9 @@ class OwnersController extends Controller
     public function edit(int $id)
     {
         $this->requireNewsletterPermission('newsletters.owners.edit');
-        
+
         $owner = $this->adminRepository->findOrFail($id);
-        
+
         // Проверка, что это owner (имеет permission_type 'all' и company_id)
         if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
@@ -168,9 +168,9 @@ class OwnersController extends Controller
     public function update(Request $request, int $id)
     {
         $this->requireNewsletterPermission('newsletters.owners.edit');
-        
+
         $owner = $this->adminRepository->findOrFail($id);
-        
+
         // Проверка, что это owner
         if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
@@ -195,9 +195,9 @@ class OwnersController extends Controller
     public function toggleStatus(int $id)
     {
         $this->requireNewsletterPermission('newsletters.owners.toggle-status');
-        
+
         $owner = $this->adminRepository->findOrFail($id);
-        
+
         // Проверка, что это owner
         if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
@@ -206,7 +206,7 @@ class OwnersController extends Controller
         $owner->status = !$owner->status;
         $owner->save();
 
-        $message = $owner->status 
+        $message = $owner->status
             ? trans('newsletters::app.admin.owners.enabled-success')
             : trans('newsletters::app.admin.owners.disabled-success');
 
@@ -223,9 +223,9 @@ class OwnersController extends Controller
     public function topup(Request $request, int $id)
     {
         $this->requireNewsletterPermission('newsletters.owners.topup');
-        
+
         $owner = $this->adminRepository->findOrFail($id);
-        
+
         // Проверка, что это owner
         if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
@@ -256,14 +256,49 @@ class OwnersController extends Controller
     }
 
     /**
+     * Resend registration email notification to owner.
+     */
+    public function resendRegistrationEmail(int $id)
+    {
+        $this->requireNewsletterPermission('newsletters.owners.edit');
+
+        $owner = $this->adminRepository->findOrFail($id);
+
+        // Проверка, что это owner
+        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
+            abort(404, trans('newsletters::app.admin.owners.not-found'));
+        }
+
+        try {
+            // Отправляем копию приветственного письма
+            // Используем placeholder для пароля, так как оригинальный пароль недоступен
+
+            Mail::sendNow(new WelcomeAdminNotification($owner, 'Используйте ваш существующий пароль'));
+            Log::info('Registration email resent for admin: ' . $owner->email . ' (Company: ' . ($owner->company ? $owner->company->name : 'N/A') . ')');
+
+            session()->flash('success', trans('newsletters::app.admin.owners.email-resent-success'));
+        } catch (\Exception $mailException) {
+            Log::error('Failed to resend registration email: ' . $mailException->getMessage(), [
+                'trace' => $mailException->getTraceAsString(),
+                'admin_id' => $owner->id,
+                'admin_email' => $owner->email
+            ]);
+
+            session()->flash('error', trans('newsletters::app.admin.owners.email-resent-failed'));
+        }
+
+        return redirect()->route('admin.newsletters.owners.index');
+    }
+
+    /**
      * Remove the specified owner (soft delete or disable).
      */
     public function destroy(int $id)
     {
         $this->requireNewsletterPermission('newsletters.owners.delete');
-        
+
         $owner = $this->adminRepository->findOrFail($id);
-        
+
         // Проверка, что это owner
         if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));

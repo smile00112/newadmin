@@ -375,6 +375,10 @@ return [
             'topup-title' => 'Top Up Account',
             'topup-amount' => 'Amount',
             'topup-notes' => 'Notes',
+            'resend-email-title' => 'Send copy of registration email notification',
+            'resend-email-confirm' => 'Are you sure you want to send a copy of the registration email notification?',
+            'email-resent-success' => 'Copy of registration email notification sent successfully.',
+            'email-resent-failed' => 'Failed to send copy of registration email notification.',
         ],
 
         'account' => [

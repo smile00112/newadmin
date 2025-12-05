@@ -54,12 +54,20 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $owner->created_at->format('Y-m-d H:i') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex items-center gap-x-2.5">
-                            <a href="{{ route('admin.newsletters.owners.edit', $owner->id) }}" 
+                            <a href="{{ route('admin.newsletters.owners.edit', $owner->id) }}"
                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                title="{{ __('admin::app.datagrid.edit') }}">
                                 <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-edit"></span>
                             </a>
-                            <button 
+                            <form method="POST" action="{{ route('admin.newsletters.owners.resend-email', $owner->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.owners.resend-email-confirm') }}')" class="inline">
+                                @csrf
+                                <button type="submit"
+                                        class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300"
+                                        title="{{ __('newsletters::app.admin.owners.resend-email-title') }}">
+                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-mail"></span>
+                                </button>
+                            </form>
+                            <button
                                 type="button"
                                 onclick="toggleStatus({{ $owner->id }})"
                                 class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
@@ -67,7 +75,7 @@
                                 <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-{{ $owner->status ? 'cancel' : 'check' }}"></span>
                             </button>
                             @if($owner->company && $owner->company->account)
-                                <button 
+                                <button
                                     type="button"
                                     onclick="openTopupModal({{ $owner->id }}, '{{ $owner->name }}', '{{ $owner->company->name }}')"
                                     class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
@@ -78,7 +86,7 @@
                             <form method="POST" action="{{ route('admin.newsletters.owners.delete', $owner->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.owners.delete-confirm') }}')" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" 
+                                <button type="submit"
                                         class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                         title="{{ __('admin::app.datagrid.delete') }}">
                                     <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-trash"></span>
