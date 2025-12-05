@@ -32,6 +32,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            padding: 15px 0;
         }
 
         nav {
@@ -78,6 +79,40 @@
 
         .btn-primary:hover {
             background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .btn-primary:disabled:hover {
+            background: #9ca3af;
+        }
+
+        .btn-loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         /* Hero Section */
@@ -437,7 +472,7 @@
     <section class="hero">
         <div class="container">
             <h1>Профессиональный сервис рассылки</h1>
-            <p>Эффективные массовые рассылки для вашего бизнеса</p>
+            <p>Эффективные массовые рассылки через Email, WhatsApp и Telegram для вашего бизнеса</p>
             <button class="btn-primary" onclick="openModal()" style="font-size: 18px; padding: 16px 32px;">
                 Получить доступ
             </button>
@@ -472,7 +507,7 @@
                 <div class="feature-card">
                     <div class="feature-icon">📱</div>
                     <h3>Мультиканальность</h3>
-                    <p>Рассылки через Email, SMS, WhatsApp и другие популярные каналы связи.</p>
+                    <p>Рассылки через Email, WhatsApp, Telegram и другие популярные каналы связи.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🤖</div>
@@ -566,6 +601,10 @@
     <!-- Footer -->
     <footer>
         <div class="container">
+            <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
+                <a href="{{ route('newsletters.landing.payment-terms') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
+                <a href="{{ route('newsletters.landing.privacy-policy') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
+            </div>
             <p>&copy; 2025 MailingService. Все права защищены.</p>
         </div>
     </footer>
@@ -576,12 +615,12 @@
             <button class="modal-close" onclick="closeModal()">&times;</button>
             <h2 class="modal-title">Заявка на регистрацию</h2>
             <p class="modal-subtitle">Заполните форму, и мы свяжемся с вами в ближайшее время</p>
-            
+
             <div id="alertContainer"></div>
 
             <form id="registrationForm">
                 <input type="hidden" id="selectedPlan" name="plan" value="">
-                
+
                 <div class="form-group">
                     <label for="name">Имя *</label>
                     <input type="text" id="name" name="name" required>
@@ -596,11 +635,19 @@
 
                 <div class="form-group">
                     <label for="phone">Телефон *</label>
-                    <input type="tel" id="phone" name="phone" required>
+                    <input type="tel" id="phone" name="phone" placeholder="+7 (___) ___-__-__" required>
                     <div class="error" id="phoneError"></div>
                 </div>
 
-                <button type="submit" class="btn-primary" style="width: 100%;">
+                <div class="form-group">
+                    <label style="display: flex; align-items: flex-start; gap: 10px; font-weight: 400; cursor: pointer;">
+                        <input type="checkbox" id="privacy_policy_accepted" name="privacy_policy_accepted" value="1" required style="width: auto; margin-top: 4px;">
+                        <span>Я принимаю <a href="{{ route('newsletters.landing.privacy-policy') }}" target="_blank" style="color: #2563eb; text-decoration: underline;">политику конфиденциальности</a> *</span>
+                    </label>
+                    <div class="error" id="privacy_policy_acceptedError"></div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn-primary" style="width: 100%;">
                     Отправить заявку
                 </button>
             </form>
@@ -612,6 +659,7 @@
         const form = document.getElementById('registrationForm');
         const selectedPlanInput = document.getElementById('selectedPlan');
         const alertContainer = document.getElementById('alertContainer');
+        const submitBtn = document.getElementById('submitBtn');
 
         function openModal(plan = '') {
             selectedPlanInput.value = plan;
@@ -625,11 +673,33 @@
             form.reset();
             clearErrors();
             alertContainer.innerHTML = '';
+            enableSubmitButton();
+        }
+
+        function disableSubmitButton() {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('btn-loading');
+            submitBtn.setAttribute('data-original-text', submitBtn.textContent);
+            submitBtn.textContent = 'Отправка...';
+        }
+
+        function enableSubmitButton() {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('btn-loading');
+            const originalText = submitBtn.getAttribute('data-original-text') || 'Отправить заявку';
+            submitBtn.textContent = originalText;
+            submitBtn.removeAttribute('data-original-text');
         }
 
         function clearErrors() {
             document.querySelectorAll('.error').forEach(el => el.textContent = '');
-            document.querySelectorAll('input').forEach(el => el.style.borderColor = '#e5e7eb');
+            document.querySelectorAll('input').forEach(el => {
+                if (el.type === 'checkbox') {
+                    el.style.outline = 'none';
+                } else {
+                    el.style.borderColor = '#e5e7eb';
+                }
+            });
         }
 
         function showAlert(message, type = 'success') {
@@ -650,9 +720,30 @@
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             clearErrors();
+            disableSubmitButton();
 
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
+
+            // Очищаем телефон от форматирования перед отправкой (оставляем только цифры)
+            if (data.phone) {
+                data.phone = data.phone.replace(/\D/g, '');
+                // Если начинается с 8, заменяем на 7
+                if (data.phone.length > 0 && data.phone[0] === '8') {
+                    data.phone = '7' + data.phone.substring(1);
+                }
+                // Если не начинается с 7, добавляем 7
+                if (data.phone.length > 0 && data.phone[0] !== '7') {
+                    data.phone = '7' + data.phone;
+                }
+                // Форматируем для отправки в формате +7XXXXXXXXXX
+                data.phone = '+' + data.phone;
+            }
+
+            // Ensure checkbox value is properly set
+            if (!data.privacy_policy_accepted) {
+                data.privacy_policy_accepted = form.querySelector('#privacy_policy_accepted').checked ? '1' : '';
+            }
 
             try {
                 const response = await fetch('{{ route("newsletters.landing.register") }}', {
@@ -669,11 +760,12 @@
 
                 if (response.ok && result.success) {
                     showAlert(result.message, 'success');
-                    form.reset();
                     setTimeout(() => {
+                        form.reset();
                         closeModal();
-                    }, 2000);
+                    }, 3000);
                 } else {
+                    enableSubmitButton();
                     if (result.errors) {
                         Object.keys(result.errors).forEach(field => {
                             const errorElement = document.getElementById(field + 'Error');
@@ -682,7 +774,11 @@
                                 errorElement.textContent = result.errors[field][0];
                             }
                             if (inputElement) {
-                                inputElement.style.borderColor = '#ef4444';
+                                if (inputElement.type === 'checkbox') {
+                                    inputElement.style.outline = '2px solid #ef4444';
+                                } else {
+                                    inputElement.style.borderColor = '#ef4444';
+                                }
                             }
                         });
                     } else {
@@ -690,9 +786,94 @@
                     }
                 }
             } catch (error) {
+                enableSubmitButton();
                 showAlert('Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.', 'error');
             }
         });
+
+        // Phone mask
+        const phoneInput = document.getElementById('phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, ''); // Удаляем все нецифровые символы
+
+                // Если начинается не с 7 или 8, добавляем 7
+                if (value.length > 0 && value[0] !== '7' && value[0] !== '8') {
+                    value = '7' + value;
+                }
+
+                // Если начинается с 8, заменяем на 7
+                if (value.length > 0 && value[0] === '8') {
+                    value = '7' + value.substring(1);
+                }
+
+                // Ограничиваем длину до 11 цифр (7 + 10 цифр)
+                if (value.length > 11) {
+                    value = value.substring(0, 11);
+                }
+
+                // Форматируем номер
+                let formattedValue = '';
+                if (value.length > 0) {
+                    formattedValue = '+7';
+                    if (value.length > 1) {
+                        formattedValue += ' (' + value.substring(1, 4);
+                    }
+                    if (value.length >= 4) {
+                        formattedValue += ') ' + value.substring(4, 7);
+                    }
+                    if (value.length >= 7) {
+                        formattedValue += '-' + value.substring(7, 9);
+                    }
+                    if (value.length >= 9) {
+                        formattedValue += '-' + value.substring(9, 11);
+                    }
+                }
+
+                e.target.value = formattedValue;
+            });
+
+            phoneInput.addEventListener('keydown', function(e) {
+                // Разрешаем: backspace, delete, tab, escape, enter
+                if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
+                    // Разрешаем: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                    (e.keyCode === 65 && e.ctrlKey === true) ||
+                    (e.keyCode === 67 && e.ctrlKey === true) ||
+                    (e.keyCode === 86 && e.ctrlKey === true) ||
+                    (e.keyCode === 88 && e.ctrlKey === true) ||
+                    // Разрешаем: home, end, left, right
+                    (e.keyCode >= 35 && e.keyCode <= 39)) {
+                    return;
+                }
+                // Запрещаем все, кроме цифр
+                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                    e.preventDefault();
+                }
+            });
+
+            phoneInput.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                let numbers = paste.replace(/\D/g, '');
+
+                if (numbers.length > 0) {
+                    // Если начинается с 8, заменяем на 7
+                    if (numbers[0] === '8') {
+                        numbers = '7' + numbers.substring(1);
+                    }
+                    // Если не начинается с 7, добавляем 7
+                    if (numbers[0] !== '7') {
+                        numbers = '7' + numbers;
+                    }
+                    // Ограничиваем до 11 цифр
+                    numbers = numbers.substring(0, 11);
+
+                    // Устанавливаем только цифры и триггерим событие input для форматирования
+                    phoneInput.value = numbers;
+                    phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }
 
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

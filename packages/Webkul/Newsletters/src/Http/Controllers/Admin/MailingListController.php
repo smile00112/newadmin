@@ -44,8 +44,18 @@ class MailingListController extends Controller
                 $query->where('incoming_message', true);
             }
         ])->orderBy('created_at', 'desc')->all();
-      //  dd($mailingLists);
-        return view('newsletters::admin.mailing-lists.index', compact('mailingLists'));
+        
+        // Get account balance for current admin
+        $hasBalance = true;
+        $accountBalance = 0;
+        $admin = auth()->guard('admin')->user();
+        if ($admin && $admin->company_id) {
+            $account = $this->accountRepository->getOrCreateForCompany($admin->company_id);
+            $accountBalance = $account->balance;
+            $hasBalance = $account->balance > 0;
+        }
+        
+        return view('newsletters::admin.mailing-lists.index', compact('mailingLists', 'hasBalance', 'accountBalance'));
     }
 
     /**
@@ -271,6 +281,16 @@ class MailingListController extends Controller
         // Get admin users and customers for user numbers
         $adminUsers = \Webkul\User\Models\Admin::select('id', 'name', 'email')->get();
         $customers = \Webkul\Customer\Models\Customer::select('id', 'first_name', 'last_name', 'email', 'phone')->get();
+        
+        // Get account balance for current admin
+        $hasBalance = true;
+        $accountBalance = 0;
+        $admin = auth()->guard('admin')->user();
+        if ($admin && $admin->company_id) {
+            $account = $this->accountRepository->getOrCreateForCompany($admin->company_id);
+            $accountBalance = $account->balance;
+            $hasBalance = $account->balance > 0;
+        }
 
         // Combine admin users and customers into a unified user numbers array
         $userNumbers = collect();
@@ -296,7 +316,7 @@ class MailingListController extends Controller
             ]);
         }
 
-        return view('newsletters::admin.mailing-lists.edit', compact('mailingList', 'whatsappInstances', 'customerNumbers', 'userNumbers', 'totalCustomerNumbers'));
+        return view('newsletters::admin.mailing-lists.edit', compact('mailingList', 'whatsappInstances', 'customerNumbers', 'userNumbers', 'totalCustomerNumbers', 'hasBalance', 'accountBalance'));
     }
 
     /**

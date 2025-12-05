@@ -29,8 +29,12 @@ class CompanyController extends Controller
         
         $admin = auth()->guard('admin')->user();
         
+        // Админ с permission_type = all видит все компании
+        if ($admin->role && $admin->role->permission_type === 'all' && !$admin->company_id) {
+            $companies = $this->companyRepository->all();
+        } 
         // Владелец видит только свою компанию
-        if ($admin->company_id) {
+        elseif ($admin->company_id) {
             $companies = collect([$this->companyRepository->find($admin->company_id)])->filter();
         } else {
             $companies = collect();
@@ -83,8 +87,11 @@ class CompanyController extends Controller
         $admin = auth()->guard('admin')->user();
         $company = $this->companyRepository->findOrFail($id);
 
-        // Проверка, что компания принадлежит текущему админу
-        $this->ensureSameCompany($company->id);
+        // Админ с permission_type = all может редактировать любую компанию
+        if (!($admin->role && $admin->role->permission_type === 'all' && !$admin->company_id)) {
+            // Проверка, что компания принадлежит текущему админу
+            $this->ensureSameCompany($company->id);
+        }
 
         return view('newsletters::admin.companies.edit', compact('company'));
     }
@@ -99,8 +106,11 @@ class CompanyController extends Controller
         $admin = auth()->guard('admin')->user();
         $company = $this->companyRepository->findOrFail($id);
 
-        // Проверка, что компания принадлежит текущему админу
-        $this->ensureSameCompany($company->id);
+        // Админ с permission_type = all может редактировать любую компанию
+        if (!($admin->role && $admin->role->permission_type === 'all' && !$admin->company_id)) {
+            // Проверка, что компания принадлежит текущему админу
+            $this->ensureSameCompany($company->id);
+        }
 
         $this->validate($request, [
             'name' => 'required|string|max:255',
@@ -133,8 +143,11 @@ class CompanyController extends Controller
         $admin = auth()->guard('admin')->user();
         $company = $this->companyRepository->findOrFail($id);
 
-        // Проверка, что компания принадлежит текущему админу
-        $this->ensureSameCompany($company->id);
+        // Админ с permission_type = all может удалять любую компанию
+        if (!($admin->role && $admin->role->permission_type === 'all' && !$admin->company_id)) {
+            // Проверка, что компания принадлежит текущему админу
+            $this->ensureSameCompany($company->id);
+        }
 
         try {
             $this->companyRepository->delete($id);

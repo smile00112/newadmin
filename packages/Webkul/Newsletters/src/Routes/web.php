@@ -13,6 +13,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\ReportsController;
 use Webkul\Newsletters\Http\Controllers\Admin\ManagerController;
 use Webkul\Newsletters\Http\Controllers\Admin\AccountController;
 use Webkul\Newsletters\Http\Controllers\Admin\AdminAccountController;
+use Webkul\Newsletters\Http\Controllers\Admin\OwnersController;
 use Webkul\Newsletters\Http\Controllers\LandingPageController;
 
 /**
@@ -22,6 +23,9 @@ Route::group(['prefix' => 'mailing-service'], function () {
     Route::controller(LandingPageController::class)->group(function () {
         Route::get('', 'index')->name('newsletters.landing.index');
         Route::post('register', 'store')->name('newsletters.landing.register');
+        Route::get('payment-terms', 'paymentTerms')->name('newsletters.landing.payment-terms');
+        Route::get('privacy-policy', 'privacyPolicy')->name('newsletters.landing.privacy-policy');
+        Route::get('activate/{token}', 'activateAccount')->name('newsletters.landing.activate');
     });
 });
 
@@ -47,21 +51,48 @@ Route::group([
     })->name('admin.newsletters.test');
 
     /**
-     * Companies routes (only for owners).
+     * Administration routes (for super admins with permission_type = all).
      */
-    Route::middleware('newsletters.permission:newsletters.companies')->group(function () {
-        Route::controller(\Webkul\Newsletters\Http\Controllers\Admin\CompanyController::class)->prefix('companies')->group(function () {
-            Route::get('', 'index')->name('admin.newsletters.companies.index');
-            Route::middleware('newsletters.permission:newsletters.companies.create')->group(function () {
-                Route::get('create', 'create')->name('admin.newsletters.companies.create');
-                Route::post('create', 'store')->name('admin.newsletters.companies.store');
+    Route::middleware('newsletters.permission:newsletters.administration')->group(function () {
+        /**
+         * Companies routes (for super admins).
+         */
+        Route::middleware('newsletters.permission:newsletters.companies')->group(function () {
+            Route::controller(\Webkul\Newsletters\Http\Controllers\Admin\CompanyController::class)->prefix('companies')->group(function () {
+                Route::get('', 'index')->name('admin.newsletters.companies.index');
+                Route::middleware('newsletters.permission:newsletters.companies.create')->group(function () {
+                    Route::get('create', 'create')->name('admin.newsletters.companies.create');
+                    Route::post('create', 'store')->name('admin.newsletters.companies.store');
+                });
+                Route::middleware('newsletters.permission:newsletters.companies.edit')->group(function () {
+                    Route::get('edit/{id}', 'edit')->name('admin.newsletters.companies.edit');
+                    Route::put('edit/{id}', 'update')->name('admin.newsletters.companies.update');
+                });
+                Route::middleware('newsletters.permission:newsletters.companies.delete')->group(function () {
+                    Route::delete('{id}', 'destroy')->name('admin.newsletters.companies.destroy');
+                });
             });
-            Route::middleware('newsletters.permission:newsletters.companies.edit')->group(function () {
-                Route::get('edit/{id}', 'edit')->name('admin.newsletters.companies.edit');
-                Route::put('edit/{id}', 'update')->name('admin.newsletters.companies.update');
-            });
-            Route::middleware('newsletters.permission:newsletters.companies.delete')->group(function () {
-                Route::delete('{id}', 'destroy')->name('admin.newsletters.companies.destroy');
+        });
+
+        /**
+         * Owners management routes (for super admins only).
+         */
+        Route::middleware('newsletters.permission:newsletters.owners.view')->group(function () {
+            Route::controller(OwnersController::class)->prefix('owners')->group(function () {
+                Route::get('', 'index')->name('admin.newsletters.owners.index');
+                Route::middleware('newsletters.permission:newsletters.owners.edit')->group(function () {
+                    Route::get('edit/{id}', 'edit')->name('admin.newsletters.owners.edit');
+                    Route::put('edit/{id}', 'update')->name('admin.newsletters.owners.update');
+                });
+                Route::middleware('newsletters.permission:newsletters.owners.toggle-status')->group(function () {
+                    Route::post('{id}/toggle-status', 'toggleStatus')->name('admin.newsletters.owners.toggle-status');
+                });
+                Route::middleware('newsletters.permission:newsletters.owners.topup')->group(function () {
+                    Route::post('{id}/topup', 'topup')->name('admin.newsletters.owners.topup');
+                });
+                Route::middleware('newsletters.permission:newsletters.owners.delete')->group(function () {
+                    Route::delete('{id}', 'destroy')->name('admin.newsletters.owners.delete');
+                });
             });
         });
     });
@@ -276,4 +307,5 @@ Route::group([
         Route::get('', 'index')->name('admin.newsletters.admin-accounts.index');
         Route::post('topup/{companyId}', 'topup')->name('admin.newsletters.admin-accounts.topup');
     });
+
 });

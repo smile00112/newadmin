@@ -58,6 +58,7 @@ return [
             'mailing-pause-failed' => 'Не удалось приостановить рассылку.',
             'no-whatsapp-instances' => 'Для этого списка рассылки не настроены WhatsApp инстансы.',
             'no-customer-numbers' => 'Для этого списка рассылки не найдены номера клиентов.',
+            'cannot-start-without-balance' => 'Вы не можете запускать рассылки с нулевым балансом. Пожалуйста, пополните счет сначала.',
             'mailing-hours-from' => 'Часы рассылки от',
             'mailing-hours-to' => 'Часы рассылки до',
             'message-delay' => 'Задержка между сообщениями (сек)',
@@ -354,6 +355,32 @@ return [
             'no-managers' => 'Менеджеры не найдены.',
         ],
 
+        'owners' => [
+            'title' => 'Владельцы компаний',
+            'edit-title' => 'Редактировать владельца',
+            'name' => 'Имя',
+            'email' => 'Email',
+            'status' => 'Статус',
+            'active' => 'Активен',
+            'inactive' => 'Неактивен',
+            'company' => 'Компания',
+            'balance' => 'Баланс',
+            'created_at' => 'Создано',
+            'update-success' => 'Владелец успешно обновлен.',
+            'enabled-success' => 'Владелец успешно активирован.',
+            'disabled-success' => 'Владелец успешно деактивирован.',
+            'topup-success' => 'Счет успешно пополнен.',
+            'delete-success' => 'Владелец успешно деактивирован.',
+            'delete-failed' => 'Не удалось деактивировать владельца.',
+            'delete-confirm' => 'Вы уверены, что хотите деактивировать этого владельца?',
+            'not-found' => 'Владелец не найден.',
+            'cannot-delete-self' => 'Вы не можете деактивировать свою собственную учетную запись.',
+            'no-owners' => 'Владельцы не найдены.',
+            'topup-title' => 'Пополнить счет',
+            'topup-amount' => 'Сумма',
+            'topup-notes' => 'Заметки',
+        ],
+
         'account' => [
             'title' => 'Счет',
             'current-balance' => 'Текущий баланс',
@@ -392,6 +419,12 @@ return [
         'companies' => 'Компании',
         'manage-companies' => 'Управление компаниями',
         'managers' => 'Менеджеры',
+        'owners' => 'Владельцы',
+        'owners.view' => 'Просмотр владельцев',
+        'owners.edit' => 'Редактирование владельцев',
+        'owners.delete' => 'Удаление владельцев',
+        'owners.toggle-status' => 'Изменение статуса владельца',
+        'owners.topup' => 'Пополнение счета владельца',
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'customer-numbers' => 'Номера клиентов',
         'contacts' => 'Контакты',
@@ -410,7 +443,9 @@ return [
 
     'sidebar' => [
         'newsletters' => 'Рассылки',
+        'administration' => 'Администрирование',
         'companies' => 'Компании',
+        'owners' => 'Владельцы компаний',
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'mailing-lists' => 'Списки рассылки',
         'customer-numbers' => 'Номера клиентов',
@@ -423,6 +458,7 @@ return [
 
     'common' => [
         'actions' => [
+            'title' => 'Действия',
             'create' => 'Создать',
             'edit' => 'Редактировать',
             'delete' => 'Удалить',

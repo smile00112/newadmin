@@ -259,10 +259,22 @@ return [
         'icon'       => 'icon-mail',
         'icon-class' => 'mail-icon',
     ], [
+        'key'        => 'newsletters.administration',
+        'name'       => 'newsletters::app.sidebar.administration',
+        'route'      => 'admin.newsletters.companies.index',
+        'sort'       => 1,
+        'icon'       => '',
+    ], [
         'key'        => 'newsletters.companies',
         'name'       => 'newsletters::app.sidebar.companies',
         'route'      => 'admin.newsletters.companies.index',
         'sort'       => 1,
+        'icon'       => '',
+    ], [
+        'key'        => 'newsletters.owners',
+        'name'       => 'newsletters::app.sidebar.owners',
+        'route'      => 'admin.newsletters.owners.index',
+        'sort'       => 2,
         'icon'       => '',
     ], [
         'key'        => 'newsletters.mailing-lists',

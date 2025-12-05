@@ -51,6 +51,7 @@ return [
             'mailing-pause-failed' => 'Failed to pause mailing campaign.',
             'no-whatsapp-instances' => 'No WhatsApp instances configured for this mailing list.',
             'no-customer-numbers' => 'No customer numbers found for this mailing list.',
+            'cannot-start-without-balance' => 'You cannot start mailing campaigns with zero balance. Please top up your account first.',
             'mailing-hours-from' => 'Mailing Hours From',
             'mailing-hours-to' => 'Mailing Hours To',
             'message-delay' => 'Message Delay (seconds)',
@@ -340,6 +341,32 @@ return [
             'no-managers' => 'No managers found.',
         ],
 
+        'owners' => [
+            'title' => 'Company Owners',
+            'edit-title' => 'Edit Owner',
+            'name' => 'Name',
+            'email' => 'Email',
+            'status' => 'Status',
+            'active' => 'Active',
+            'inactive' => 'Inactive',
+            'company' => 'Company',
+            'balance' => 'Balance',
+            'created_at' => 'Created At',
+            'update-success' => 'Owner updated successfully.',
+            'enabled-success' => 'Owner enabled successfully.',
+            'disabled-success' => 'Owner disabled successfully.',
+            'topup-success' => 'Account topped up successfully.',
+            'delete-success' => 'Owner disabled successfully.',
+            'delete-failed' => 'Owner can not be disabled.',
+            'delete-confirm' => 'Are you sure you want to disable this owner?',
+            'not-found' => 'Owner not found.',
+            'cannot-delete-self' => 'You cannot disable your own account.',
+            'no-owners' => 'No owners found.',
+            'topup-title' => 'Top Up Account',
+            'topup-amount' => 'Amount',
+            'topup-notes' => 'Notes',
+        ],
+
         'account' => [
             'title' => 'Account',
             'current-balance' => 'Current Balance',
@@ -378,6 +405,12 @@ return [
         'companies' => 'Companies',
         'manage-companies' => 'Manage Companies',
         'managers' => 'Managers',
+        'owners' => 'Owners',
+        'owners.view' => 'View Owners',
+        'owners.edit' => 'Edit Owners',
+        'owners.delete' => 'Delete Owners',
+        'owners.toggle-status' => 'Toggle Owner Status',
+        'owners.topup' => 'Top Up Owner Account',
         'whatsapp-instances' => 'WhatsApp Instances',
         'customer-numbers' => 'Customer Numbers',
         'contacts' => 'Contacts',
@@ -396,7 +429,9 @@ return [
 
     'sidebar' => [
         'newsletters' => 'Newsletters',
+        'administration' => 'Administration',
         'companies' => 'Companies',
+        'owners' => 'Company Owners',
         'whatsapp-instances' => 'WhatsApp Instances',
         'mailing-lists' => 'Mailing Lists',
         'customer-numbers' => 'Customer Numbers',
@@ -409,6 +444,7 @@ return [
 
     'common' => [
         'actions' => [
+            'title' => 'Actions',
             'create' => 'Create',
             'edit' => 'Edit',
             'delete' => 'Delete',

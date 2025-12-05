@@ -15,12 +15,12 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('account_id');
             $table->decimal('amount', 15, 2);
-            $table->unsignedBigInteger('admin_id')->nullable();
+            $table->unsignedInteger('admin_id')->nullable();  // Изменено с unsignedBigInteger
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->foreign('account_id')->references('id')->on('company_accounts')->onDelete('cascade');
-            $table->foreign('admin_id')->references('id')->on('admins')->onDelete('set null');
+            $table->foreign('account_id', 'ai_i_ca')->references('id')->on('company_accounts')->onDelete('cascade');
+            $table->foreign('admin_id', 'ai_i_a')->references('id')->on('admins')->onDelete('set null');
             $table->index('account_id');
             $table->index('admin_id');
         });

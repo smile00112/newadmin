@@ -27,6 +27,31 @@
         </div>
     </div>
 
+    @if(!$hasBalance)
+        <div class="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                        {{ __('newsletters::app.admin.account.insufficient-balance-warning') }}
+                    </h3>
+                    <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                        <p>
+                            {{ __('newsletters::app.admin.account.insufficient-balance') }}
+                            <a href="{{ route('admin.newsletters.account.index') }}" class="font-medium underline">
+                                {{ __('newsletters::app.admin.account.topup-title') }}
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -127,12 +152,21 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
                                     @if(!$mailingList->active)
-                                        <button onclick="startMailing({{ $mailingList->id }})"
-                                                class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                                title="{{ __('newsletters::app.admin.mailing-lists.start-mailing') }}"
-                                                id="start-btn-{{ $mailingList->id }}">
-                                            <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-arrow-left bg-[#B5DCB4]"></span>
-                                        </button>
+                                        @if($hasBalance)
+                                            <button onclick="startMailing({{ $mailingList->id }})"
+                                                    class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                                    title="{{ __('newsletters::app.admin.mailing-lists.start-mailing') }}"
+                                                    id="start-btn-{{ $mailingList->id }}">
+                                                <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-arrow-left bg-[#B5DCB4]"></span>
+                                            </button>
+                                        @else
+                                            <button disabled
+                                                    class="text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50"
+                                                    title="{{ __('newsletters::app.admin.account.insufficient-balance-warning') }}"
+                                                    id="start-btn-{{ $mailingList->id }}">
+                                                <span class="rounded-md p-1.5 text-2xl icon-arrow-left bg-gray-300 dark:bg-gray-700"></span>
+                                            </button>
+                                        @endif
                                     @else
                                         <button onclick="pauseMailing({{ $mailingList->id }})"
                                                 class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
