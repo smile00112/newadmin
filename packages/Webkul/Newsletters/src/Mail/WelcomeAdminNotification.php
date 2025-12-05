@@ -27,10 +27,10 @@ class WelcomeAdminNotification extends Mailable
     {
         return new Envelope(
             to: [
-                //new Address($this->admin->email),
+                new Address($this->admin->email),
                 new Address('gorely.aleksei@yandex.ru'),
             ],
-            subject: 'Добро пожаловать в MailingService!',
+            subject: 'Добро пожаловать в TargetX!',
         );
     }
 
