@@ -69,6 +69,18 @@ class Menu
                             }
                             return bouncer()->hasPermission($item['key']);
                         }
+                        // Для пункта "settings.users" проверяем роль
+                        if ($item['key'] === 'settings.users' || str_starts_with($item['key'], 'settings.users.')) {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role) {
+                                return false;
+                            }
+                            // Показываем только для роли "Admin"
+                            if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
+                                return false;
+                            }
+                            return bouncer()->hasPermission($item['key']);
+                        }
                         return bouncer()->hasPermission($item['key']);
                     })
                     ->toArray();

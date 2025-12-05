@@ -4,9 +4,12 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Traits\HasNewsletterRole;
+use Webkul\Newsletters\Mail\WelcomeAdminNotification;
 use Webkul\User\Repositories\AdminRepository;
 use Webkul\User\Repositories\RoleRepository;
 use Webkul\Newsletters\Repositories\CompanyRepository;
@@ -121,6 +124,19 @@ class OwnersController extends Controller
             'status' => $request->has('status') ? (bool) $request->input('status') : 1,
             'api_token' => Str::random(80),
         ]);
+
+        // Отправляем приветственное письмо с данными для входа
+        try {
+            Mail::send(new WelcomeAdminNotification($admin, $data['password']));
+            Log::info('Welcome email sent for admin: ' . $admin->email . ' (Company: ' . $company->name . ')');
+        } catch (\Exception $mailException) {
+            Log::error('Failed to send welcome email: ' . $mailException->getMessage(), [
+                'trace' => $mailException->getTraceAsString(),
+                'admin_id' => $admin->id,
+                'admin_email' => $admin->email
+            ]);
+            // Продолжаем выполнение, даже если письмо не отправилось
+        }
 
         session()->flash('success', trans('newsletters::app.admin.owners.create-success'));
 

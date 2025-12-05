@@ -23,7 +23,17 @@ class UserController extends Controller
     public function __construct(
         protected AdminRepository $adminRepository,
         protected RoleRepository $roleRepository
-    ) {}
+    ) {
+        $this->middleware(function ($request, $next) {
+            $admin = auth()->guard('admin')->user();
+            
+            if (!$admin || !$admin->role || !isset($admin->role->name) || $admin->role->name !== 'Admin') {
+                abort(403, 'This action is unauthorized.');
+            }
+            
+            return $next($request);
+        });
+    }
 
     /**
      * Display a listing of the resource.

