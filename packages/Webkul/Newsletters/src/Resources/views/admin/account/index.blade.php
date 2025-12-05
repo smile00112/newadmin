@@ -12,10 +12,10 @@
     <!-- Balance Card -->
     <div class="mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900">
         <div class="mb-4">
-            <p class="text-sm text-gray-600 dark:text-gray-300">
+            <p class="p-3 text-sm text-gray-600 dark:text-gray-300">
                 @lang('newsletters::app.admin.account.current-balance')
             </p>
-            <p class="text-3xl font-bold text-gray-800 dark:text-white">
+            <p class="p-3 text-3xl font-bold text-gray-800 dark:text-white">
                 {{ number_format($account->balance, 2) }}
             </p>
             @if($account->balance <= 0)
@@ -27,7 +27,7 @@
     </div>
 
     <!-- Topup Form -->
-    <div class="mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900">
+    <div class="p-3 mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900">
         <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
             @lang('newsletters::app.admin.account.topup-title')
         </p>
@@ -79,33 +79,51 @@
     </div>
 
     <!-- Topup History -->
-    <div class="mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900">
+    <div class="p-3 mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900">
         <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
             @lang('newsletters::app.admin.account.topup-history')
         </p>
 
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                        <th>@lang('newsletters::app.admin.account.topup-date')</th>
-                        <th>@lang('newsletters::app.admin.account.amount')</th>
-                        <th>@lang('newsletters::app.admin.account.admin')</th>
-                        <th>@lang('newsletters::app.admin.account.notes')</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            @lang('newsletters::app.admin.account.topup-date')
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            @lang('newsletters::app.admin.account.amount')
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            @lang('newsletters::app.admin.account.admin')
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            @lang('newsletters::app.admin.account.notes')
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
                     @forelse($topups as $topup)
-                        <tr>
-                            <td>{{ $topup->created_at->format('Y-m-d H:i') }}</td>
-                            <td>{{ number_format($topup->amount, 2) }}</td>
-                            <td>{{ $topup->admin ? $topup->admin->name : '-' }}</td>
-                            <td>{{ $topup->notes ?: '-' }}</td>
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                {{ $topup->created_at->format('Y-m-d H:i') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600 dark:text-green-400">
+                                {{ number_format($topup->amount, 2) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                                {{ $topup->admin ? $topup->admin->name : '-' }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                {{ $topup->notes ?: '-' }}
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center">
-                                <p>@lang('newsletters::app.common.messages.no_data')</p>
+                            <td colspan="4" class="px-6 py-8 text-center">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    @lang('newsletters::app.common.messages.no_data')
+                                </p>
                             </td>
                         </tr>
                     @endforelse

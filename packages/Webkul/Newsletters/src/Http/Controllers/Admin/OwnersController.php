@@ -3,9 +3,12 @@
 namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Traits\HasNewsletterRole;
 use Webkul\User\Repositories\AdminRepository;
+use Webkul\User\Repositories\RoleRepository;
 use Webkul\Newsletters\Repositories\CompanyRepository;
 use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Webkul\Newsletters\Repositories\AccountTopupRepository;
@@ -19,6 +22,7 @@ class OwnersController extends Controller
      */
     public function __construct(
         protected AdminRepository $adminRepository,
+        protected RoleRepository $roleRepository,
         protected CompanyRepository $companyRepository,
         protected CompanyAccountRepository $accountRepository,
         protected AccountTopupRepository $topupRepository
@@ -42,6 +46,85 @@ class OwnersController extends Controller
             ->load(['role', 'company', 'company.account']);
 
         return view('newsletters::admin.owners.index', compact('owners'));
+    }
+
+    /**
+     * Show the form for creating a new owner.
+     */
+    public function create()
+    {
+        $this->requireNewsletterPermission('newsletters.owners.create');
+        
+        // Получить все компании для выбора
+        $companies = $this->companyRepository->all();
+
+        return view('newsletters::admin.owners.create', compact('companies'));
+    }
+
+    /**
+     * Store a newly created owner.
+     */
+    public function store(Request $request)
+    {
+        $this->requireNewsletterPermission('newsletters.owners.create');
+        
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:admins,email',
+            'password' => 'required|min:6|confirmed',
+            'company_option' => 'required|in:existing,new',
+            'company_id' => 'required_if:company_option,existing|exists:companies,id',
+            'company_name' => 'required_if:company_option,new|string|max:255',
+            'company_description' => 'nullable|string',
+            'status' => 'boolean',
+        ]);
+
+        // Получаем роль с permission_type 'all' (роль для owners)
+        $ownerRole = $this->roleRepository->findOneWhere(['permission_type' => 'all']);
+
+        if (!$ownerRole) {
+            session()->flash('error', trans('newsletters::app.admin.owners.role-not-found'));
+            return redirect()->back()->withInput();
+        }
+
+        // Определяем компанию
+        if ($data['company_option'] === 'new') {
+            // Создаем новую компанию
+            $companySlug = Str::slug($data['company_name']);
+            
+            // Проверяем уникальность slug
+            $slugCounter = 1;
+            $originalSlug = $companySlug;
+            while ($this->companyRepository->findOneWhere(['slug' => $companySlug])) {
+                $companySlug = $originalSlug . '-' . $slugCounter;
+                $slugCounter++;
+            }
+
+            $company = $this->companyRepository->create([
+                'name' => $data['company_name'],
+                'slug' => $companySlug,
+                'description' => $data['company_description'] ?? 'Company for ' . $data['name'],
+                'is_active' => true,
+            ]);
+        } else {
+            // Используем существующую компанию
+            $company = $this->companyRepository->findOrFail($data['company_id']);
+        }
+
+        // Создаем admin аккаунт с ролью owner
+        $admin = $this->adminRepository->create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role_id' => $ownerRole->id,
+            'company_id' => $company->id,
+            'status' => $request->has('status') ? (bool) $request->input('status') : 1,
+            'api_token' => Str::random(80),
+        ]);
+
+        session()->flash('success', trans('newsletters::app.admin.owners.create-success'));
+
+        return redirect()->route('admin.newsletters.owners.index');
     }
 
     /**

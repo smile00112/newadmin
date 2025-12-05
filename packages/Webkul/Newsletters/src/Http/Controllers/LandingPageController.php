@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -75,6 +76,21 @@ class LandingPageController
             ], 422);
         }
 
+        // Проверяем уникальность email в таблицах registration_requests и admins
+        $emailExistsInRequests = DB::table('registration_requests')
+            ->where('email', $request->email)
+            ->exists();
+
+        $existingAdmin = $this->adminRepository->findOneByField('email', $request->email);
+
+        if ($emailExistsInRequests || $existingAdmin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Пользователь с таким email уже зарегистрирован или подал заявку на регистрацию.',
+                'errors' => ['email' => ['Пользователь с таким email уже зарегистрирован или подал заявку на регистрацию.']]
+            ], 422);
+        }
+
         try {
             // Сохраняем заявку на регистрацию
             RegistrationRequest::create([
@@ -85,23 +101,12 @@ class LandingPageController
                 'status' => 'pending',
             ]);
 
-            // Проверяем, существует ли уже admin с таким email
-            $existingAdmin = $this->adminRepository->findOneByField('email', $request->email);
-            
-            if ($existingAdmin) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Пользователь с таким email уже зарегистрирован.',
-                    'errors' => ['email' => ['Пользователь с таким email уже зарегистрирован.']]
-                ], 422);
-            }
-
             // Генерируем случайный пароль
             $password = Str::random(12);
 
             // Получаем роль с permission_type 'all' (роль для owners)
             $ownerRole = $this->roleRepository->findOneWhere(['permission_type' => 'all']);
-            
+
             if (!$ownerRole) {
                 Log::error('Owner role not found (role with permission_type "all")');
                 return response()->json([
@@ -113,7 +118,7 @@ class LandingPageController
             // Создаем компанию для owner
             $companyName = $request->name . ' Company';
             $companySlug = Str::slug($companyName);
-            
+
             // Проверяем уникальность slug
             $slugCounter = 1;
             $originalSlug = $companySlug;
@@ -142,8 +147,9 @@ class LandingPageController
 
             // Отправляем приветственное письмо с данными для входа
             try {
-                Mail::queue(new WelcomeAdminNotification($admin, $password));
-                Log::info('Welcome email queued for admin: ' . $admin->email . ' (Company: ' . $company->name . ')');
+                //Mail::queue(new WelcomeAdminNotification($admin, $password));
+                Mail::send(new WelcomeAdminNotification($admin, $password));
+                Log::info('Welcome email queued for admin: ' . $admin->email . ' (Company: ' . $company->name . '   ('.$password.'))');
             } catch (\Exception $mailException) {
                 Log::error('Failed to send welcome email: ' . $mailException->getMessage(), [
                     'trace' => $mailException->getTraceAsString(),

@@ -23,25 +23,6 @@
                     @lang('admin::app.account.edit.back-btn')
                 </a>
 
-                @php
-                    $admin = auth()->guard('admin')->user();
-                    $isCompanyOwner = $admin && $admin->company_id && (
-                        $admin->role->permission_type === 'all' ||
-                        $admin->hasPermission('newsletters.companies.manage') ||
-                        $admin->hasPermission('newsletters.managers.create')
-                    );
-                @endphp
-
-                @if($isCompanyOwner)
-                    <!-- Account Link -->
-                    <a
-                        href="{{ route('admin.newsletters.account.index') }}"
-                        class="secondary-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
-                    >
-                        {{ __('newsletters::app.admin.account.title') }}
-                    </a>
-                @endif
-
                 <!-- Save Button -->
                 <div class="flex items-center gap-x-2.5">
                     <button 

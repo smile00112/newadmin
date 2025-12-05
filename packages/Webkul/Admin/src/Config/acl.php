@@ -871,10 +871,40 @@ return [
         'route' => 'admin.newsletters.mailing-lists.index',
         'sort'  => 7,
     ], [
-        'key'   => 'newsletters.administration',
+        'key'   => 'administration',
         'name'  => 'newsletters::app.sidebar.administration',
         'route' => 'admin.newsletters.companies.index',
+        'sort'  => 8,
+    ], [
+        'key'   => 'administration.companies',
+        'name'  => 'newsletters::app.sidebar.companies',
+        'route' => 'admin.newsletters.companies.index',
         'sort'  => 1,
+    ], [
+        'key'   => 'administration.clients',
+        'name'  => 'newsletters::app.sidebar.clients',
+        'route' => 'admin.newsletters.owners.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'administration.registration-requests',
+        'name'  => 'newsletters::app.sidebar.registration-requests',
+        'route' => 'admin.newsletters.registration-requests.index',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.registration-requests.view',
+        'name'  => 'newsletters::app.acl.view',
+        'route' => 'admin.newsletters.registration-requests.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.registration-requests.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.registration-requests.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.registration-requests.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.registration-requests.destroy',
+        'sort'  => 3,
     ], [
         'key'   => 'newsletters.companies',
         'name'  => 'newsletters::app.acl.companies',
@@ -1096,25 +1126,30 @@ return [
         'route' => 'admin.newsletters.owners.index',
         'sort'  => 1,
     ], [
+        'key'   => 'newsletters.owners.create',
+        'name'  => 'newsletters::app.acl.owners.create',
+        'route' => 'admin.newsletters.owners.create',
+        'sort'  => 2,
+    ], [
         'key'   => 'newsletters.owners.edit',
         'name'  => 'newsletters::app.acl.owners.edit',
         'route' => 'admin.newsletters.owners.edit',
-        'sort'  => 2,
+        'sort'  => 3,
     ], [
         'key'   => 'newsletters.owners.delete',
         'name'  => 'newsletters::app.acl.owners.delete',
         'route' => 'admin.newsletters.owners.delete',
-        'sort'  => 3,
+        'sort'  => 4,
     ], [
         'key'   => 'newsletters.owners.toggle-status',
         'name'  => 'newsletters::app.acl.owners.toggle-status',
         'route' => 'admin.newsletters.owners.toggle-status',
-        'sort'  => 4,
+        'sort'  => 5,
     ], [
         'key'   => 'newsletters.owners.topup',
         'name'  => 'newsletters::app.acl.owners.topup',
         'route' => 'admin.newsletters.owners.topup',
-        'sort'  => 5,
+        'sort'  => 6,
     ],
 
     /*

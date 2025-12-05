@@ -70,6 +70,9 @@ class CompanyController extends Controller
             $data['slug'] = Str::slug($data['name']);
         }
 
+        // Handle checkbox: if not present in request, set to false
+        $data['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : false;
+
         $company = $this->companyRepository->create($data);
 
         session()->flash('success', trans('newsletters::app.admin.companies.create-success'));
@@ -126,6 +129,9 @@ class CompanyController extends Controller
             $data['slug'] = Str::slug($data['name']);
         }
 
+        // Handle checkbox: if not present in request, set to false
+        $data['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : false;
+
         $company = $this->companyRepository->update($data, $id);
 
         session()->flash('success', trans('newsletters::app.admin.companies.update-success'));
@@ -152,13 +158,13 @@ class CompanyController extends Controller
         try {
             $this->companyRepository->delete($id);
 
-            return response()->json([
-                'message' => trans('newsletters::app.admin.companies.delete-success'),
-            ]);
+            session()->flash('success', trans('newsletters::app.admin.companies.delete-success'));
+
+            return redirect()->route('admin.newsletters.companies.index');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => trans('newsletters::app.admin.companies.delete-failed'),
-            ], 500);
+            session()->flash('error', trans('newsletters::app.admin.companies.delete-failed'));
+
+            return redirect()->route('admin.newsletters.companies.index');
         }
     }
 }

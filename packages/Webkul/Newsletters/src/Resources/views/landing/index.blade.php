@@ -6,6 +6,37 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Сервис рассылки - Профессиональные решения для массовых рассылок</title>
     <style>
+        /* Bagisto Shop Icon Font */
+        @font-face {
+            font-family: "bagisto-shop";
+            src: url("{{ asset('themes/shop/default/build/assets/bagisto-shop-BHAKyv0r.woff') }}") format("woff");
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        [class^="icon-"],
+        [class*=" icon-"] {
+            font-family: "bagisto-shop" !important;
+            speak: never;
+            font-style: normal;
+            font-weight: normal;
+            font-variant: normal;
+            text-transform: none;
+            line-height: 1 !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .icon-email:before { content: "\e916"; }
+        .icon-eye:before { content: "\e918"; }
+        .icon-arrow-right:before { content: "\e905"; }
+        .icon-filter:before { content: "\e91b"; }
+        .icon-tick:before { content: "\e93b"; }
+        .icon-product:before { content: "\e92f"; }
+        .icon-arrow-up:before { content: "\e906"; }
+        .icon-users:before { content: "\e942"; }
+        .icon-support:before { content: "\e93a"; }
         * {
             margin: 0;
             padding: 0;
@@ -177,9 +208,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 32px;
             margin-bottom: 20px;
             color: #2563eb;
+        }
+
+        .benefit-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: inline-block;
+            font-size: 50px;
+            line-height: normal;
         }
 
         .feature-card h3 {
@@ -458,7 +497,10 @@
     <!-- Header -->
     <header>
         <nav class="container">
-            <div class="logo">📧 MailingService</div>
+            <div class="logo">
+                <span class="icon-email" style="font-size: 24px; vertical-align: middle; margin-right: 8px;"></span>
+                MailingService
+            </div>
             <ul class="nav-links">
                 <li><a href="#features">Возможности</a></li>
                 <li><a href="#benefits">Преимущества</a></li>
@@ -485,32 +527,32 @@
             <h2 class="section-title">Возможности платформы</h2>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">📊</div>
+                    <div class="feature-icon icon-eye"></div>
                     <h3>Аналитика и отчеты</h3>
                     <p>Детальная статистика по каждой рассылке: открытия, клики, конверсии и многое другое.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
+                    <div class="feature-icon icon-arrow-right"></div>
                     <h3>Высокая скорость</h3>
                     <p>Мгновенная доставка сообщений тысячам получателей одновременно.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
+                    <div class="feature-icon icon-filter"></div>
                     <h3>Таргетирование</h3>
                     <p>Сегментация аудитории и персонализация сообщений для максимальной эффективности.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
+                    <div class="feature-icon icon-tick"></div>
                     <h3>Безопасность</h3>
                     <p>Защита данных и соответствие всем требованиям безопасности и конфиденциальности.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📱</div>
+                    <div class="feature-icon icon-product"></div>
                     <h3>Мультиканальность</h3>
                     <p>Рассылки через Email, WhatsApp, Telegram и другие популярные каналы связи.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🤖</div>
+                    <div class="feature-icon icon-email"></div>
                     <h3>Автоматизация</h3>
                     <p>Настройка автоматических рассылок по триггерам и событиям.</p>
                 </div>
@@ -524,22 +566,22 @@
             <h2 class="section-title">Почему выбирают нас</h2>
             <div class="benefits-grid">
                 <div class="benefit-item">
-                    <div style="font-size: 48px; margin-bottom: 15px;">🚀</div>
+                    <div class="benefit-icon ">⚡</div>
                     <h3>Быстрый старт</h3>
                     <p>Начните работу уже сегодня. Простая настройка за несколько минут.</p>
                 </div>
                 <div class="benefit-item">
-                    <div style="font-size: 48px; margin-bottom: 15px;">💼</div>
+                    <div class="benefit-icon">💼</div>
                     <h3>Для бизнеса</h3>
                     <p>Решения для компаний любого размера - от стартапов до корпораций.</p>
                 </div>
                 <div class="benefit-item">
-                    <div style="font-size: 48px; margin-bottom: 15px;">🎓</div>
+                    <div class="benefit-icon icon-support"></div>
                     <h3>Поддержка 24/7</h3>
                     <p>Наша команда всегда готова помочь вам с любыми вопросами.</p>
                 </div>
                 <div class="benefit-item">
-                    <div style="font-size: 48px; margin-bottom: 15px;">📈</div>
+                    <div class="benefit-icon">📱</div>
                     <h3>Масштабируемость</h3>
                     <p>Растите вместе с нами. Платформа легко масштабируется под ваши нужды.</p>
                 </div>

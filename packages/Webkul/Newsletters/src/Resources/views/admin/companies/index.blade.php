@@ -46,7 +46,7 @@
                                title="{{ __('admin::app.datagrid.edit') }}">
                                 <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-edit"></span>
                             </a>
-                            <form method="POST" action="{{ route('admin.newsletters.companies.destroy', $company->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.companies.delete-confirm') }}')">
+                            <form method="POST" action="{{ route('admin.newsletters.companies.destroy', $company->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.companies.delete-confirm') }}')" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" 

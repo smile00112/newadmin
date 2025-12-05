@@ -14,6 +14,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\ManagerController;
 use Webkul\Newsletters\Http\Controllers\Admin\AccountController;
 use Webkul\Newsletters\Http\Controllers\Admin\AdminAccountController;
 use Webkul\Newsletters\Http\Controllers\Admin\OwnersController;
+use Webkul\Newsletters\Http\Controllers\Admin\RegistrationRequestController;
 use Webkul\Newsletters\Http\Controllers\LandingPageController;
 
 /**
@@ -53,7 +54,7 @@ Route::group([
     /**
      * Administration routes (for super admins with permission_type = all).
      */
-    Route::middleware('newsletters.permission:newsletters.administration')->group(function () {
+    Route::middleware('newsletters.permission:administration')->group(function () {
         /**
          * Companies routes (for super admins).
          */
@@ -80,6 +81,10 @@ Route::group([
         Route::middleware('newsletters.permission:newsletters.owners.view')->group(function () {
             Route::controller(OwnersController::class)->prefix('owners')->group(function () {
                 Route::get('', 'index')->name('admin.newsletters.owners.index');
+                Route::middleware('newsletters.permission:newsletters.owners.create')->group(function () {
+                    Route::get('create', 'create')->name('admin.newsletters.owners.create');
+                    Route::post('create', 'store')->name('admin.newsletters.owners.store');
+                });
                 Route::middleware('newsletters.permission:newsletters.owners.edit')->group(function () {
                     Route::get('edit/{id}', 'edit')->name('admin.newsletters.owners.edit');
                     Route::put('edit/{id}', 'update')->name('admin.newsletters.owners.update');
@@ -92,6 +97,22 @@ Route::group([
                 });
                 Route::middleware('newsletters.permission:newsletters.owners.delete')->group(function () {
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.owners.delete');
+                });
+            });
+        });
+
+        /**
+         * Registration requests routes (for super admins only).
+         */
+        Route::middleware('newsletters.permission:newsletters.registration-requests.view')->group(function () {
+            Route::controller(RegistrationRequestController::class)->prefix('registration-requests')->group(function () {
+                Route::get('', 'index')->name('admin.newsletters.registration-requests.index');
+                Route::middleware('newsletters.permission:newsletters.registration-requests.edit')->group(function () {
+                    Route::get('edit/{id}', 'edit')->name('admin.newsletters.registration-requests.edit');
+                    Route::put('edit/{id}', 'update')->name('admin.newsletters.registration-requests.update');
+                });
+                Route::middleware('newsletters.permission:newsletters.registration-requests.delete')->group(function () {
+                    Route::delete('{id}', 'destroy')->name('admin.newsletters.registration-requests.destroy');
                 });
             });
         });

@@ -1,5 +1,18 @@
 @php
     $admin = auth()->guard('admin')->user();
+    
+    // Get account balance if user has company
+    $accountBalance = null;
+    $isCompanyOwner = false;
+    if ($admin && $admin->company_id) {
+        $accountRepository = app(\Webkul\Newsletters\Repositories\CompanyAccountRepository::class);
+        $account = $accountRepository->getOrCreateForCompany($admin->company_id);
+        $accountBalance = $account->balance;
+        
+        $isCompanyOwner = $admin->role->permission_type === 'all' ||
+            $admin->hasPermission('newsletters.companies.manage') ||
+            $admin->hasPermission('newsletters.managers.create');
+    }
 @endphp
 
 <header class="sticky top-0 z-[10001] flex items-center justify-between border-b bg-white px-2 py-2 dark:border-gray-800 dark:bg-gray-900 sm:px-4 sm:py-2.5">
@@ -44,6 +57,33 @@
     </div>
 
     <div class="flex items-center gap-1 sm:gap-2.5">
+        <!-- Account Balance -->
+        @if($accountBalance !== null)
+            @if($isCompanyOwner)
+                <a
+                    href="{{ route('admin.newsletters.account.index') }}"
+                    class="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold transition-all hover:bg-gray-100 dark:hover:bg-gray-950 sm:px-3 sm:text-base"
+                    title="@lang('newsletters::app.admin.account.title')"
+                >
+                    <span class="text-xs text-gray-600 dark:text-gray-400 sm:text-sm">
+                        @lang('newsletters::app.admin.account.current-balance'):
+                    </span>
+                    <span class="{{ $accountBalance <= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+                        {{ number_format($accountBalance, 2) }}
+                    </span>
+                </a>
+            @else
+                <div class="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-semibold text-gray-800 dark:text-white sm:px-3 sm:text-base">
+                    <span class="text-xs text-gray-600 dark:text-gray-400 sm:text-sm">
+                        @lang('newsletters::app.admin.account.current-balance'):
+                    </span>
+                    <span class="{{ $accountBalance <= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+                        {{ number_format($accountBalance, 2) }}
+                    </span>
+                </div>
+            @endif
+        @endif
+
         <!-- Dark mode Switcher -->
         <v-dark>
             <div class="flex">
@@ -117,6 +157,15 @@
                     >
                         @lang('admin::app.components.layouts.header.my-account')
                     </a>
+
+                    @if($isCompanyOwner)
+                        <a
+                            class="cursor-pointer px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-950 sm:px-5 sm:text-base"
+                            href="{{ route('admin.newsletters.account.index') }}"
+                        >
+                            {{ __('newsletters::app.admin.account.title') }}
+                        </a>
+                    @endif
 
                     <!--Admin logout-->
                     <x-admin::form

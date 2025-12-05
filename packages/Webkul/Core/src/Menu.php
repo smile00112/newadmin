@@ -55,7 +55,22 @@ class Menu
         switch ($area) {
             case self::ADMIN:
                 $this->configMenu = $configMenu
-                    ->filter(fn ($item) => bouncer()->hasPermission($item['key']))
+                    ->filter(function ($item) {
+                        // Для пункта "administration" и всех его дочерних элементов проверяем роль
+                        if ($item['key'] === 'administration' || str_starts_with($item['key'], 'administration.')) {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role) {
+                                return false;
+                            }
+                            // Показываем только для роли "Admin", не для owner
+                            // Проверяем, что роль загружена и имеет свойство name
+                            if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
+                                return false;
+                            }
+                            return bouncer()->hasPermission($item['key']);
+                        }
+                        return bouncer()->hasPermission($item['key']);
+                    })
                     ->toArray();
                 break;
 
@@ -101,6 +116,11 @@ class Menu
         $menu = Arr::undot(Arr::dot($menuWithDotNotation));
 
         foreach ($menu as $menuItemKey => $menuItem) {
+            // Пропускаем элементы без обязательных полей
+            if (!isset($menuItem['name']) || !isset($menuItem['route']) || !isset($menuItem['sort'])) {
+                continue;
+            }
+
             $subMenuItems = $this->processSubMenuItems($menuItem);
 
             $this->addItem(new MenuItem(
@@ -108,7 +128,7 @@ class Menu
                 name: trans($menuItem['name']),
                 route: $menuItem['route'],
                 sort: $menuItem['sort'],
-                icon: $menuItem['icon'],
+                icon: $menuItem['icon'] ?? '',
                 children: $subMenuItems,
             ));
         }
