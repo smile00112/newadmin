@@ -498,8 +498,8 @@
     <header>
         <nav class="container">
             <div class="logo">
-                <span class="icon-email" style="font-size: 24px; vertical-align: middle; margin-right: 8px;"></span>
-                MailingService
+                <a href="/" class="flex-shrink-0">
+                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin"></a>
             </div>
             <ul class="nav-links">
                 <li><a href="#features">Возможности</a></li>
@@ -647,7 +647,7 @@
                 <a href="{{ route('newsletters.landing.payment-terms') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
                 <a href="{{ route('newsletters.landing.privacy-policy') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
             </div>
-            <p>&copy; 2025 MailingService. Все права защищены.</p>
+            <p>&copy; 2025 TargetX. Все права защищены.</p>
         </div>
     </footer>
 

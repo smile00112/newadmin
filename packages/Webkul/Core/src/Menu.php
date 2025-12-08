@@ -118,8 +118,12 @@ class Menu
         $menuWithDotNotation = [];
 
         foreach ($this->configMenu as $item) {
-            if (strpos(request()->url(), route($item['route'])) !== false) {
-                $this->currentKey = $item['key'];
+            try {
+                if (isset($item['route']) && strpos(request()->url(), route($item['route'])) !== false) {
+                    $this->currentKey = $item['key'];
+                }
+            } catch (\Exception $e) {
+                // Игнорируем ошибки маршрутов при определении текущего пункта меню
             }
 
             $menuWithDotNotation[$item['key']] = $item;
@@ -153,7 +157,19 @@ class Menu
     {
         return collect($menuItem)
             ->sortBy('sort')
-            ->filter(fn ($value) => is_array($value))
+            ->filter(function ($value, $key) {
+                // Проверяем, что это массив и имеет необходимые поля для подпункта меню
+                // Исключаем служебные поля (key, name, route, sort, icon)
+                if (!is_array($value)) {
+                    return false;
+                }
+                
+                // Проверяем наличие обязательных полей
+                return isset($value['key']) 
+                    && isset($value['name']) 
+                    && isset($value['route']) 
+                    && isset($value['sort']);
+            })
             ->map(function ($subMenuItem) {
                 $subSubMenuItems = $this->processSubMenuItems($subMenuItem);
 
@@ -162,7 +178,7 @@ class Menu
                     name: trans($subMenuItem['name']),
                     route: $subMenuItem['route'],
                     sort: $subMenuItem['sort'],
-                    icon: $subMenuItem['icon'],
+                    icon: $subMenuItem['icon'] ?? '',
                     children: $subSubMenuItems,
                 );
             });

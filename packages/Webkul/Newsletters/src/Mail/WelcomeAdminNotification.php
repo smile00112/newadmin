@@ -43,3 +43,4 @@ class WelcomeAdminNotification extends Mailable
     }
 }
 
+

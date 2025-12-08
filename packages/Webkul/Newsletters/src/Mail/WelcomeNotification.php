@@ -45,3 +45,4 @@ class WelcomeNotification extends Mailable
     }
 }
 
+

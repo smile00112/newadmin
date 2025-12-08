@@ -10,7 +10,7 @@
     </div>
 
     <!-- Balance Card -->
-    <div class="mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900">
+    <div class="mt-4 box-shadow rounded bg-white p-6 dark:bg-gray-900 sm:hidden">
         <div class="mb-4">
             <p class="p-3 text-sm text-gray-600 dark:text-gray-300">
                 @lang('newsletters::app.admin.account.current-balance')
