@@ -21,6 +21,7 @@
         "bagisto/bagisto-package-generator": "^2.1",
         "bagisto/image-cache": "dev-master",
         "barryvdh/laravel-dompdf": "^2.0.0",
+        "darkaonline/l5-swagger": "^9.0",
         "diglactic/laravel-breadcrumbs": "^9.0",
         "elasticsearch/elasticsearch": "^8.10",
         "enshrined/svg-sanitize": "^0.22.0",
@@ -96,7 +97,8 @@
             "Webkul\\SocialShare\\": "packages/Webkul/SocialShare/src",
             "Webkul\\Tax\\": "packages/Webkul/Tax/src",
             "Webkul\\Theme\\": "packages/Webkul/Theme/src",
-            "Webkul\\User\\": "packages/Webkul/User/src"
+            "Webkul\\User\\": "packages/Webkul/User/src",
+            "Webkul\\RestApi\\": "packages/Webkul/RestApi/src"
         }
     },
     "autoload-dev": {

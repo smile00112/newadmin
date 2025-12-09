@@ -325,7 +325,6 @@ class Constructor extends AbstractType
         }
     }
 
-
     /**
      * Update product price based on constructor configuration.
      *

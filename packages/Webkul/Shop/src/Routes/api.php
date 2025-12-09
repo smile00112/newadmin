@@ -13,6 +13,7 @@ use Webkul\Shop\Http\Controllers\API\ReviewController;
 use Webkul\Shop\Http\Controllers\API\WishlistController;
 
 Route::group(['prefix' => 'api'], function () {
+
     Route::controller(CoreController::class)->prefix('core')->group(function () {
         Route::get('countries', 'getCountries')->name('shop.api.core.countries');
 
@@ -92,25 +93,32 @@ Route::group(['prefix' => 'api'], function () {
     });
 
     /**
-     * Login routes.
-     * Where are four login ways:
+     * Authentication routes.
+     * Multiple login methods supported:
      * 1. Login with email and password
-     * 2. Login with phone and code from sms
-     * 3. Login with phone and code from telegram
-     * 4. Login with phone and code from WhatsApp
+     * 2. Login with phone and SMS code
+     * 3. Login with phone and Telegram code
+     * 4. Login with phone and WhatsApp code
      */
-    Route::controller(CustomerController::class)->prefix('customer')->group(function () {
-        Route::post('login', 'login')->name('shop.api.customers.session.create');
+    Route::controller(CustomerController::class)->prefix('auth')->group(function () {
+        // Email/password login
+        Route::post('login', 'login')->name('shop.api.auth.login');
+
+        // Phone/SMS authentication
+        Route::post('send-sms-code', 'sendSmsCode')->name('shop.api.auth.send_sms_code');
+        Route::post('verify-sms-code', 'verifySmsCode')->name('shop.api.auth.verify_sms_code');
+
+        // Token management
+        Route::get('check-token', 'checkToken')->name('shop.api.auth.check_token');
+        Route::post('refresh-token', 'refreshToken')->name('shop.api.auth.refresh_token');
+        Route::post('logout', 'logout')->name('shop.api.auth.logout');
     });
-    Route::group(['prefix' => 'login/sms'], function () {
-        Route::controller(CustomerController::class)->prefix('customer')->group(function () {
-            Route::post('send_code', 'login')->name('shop.api.customers.auth.sms.send_code');
-        });
-    });
+
+
     /**
-     * Customer data routes.
+     * Protected customer routes (require authentication).
      */
-    Route::group(['middleware' => ['customer'], 'prefix' => 'customer'], function () {
+    Route::group(['middleware' => ['auth:sanctum'], 'prefix' => 'customer'], function () {
         Route::controller(AddressController::class)->prefix('addresses')->group(function () {
             Route::get('', 'index')->name('shop.api.customers.account.addresses.index');
 
