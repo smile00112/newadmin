@@ -54,6 +54,14 @@ class LandingPageController
     }
 
     /**
+     * Display offer page.
+     */
+    public function offer()
+    {
+        return view('newsletters::landing.offer');
+    }
+
+    /**
      * Store registration request.
      */
     public function store(Request $request): JsonResponse

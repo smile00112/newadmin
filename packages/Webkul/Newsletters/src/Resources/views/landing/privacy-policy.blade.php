@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Политика конфиденциальности - MailingService</title>
+    <title>Политика конфиденциальности - {{ config('app.name') }}</title>
     <style>
         * {
             margin: 0;
@@ -118,7 +118,7 @@
 <body>
     <header>
         <nav>
-            <a href="{{ route('newsletters.landing.index') }}" class="logo">📧 MailingService</a>
+            <a href="{{ route('newsletters.landing.index') }}" class="logo">📧 {{ config('app.name') }}</a>
             <a href="{{ route('newsletters.landing.index') }}" class="back-link">← Вернуться на главную</a>
         </nav>
     </header>
@@ -126,7 +126,7 @@
     <div class="container">
         <h1>Политика конфиденциальности</h1>
         
-        <p>Настоящая политика конфиденциальности описывает, как MailingService собирает, использует и защищает персональные данные пользователей.</p>
+        <p>Настоящая политика конфиденциальности описывает, как {{ config('app.name') }} собирает, использует и защищает персональные данные пользователей.</p>
 
         <h2>1. Сбор персональных данных</h2>
         <p>Мы собираем следующие персональные данные:</p>
@@ -176,8 +176,9 @@
         <div class="footer-links">
             <a href="{{ route('newsletters.landing.payment-terms') }}">Условия оплаты</a>
             <a href="{{ route('newsletters.landing.privacy-policy') }}">Политика конфиденциальности</a>
+            <a href="{{ route('newsletters.landing.offer') }}">Оферта</a>
         </div>
-        <p>&copy; 2025 MailingService. Все права защищены.</p>
+        <p>&copy; 2025 {{ config('app.name') }}. Все права защищены.</p>
     </footer>
 </body>
 </html>

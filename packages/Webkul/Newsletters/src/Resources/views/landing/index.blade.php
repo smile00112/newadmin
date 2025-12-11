@@ -646,6 +646,7 @@
             <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
                 <a href="{{ route('newsletters.landing.payment-terms') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
                 <a href="{{ route('newsletters.landing.privacy-policy') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
+                <a href="{{ route('newsletters.landing.offer') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
             </div>
             <p>&copy; 2025 TargetX. Все права защищены.</p>
         </div>
