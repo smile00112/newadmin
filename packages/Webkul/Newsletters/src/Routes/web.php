@@ -26,7 +26,9 @@ Route::group(['prefix' => 'mailing-service'], function () {
         Route::post('register', 'store')->name('newsletters.landing.register');
         Route::get('payment-terms', 'paymentTerms')->name('newsletters.landing.payment-terms');
         Route::get('privacy-policy', 'privacyPolicy')->name('newsletters.landing.privacy-policy');
-        Route::get('offer', 'offer')->name('newsletters.landing.offer');
+        Route::get('offer', function () {
+           return redirect()->away('https://oferta.targetx.su');
+        })->name('newsletters.landing.offer');
         Route::get('activate/{token}', 'activateAccount')->name('newsletters.landing.activate');
     });
 });
@@ -41,7 +43,7 @@ Route::group(['prefix' => 'newsletters'], function () {
 });
 
 Route::group([
-    'prefix' => 'admin/newsletters', 
+    'prefix' => 'admin/newsletters',
     'middleware' => ['web', 'admin', 'newsletters.company']
 ], function () {
 
