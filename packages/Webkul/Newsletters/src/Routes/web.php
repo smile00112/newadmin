@@ -27,7 +27,9 @@ Route::group(['prefix' => 'mailing-service'], function () {
         Route::get('payment-terms', 'paymentTerms')->name('newsletters.landing.payment-terms');
         Route::get('privacy-policy', 'privacyPolicy')->name('newsletters.landing.privacy-policy');
         Route::get('offer', function () {
-           return redirect()->away('https://oferta.targetx.su');
+            $pathToFile = $_SERVER['DOCUMENT_ROOT'] . '/files/oferta_TargetX.pdf';
+            return response()->download($pathToFile, 'Лицензионная публичная оферта TargetX.pdf');
+          // return redirect()->away('https://oferta.targetx.su');
         })->name('newsletters.landing.offer');
         Route::get('activate/{token}', 'activateAccount')->name('newsletters.landing.activate');
     });
