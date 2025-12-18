@@ -61,6 +61,9 @@ class ProductResource extends JsonResource
                 $product->getTypeInstance()->showQuantityBox()
             ),
 
+            /* product attributes with their options */
+            'attributes' => $this->getProductAttributes($product),
+
             /* product's extra information */
             $this->merge($this->allProductExtraInfo()),
 
@@ -72,6 +75,57 @@ class ProductResource extends JsonResource
                 'super_attributes' => AttributeResource::collection($product->super_attributes),
             ]),
         ];
+    }
+
+    /**
+     * Get product attributes with their available options.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getProductAttributes($product)
+    {
+        $attributes = [];
+
+        $attributeFamily = $product->attribute_family;
+
+        if (!$attributeFamily) {
+            return $attributes;
+        }
+
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        foreach ($customAttributes as $attribute) {
+            // Only include attributes that have options (select, multiselect, checkbox)
+            if (!in_array($attribute->type, ['select', 'multiselect', 'checkbox'])) {
+                continue;
+            }
+
+            if (!$attribute->options || $attribute->options->count() === 0) {
+                continue;
+            }
+
+            $currentValue = $product->getCustomAttributeValue($attribute);
+
+            $attributeData = [
+                'id'            => $attribute->id,
+                'code'          => $attribute->code,
+                'name'          => $attribute->admin_name ?? $attribute->code,
+                'type'          => $attribute->type,
+                'current_value' => $currentValue,
+                'options'       => $attribute->options->map(function ($option) {
+                    return [
+                        'id'    => $option->id,
+                        'code'  => $option->admin_name ?? $option->id,
+                        'label' => $option->label ?? $option->admin_name,
+                    ];
+                })->values()->toArray(),
+            ];
+
+            $attributes[] = $attributeData;
+        }
+
+        return $attributes;
     }
 
     /**

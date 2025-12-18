@@ -5664,6 +5664,146 @@
                     }
                 ]
             }
+        },
+        "/api/v1/mobile-settings": {
+            "get": {
+                "tags": [
+                    "Mobile App"
+                ],
+                "summary": "Get mobile app settings",
+                "description": "Returns mobile app configuration settings including app info, filters, and custom data",
+                "operationId": "getMobileAppSettings",
+                "parameters": [
+                    {
+                        "name": "channel",
+                        "in": "query",
+                        "description": "Channel code (optional, defaults to default channel)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "default"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "app_name": {
+                                                    "description": "Application name",
+                                                    "type": "string",
+                                                    "example": "My Store App"
+                                                },
+                                                "app_version": {
+                                                    "description": "Current app version",
+                                                    "type": "string",
+                                                    "example": "1.0.0"
+                                                },
+                                                "min_app_version": {
+                                                    "description": "Minimum required app version",
+                                                    "type": "string",
+                                                    "example": "1.0.0"
+                                                },
+                                                "force_update": {
+                                                    "description": "Whether to force app update",
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "maintenance_mode": {
+                                                    "description": "Whether app is in maintenance mode",
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "custom_data": {
+                                                    "description": "Custom JSON data",
+                                                    "type": "string",
+                                                    "example": "{}"
+                                                },
+                                                "home_filters": {
+                                                    "description": "Filters for home screen with attribute options",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "code": {
+                                                                "description": "Attribute code",
+                                                                "type": "string",
+                                                                "example": "color"
+                                                            },
+                                                            "name": {
+                                                                "description": "Attribute name",
+                                                                "type": "string",
+                                                                "example": "Color"
+                                                            },
+                                                            "type": {
+                                                                "description": "Attribute type",
+                                                                "type": "string",
+                                                                "example": "select"
+                                                            },
+                                                            "options": {
+                                                                "description": "Available options for this attribute",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        },
+                                                                        "code": {
+                                                                            "type": "string",
+                                                                            "example": "red"
+                                                                        },
+                                                                        "label": {
+                                                                            "type": "string",
+                                                                            "example": "Red"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "featured_categories": {
+                                                    "description": "Featured category IDs",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    }
+                                                },
+                                                "featured_products": {
+                                                    "description": "Featured product IDs",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -11231,6 +11371,10 @@
         {
             "name": "Catalog",
             "description": "Catalog"
+        },
+        {
+            "name": "Mobile App",
+            "description": "Mobile App"
         }
     ],
     "security": [
