@@ -265,6 +265,131 @@
                 }
             }
         },
+        "/api/v1/catalog": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get categories with products",
+                "description": "Returns categories with their products, if you want to retrieve all at once pass pagination=0 otherwise ignore this parameter",
+                "operationId": "getCatalog",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "Category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort column",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "id"
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "description": "Sort order",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CatalogCategory"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/catalog/{id}": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get category with products by id",
+                "description": "Returns category with its products by id",
+                "operationId": "getCatalogCategory",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Category id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/CatalogCategory"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    }
+                }
+            }
+        },
         "/api/v1/categories": {
             "get": {
                 "tags": [
@@ -5875,6 +6000,117 @@
                 },
                 "type": "object"
             },
+            "CatalogCategory": {
+                "title": "CatalogCategory",
+                "description": "Category with products model",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Category's name",
+                        "type": "string",
+                        "example": "Women Apparel"
+                    },
+                    "slug": {
+                        "title": "Slug",
+                        "description": "Category's slug",
+                        "type": "string",
+                        "example": "women-apparel"
+                    },
+                    "display_mode": {
+                        "title": "Display Mode",
+                        "description": "Category's content display mode",
+                        "type": "string",
+                        "enum": [
+                            "products_and_description",
+                            "products_only",
+                            "description_only"
+                        ],
+                        "example": "products_and_description"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "description": "Category's description",
+                        "type": "string",
+                        "example": "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+                    },
+                    "meta_title": {
+                        "title": "Meta Title",
+                        "description": "Category's meta title",
+                        "type": "string",
+                        "example": "Women Apparel"
+                    },
+                    "meta_description": {
+                        "title": "Meta Description",
+                        "description": "Category's meta description",
+                        "type": "string",
+                        "example": "Women Apparel"
+                    },
+                    "meta_keywords": {
+                        "title": "Meta Keywords",
+                        "description": "Category's meta keywords",
+                        "type": "string",
+                        "example": "Women Apparel"
+                    },
+                    "status": {
+                        "title": "Status",
+                        "description": "Category's status",
+                        "type": "integer",
+                        "enum": [
+                            "0",
+                            "1"
+                        ],
+                        "example": 1
+                    },
+                    "image_url": {
+                        "title": "Image URL",
+                        "description": "Category's image URL",
+                        "type": "string",
+                        "example": "http://localhost/public/storage/category/{category_id}/{image_name}.jpg"
+                    },
+                    "category_icon_path": {
+                        "title": "Category Icon Path",
+                        "description": "Category's icon path",
+                        "type": "string",
+                        "example": "http://localhost/public/storage/velocity/category_icon_path/{category_id}/{image_name}.png"
+                    },
+                    "additional": {
+                        "title": "Additional",
+                        "description": "Category's additional information",
+                        "type": "object",
+                        "example": null
+                    },
+                    "created_at": {
+                        "title": "Created at",
+                        "description": "Created at",
+                        "type": "string",
+                        "format": "datetime",
+                        "example": "2020-01-27 17:50:45"
+                    },
+                    "updated_at": {
+                        "title": "Updated at",
+                        "description": "Updated at",
+                        "type": "string",
+                        "format": "datetime",
+                        "example": "2020-01-27 17:50:45"
+                    },
+                    "products": {
+                        "title": "Products",
+                        "description": "Category's products",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Product"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "Category": {
                 "title": "Category",
                 "description": "Category model",
@@ -10987,6 +11223,10 @@
         {
             "name": "Multi-Channel Authentication",
             "description": "API endpoints for SMS, WhatsApp, and Telegram authentication"
+        },
+        {
+            "name": "Catalog",
+            "description": "Catalog"
         }
     ],
     "security": [
