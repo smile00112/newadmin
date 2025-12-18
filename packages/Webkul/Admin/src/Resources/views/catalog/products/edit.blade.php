@@ -188,7 +188,7 @@
 <!--                                    TODO - remove this -->
                             @php
                                 $style_group = '';
-                                if(in_array($group->code, ['meta_description', 'shipping', 'settings'])){
+                                if(in_array($group->code, ['meta_description', 'shipping'])){ //, 'settings'
                                     $style_group = 'display: none';
 
                                 }
