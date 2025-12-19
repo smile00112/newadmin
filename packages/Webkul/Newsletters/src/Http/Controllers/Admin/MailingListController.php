@@ -11,6 +11,7 @@ use Webkul\Newsletters\Repositories\MailingListRepository;
 use Webkul\Newsletters\Repositories\VacapInstanceRepository;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
 use Webkul\Newsletters\Repositories\CompanyAccountRepository;
+use Webkul\Newsletters\Repositories\MailInstanceRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -25,7 +26,8 @@ class MailingListController extends Controller
         protected MailingListRepository $mailingListRepository,
         protected VacapInstanceRepository $vacapInstanceRepository,
         protected CustomerNumberRepository $customerNumberRepository,
-        protected CompanyAccountRepository $accountRepository
+        protected CompanyAccountRepository $accountRepository,
+        protected MailInstanceRepository $mailInstanceRepository
     ) {}
 
     /**
@@ -63,7 +65,10 @@ class MailingListController extends Controller
      */
     public function create()
     {
-        return view('newsletters::admin.mailing-lists.create');
+        // Get available mail instances for selection
+        $mailInstances = $this->mailInstanceRepository->getAllForCompany();
+        
+        return view('newsletters::admin.mailing-lists.create', compact('mailInstances'));
     }
 
     /**
@@ -141,6 +146,7 @@ class MailingListController extends Controller
                 'message_delay_from' => $request->input('message_delay_from', 5),
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance'),
+                'channel_type' => $request->input('channel_type', 'whatsapp'),
             ];
 
             Log::info('Creating mailing list', [
@@ -188,6 +194,55 @@ class MailingListController extends Controller
                         'login' => $instance->login,
                         'mailing_list_id' => $instance->mailing_list_id,
                     ]);
+                }
+            }
+
+            // Handle mail instances - either select existing or create new
+            if ($request->input('channel_type') === 'email') {
+                // Check if user selected existing mail instance
+                if ($request->has('mail_instance_id') && $request->input('mail_instance_id')) {
+                    // Link existing mail instance to this mailing list
+                    $this->mailInstanceRepository->update(
+                        ['mailing_list_id' => $mailingList->id],
+                        $request->input('mail_instance_id')
+                    );
+                    
+                    Log::info('Linked existing mail instance to mailing list', [
+                        'mail_instance_id' => $request->input('mail_instance_id'),
+                        'mailing_list_id' => $mailingList->id,
+                    ]);
+                } elseif ($request->has('mail_instances')) {
+                    // Create new mail instances
+                    $mailInstances = $request->input('mail_instances');
+                    $validInstances = array_filter($mailInstances, function($instance) {
+                        return !empty($instance['host']) && !empty($instance['username']) && !empty($instance['password']) && !empty($instance['from_email']);
+                    });
+
+                    Log::info('Processing mail instances', [
+                        'total_instances' => count($mailInstances),
+                        'valid_instances' => count($validInstances),
+                        'mailing_list_id' => $mailingList->id,
+                    ]);
+
+                    foreach ($validInstances as $index => $instanceData) {
+                        $instanceData['mailing_list_id'] = $mailingList->id;
+
+                        Log::info('Creating mail instance', [
+                            'instance_index' => $index,
+                            'host' => $instanceData['host'],
+                            'username' => $instanceData['username'],
+                            'mailing_list_id' => $mailingList->id,
+                        ]);
+
+                        $instance = $this->mailInstanceRepository->create($instanceData);
+
+                        Log::info('Mail instance created successfully', [
+                            'instance_id' => $instance->id,
+                            'host' => $instance->host,
+                            'username' => $instance->username,
+                            'mailing_list_id' => $instance->mailing_list_id,
+                        ]);
+                    }
                 }
             }
 
@@ -402,6 +457,7 @@ class MailingListController extends Controller
                 'message_delay_from' => $request->input('message_delay_from', 5),
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance'),
+                'channel_type' => $request->input('channel_type', 'whatsapp'),
             ];
 
             Log::info('Updating mailing list', [

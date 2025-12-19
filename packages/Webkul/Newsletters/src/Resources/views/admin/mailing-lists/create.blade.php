@@ -28,6 +28,28 @@
                     </h2>
                 </div>
             <div class="p-6 space-y-6">
+                    <!-- Channel Type -->
+                    <div>
+                        <label for="channel_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mailing-lists.channel-type') }}
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="channel_type"
+                            id="channel_type"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            onchange="toggleChannelInstances(this.value)"
+                            required
+                        >
+                            <option value="whatsapp" {{ old('channel_type', 'whatsapp') == 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
+                            <option value="email" {{ old('channel_type') == 'email' ? 'selected' : '' }}>Email</option>
+                            <option value="telegram" {{ old('channel_type') == 'telegram' ? 'selected' : '' }}>Telegram</option>
+                        </select>
+                        @error('channel_type')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Message Text -->
                     <div>
                         <label for="message_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -213,10 +235,10 @@
             </div>
         </div>
 
-        <!-- WhatsApp Instances and Customer Numbers Section -->
+        <!-- Channel Instances and Customer Numbers Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- WhatsApp Instances Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div id="whatsappInstancesSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between">
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -286,6 +308,70 @@
 {{--                            </div>--}}
 {{--                        </div>--}}
                     </div>
+                </div>
+            </div>
+
+            <!-- Email Instances Section (hidden by default) -->
+            <div id="emailInstancesSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ __('newsletters::app.admin.mail-instances.title') }}
+                        </h2>
+                        <button type="button" onclick="addEmailInstanceRow()"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            {{ __('newsletters::app.common.actions.add') }}
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <!-- Select existing mail instance -->
+                    @if(isset($mailInstances) && $mailInstances->count() > 0)
+                    <div class="mb-6">
+                        <label for="mail_instance_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.select-existing') }}
+                        </label>
+                        <select
+                            name="mail_instance_id"
+                            id="mail_instance_id"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            onchange="toggleNewEmailInstanceForm(this.value)"
+                        >
+                            <option value="">{{ __('newsletters::app.admin.mail-instances.create-new') }}</option>
+                            @foreach($mailInstances as $mailInstance)
+                                <option value="{{ $mailInstance->id }}">
+                                    {{ $mailInstance->name ?: $mailInstance->from_email }} ({{ $mailInstance->host }})
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {{ __('newsletters::app.admin.mail-instances.select-existing-hint') }}
+                        </p>
+                    </div>
+                    <div id="newEmailInstancesWrapper">
+                    @endif
+                    <div id="emailInstancesContainer"></div>
+                    @if(isset($mailInstances) && $mailInstances->count() > 0)
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Telegram Instances Section (hidden by default) -->
+            <div id="telegramInstancesSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ __('newsletters::app.admin.telegram-instances.title') }}
+                        </h2>
+                        <button type="button" onclick="addTelegramInstanceRow()"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            {{ __('newsletters::app.common.actions.add') }}
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="telegramInstancesContainer"></div>
                 </div>
             </div>
 
@@ -423,7 +509,181 @@
     <script>
         let customerNumberIndex = 1;
         let whatsappInstanceIndex = 1;
+        let emailInstanceIndex = 0;
+        let telegramInstanceIndex = 0;
         let currentImportType = '';
+
+        function toggleChannelInstances(channelType) {
+            document.getElementById('whatsappInstancesSection').classList.add('hidden');
+            document.getElementById('emailInstancesSection').classList.add('hidden');
+            document.getElementById('telegramInstancesSection').classList.add('hidden');
+
+            if (channelType === 'whatsapp') {
+                document.getElementById('whatsappInstancesSection').classList.remove('hidden');
+            } else if (channelType === 'email') {
+                document.getElementById('emailInstancesSection').classList.remove('hidden');
+            } else if (channelType === 'telegram') {
+                document.getElementById('telegramInstancesSection').classList.remove('hidden');
+            }
+        }
+
+        function toggleNewEmailInstanceForm(selectedValue) {
+            const wrapper = document.getElementById('newEmailInstancesWrapper');
+            if (wrapper) {
+                if (selectedValue) {
+                    // Hide new instance form when existing instance is selected
+                    wrapper.style.display = 'none';
+                } else {
+                    // Show new instance form when "Create new" is selected
+                    wrapper.style.display = 'block';
+                }
+            }
+        }
+
+        function addEmailInstanceRow() {
+            const container = document.getElementById('emailInstancesContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'email-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
+            newRow.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.name') }}
+                        </label>
+                        <input type="text" name="mail_instances[${emailInstanceIndex}][name]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.host') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="mail_instances[${emailInstanceIndex}][host]"
+                            placeholder="smtp.gmail.com"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.port') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="mail_instances[${emailInstanceIndex}][port]"
+                            value="587"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.encryption') }}
+                        </label>
+                        <select name="mail_instances[${emailInstanceIndex}][encryption]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                            <option value="tls">TLS</option>
+                            <option value="ssl">SSL</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.username') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="mail_instances[${emailInstanceIndex}][username]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.password') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" name="mail_instances[${emailInstanceIndex}][password]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.from-email') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" name="mail_instances[${emailInstanceIndex}][from_email]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.from-name') }}
+                        </label>
+                        <input type="text" name="mail_instances[${emailInstanceIndex}][from_name]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" onclick="removeEmailInstanceRow(this)"
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        {{ __('newsletters::app.common.actions.delete') }}
+                    </button>
+                </div>
+            `;
+            container.appendChild(newRow);
+            emailInstanceIndex++;
+        }
+
+        function removeEmailInstanceRow(button) {
+            if (confirm('{{ __("newsletters::app.common.messages.confirm_delete") }}')) {
+                button.closest('.email-instance-row').remove();
+            }
+        }
+
+        function addTelegramInstanceRow() {
+            const container = document.getElementById('telegramInstancesContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'telegram-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
+            newRow.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.telegram-instances.bot-name') }}
+                        </label>
+                        <input type="text" name="telegram_instances[${telegramInstanceIndex}][bot_name]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.telegram-instances.bot-username') }}
+                        </label>
+                        <input type="text" name="telegram_instances[${telegramInstanceIndex}][bot_username]"
+                            placeholder="@your_bot"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.telegram-instances.bot-token') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="telegram_instances[${telegramInstanceIndex}][bot_token]"
+                            placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            required>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" onclick="removeTelegramInstanceRow(this)"
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        {{ __('newsletters::app.common.actions.delete') }}
+                    </button>
+                </div>
+            `;
+            container.appendChild(newRow);
+            telegramInstanceIndex++;
+        }
+
+        function removeTelegramInstanceRow(button) {
+            if (confirm('{{ __("newsletters::app.common.messages.confirm_delete") }}')) {
+                button.closest('.telegram-instance-row').remove();
+            }
+        }
 
         function addCustomerNumberRow() {
             const container = document.getElementById('customerNumbersContainer');

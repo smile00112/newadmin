@@ -25,6 +25,8 @@ class CustomerNumber extends Model
      */
     protected $fillable = [
         'phone_number',
+        'email',
+        'telegram_id',
         'name',
         'greenapi_chat_id',
         'delivered',

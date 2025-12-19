@@ -35,6 +35,7 @@ class MailingList extends Model
         'status', // created, pending, completed
         'max_messages_per_instance',
         'company_id',
+        'channel_type', // whatsapp, email, telegram
     ];
 
     /**
@@ -56,6 +57,22 @@ class MailingList extends Model
     public function whatsappInstances(): HasMany
     {
         return $this->hasMany(VacapInstance::class);
+    }
+
+    /**
+     * Get the telegram bot instances for the mailing list.
+     */
+    public function telegramInstances(): HasMany
+    {
+        return $this->hasMany(TelegramBotInstance::class);
+    }
+
+    /**
+     * Get the mail instances for the mailing list.
+     */
+    public function mailInstances(): HasMany
+    {
+        return $this->hasMany(MailInstance::class);
     }
 
     /**

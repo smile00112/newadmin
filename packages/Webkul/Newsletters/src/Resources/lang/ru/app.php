@@ -15,7 +15,28 @@ return [
             'mailing-list' => 'Список рассылки',
             'no-instances' => 'WhatsApp инстансы не найдены.',
             'instance-phone' => 'Телефон инстанса',
+        ],
 
+        'mail-instances' => [
+            'title' => 'Email SMTP аккаунты',
+            'name' => 'Название',
+            'host' => 'SMTP Хост',
+            'port' => 'Порт',
+            'username' => 'Логин',
+            'password' => 'Пароль',
+            'encryption' => 'Шифрование',
+            'from-email' => 'Email отправителя',
+            'from-name' => 'Имя отправителя',
+            'select-existing' => 'Выбрать существующий SMTP аккаунт',
+            'create-new' => '-- Создать новый --',
+            'select-existing-hint' => 'Выберите существующий SMTP аккаунт или создайте новый ниже',
+        ],
+
+        'telegram-instances' => [
+            'title' => 'Telegram боты',
+            'bot-token' => 'Токен бота',
+            'bot-username' => 'Username бота',
+            'bot-name' => 'Название бота',
         ],
         'datagrid' => [
             'add' => 'Добавить'
@@ -61,6 +82,12 @@ return [
             'cannot-start-without-balance' => 'Вы не можете запускать рассылки с нулевым балансом. Пожалуйста, пополните счет сначала.',
             'mailing-hours-from' => 'Часы рассылки от',
             'mailing-hours-to' => 'Часы рассылки до',
+            'message-delay-from' => 'message-delay-from',
+            'message-delay-to' => 'message-delay-to',
+            'message-delay-from-hint' => 'message-delay-from-hint',
+            'message-delay-to-hint' => 'message-delay-to-hint',
+            'max-messages-per-instance' => 'max-messages-per-instance',
+            'max-messages-per-instance-hint' => 'max-messages-per-instance-hint',
             'message-delay' => 'Задержка между сообщениями (сек)',
             'message-delay-hint' => 'Задержка между сообщениями в секундах (1-3600)',
             'media-file' => 'Медиа файл',
@@ -71,6 +98,7 @@ return [
             'created' => 'Ожидает запуска',
             'pending' => 'В очереди',
             'completed' => 'Завершена',
+            'channel-type' => 'Канал рассылки',
         ],
 
         'customer-numbers' => [

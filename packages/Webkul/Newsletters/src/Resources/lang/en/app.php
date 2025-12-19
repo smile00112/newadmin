@@ -17,6 +17,28 @@ return [
             'instance-phone' => 'Instance Phone',
         ],
 
+        'mail-instances' => [
+            'title' => 'Email SMTP Accounts',
+            'name' => 'Name',
+            'host' => 'SMTP Host',
+            'port' => 'Port',
+            'username' => 'Username',
+            'password' => 'Password',
+            'encryption' => 'Encryption',
+            'from-email' => 'From Email',
+            'from-name' => 'From Name',
+            'select-existing' => 'Select existing SMTP account',
+            'create-new' => '-- Create new --',
+            'select-existing-hint' => 'Select an existing SMTP account or create a new one below',
+        ],
+
+        'telegram-instances' => [
+            'title' => 'Telegram Bots',
+            'bot-token' => 'Bot Token',
+            'bot-username' => 'Bot Username',
+            'bot-name' => 'Bot Name',
+        ],
+
         'mailing-lists' => [
             'title' => 'Mailing Lists',
             'create-success' => 'Mailing list created successfully.',
@@ -65,6 +87,7 @@ return [
             'media-file-hint' => 'Maximum file size: 10MB. Supported formats: JPG, PNG, GIF, MP4, AVI, MOV, WEBM',
             'current-media' => 'Current Media',
             'new-media-preview' => 'New Media Preview',
+            'channel-type' => 'Channel Type',
         ],
 
         'customer-numbers' => [
