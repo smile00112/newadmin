@@ -108,3 +108,4 @@ class EmailChannel implements MailingChannelInterface
 }
 
 
+
