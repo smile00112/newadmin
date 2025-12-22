@@ -1,0 +1,27 @@
+{
+    "name": "bagisto/mobile-app",
+    "description": "Mobile App Settings for Bagisto",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Webkul Software Pvt. Ltd.",
+            "email": "support@bagisto.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Webkul\\MobileApp\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\MobileApp\\Providers\\MobileAppServiceProvider",
+                "Webkul\\MobileApp\\Providers\\ModuleServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev"
+}
+
