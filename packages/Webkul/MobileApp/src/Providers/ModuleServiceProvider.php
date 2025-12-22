@@ -13,4 +13,3 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
         \Webkul\MobileApp\Models\MobileAppSetting::class,
     ];
 }
-
