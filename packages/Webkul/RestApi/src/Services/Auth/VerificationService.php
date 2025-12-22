@@ -9,6 +9,15 @@ use Illuminate\Support\Str;
 class VerificationService
 {
     /**
+     * Controller instance.
+     *
+     * @return void
+     */
+    public function __construct(
+        protected TestUserService $testUserService
+    ) {}
+
+    /**
      * Generate verification code and token.
      *
      * @param string $identifier
@@ -17,7 +26,20 @@ class VerificationService
      */
     public function generateVerificationCode(string $identifier, string $channel): array
     {
-        $verificationCode = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Check if test user - use fixed code, otherwise generate random
+        $isTestUser = $this->testUserService->isTestUser($identifier);
+        $verificationCode = $isTestUser
+            ? $this->testUserService->getFixedCode()
+            : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        if ($isTestUser) {
+            Log::info("Test user verification code generated", [
+                'identifier' => $identifier,
+                'channel' => $channel,
+                'code' => $verificationCode,
+            ]);
+        }
+        
         $verificationToken = Str::random(64);
         
         // Store verification data in cache for 10 minutes

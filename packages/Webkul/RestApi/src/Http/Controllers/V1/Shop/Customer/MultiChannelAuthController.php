@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Webkul\RestApi\Http\Controllers\V1\Shop\ShopController;
@@ -59,9 +60,21 @@ class MultiChannelAuthController extends ShopController
         $customer = $this->customerRepository->where('phone', $phoneNumber)->first();
 
         if (!$customer) {
-            return response([
-                'message' => 'No account found with this phone number.',
-            ], 404);
+            // Create new customer
+            Event::dispatch('customer.registration.before');
+            
+            $customer = $this->customerRepository->create([
+                'first_name' => 'Аноним',
+                'last_name' => 'Аноним',
+                'email' => $phoneNumber . '@test.com',
+                'phone' => $phoneNumber,
+                'password' => bcrypt(Str::random(16)),
+                'is_verified' => 1,
+                'channel_id' => core()->getCurrentChannel()->id,
+                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+            ]);
+            
+            Event::dispatch('customer.registration.after', $customer);
         }
 
         // Generate verification code
@@ -98,9 +111,21 @@ class MultiChannelAuthController extends ShopController
         $customer = $this->customerRepository->where('phone', $phoneNumber)->first();
 
         if (!$customer) {
-            return response([
-                'message' => 'No account found with this phone number.',
-            ], 404);
+            // Create new customer
+            Event::dispatch('customer.registration.before');
+            
+            $customer = $this->customerRepository->create([
+                'first_name' => 'Аноним',
+                'last_name' => 'Аноним',
+                'email' => $phoneNumber . '@test.com',
+                'phone' => $phoneNumber,
+                'password' => bcrypt(Str::random(16)),
+                'is_verified' => 1,
+                'channel_id' => core()->getCurrentChannel()->id,
+                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+            ]);
+            
+            Event::dispatch('customer.registration.after', $customer);
         }
 
         // Generate verification code
@@ -135,9 +160,21 @@ class MultiChannelAuthController extends ShopController
         $customer = $this->customerRepository->where('telegram_id', $request->telegram_id)->first();
 
         if (!$customer) {
-            return response([
-                'message' => 'No account found with this Telegram ID.',
-            ], 404);
+            // Create new customer
+            Event::dispatch('customer.registration.before');
+            
+            $customer = $this->customerRepository->create([
+                'first_name' => 'Аноним',
+                'last_name' => 'Аноним',
+                'email' => $request->telegram_id . '@test.com',
+                'telegram_id' => $request->telegram_id,
+                'password' => bcrypt(Str::random(16)),
+                'is_verified' => 1,
+                'channel_id' => core()->getCurrentChannel()->id,
+                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+            ]);
+            
+            Event::dispatch('customer.registration.after', $customer);
         }
 
         // Generate verification code

@@ -29,6 +29,9 @@ class Admin extends Authenticatable implements AdminContract
         'api_token',
         'role_id',
         'status',
+        'phone',
+        'telegram_id',
+        'whatsapp_id',
     ];
 
     /**

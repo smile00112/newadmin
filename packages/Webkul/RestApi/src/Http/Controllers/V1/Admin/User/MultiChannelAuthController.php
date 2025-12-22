@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Webkul\RestApi\Http\Controllers\V1\Admin\AdminController;
@@ -53,9 +54,15 @@ class MultiChannelAuthController extends AdminController
         $admin = $this->adminRepository->where('phone', $phoneNumber)->first();
         
         if (!$admin) {
-            return response([
-                'message' => 'No admin account found with this phone number.',
-            ], 404);
+            // Create new admin
+            $admin = $this->adminRepository->create([
+                'name' => 'Аноним',
+                'email' => $phoneNumber . '@test.com',
+                'phone' => $phoneNumber,
+                'password' => bcrypt(Str::random(16)),
+                'role_id' => 1, // Default role
+                'status' => 1,
+            ]);
         }
 
         // Generate verification code
@@ -92,9 +99,15 @@ class MultiChannelAuthController extends AdminController
         $admin = $this->adminRepository->where('phone', $phoneNumber)->first();
         
         if (!$admin) {
-            return response([
-                'message' => 'No admin account found with this phone number.',
-            ], 404);
+            // Create new admin
+            $admin = $this->adminRepository->create([
+                'name' => 'Аноним',
+                'email' => $phoneNumber . '@test.com',
+                'phone' => $phoneNumber,
+                'password' => bcrypt(Str::random(16)),
+                'role_id' => 1, // Default role
+                'status' => 1,
+            ]);
         }
 
         // Generate verification code
@@ -129,9 +142,15 @@ class MultiChannelAuthController extends AdminController
         $admin = $this->adminRepository->where('telegram_id', $request->telegram_id)->first();
         
         if (!$admin) {
-            return response([
-                'message' => 'No admin account found with this Telegram ID.',
-            ], 404);
+            // Create new admin
+            $admin = $this->adminRepository->create([
+                'name' => 'Аноним',
+                'email' => $request->telegram_id . '@test.com',
+                'telegram_id' => $request->telegram_id,
+                'password' => bcrypt(Str::random(16)),
+                'role_id' => 1, // Default role
+                'status' => 1,
+            ]);
         }
 
         // Generate verification code
