@@ -29,3 +29,4 @@ class MobileAppSetting extends Model implements MobileAppSettingContract
     ];
 }
 
+

@@ -8,3 +8,4 @@ class MobileAppSettingProxy extends ModelProxy
 {
 }
 
+
