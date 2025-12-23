@@ -14,4 +14,3 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
     ];
 }
 
-
