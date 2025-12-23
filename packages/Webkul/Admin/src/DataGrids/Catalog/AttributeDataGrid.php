@@ -17,11 +17,9 @@ class AttributeDataGrid extends DataGrid
         return DB::table('attributes')
             ->select(
                 'id',
-                'code',
                 'admin_name',
                 'type',
                 'is_required',
-                'is_unique',
                 'value_per_locale',
                 'value_per_channel',
                 'created_at'
@@ -39,15 +37,6 @@ class AttributeDataGrid extends DataGrid
             'index'      => 'id',
             'label'      => trans('admin::app.catalog.attributes.index.datagrid.id'),
             'type'       => 'integer',
-            'searchable' => true,
-            'filterable' => true,
-            'sortable'   => true,
-        ]);
-
-        $this->addColumn([
-            'index'      => 'code',
-            'label'      => trans('admin::app.catalog.attributes.index.datagrid.code'),
-            'type'       => 'string',
             'searchable' => true,
             'filterable' => true,
             'sortable'   => true,
@@ -127,22 +116,6 @@ class AttributeDataGrid extends DataGrid
             'sortable'   => true,
             'closure'    => function ($row) {
                 if ($row->is_required) {
-                    return trans('admin::app.catalog.attributes.index.datagrid.true');
-                }
-
-                return trans('admin::app.catalog.attributes.index.datagrid.false');
-            },
-        ]);
-
-        $this->addColumn([
-            'index'      => 'is_unique',
-            'label'      => trans('admin::app.catalog.attributes.index.datagrid.unique'),
-            'type'       => 'boolean',
-            'searchable' => true,
-            'filterable' => true,
-            'sortable'   => true,
-            'closure'    => function ($row) {
-                if ($row->is_unique) {
                     return trans('admin::app.catalog.attributes.index.datagrid.true');
                 }
 
