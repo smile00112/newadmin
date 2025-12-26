@@ -155,6 +155,21 @@ class CartController extends CustomerController
      */
     public function removeItem(int $cartItemId): Response
     {
+        if (! $cart = Cart::getCart()) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        // Проверяем, что товар существует и принадлежит текущей корзине
+        $cartItemIds = $cart->items()->pluck('id')->toArray();
+        
+        if (! in_array($cartItemId, $cartItemIds)) {
+            return response([
+                'message' => 'Cart Item not found',
+            ], 400);
+        }
+
         Event::dispatch('checkout.cart.item.delete.before', $cartItemId);
 
         Cart::removeItem($cartItemId);
