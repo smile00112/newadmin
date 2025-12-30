@@ -2,8 +2,11 @@
 
 namespace Webkul\Product\Type;
 
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Checkout\Models\CartItem;
@@ -193,6 +196,9 @@ abstract class AbstractType
         $this->productVideoRepository->upload($data, $product, 'videos');
 
         $this->productCustomerGroupPriceRepository->saveCustomerGroupPrices($data, $product);
+
+        // Handle category_image upload
+        $this->handleCategoryImage($data, $product);
 
         return $product;
     }
@@ -1090,5 +1096,48 @@ abstract class AbstractType
         }
 
         return $lastPrice;
+    }
+
+    /**
+     * Handle category image upload.
+     *
+     * @param  array  $data
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @return void
+     */
+    protected function handleCategoryImage(array $data, $product): void
+    {
+        // Check if delete flag is set
+        if (! empty($data['category_image_delete'])) {
+            if ($product->category_image && Storage::exists($product->category_image)) {
+                Storage::delete($product->category_image);
+            }
+            
+            $product->update(['category_image' => null]);
+            
+            return;
+        }
+
+        // Check if new file is uploaded
+        if (isset($data['category_image']) && $data['category_image'] instanceof UploadedFile) {
+            // Delete old image if exists
+            if ($product->category_image && Storage::exists($product->category_image)) {
+                Storage::delete($product->category_image);
+            }
+
+            // Process and save new image
+            $file = $data['category_image'];
+            
+            if (Str::contains($file->getMimeType(), 'image')) {
+                $manager = new ImageManager;
+                $image = $manager->make($file)->encode('webp');
+                $path = 'product/'.$product->id.'/category_'.Str::random(40).'.webp';
+                Storage::put($path, $image);
+            } else {
+                $path = $file->store('product/'.$product->id);
+            }
+
+            $product->update(['category_image' => $path]);
+        }
     }
 }

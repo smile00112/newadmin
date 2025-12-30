@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Product\Facades\ProductImage;
 use Webkul\Product\Helpers\BundleOption;
@@ -41,14 +42,9 @@ class ProductResource extends JsonResource
             'images'             => ProductImageResource::collection($product->images),
             'videos'             => ProductVideoResource::collection($product->videos),
             'base_image'         => ProductImage::getProductBaseImage($product),
+            'category_image'     => $this->getCategoryImage($product),
             'created_at'         => $product->created_at,
             'updated_at'         => $product->updated_at,
-
-            /* nutrition information */
-            'calories'           => $product->calories !== null ? (float) $product->calories : null,
-            'proteins'           => $product->proteins !== null ? (float) $product->proteins : null,
-            'fats'               => $product->fats !== null ? (float) $product->fats : null,
-            'carbs'              => $product->carbs !== null ? (float) $product->carbs : null,
 
             /* product's reviews */
             'reviews' => [
@@ -216,14 +212,6 @@ class ProductResource extends JsonResource
                     ? $this->getBookingProductInfo($product)
                     : null
             ),
-
-            /* constructor product */
-            $this->mergeWhen(
-                $productTypeInstance instanceof \Webkul\Product\Type\Constructor,
-                $product->type == 'constructor'
-                    ? $this->getConstructorProductInfo($product)
-                    : null
-            ),
         ];
     }
 
@@ -321,80 +309,26 @@ class ProductResource extends JsonResource
     }
 
     /**
-     * Get constructor product's extra information.
+     * Get category image URL.
      *
      * @param  \Webkul\Product\Models\Product  $product
-     * @return array
+     * @return array|null
      */
-    private function getConstructorProductInfo($product)
+    private function getCategoryImage($product)
     {
-        $constructors = $product->constructor()->with([
-            'groups',
-            'groups.products',
-            'groups.products.images',
-            'groups.products.inventory_indices',
-        ])->get();
+        $categoryImagePath = $product->category_image;
+
+        if (empty($categoryImagePath)) {
+            return null;
+        }
 
         return [
-            'constructor' => $constructors->map(function ($constructor) {
-                return [
-                    'id'                => $constructor->id,
-                    'visible'           => $constructor->visible,
-                    'required'          => $constructor->required,
-                    'combo'             => $constructor->combo,
-                    'discount'          => $constructor->discount,
-                    'design'            => $constructor->design,
-                    'discount_type'     => $constructor->discount_type,
-                    'discount_value'    => $constructor->discount_value,
-                    'min_selected_sum'  => $constructor->min_selected_sum,
-                    'groups'            => $constructor->groups->sortBy('sort')->map(function ($group) {
-                        $ingredients = $group->products->sortBy(function ($product) {
-                            return $product->pivot->sort ?? 0;
-                        })->map(function ($ingredient) {
-                            $ingredientTypeInstance = $ingredient->getTypeInstance();
-                            
-                            return [
-                                'id'                 => $ingredient->id,
-                                'sku'                => $ingredient->sku,
-                                'name'               => $ingredient->name,
-                                'url_key'            => $ingredient->url_key,
-                                'price'              => core()->convertPrice($ingredientTypeInstance->getMinimalPrice()),
-                                'formatted_price'    => core()->currency($ingredientTypeInstance->getMinimalPrice()),
-                                'base_image'         => ProductImage::getProductBaseImage($ingredient),
-                                'images'             => ProductImageResource::collection($ingredient->images),
-                                'in_stock'           => $ingredient->haveSufficientQuantity(1),
-                                'default'            => (bool) ($ingredient->pivot->default ?? false),
-                                'sort'               => (int) ($ingredient->pivot->sort ?? 0),
-                                'attributes'         => $this->getProductAttributes($ingredient),
-                                
-                                /* nutrition information for ingredients */
-                                'calories'           => $ingredient->calories !== null ? (float) $ingredient->calories : null,
-                                'proteins'           => $ingredient->proteins !== null ? (float) $ingredient->proteins : null,
-                                'fats'               => $ingredient->fats !== null ? (float) $ingredient->fats : null,
-                                'carbs'              => $ingredient->carbs !== null ? (float) $ingredient->carbs : null,
-                            ];
-                        })->values();
-
-                        return [
-                            'id'                    => $group->id,
-                            'name'                  => $group->name,
-                            'field_type'            => $group->field_type,
-                            'checked_type'          => $group->checked_type,
-                            'quantity_min'          => $group->quantity_min,
-                            'quantity_max'          => $group->quantity_max,
-                            'show_title'            => $group->show_title,
-                            'opened_by_default'     => $group->opened_by_default,
-                            'zero_price'            => $group->zero_price,
-                            'required'              => $group->required,
-                            'hidden'                => $group->hidden,
-                            'sort'                  => $group->sort,
-                            'double_portions'       => $group->double_portions,
-                            'half_portions'         => $group->half_portions,
-                            'ingredients'           => $ingredients,
-                        ];
-                    })->values(),
-                ];
-            })->values(),
+            'path'               => $categoryImagePath,
+            'url'                => Storage::url($categoryImagePath),
+            'original_image_url' => Storage::url($categoryImagePath),
+            'small_image_url'    => url('cache/small/'.$categoryImagePath),
+            'medium_image_url'   => url('cache/medium/'.$categoryImagePath),
+            'large_image_url'    => url('cache/large/'.$categoryImagePath),
         ];
     }
 }

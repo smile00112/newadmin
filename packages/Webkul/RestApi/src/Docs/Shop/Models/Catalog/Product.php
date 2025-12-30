@@ -157,6 +157,33 @@ class Product
 
     /**
      * @OA\Property(
+     *     title="Category Image",
+     *     description="Product's category image for displaying in category listings",
+     *     type="object",
+     *     nullable=true,
+     *     example={
+     *          "path": "product/1/category_abc123.webp",
+     *          "url": "http://localhost/storage/product/1/category_abc123.webp",
+     *          "original_image_url": "http://localhost/storage/product/1/category_abc123.webp",
+     *          "small_image_url": "http://localhost/cache/small/product/1/category_abc123.webp",
+     *          "medium_image_url": "http://localhost/cache/medium/product/1/category_abc123.webp",
+     *          "large_image_url": "http://localhost/cache/large/product/1/category_abc123.webp",
+     *     },
+     *
+     *     @OA\Property(property="path", type="string", description="Image path"),
+     *     @OA\Property(property="url", type="string", description="Image URL"),
+     *     @OA\Property(property="original_image_url", type="string", description="Original image URL"),
+     *     @OA\Property(property="small_image_url", type="string", description="Small image URL"),
+     *     @OA\Property(property="medium_image_url", type="string", description="Medium image URL"),
+     *     @OA\Property(property="large_image_url", type="string", description="Large image URL")
+     * )
+     *
+     * @var object|null
+     */
+    public $category_image;
+
+    /**
+     * @OA\Property(
      *     title="Created at",
      *     description="Created at",
      *     example="2020-01-27 17:50:45",

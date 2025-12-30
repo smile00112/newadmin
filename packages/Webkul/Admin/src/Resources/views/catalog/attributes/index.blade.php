@@ -37,31 +37,43 @@
             </template>
 
             <template v-else>
-                <template v-if="available.records.length">
+                <template v-if="available && available.records && available.records.length > 0">
                     <div
                         class="row grid items-center gap-2.5 border-b px-4 py-4 text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950 cursor-pointer"
                         v-for="record in available.records"
+                        :key="record[available.meta && available.meta.primary_column ? available.meta.primary_column : 'id']"
                         :style="`grid-template-columns: repeat(${(() => {
-                            let count = available.columns.filter((column) => column.visibility).length;
-                            if (available.actions.length) ++count;
-                            if (available.massActions.length) ++count;
-                            return count;
+                            try {
+                                if (!available || !available.columns) return 7;
+                                let count = (available.columns || []).filter((column) => column && column.visibility).length;
+                                if (available.actions && available.actions.length) ++count;
+                                if (available.massActions && available.massActions.length) ++count;
+                                return count || 7;
+                            } catch(e) {
+                                return 7;
+                            }
                         })()}, minmax(150px, 1fr))`"
                         @click="(() => {
-                            const editAction = record.actions.find(action => action.icon && action.icon.includes('icon-edit'));
-                            if (editAction && editAction.method === 'GET') {
-                                window.location.href = editAction.url;
+                            try {
+                                if (record.actions && record.actions.length) {
+                                    const editAction = record.actions.find(action => action && action.icon && action.icon.includes('icon-edit'));
+                                    if (editAction && editAction.method === 'GET') {
+                                        window.location.href = editAction.url;
+                                    }
+                                }
+                            } catch(e) {
+                                console.error(e);
                             }
                         })()"
                     >
                         <!-- Mass Actions -->
-                        <p v-if="available.massActions.length" @click.stop>
-                            <label :for="`mass_action_select_record_${record[available.meta.primary_column]}`">
+                        <p v-if="available.massActions && available.massActions.length > 0" @click.stop>
+                            <label :for="`mass_action_select_record_${record[available.meta && available.meta.primary_column ? available.meta.primary_column : 'id']}`">
                                 <input
                                     type="checkbox"
-                                    :name="`mass_action_select_record_${record[available.meta.primary_column]}`"
-                                    :value="record[available.meta.primary_column]"
-                                    :id="`mass_action_select_record_${record[available.meta.primary_column]}`"
+                                    :name="`mass_action_select_record_${record[available.meta && available.meta.primary_column ? available.meta.primary_column : 'id']}`"
+                                    :value="record[available.meta && available.meta.primary_column ? available.meta.primary_column : 'id']"
+                                    :id="`mass_action_select_record_${record[available.meta && available.meta.primary_column ? available.meta.primary_column : 'id']}`"
                                     class="peer hidden"
                                     v-model="applied.massActions.indices"
                                 >
@@ -72,11 +84,12 @@
                         </p>
 
                         <!-- Columns -->
-                        <template v-for="column in available.columns">
+                        <template v-for="column in (available.columns || [])">
                             <p
                                 class="break-words"
                                 v-html="record[column.index]"
-                                v-if="column.visibility"
+                                v-if="column && column.visibility"
+                                :key="column.index"
                             >
                             </p>
                         </template>
@@ -84,14 +97,15 @@
                         <!-- Actions -->
                         <p
                             class="place-self-end"
-                            v-if="available.actions.length"
+                            v-if="available.actions && available.actions.length > 0"
                             @click.stop
                         >
                             <span
                                 class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
                                 :class="action.icon"
                                 v-text="! action.icon ? action.title : ''"
-                                v-for="action in record.actions"
+                                v-for="action in (record.actions || [])"
+                                :key="action.url || action.title"
                                 @click="performAction(action)"
                             >
                             </span>

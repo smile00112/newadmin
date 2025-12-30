@@ -871,6 +871,11 @@ return [
                     'title' => 'Images',
                 ],
 
+                'category_image' => [
+                    'info'  => 'Image for displaying in category listings',
+                    'title' => 'Category Image',
+                ],
+
                 'videos' => [
                     'error' => 'The :attribute may not be greater than :max kilobytes. Please choose a smaller file.',
                     'info'  => 'Maximum video size should be like :size',

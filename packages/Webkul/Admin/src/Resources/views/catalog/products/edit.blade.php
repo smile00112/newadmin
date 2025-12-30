@@ -276,6 +276,9 @@
                     @endforeach
 
                     @if ($column == 1)
+                        <!-- Category Image View Blade File -->
+                        @include('admin::catalog.products.edit.category_image')
+
                         <!-- Images View Blade File -->
                         @include('admin::catalog.products.edit.images')
 

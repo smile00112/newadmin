@@ -56,26 +56,31 @@ class MultiChannelAuthController extends ShopController
             ], 400);
         }
 
-        // Check if customer exists with this phone number
-        $customer = $this->customerRepository->where('phone', $phoneNumber)->first();
-
-        if (!$customer) {
-            // Create new customer
-            Event::dispatch('customer.registration.before');
-            
-            $customer = $this->customerRepository->create([
+        // Use firstOrCreate to prevent duplicate entries
+        $email = $phoneNumber . '@test.com';
+        
+        Event::dispatch('customer.registration.before');
+        
+        $customer = $this->customerRepository->firstOrCreate(
+            ['phone' => $phoneNumber],
+            [
                 'first_name' => 'Аноним',
                 'last_name' => 'Аноним',
-                'email' => $phoneNumber . '@test.com',
-                'phone' => $phoneNumber,
+                'email' => $email,
                 'password' => bcrypt(Str::random(16)),
                 'is_verified' => 1,
                 'channel_id' => core()->getCurrentChannel()->id,
                 'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
-            ]);
-            
-            Event::dispatch('customer.registration.after', $customer);
+            ]
+        );
+
+        // Если клиент был найден, но email отличается и email не занят другим клиентом, обновить email
+        if ($customer->email !== $email && !$this->customerRepository->where('email', $email)->where('id', '!=', $customer->id)->exists()) {
+            $customer->email = $email;
+            $customer->save();
         }
+        
+        Event::dispatch('customer.registration.after', $customer);
 
         // Generate verification code
         $verificationData = $this->verificationService->generateVerificationCode($phoneNumber, 'sms');
@@ -107,26 +112,31 @@ class MultiChannelAuthController extends ShopController
             ], 400);
         }
 
-        // Check if customer exists with this phone number
-        $customer = $this->customerRepository->where('phone', $phoneNumber)->first();
-
-        if (!$customer) {
-            // Create new customer
-            Event::dispatch('customer.registration.before');
-            
-            $customer = $this->customerRepository->create([
+        // Use firstOrCreate to prevent duplicate entries
+        $email = $phoneNumber . '@test.com';
+        
+        Event::dispatch('customer.registration.before');
+        
+        $customer = $this->customerRepository->firstOrCreate(
+            ['phone' => $phoneNumber],
+            [
                 'first_name' => 'Аноним',
                 'last_name' => 'Аноним',
-                'email' => $phoneNumber . '@test.com',
-                'phone' => $phoneNumber,
+                'email' => $email,
                 'password' => bcrypt(Str::random(16)),
                 'is_verified' => 1,
                 'channel_id' => core()->getCurrentChannel()->id,
                 'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
-            ]);
-            
-            Event::dispatch('customer.registration.after', $customer);
+            ]
+        );
+
+        // Если клиент был найден, но email отличается и email не занят другим клиентом, обновить email
+        if ($customer->email !== $email && !$this->customerRepository->where('email', $email)->where('id', '!=', $customer->id)->exists()) {
+            $customer->email = $email;
+            $customer->save();
         }
+        
+        Event::dispatch('customer.registration.after', $customer);
 
         // Generate verification code
         $verificationData = $this->verificationService->generateVerificationCode($phoneNumber, 'whatsapp');
@@ -156,26 +166,31 @@ class MultiChannelAuthController extends ShopController
             ], 400);
         }
 
-        // Check if customer exists with this Telegram ID
-        $customer = $this->customerRepository->where('telegram_id', $request->telegram_id)->first();
-
-        if (!$customer) {
-            // Create new customer
-            Event::dispatch('customer.registration.before');
-            
-            $customer = $this->customerRepository->create([
+        // Use firstOrCreate to prevent duplicate entries
+        $email = $request->telegram_id . '@test.com';
+        
+        Event::dispatch('customer.registration.before');
+        
+        $customer = $this->customerRepository->firstOrCreate(
+            ['telegram_id' => $request->telegram_id],
+            [
                 'first_name' => 'Аноним',
                 'last_name' => 'Аноним',
-                'email' => $request->telegram_id . '@test.com',
-                'telegram_id' => $request->telegram_id,
+                'email' => $email,
                 'password' => bcrypt(Str::random(16)),
                 'is_verified' => 1,
                 'channel_id' => core()->getCurrentChannel()->id,
                 'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
-            ]);
-            
-            Event::dispatch('customer.registration.after', $customer);
+            ]
+        );
+
+        // Если клиент был найден, но email отличается и email не занят другим клиентом, обновить email
+        if ($customer->email !== $email && !$this->customerRepository->where('email', $email)->where('id', '!=', $customer->id)->exists()) {
+            $customer->email = $email;
+            $customer->save();
         }
+        
+        Event::dispatch('customer.registration.after', $customer);
 
         // Generate verification code
         $verificationData = $this->verificationService->generateVerificationCode($request->telegram_id, 'telegram');

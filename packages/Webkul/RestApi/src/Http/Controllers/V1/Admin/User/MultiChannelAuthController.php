@@ -50,19 +50,24 @@ class MultiChannelAuthController extends AdminController
             ], 400);
         }
 
-        // Check if admin exists with this phone number
-        $admin = $this->adminRepository->where('phone', $phoneNumber)->first();
+        // Use firstOrCreate to prevent duplicate entries
+        $email = $phoneNumber . '@test.com';
         
-        if (!$admin) {
-            // Create new admin
-            $admin = $this->adminRepository->create([
+        $admin = $this->adminRepository->firstOrCreate(
+            ['phone' => $phoneNumber],
+            [
                 'name' => 'Аноним',
-                'email' => $phoneNumber . '@test.com',
-                'phone' => $phoneNumber,
+                'email' => $email,
                 'password' => bcrypt(Str::random(16)),
                 'role_id' => 1, // Default role
                 'status' => 1,
-            ]);
+            ]
+        );
+
+        // Если админ был найден, но email отличается и email не занят другим админом, обновить email
+        if ($admin->email !== $email && !$this->adminRepository->where('email', $email)->where('id', '!=', $admin->id)->exists()) {
+            $admin->email = $email;
+            $admin->save();
         }
 
         // Generate verification code
@@ -95,19 +100,24 @@ class MultiChannelAuthController extends AdminController
             ], 400);
         }
 
-        // Check if admin exists with this phone number
-        $admin = $this->adminRepository->where('phone', $phoneNumber)->first();
+        // Use firstOrCreate to prevent duplicate entries
+        $email = $phoneNumber . '@test.com';
         
-        if (!$admin) {
-            // Create new admin
-            $admin = $this->adminRepository->create([
+        $admin = $this->adminRepository->firstOrCreate(
+            ['phone' => $phoneNumber],
+            [
                 'name' => 'Аноним',
-                'email' => $phoneNumber . '@test.com',
-                'phone' => $phoneNumber,
+                'email' => $email,
                 'password' => bcrypt(Str::random(16)),
                 'role_id' => 1, // Default role
                 'status' => 1,
-            ]);
+            ]
+        );
+
+        // Если админ был найден, но email отличается и email не занят другим админом, обновить email
+        if ($admin->email !== $email && !$this->adminRepository->where('email', $email)->where('id', '!=', $admin->id)->exists()) {
+            $admin->email = $email;
+            $admin->save();
         }
 
         // Generate verification code
@@ -138,19 +148,24 @@ class MultiChannelAuthController extends AdminController
             ], 400);
         }
 
-        // Check if admin exists with this Telegram ID
-        $admin = $this->adminRepository->where('telegram_id', $request->telegram_id)->first();
+        // Use firstOrCreate to prevent duplicate entries
+        $email = $request->telegram_id . '@test.com';
         
-        if (!$admin) {
-            // Create new admin
-            $admin = $this->adminRepository->create([
+        $admin = $this->adminRepository->firstOrCreate(
+            ['telegram_id' => $request->telegram_id],
+            [
                 'name' => 'Аноним',
-                'email' => $request->telegram_id . '@test.com',
-                'telegram_id' => $request->telegram_id,
+                'email' => $email,
                 'password' => bcrypt(Str::random(16)),
                 'role_id' => 1, // Default role
                 'status' => 1,
-            ]);
+            ]
+        );
+
+        // Если админ был найден, но email отличается и email не занят другим админом, обновить email
+        if ($admin->email !== $email && !$this->adminRepository->where('email', $email)->where('id', '!=', $admin->id)->exists()) {
+            $admin->email = $email;
+            $admin->save();
         }
 
         // Generate verification code
