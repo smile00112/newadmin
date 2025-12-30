@@ -43,7 +43,7 @@ return [
         \Webkul\Theme\Providers\ModuleServiceProvider::class,
         \Webkul\User\Providers\ModuleServiceProvider::class,
         // ВНИМАНИЕ: Раскомментируйте следующую строку после выполнения: composer dump-autoload
-        // \Webkul\MobileApp\Providers\ModuleServiceProvider::class,
+        \Webkul\MobileApp\Providers\ModuleServiceProvider::class,
     ],
 
 ];
