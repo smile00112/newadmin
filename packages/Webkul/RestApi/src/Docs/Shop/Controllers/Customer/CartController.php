@@ -242,6 +242,31 @@ class CartController
      *                        ),
      *                      )
      *                  ),
+     *                  @OA\Property(
+     *                      property="constructor_options",
+     *                      type="object",
+     *                      description="Use in constructor type product only (Required), object where key is group_id (from product_constructor_group table) and value is object with product_id as key and quantity as value",
+     *                      example={
+     *                          "1": {
+     *                              "25": 2,
+     *                              "26": 1
+     *                          },
+     *                          "2": {
+     *                              "30": 1
+     *                          },
+     *                          "3": {
+     *                              "35": 3,
+     *                              "36": 1
+     *                          }
+     *                      },
+     *                      additionalProperties={
+     *                          "type": "object",
+     *                          "additionalProperties": {
+     *                              "type": "integer",
+     *                              "description": "Quantity of the product in the group"
+     *                          }
+     *                      }
+     *                  ),
      *
      *                  required={"product_id", "quantity"}
      *              ),
@@ -423,6 +448,29 @@ class CartController
      *                    "quantity": 1
      *                }
      *            ),
+     *            @OA\Examples(
+     *                example="ConstructorProduct",
+     *                summary="Constructor Product",
+     *                description="Constructor product allows selecting products from different groups. Each group_id corresponds to a group in product_constructor_group table, and each product_id is a simple product with its quantity.",
+     *                value={
+     *                    "product_id": 17,
+     *                    "is_buy_now": 0,
+     *                    "quantity": 1,
+     *                    "constructor_options": {
+     *                        "1": {
+     *                            "25": 2,
+     *                            "26": 1
+     *                        },
+     *                        "2": {
+     *                            "30": 1
+     *                        },
+     *                        "3": {
+     *                            "35": 3,
+     *                            "36": 1
+     *                        }
+     *                    }
+     *                }
+     *            ),
      *
      *          )
      *      ),
@@ -464,7 +512,7 @@ class CartController
      *      operationId="updateCartItem",
      *      tags={"Cart"},
      *      summary="Update cart item",
-     *      description="Update cart item",
+     *      description="Update cart item quantity. For constructor products, this updates the quantity of the main constructor product. To change constructor options (selected products in groups), remove the item and add it again with new constructor_options.",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\RequestBody(
@@ -477,7 +525,7 @@ class CartController
      *                  @OA\Property(
      *                      property="qty",
      *                      type="array",
-     *                      description="Index used as cart_item_id and value is quantity of the product, Use for all types of product (Required)",
+     *                      description="Index used as cart_item_id and value is quantity of the product, Use for all types of product (Required). Note: For constructor products, this only updates the quantity of the main product, not the constructor options.",
      *                      example={
      *                          "1": 2,
      *                          "2": 3
@@ -530,7 +578,7 @@ class CartController
      *      operationId="removeCartItem",
      *      tags={"Cart"},
      *      summary="Delete item from cart using cart item id",
-     *      description="Delete item from cart using cart item id",
+     *      description="Delete item from cart using cart item id. Works for all product types including constructor products. When removing a constructor product, all associated child items (selected products from groups) are also removed.",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\Parameter(

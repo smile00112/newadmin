@@ -3069,6 +3069,30 @@
                                             },
                                             "type": "object"
                                         }
+                                    },
+                                    "constructor_options": {
+                                        "description": "Use in constructor type product only (Required), object where key is group_id (from product_constructor_group table) and value is object with product_id as key and quantity as value",
+                                        "type": "object",
+                                        "example": {
+                                            "1": {
+                                                "25": 2,
+                                                "26": 1
+                                            },
+                                            "2": {
+                                                "30": 1
+                                            },
+                                            "3": {
+                                                "35": 3,
+                                                "36": 1
+                                            }
+                                        },
+                                        "additionalProperties": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "integer",
+                                                "description": "Quantity of the product in the group"
+                                            }
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -3242,6 +3266,28 @@
                                         },
                                         "quantity": 1
                                     }
+                                },
+                                "ConstructorProduct": {
+                                    "summary": "Constructor Product",
+                                    "description": "Constructor product allows selecting products from different groups. Each group_id corresponds to a group in product_constructor_group table, and each product_id is a simple product with its quantity.",
+                                    "value": {
+                                        "product_id": 17,
+                                        "is_buy_now": 0,
+                                        "quantity": 1,
+                                        "constructor_options": {
+                                            "1": {
+                                                "25": 2,
+                                                "26": 1
+                                            },
+                                            "2": {
+                                                "30": 1
+                                            },
+                                            "3": {
+                                                "35": 3,
+                                                "36": 1
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3287,7 +3333,7 @@
                     "Cart"
                 ],
                 "summary": "Update cart item",
-                "description": "Update cart item",
+                "description": "Update cart item quantity. For constructor products, this updates the quantity of the main constructor product. To change constructor options (selected products in groups), remove the item and add it again with new constructor_options.",
                 "operationId": "updateCartItem",
                 "requestBody": {
                     "content": {
@@ -3298,7 +3344,7 @@
                                 ],
                                 "properties": {
                                     "qty": {
-                                        "description": "Index used as cart_item_id and value is quantity of the product, Use for all types of product (Required)",
+                                        "description": "Index used as cart_item_id and value is quantity of the product, Use for all types of product (Required). Note: For constructor products, this only updates the quantity of the main product, not the constructor options.",
                                         "type": "array",
                                         "items": {
                                             "properties": {
@@ -3359,7 +3405,7 @@
                     "Cart"
                 ],
                 "summary": "Delete item from cart using cart item id",
-                "description": "Delete item from cart using cart item id",
+                "description": "Delete item from cart using cart item id. Works for all product types including constructor products. When removing a constructor product, all associated child items (selected products from groups) are also removed.",
                 "operationId": "removeCartItem",
                 "parameters": [
                     {
@@ -6456,6 +6502,46 @@
                             "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
                         }
                     },
+                    "category_image": {
+                        "title": "Category Image",
+                        "description": "Product's category image for displaying in category listings",
+                        "properties": {
+                            "path": {
+                                "description": "Image path",
+                                "type": "string"
+                            },
+                            "url": {
+                                "description": "Image URL",
+                                "type": "string"
+                            },
+                            "original_image_url": {
+                                "description": "Original image URL",
+                                "type": "string"
+                            },
+                            "small_image_url": {
+                                "description": "Small image URL",
+                                "type": "string"
+                            },
+                            "medium_image_url": {
+                                "description": "Medium image URL",
+                                "type": "string"
+                            },
+                            "large_image_url": {
+                                "description": "Large image URL",
+                                "type": "string"
+                            }
+                        },
+                        "type": "object",
+                        "example": {
+                            "path": "product/1/category_abc123.webp",
+                            "url": "http://localhost/storage/product/1/category_abc123.webp",
+                            "original_image_url": "http://localhost/storage/product/1/category_abc123.webp",
+                            "small_image_url": "http://localhost/cache/small/product/1/category_abc123.webp",
+                            "medium_image_url": "http://localhost/cache/medium/product/1/category_abc123.webp",
+                            "large_image_url": "http://localhost/cache/large/product/1/category_abc123.webp"
+                        },
+                        "nullable": true
+                    },
                     "created_at": {
                         "title": "Created at",
                         "description": "Created at",
@@ -6936,15 +7022,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
@@ -11371,7 +11453,6 @@
         {
             "name": "Catalog",
             "description": "Catalog"
-
         },
         {
             "name": "Mobile App",
