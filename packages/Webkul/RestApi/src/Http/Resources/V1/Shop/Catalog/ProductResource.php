@@ -66,6 +66,9 @@ class ProductResource extends JsonResource
             /* product attributes with their options */
             'attributes' => $this->getProductAttributes($product),
 
+            /* nutrition information (КЖБУ) */
+            'nutrition' => $this->getNutritionData($product),
+
             /* product's extra information */
             $this->merge($this->allProductExtraInfo()),
 
@@ -330,5 +333,40 @@ class ProductResource extends JsonResource
             'medium_image_url'   => url('cache/medium/'.$categoryImagePath),
             'large_image_url'    => url('cache/large/'.$categoryImagePath),
         ];
+    }
+
+    /**
+     * Get nutrition information (КЖБУ).
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getNutritionData($product)
+    {
+        $nutrition = [
+            'calories' => null,
+            'proteins' => null,
+            'fats'     => null,
+            'carbs'    => null,
+        ];
+
+        // Получаем значения КЖБУ из атрибутов товара
+        $nutritionCodes = ['calories', 'proteins', 'fats', 'carbs'];
+        
+        foreach ($nutritionCodes as $code) {
+            $value = $product->{$code};
+            
+            if ($value !== null && $value !== '') {
+                // Преобразуем в число, если это строка
+                $nutrition[$code] = is_numeric($value) ? (float) $value : $value;
+            }
+        }
+
+        // Возвращаем null, если все значения пустые
+        if (empty(array_filter($nutrition))) {
+            return null;
+        }
+
+        return $nutrition;
     }
 }
