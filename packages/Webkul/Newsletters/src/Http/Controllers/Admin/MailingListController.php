@@ -12,6 +12,7 @@ use Webkul\Newsletters\Repositories\VacapInstanceRepository;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
 use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Webkul\Newsletters\Repositories\MailInstanceRepository;
+use Webkul\Newsletters\Repositories\TelegramBotInstanceRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +28,8 @@ class MailingListController extends Controller
         protected VacapInstanceRepository $vacapInstanceRepository,
         protected CustomerNumberRepository $customerNumberRepository,
         protected CompanyAccountRepository $accountRepository,
-        protected MailInstanceRepository $mailInstanceRepository
+        protected MailInstanceRepository $mailInstanceRepository,
+        protected TelegramBotInstanceRepository $telegramBotInstanceRepository
     ) {}
 
     /**
@@ -65,10 +67,12 @@ class MailingListController extends Controller
      */
     public function create()
     {
-        // Get available mail instances for selection
+        // Get available instances for selection
         $mailInstances = $this->mailInstanceRepository->getAllForCompany();
+        $telegramInstances = $this->telegramBotInstanceRepository->getAllForCompany();
+        $whatsappInstances = $this->vacapInstanceRepository->all();
         
-        return view('newsletters::admin.mailing-lists.create', compact('mailInstances'));
+        return view('newsletters::admin.mailing-lists.create', compact('mailInstances', 'telegramInstances', 'whatsappInstances'));
     }
 
     /**
@@ -162,7 +166,15 @@ class MailingListController extends Controller
                 'start_at' => $mailingList->start_at,
             ]);
 
-            // Create WhatsApp instances with the new mailing list ID
+            // Handle WhatsApp instances - either select existing or create new
+            $whatsappInstanceIds = [];
+            
+            // Check if user selected existing WhatsApp instances
+            if ($request->has('whatsapp_instance_ids') && is_array($request->input('whatsapp_instance_ids'))) {
+                $whatsappInstanceIds = array_filter($request->input('whatsapp_instance_ids'));
+            }
+            
+            // Create new WhatsApp instances if provided
             if ($request->has('whatsapp_instances')) {
                 $whatsappInstances = $request->input('whatsapp_instances');
                 $validInstances = array_filter($whatsappInstances, function($instance) {
@@ -176,43 +188,47 @@ class MailingListController extends Controller
                 ]);
 
                 foreach ($validInstances as $index => $instanceData) {
-                    $instanceData['mailing_list_id'] = $mailingList->id;
+                    // Remove mailing_list_id if present
+                    unset($instanceData['mailing_list_id']);
                     // company_id will be automatically set by repository
 
                     Log::info('Creating WhatsApp instance', [
                         'instance_index' => $index,
                         'link_name' => $instanceData['link_name'],
                         'login' => $instanceData['login'],
-                        'mailing_list_id' => $mailingList->id,
                     ]);
 
                     $instance = $this->vacapInstanceRepository->create($instanceData);
+                    $whatsappInstanceIds[] = $instance->id;
 
                     Log::info('WhatsApp instance created successfully', [
                         'instance_id' => $instance->id,
                         'link_name' => $instance->link_name,
                         'login' => $instance->login,
-                        'mailing_list_id' => $instance->mailing_list_id,
                     ]);
                 }
             }
+            
+            // Attach WhatsApp instances to mailing list
+            if (!empty($whatsappInstanceIds)) {
+                $mailingList->whatsappInstances()->sync($whatsappInstanceIds);
+                Log::info('Attached WhatsApp instances to mailing list', [
+                    'mailing_list_id' => $mailingList->id,
+                    'instance_ids' => $whatsappInstanceIds,
+                ]);
+            }
 
             // Handle mail instances - either select existing or create new
+            $mailInstanceIds = [];
+            
             if ($request->input('channel_type') === 'email') {
-                // Check if user selected existing mail instance
-                if ($request->has('mail_instance_id') && $request->input('mail_instance_id')) {
-                    // Link existing mail instance to this mailing list
-                    $this->mailInstanceRepository->update(
-                        ['mailing_list_id' => $mailingList->id],
-                        $request->input('mail_instance_id')
-                    );
-                    
-                    Log::info('Linked existing mail instance to mailing list', [
-                        'mail_instance_id' => $request->input('mail_instance_id'),
-                        'mailing_list_id' => $mailingList->id,
-                    ]);
-                } elseif ($request->has('mail_instances')) {
-                    // Create new mail instances
+                // Check if user selected existing mail instances
+                if ($request->has('mail_instance_ids') && is_array($request->input('mail_instance_ids'))) {
+                    $mailInstanceIds = array_filter($request->input('mail_instance_ids'));
+                }
+                
+                // Create new mail instances if provided
+                if ($request->has('mail_instances')) {
                     $mailInstances = $request->input('mail_instances');
                     $validInstances = array_filter($mailInstances, function($instance) {
                         return !empty($instance['host']) && !empty($instance['username']) && !empty($instance['password']) && !empty($instance['from_email']);
@@ -225,24 +241,84 @@ class MailingListController extends Controller
                     ]);
 
                     foreach ($validInstances as $index => $instanceData) {
-                        $instanceData['mailing_list_id'] = $mailingList->id;
+                        // Remove mailing_list_id if present
+                        unset($instanceData['mailing_list_id']);
 
                         Log::info('Creating mail instance', [
                             'instance_index' => $index,
                             'host' => $instanceData['host'],
                             'username' => $instanceData['username'],
-                            'mailing_list_id' => $mailingList->id,
                         ]);
 
                         $instance = $this->mailInstanceRepository->create($instanceData);
+                        $mailInstanceIds[] = $instance->id;
 
                         Log::info('Mail instance created successfully', [
                             'instance_id' => $instance->id,
                             'host' => $instance->host,
                             'username' => $instance->username,
-                            'mailing_list_id' => $instance->mailing_list_id,
                         ]);
                     }
+                }
+                
+                // Attach mail instances to mailing list
+                if (!empty($mailInstanceIds)) {
+                    $mailingList->mailInstances()->sync($mailInstanceIds);
+                    Log::info('Attached mail instances to mailing list', [
+                        'mailing_list_id' => $mailingList->id,
+                        'instance_ids' => $mailInstanceIds,
+                    ]);
+                }
+            }
+            
+            // Handle telegram instances - either select existing or create new
+            $telegramInstanceIds = [];
+            
+            if ($request->input('channel_type') === 'telegram') {
+                // Check if user selected existing telegram instances
+                if ($request->has('telegram_instance_ids') && is_array($request->input('telegram_instance_ids'))) {
+                    $telegramInstanceIds = array_filter($request->input('telegram_instance_ids'));
+                }
+                
+                // Create new telegram instances if provided
+                if ($request->has('telegram_instances')) {
+                    $telegramInstances = $request->input('telegram_instances');
+                    $validInstances = array_filter($telegramInstances, function($instance) {
+                        return !empty($instance['bot_token']);
+                    });
+
+                    Log::info('Processing telegram instances', [
+                        'total_instances' => count($telegramInstances),
+                        'valid_instances' => count($validInstances),
+                        'mailing_list_id' => $mailingList->id,
+                    ]);
+
+                    foreach ($validInstances as $index => $instanceData) {
+                        // Remove mailing_list_id if present
+                        unset($instanceData['mailing_list_id']);
+
+                        Log::info('Creating telegram instance', [
+                            'instance_index' => $index,
+                            'bot_username' => $instanceData['bot_username'] ?? null,
+                        ]);
+
+                        $instance = $this->telegramBotInstanceRepository->create($instanceData);
+                        $telegramInstanceIds[] = $instance->id;
+
+                        Log::info('Telegram instance created successfully', [
+                            'instance_id' => $instance->id,
+                            'bot_username' => $instance->bot_username,
+                        ]);
+                    }
+                }
+                
+                // Attach telegram instances to mailing list
+                if (!empty($telegramInstanceIds)) {
+                    $mailingList->telegramInstances()->sync($telegramInstanceIds);
+                    Log::info('Attached telegram instances to mailing list', [
+                        'mailing_list_id' => $mailingList->id,
+                        'instance_ids' => $telegramInstanceIds,
+                    ]);
                 }
             }
 
@@ -320,7 +396,7 @@ class MailingListController extends Controller
     public function edit(int $id)
     {
         $mailingList = $this->mailingListRepository->findOrFail($id);
-        $whatsappInstances = $this->vacapInstanceRepository->where('mailing_list_id', $id)->get();
+        $whatsappInstances = $mailingList->whatsappInstances;
 
         // Get customer numbers with sorting and pagination
         $customerNumbers = $this->customerNumberRepository
@@ -371,7 +447,31 @@ class MailingListController extends Controller
             ]);
         }
 
-        return view('newsletters::admin.mailing-lists.edit', compact('mailingList', 'whatsappInstances', 'customerNumbers', 'userNumbers', 'totalCustomerNumbers', 'hasBalance', 'accountBalance'));
+        // Get all available instances for selection
+        $mailInstances = $this->mailInstanceRepository->getAllForCompany();
+        $telegramInstances = $this->telegramBotInstanceRepository->getAllForCompany();
+        $allWhatsappInstances = $this->vacapInstanceRepository->all();
+        
+        // Get selected instance IDs for pre-selection
+        $selectedMailInstanceIds = $mailingList->mailInstances->pluck('id')->toArray();
+        $selectedTelegramInstanceIds = $mailingList->telegramInstances->pluck('id')->toArray();
+        $selectedWhatsappInstanceIds = $whatsappInstances->pluck('id')->toArray();
+        
+        return view('newsletters::admin.mailing-lists.edit', compact(
+            'mailingList', 
+            'whatsappInstances', 
+            'customerNumbers', 
+            'userNumbers', 
+            'totalCustomerNumbers', 
+            'hasBalance', 
+            'accountBalance',
+            'mailInstances',
+            'telegramInstances',
+            'allWhatsappInstances',
+            'selectedMailInstanceIds',
+            'selectedTelegramInstanceIds',
+            'selectedWhatsappInstanceIds'
+        ));
     }
 
     /**
@@ -474,7 +574,15 @@ class MailingListController extends Controller
                 'start_at' => $mailingList->start_at,
             ]);
 
-            // Update WhatsApp instances
+            // Handle WhatsApp instances - sync selected and created instances
+            $whatsappInstanceIds = [];
+            
+            // Get selected existing WhatsApp instances
+            if ($request->has('whatsapp_instance_ids') && is_array($request->input('whatsapp_instance_ids'))) {
+                $whatsappInstanceIds = array_filter($request->input('whatsapp_instance_ids'));
+            }
+            
+            // Create or update WhatsApp instances if provided
             if ($request->has('whatsapp_instances')) {
                 $whatsappInstances = $request->input('whatsapp_instances');
                 $validInstances = array_filter($whatsappInstances, function($instance) {
@@ -487,34 +595,27 @@ class MailingListController extends Controller
                     'mailing_list_id' => $id,
                 ]);
 
-                // Get existing instances
-                $existingInstances = $this->vacapInstanceRepository->where('mailing_list_id', $id)->get()->keyBy('id');
-                $processedInstanceIds = [];
-
                 foreach ($validInstances as $index => $instanceData) {
-                    $instanceData['mailing_list_id'] = $id;
+                    // Remove mailing_list_id if present
+                    unset($instanceData['mailing_list_id']);
 
                     // Check if this is an update (has ID) or new instance
-                    if (isset($instanceData['id']) && !empty($instanceData['id']) && $existingInstances->has($instanceData['id'])) {
+                    if (isset($instanceData['id']) && !empty($instanceData['id'])) {
                         // Update existing instance
-                        $existingInstance = $existingInstances->get($instanceData['id']);
-
                         Log::info('Updating existing WhatsApp instance', [
-                            'instance_id' => $existingInstance->id,
+                            'instance_id' => $instanceData['id'],
                             'instance_index' => $index,
                             'link_name' => $instanceData['link_name'],
                             'login' => $instanceData['login'],
-                            'mailing_list_id' => $id,
                         ]);
 
-                        $this->vacapInstanceRepository->update($instanceData, $existingInstance->id);
-                        $processedInstanceIds[] = $existingInstance->id;
+                        $this->vacapInstanceRepository->update($instanceData, $instanceData['id']);
+                        $whatsappInstanceIds[] = $instanceData['id'];
 
                         Log::info('WhatsApp instance updated successfully', [
-                            'instance_id' => $existingInstance->id,
+                            'instance_id' => $instanceData['id'],
                             'link_name' => $instanceData['link_name'],
                             'login' => $instanceData['login'],
-                            'mailing_list_id' => $id,
                         ]);
                     } else {
                         // Create new instance
@@ -522,40 +623,161 @@ class MailingListController extends Controller
                             'instance_index' => $index,
                             'link_name' => $instanceData['link_name'],
                             'login' => $instanceData['login'],
-                            'mailing_list_id' => $id,
                         ]);
 
                         $instance = $this->vacapInstanceRepository->create($instanceData);
-                        $processedInstanceIds[] = $instance->id;
+                        $whatsappInstanceIds[] = $instance->id;
 
                         Log::info('WhatsApp instance created successfully', [
                             'instance_id' => $instance->id,
                             'link_name' => $instance->link_name,
                             'login' => $instance->login,
-                            'mailing_list_id' => $instance->mailing_list_id,
                         ]);
                     }
                 }
+            }
+            
+            // Sync WhatsApp instances with mailing list
+            $mailingList->whatsappInstances()->sync($whatsappInstanceIds);
+            Log::info('Synced WhatsApp instances with mailing list', [
+                'mailing_list_id' => $id,
+                'instance_ids' => $whatsappInstanceIds,
+            ]);
 
-                // Delete instances that were not in the request (removed by user)
-                $instancesToDelete = $existingInstances->whereNotIn('id', $processedInstanceIds);
+            // Handle mail instances - sync selected and created instances
+            $mailInstanceIds = [];
+            
+            if ($request->input('channel_type') === 'email') {
+                // Get selected existing mail instances
+                if ($request->has('mail_instance_ids') && is_array($request->input('mail_instance_ids'))) {
+                    $mailInstanceIds = array_filter($request->input('mail_instance_ids'));
+                }
+                
+                // Create or update mail instances if provided
+                if ($request->has('mail_instances')) {
+                    $mailInstances = $request->input('mail_instances');
+                    $validInstances = array_filter($mailInstances, function($instance) {
+                        return !empty($instance['host']) && !empty($instance['username']) && !empty($instance['password']) && !empty($instance['from_email']);
+                    });
 
-                if ($instancesToDelete->count() > 0) {
-                    Log::info('Deleting removed WhatsApp instances', [
+                    Log::info('Processing mail instances for update', [
+                        'total_instances' => count($mailInstances),
+                        'valid_instances' => count($validInstances),
                         'mailing_list_id' => $id,
-                        'instances_to_delete' => $instancesToDelete->pluck('id')->toArray(),
                     ]);
 
-                    foreach ($instancesToDelete as $instanceToDelete) {
-                        $this->vacapInstanceRepository->delete($instanceToDelete->id);
+                    foreach ($validInstances as $index => $instanceData) {
+                        // Remove mailing_list_id if present
+                        unset($instanceData['mailing_list_id']);
 
-                        Log::info('WhatsApp instance deleted', [
-                            'instance_id' => $instanceToDelete->id,
-                            'link_name' => $instanceToDelete->link_name,
-                            'mailing_list_id' => $id,
-                        ]);
+                        // Check if this is an update (has ID) or new instance
+                        if (isset($instanceData['id']) && !empty($instanceData['id'])) {
+                            // Update existing instance
+                            Log::info('Updating existing mail instance', [
+                                'instance_id' => $instanceData['id'],
+                                'instance_index' => $index,
+                                'host' => $instanceData['host'],
+                            ]);
+
+                            $this->mailInstanceRepository->update($instanceData, $instanceData['id']);
+                            $mailInstanceIds[] = $instanceData['id'];
+
+                            Log::info('Mail instance updated successfully', [
+                                'instance_id' => $instanceData['id'],
+                                'host' => $instanceData['host'],
+                            ]);
+                        } else {
+                            // Create new instance
+                            Log::info('Creating new mail instance', [
+                                'instance_index' => $index,
+                                'host' => $instanceData['host'],
+                            ]);
+
+                            $instance = $this->mailInstanceRepository->create($instanceData);
+                            $mailInstanceIds[] = $instance->id;
+
+                            Log::info('Mail instance created successfully', [
+                                'instance_id' => $instance->id,
+                                'host' => $instance->host,
+                            ]);
+                        }
                     }
                 }
+                
+                // Sync mail instances with mailing list
+                $mailingList->mailInstances()->sync($mailInstanceIds);
+                Log::info('Synced mail instances with mailing list', [
+                    'mailing_list_id' => $id,
+                    'instance_ids' => $mailInstanceIds,
+                ]);
+            }
+            
+            // Handle telegram instances - sync selected and created instances
+            $telegramInstanceIds = [];
+            
+            if ($request->input('channel_type') === 'telegram') {
+                // Get selected existing telegram instances
+                if ($request->has('telegram_instance_ids') && is_array($request->input('telegram_instance_ids'))) {
+                    $telegramInstanceIds = array_filter($request->input('telegram_instance_ids'));
+                }
+                
+                // Create or update telegram instances if provided
+                if ($request->has('telegram_instances')) {
+                    $telegramInstances = $request->input('telegram_instances');
+                    $validInstances = array_filter($telegramInstances, function($instance) {
+                        return !empty($instance['bot_token']);
+                    });
+
+                    Log::info('Processing telegram instances for update', [
+                        'total_instances' => count($telegramInstances),
+                        'valid_instances' => count($validInstances),
+                        'mailing_list_id' => $id,
+                    ]);
+
+                    foreach ($validInstances as $index => $instanceData) {
+                        // Remove mailing_list_id if present
+                        unset($instanceData['mailing_list_id']);
+
+                        // Check if this is an update (has ID) or new instance
+                        if (isset($instanceData['id']) && !empty($instanceData['id'])) {
+                            // Update existing instance
+                            Log::info('Updating existing telegram instance', [
+                                'instance_id' => $instanceData['id'],
+                                'instance_index' => $index,
+                                'bot_username' => $instanceData['bot_username'] ?? null,
+                            ]);
+
+                            $this->telegramBotInstanceRepository->update($instanceData, $instanceData['id']);
+                            $telegramInstanceIds[] = $instanceData['id'];
+
+                            Log::info('Telegram instance updated successfully', [
+                                'instance_id' => $instanceData['id'],
+                                'bot_username' => $instanceData['bot_username'] ?? null,
+                            ]);
+                        } else {
+                            // Create new instance
+                            Log::info('Creating new telegram instance', [
+                                'instance_index' => $index,
+                                'bot_username' => $instanceData['bot_username'] ?? null,
+                            ]);
+
+                            $instance = $this->telegramBotInstanceRepository->create($instanceData);
+                            $telegramInstanceIds[] = $instance->id;
+
+                            Log::info('Telegram instance created successfully', [
+                                'instance_id' => $instance->id,
+                                'bot_username' => $instance->bot_username,
+                            ]);
+                        }
+                    }
+                }
+                
+                // Sync telegram instances with mailing list
+                $mailingList->telegramInstances()->sync($telegramInstanceIds);
+                Log::info('Synced telegram instances with mailing list', [
+                    'mailing_list_id' => $id,
+                    'instance_ids' => $telegramInstanceIds,
+                ]);
             }
 
             // Update customer numbers
@@ -739,7 +961,7 @@ class MailingListController extends Controller
 
             // Get counts before deletion for logging
             $customerNumbersCount = $this->customerNumberRepository->where('mailing_list_id', $id)->count();
-            $whatsappInstancesCount = $this->vacapInstanceRepository->where('mailing_list_id', $id)->count();
+            $whatsappInstancesCount = $mailingList->whatsappInstances()->count();
 
             Log::info('Deleting associated records', [
                 'mailing_list_id' => $id,
@@ -754,11 +976,11 @@ class MailingListController extends Controller
                 'deleted_customers_count' => $customerNumbersCount,
             ]);
 
-            // Delete WhatsApp instances
-            $this->vacapInstanceRepository->where('mailing_list_id', $id)->delete();
-            Log::info('WhatsApp instances deleted successfully', [
+            // Detach WhatsApp instances (pivot table will be cleaned automatically by cascade)
+            $mailingList->whatsappInstances()->detach();
+            Log::info('WhatsApp instances detached from mailing list', [
                 'mailing_list_id' => $id,
-                'deleted_instances_count' => $whatsappInstancesCount,
+                'detached_instances_count' => $whatsappInstancesCount,
             ]);
 
             // Delete mailing list

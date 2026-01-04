@@ -277,6 +277,32 @@
                     </div>
                 </div>
                 <div class="p-6">
+                    <!-- Select existing WhatsApp instances -->
+                    @if(isset($whatsappInstances) && $whatsappInstances->count() > 0)
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.whatsapp-instances.select-existing') }}
+                        </label>
+                        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3 dark:bg-gray-700">
+                            @foreach($whatsappInstances as $whatsappInstance)
+                                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
+                                    <input
+                                        type="checkbox"
+                                        name="whatsapp_instance_ids[]"
+                                        value="{{ $whatsappInstance->id }}"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    >
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                                        {{ $whatsappInstance->link_name }} ({{ $whatsappInstance->login }})
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {{ __('newsletters::app.admin.whatsapp-instances.select-existing-hint') }}
+                        </p>
+                    </div>
+                    @endif
                     <div id="whatsappInstancesContainer">
 {{--                        <div class="whatsapp-instance-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">--}}
 {{--                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">--}}
@@ -345,25 +371,27 @@
                     </div>
                 </div>
                 <div class="p-6">
-                    <!-- Select existing mail instance -->
+                    <!-- Select existing mail instances -->
                     @if(isset($mailInstances) && $mailInstances->count() > 0)
                     <div class="mb-6">
-                        <label for="mail_instance_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {{ __('newsletters::app.admin.mail-instances.select-existing') }}
                         </label>
-                        <select
-                            name="mail_instance_id"
-                            id="mail_instance_id"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            onchange="toggleNewEmailInstanceForm(this.value)"
-                        >
-                            <option value="">{{ __('newsletters::app.admin.mail-instances.create-new') }}</option>
+                        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3 dark:bg-gray-700">
                             @foreach($mailInstances as $mailInstance)
-                                <option value="{{ $mailInstance->id }}">
-                                    {{ $mailInstance->name ?: $mailInstance->from_email }} ({{ $mailInstance->host }})
-                                </option>
+                                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
+                                    <input
+                                        type="checkbox"
+                                        name="mail_instance_ids[]"
+                                        value="{{ $mailInstance->id }}"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    >
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                                        {{ $mailInstance->name ?: $mailInstance->from_email }} ({{ $mailInstance->host }})
+                                    </span>
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                             {{ __('newsletters::app.admin.mail-instances.select-existing-hint') }}
                         </p>
@@ -391,6 +419,32 @@
                     </div>
                 </div>
                 <div class="p-6">
+                    <!-- Select existing Telegram instances -->
+                    @if(isset($telegramInstances) && $telegramInstances->count() > 0)
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.telegram-instances.select-existing') }}
+                        </label>
+                        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3 dark:bg-gray-700">
+                            @foreach($telegramInstances as $telegramInstance)
+                                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
+                                    <input
+                                        type="checkbox"
+                                        name="telegram_instance_ids[]"
+                                        value="{{ $telegramInstance->id }}"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    >
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                                        {{ $telegramInstance->bot_name ?: $telegramInstance->bot_username ?: 'Telegram Bot' }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {{ __('newsletters::app.admin.telegram-instances.select-existing-hint') }}
+                        </p>
+                    </div>
+                    @endif
                     <div id="telegramInstancesContainer"></div>
                 </div>
             </div>

@@ -5,7 +5,7 @@ namespace Webkul\Newsletters\Repositories;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\Newsletters\Traits\BelongsToCompany;
 
-class MailInstanceRepository extends Repository
+class TelegramBotInstanceRepository extends Repository
 {
     use BelongsToCompany;
 
@@ -16,7 +16,7 @@ class MailInstanceRepository extends Repository
      */
     function model()
     {
-        return 'Webkul\Newsletters\Models\MailInstance';
+        return 'Webkul\Newsletters\Models\TelegramBotInstance';
     }
 
     /**
@@ -85,20 +85,9 @@ class MailInstanceRepository extends Repository
      */
     public function create(array $attributes)
     {
-        // If company_id is explicitly provided, use it
-        if (isset($attributes['company_id'])) {
-            $companyId = $attributes['company_id'];
-        } else {
-            // Otherwise, try to get from current user
-            $companyId = $this->getCurrentCompanyId();
-            if ($companyId !== null) {
-                $attributes['company_id'] = $companyId;
-            }
-        }
-
-        // Ensure company_id is set, throw exception if not
-        if (!isset($attributes['company_id']) || $attributes['company_id'] === null) {
-            throw new \RuntimeException('Cannot create mail instance: company_id is required but not provided.');
+        $companyId = $this->getCurrentCompanyId();
+        if ($companyId !== null && !isset($attributes['company_id'])) {
+            $attributes['company_id'] = $companyId;
         }
 
         $model = $this->makeModel();
@@ -111,7 +100,7 @@ class MailInstanceRepository extends Repository
     }
 
     /**
-     * Get available mail instances for company.
+     * Get available telegram instances for company.
      */
     public function getAvailableForCompany($companyId = null)
     {
@@ -124,7 +113,7 @@ class MailInstanceRepository extends Repository
     }
 
     /**
-     * Get all mail instances for company.
+     * Get all telegram instances for company.
      */
     public function getAllForCompany($companyId = null)
     {
@@ -136,6 +125,4 @@ class MailInstanceRepository extends Repository
             ->get();
     }
 }
-
-
 

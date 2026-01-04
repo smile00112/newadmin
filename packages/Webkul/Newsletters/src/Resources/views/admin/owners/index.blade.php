@@ -67,6 +67,16 @@
                                 </button>
                             </form>
                             @endif
+                            @if($context['type'] === 'super_admin' && $user->status)
+                            <form method="POST" action="{{ route('admin.newsletters.owners.impersonate', $user->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.owners.impersonate-confirm', ['name' => $user->name]) }}')" class="inline">
+                                @csrf
+                                <button type="submit"
+                                        class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                        title="{{ __('newsletters::app.admin.owners.impersonate-title') }}">
+                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-login"></span>
+                                </button>
+                            </form>
+                            @endif
                             <button
                                 type="button"
                                 onclick="toggleStatus({{ $user->id }})"

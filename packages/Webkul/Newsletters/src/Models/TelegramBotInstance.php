@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TelegramBotInstance extends Model
@@ -17,7 +18,6 @@ class TelegramBotInstance extends Model
         'bot_username',
         'bot_name',
         'company_id',
-        'mailing_list_id',
         'active',
     ];
 
@@ -39,9 +39,9 @@ class TelegramBotInstance extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function mailingList(): BelongsTo
+    public function mailingLists(): BelongsToMany
     {
-        return $this->belongsTo(MailingList::class);
+        return $this->belongsToMany(MailingList::class, 'newsletters_mailing_list_telegram_instance', 'telegram_instance_id', 'mailing_list_id');
     }
 
     public function scopeForCompany($query, $companyId)

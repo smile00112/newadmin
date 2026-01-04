@@ -43,10 +43,10 @@ class VacapInstanceController extends Controller
             'link_name' => 'required|string|max:255',
             'login' => 'required|string|max:255',
             'password' => 'required|string|max:255',
-            'mailing_list_id' => 'nullable|exists:newsletters_mailing_lists,id',
         ]);
 
-        $whatsappInstance = $this->whatsappInstanceRepository->create($request->all());
+        $data = $request->except(['mailing_list_id']);
+        $whatsappInstance = $this->whatsappInstanceRepository->create($data);
 
         session()->flash('success', trans('newsletters::app.admin.whatsapp-instances.create-success'));
 
@@ -73,10 +73,10 @@ class VacapInstanceController extends Controller
             'link_name' => 'required|string|max:255',
             'login' => 'required|string|max:255',
             'password' => 'required|string|max:255',
-            'mailing_list_id' => 'nullable|exists:newsletters_mailing_lists,id',
         ]);
 
-        $whatsappInstance = $this->whatsappInstanceRepository->update($request->all(), $id);
+        $data = $request->except(['mailing_list_id']);
+        $whatsappInstance = $this->whatsappInstanceRepository->update($data, $id);
 
         session()->flash('success', trans('newsletters::app.admin.whatsapp-instances.update-success'));
 

@@ -951,24 +951,24 @@ return [
         'route' => 'admin.newsletters.mailing-lists.pause',
         'sort'  => 6,
     ], [
-        'key'   => 'newsletters.whatsapp-instances',
-        'name'  => 'newsletters::app.acl.whatsapp-instances',
-        'route' => 'admin.newsletters.whatsapp-instances.index',
+        'key'   => 'newsletters.channel-instances',
+        'name'  => 'newsletters::app.acl.channel-instances',
+        'route' => 'admin.newsletters.channel-instances.index',
         'sort'  => 4,
     ], [
-        'key'   => 'newsletters.whatsapp-instances.create',
+        'key'   => 'newsletters.channel-instances.create',
         'name'  => 'newsletters::app.acl.create',
-        'route' => 'admin.newsletters.whatsapp-instances.create',
+        'route' => 'admin.newsletters.channel-instances.create',
         'sort'  => 1,
     ], [
-        'key'   => 'newsletters.whatsapp-instances.edit',
+        'key'   => 'newsletters.channel-instances.edit',
         'name'  => 'newsletters::app.acl.edit',
-        'route' => 'admin.newsletters.whatsapp-instances.edit',
+        'route' => 'admin.newsletters.channel-instances.edit',
         'sort'  => 2,
     ], [
-        'key'   => 'newsletters.whatsapp-instances.delete',
+        'key'   => 'newsletters.channel-instances.delete',
         'name'  => 'newsletters::app.acl.delete',
-        'route' => 'admin.newsletters.whatsapp-instances.destroy',
+        'route' => 'admin.newsletters.channel-instances.destroy',
         'sort'  => 3,
     ], [
         'key'   => 'newsletters.customer-numbers',

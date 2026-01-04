@@ -44,8 +44,8 @@ class ResetBlockedInstances extends Command
         $totalReset = 0;
 
         foreach ($activeMailingLists as $mailingList) {
-            // Получаем все инстансы этой рассылки
-            $instances = VacapInstance::where('mailing_list_id', $mailingList->id)->get();
+            // Получаем все инстансы этой рассылки через belongsToMany
+            $instances = $mailingList->whatsappInstances;
 
             foreach ($instances as $instance) {
                 // Сбрасываем блокировку и счетчик сообщений

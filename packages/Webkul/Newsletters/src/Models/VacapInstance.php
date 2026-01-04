@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -27,7 +28,6 @@ class VacapInstance extends Model
         'link_name',
         'login',
         'password',
-        'mailing_list_id',
         'phone',
         'active',
         'sending_message_count',
@@ -63,11 +63,11 @@ class VacapInstance extends Model
     }
 
     /**
-     * Get the mailing list that owns the whatsapp instance.
+     * Get the mailing lists that use this whatsapp instance.
      */
-    public function mailingList(): BelongsTo
+    public function mailingLists(): BelongsToMany
     {
-        return $this->belongsTo(MailingList::class);
+        return $this->belongsToMany(MailingList::class, 'newsletters_mailing_list_whatsapp_instance', 'whatsapp_instance_id', 'mailing_list_id');
     }
 
     public function customerNumbers(): HasMany

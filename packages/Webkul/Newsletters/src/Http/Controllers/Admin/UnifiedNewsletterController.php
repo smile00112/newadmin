@@ -135,8 +135,8 @@ class UnifiedNewsletterController extends Controller
                 'start_at' => $request->input('mailing_list.start_at'),
             ], $mailingListId);
 
-            // Update WhatsApp instance
-            $whatsappInstance = $this->vacapInstanceRepository->where('mailing_list_id', $mailingListId)->first();
+            // Update WhatsApp instance (get first instance from relationship)
+            $whatsappInstance = $mailingList->whatsappInstances()->first();
             if ($whatsappInstance) {
                 $this->vacapInstanceRepository->update([
                     'link_name' => $request->input('whatsapp_instance.link_name'),
@@ -183,7 +183,7 @@ class UnifiedNewsletterController extends Controller
     public function edit(int $mailingListId)
     {
         $mailingList = $this->mailingListRepository->findOrFail($mailingListId);
-        $whatsappInstance = $this->vacapInstanceRepository->where('mailing_list_id', $mailingListId)->first();
+        $whatsappInstance = $mailingList->whatsappInstances()->first();
         $customerNumbers = $this->customerNumberRepository->where('mailing_list_id', $mailingListId)->get();
 
         return view('newsletters::admin.unified.edit', compact('mailingList', 'whatsappInstance', 'customerNumbers'));
@@ -200,8 +200,9 @@ class UnifiedNewsletterController extends Controller
             // Delete customer numbers first
             $this->customerNumberRepository->where('mailing_list_id', $mailingListId)->delete();
             
-            // Delete WhatsApp instance
-            $this->vacapInstanceRepository->where('mailing_list_id', $mailingListId)->delete();
+            // Detach WhatsApp instances (pivot table will be cleaned automatically by cascade)
+            $mailingList = $this->mailingListRepository->findOrFail($mailingListId);
+            $mailingList->whatsappInstances()->detach();
             
             // Delete mailing list
             $this->mailingListRepository->delete($mailingListId);

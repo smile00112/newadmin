@@ -607,5 +607,72 @@ class OwnersController extends Controller
 
         return redirect()->route('admin.newsletters.owners.index');
     }
+
+    /**
+     * Impersonate (login as) another user (super admin only).
+     */
+    public function impersonate(int $id)
+    {
+        $context = $this->getContext();
+        
+        if ($context['type'] !== 'super_admin') {
+            abort(403);
+        }
+
+        $this->requireNewsletterPermission('newsletters.owners.view');
+
+        $targetUser = $this->adminRepository->findOrFail($id);
+
+        // Проверка, что это пользователь компании
+        if (!$targetUser->company_id) {
+            abort(404, trans('newsletters::app.admin.owners.not-found'));
+        }
+
+        // Проверка, что пользователь активен
+        if (!$targetUser->status) {
+            session()->flash('error', trans('newsletters::app.admin.owners.cannot-impersonate-inactive'));
+            return redirect()->route('admin.newsletters.owners.index');
+        }
+
+        $currentAdmin = auth()->guard('admin')->user();
+
+        // Сохраняем ID оригинального администратора в сессии
+        session()->put('impersonator_id', $currentAdmin->id);
+        session()->put('impersonator_name', $currentAdmin->name);
+
+        // Входим под пользователем
+        auth()->guard('admin')->login($targetUser);
+
+        session()->flash('success', trans('newsletters::app.admin.owners.impersonate-success', ['name' => $targetUser->name]));
+
+        return redirect()->route('admin.newsletters.mailing-lists.index');
+    }
+
+    /**
+     * Stop impersonation and return to admin account.
+     */
+    public function stopImpersonate()
+    {
+        $impersonatorId = session()->get('impersonator_id');
+
+        if (!$impersonatorId) {
+            // Если нет информации об impersonator, просто выходим
+            auth()->guard('admin')->logout();
+            return redirect()->route('admin.session.create');
+        }
+
+        $impersonator = $this->adminRepository->findOrFail($impersonatorId);
+
+        // Очищаем сессию impersonation
+        session()->forget('impersonator_id');
+        session()->forget('impersonator_name');
+
+        // Возвращаемся к оригинальному администратору
+        auth()->guard('admin')->login($impersonator);
+
+        session()->flash('success', trans('newsletters::app.admin.owners.stop-impersonate-success'));
+
+        return redirect()->route('admin.newsletters.owners.index');
+    }
 }
 

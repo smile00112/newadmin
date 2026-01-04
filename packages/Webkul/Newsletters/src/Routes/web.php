@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Webkul\Newsletters\Http\Controllers\Admin\HooksController;
 use Webkul\Newsletters\Http\Controllers\Admin\VacapInstanceController;
+use Webkul\Newsletters\Http\Controllers\Admin\ChannelInstancesController;
 use Webkul\Newsletters\Http\Controllers\Admin\MailingListController;
 use Webkul\Newsletters\Http\Controllers\Admin\CustomerNumberController;
 use Webkul\Newsletters\Http\Controllers\Admin\StopListController;
@@ -104,6 +105,8 @@ Route::group([
                 Route::middleware('newsletters.permission:newsletters.owners.delete')->group(function () {
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.owners.delete');
                 });
+                // Impersonation routes
+                Route::post('{id}/impersonate', 'impersonate')->name('admin.newsletters.owners.impersonate');
             });
         });
 
@@ -162,6 +165,26 @@ Route::group([
             });
             Route::middleware('newsletters.permission:newsletters.whatsapp-instances.delete')->group(function () {
                 Route::delete('{id}', 'destroy')->name('admin.newsletters.whatsapp-instances.destroy');
+            });
+        });
+    });
+
+    /**
+     * Channel Instances routes (unified management for WhatsApp, Email, Telegram).
+     */
+    Route::middleware('newsletters.permission:newsletters.channel-instances')->group(function () {
+        Route::controller(ChannelInstancesController::class)->prefix('channel-instances')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.channel-instances.index');
+            Route::middleware('newsletters.permission:newsletters.channel-instances.create')->group(function () {
+                Route::get('create/{type}', 'create')->name('admin.newsletters.channel-instances.create');
+                Route::post('create/{type}', 'store')->name('admin.newsletters.channel-instances.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.channel-instances.edit')->group(function () {
+                Route::get('edit/{type}/{id}', 'edit')->name('admin.newsletters.channel-instances.edit');
+                Route::put('edit/{type}/{id}', 'update')->name('admin.newsletters.channel-instances.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.channel-instances.delete')->group(function () {
+                Route::delete('{type}/{id}', 'destroy')->name('admin.newsletters.channel-instances.destroy');
             });
         });
     });
@@ -334,5 +357,10 @@ Route::group([
         Route::get('', 'index')->name('admin.newsletters.admin-accounts.index');
         Route::post('topup/{companyId}', 'topup')->name('admin.newsletters.admin-accounts.topup');
     });
+
+    /**
+     * Stop impersonation route (available for all authenticated users).
+     */
+    Route::post('stop-impersonate', [OwnersController::class, 'stopImpersonate'])->name('admin.newsletters.stop-impersonate');
 
 });

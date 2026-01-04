@@ -283,7 +283,15 @@ return [
         'route'      => 'admin.newsletters.registration-requests.index',
         'sort'       => 3,
         'icon'       => '',
-    ], [
+    ],
+    [
+        'key'        => 'administration.channel-instances',
+        'name'       => 'newsletters::app.sidebar.channel-instances',
+        'route'      => 'admin.newsletters.channel-instances.index',
+        'sort'       => 6,
+        'icon'       => '',
+    ],
+    [
         'key'        => 'newsletters.mailing-lists',
         'name'       => 'newsletters::app.sidebar.mailing-lists',
         'route'      => 'admin.newsletters.mailing-lists.index',
@@ -316,24 +324,10 @@ return [
         'icon'       => '',
     ],
     [
-        'key'        => 'newsletters.whatsapp-instances',
-        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
-        'route'      => 'admin.newsletters.whatsapp-instances.index',
-        'sort'       => 6,
-        'icon'       => '',
-    ],
-    [
         'key'        => 'newsletters.contact-groups',
         'name'       => 'newsletters::app.sidebar.contact-groups',
         'route'      => 'admin.newsletters.contact-groups.index',
         'sort'       => 5,
-        'icon'       => '',
-    ],
-    [
-        'key'        => 'newsletters.whatsapp-instances',
-        'name'       => 'newsletters::app.sidebar.whatsapp-instances',
-        'route'      => 'admin.newsletters.whatsapp-instances.index',
-        'sort'       => 6,
         'icon'       => '',
     ],
 

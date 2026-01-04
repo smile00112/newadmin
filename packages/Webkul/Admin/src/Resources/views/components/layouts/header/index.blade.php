@@ -57,6 +57,19 @@
     </div>
 
     <div class="flex items-center gap-1 sm:gap-2.5">
+        <!-- Impersonation Warning & Return Button -->
+        @if(session()->has('impersonator_id'))
+            <form method="POST" action="{{ route('admin.newsletters.stop-impersonate') }}" class="inline">
+                @csrf
+                <button type="submit"
+                        class="flex items-center gap-1.5 rounded-md bg-orange-500 px-3 py-1.5 text-sm font-semibold text-white transition-all hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 sm:px-4 sm:text-base"
+                        title="{{ __('newsletters::app.admin.owners.stop-impersonate-title') }}">
+                    <span class="icon-arrow-left text-base sm:text-lg"></span>
+                    <span>{{ __('newsletters::app.admin.owners.return-to-admin') }}</span>
+                </button>
+            </form>
+        @endif
+
         <!-- Account Balance -->
         @if($accountBalance !== null)
             @if($isCompanyOwner)

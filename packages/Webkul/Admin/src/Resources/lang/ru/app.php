@@ -4852,6 +4852,7 @@ return [
                 'url-rewrites'             => 'Перезапись URL',
                 'users'                    => 'Пользователи',
                 'ingredients'                    => 'Ингредиенты',
+
             ],
 
             'powered-by' => [

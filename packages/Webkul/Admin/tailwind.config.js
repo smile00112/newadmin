@@ -1,9 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
     content: [
-        "./src/Resources/**/*.blade.php", 
+        "./src/Resources/**/*.blade.php",
         "./src/Resources/**/*.js",
-        "../../Newsletters/src/Resources/**/*.blade.php"
+        "../../Newsletters/src/Resources/**/*.blade.php",
+        "../Newsletters/src/Resources/**/*.blade.php"
     ],
 
     theme: {
@@ -40,7 +41,7 @@ module.exports = {
             }
         },
     },
-    
+
     darkMode: 'class',
 
     plugins: [],

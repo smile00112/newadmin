@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MailInstance extends Model
@@ -22,7 +23,6 @@ class MailInstance extends Model
         'from_email',
         'from_name',
         'company_id',
-        'mailing_list_id',
         'active',
     ];
 
@@ -45,9 +45,9 @@ class MailInstance extends Model
         return $this->belongsTo(Company::class);
     }
 
-    public function mailingList(): BelongsTo
+    public function mailingLists(): BelongsToMany
     {
-        return $this->belongsTo(MailingList::class);
+        return $this->belongsToMany(MailingList::class, 'newsletters_mailing_list_mail_instance', 'mail_instance_id', 'mailing_list_id');
     }
 
     public function scopeForCompany($query, $companyId)

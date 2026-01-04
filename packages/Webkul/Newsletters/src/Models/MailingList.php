@@ -5,6 +5,7 @@ namespace Webkul\Newsletters\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MailingList extends Model
@@ -54,25 +55,25 @@ class MailingList extends Model
     /**
      * Get the whatsapp instances for the mailing list.
      */
-    public function whatsappInstances(): HasMany
+    public function whatsappInstances(): BelongsToMany
     {
-        return $this->hasMany(VacapInstance::class);
+        return $this->belongsToMany(VacapInstance::class, 'newsletters_mailing_list_whatsapp_instance', 'mailing_list_id', 'whatsapp_instance_id');
     }
 
     /**
      * Get the telegram bot instances for the mailing list.
      */
-    public function telegramInstances(): HasMany
+    public function telegramInstances(): BelongsToMany
     {
-        return $this->hasMany(TelegramBotInstance::class);
+        return $this->belongsToMany(TelegramBotInstance::class, 'newsletters_mailing_list_telegram_instance', 'mailing_list_id', 'telegram_instance_id');
     }
 
     /**
      * Get the mail instances for the mailing list.
      */
-    public function mailInstances(): HasMany
+    public function mailInstances(): BelongsToMany
     {
-        return $this->hasMany(MailInstance::class);
+        return $this->belongsToMany(MailInstance::class, 'newsletters_mailing_list_mail_instance', 'mailing_list_id', 'mail_instance_id');
     }
 
     /**

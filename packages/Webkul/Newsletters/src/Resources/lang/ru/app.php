@@ -38,6 +38,28 @@ return [
             'bot-username' => 'Username бота',
             'bot-name' => 'Название бота',
         ],
+
+        'channel-instances' => [
+            'title' => 'Каналы рассылок',
+            'type' => [
+                'whatsapp' => 'WhatsApp',
+                'email' => 'Email',
+                'telegram' => 'Telegram',
+            ],
+            'mailing-list' => 'Список рассылки',
+            'create-success' => 'Инстанс :type успешно создан.',
+            'create-failed' => 'Не удалось создать инстанс :type.',
+            'update-success' => 'Инстанс :type успешно обновлен.',
+            'update-failed' => 'Не удалось обновить инстанс :type.',
+            'delete-success' => 'Инстанс :type успешно удален.',
+            'delete-failed' => 'Не удалось удалить инстанс :type.',
+            'delete-confirm' => 'Вы уверены, что хотите удалить этот инстанс?',
+            'invalid-type' => 'Неверный тип инстанса.',
+            'not-found' => 'Инстанс не найден.',
+            'no-instances' => 'Инстансы :type не найдены.',
+            'password-placeholder' => 'Оставьте пустым, чтобы сохранить текущий пароль',
+        ],
+
         'datagrid' => [
             'add' => 'Добавить'
         ],
@@ -384,10 +406,10 @@ return [
         ],
 
         'owners' => [
-            'title' => 'Владельцы компаний',
-            'create-title' => 'Создать владельца',
-            'create-button' => 'Создать владельца',
-            'edit-title' => 'Редактировать владельца',
+            'title' => 'Пользователи',
+            'create-title' => 'Создать пользователя',
+            'create-button' => 'Создать пользователя',
+            'edit-title' => 'Редактировать пользователя',
             'name' => 'Имя',
             'email' => 'Email',
             'password' => 'Пароль',
@@ -408,12 +430,12 @@ return [
             'disabled-success' => 'Владелец успешно деактивирован.',
             'topup-success' => 'Счет успешно пополнен.',
             'delete-success' => 'Владелец успешно деактивирован.',
-            'delete-failed' => 'Не удалось деактивировать владельца.',
-            'delete-confirm' => 'Вы уверены, что хотите деактивировать этого владельца?',
+            'delete-failed' => 'Не удалось деактивировать пользователя.',
+            'delete-confirm' => 'Вы уверены, что хотите деактивировать этого пользователя?',
             'not-found' => 'Владелец не найден.',
             'role-not-found' => 'Роль владельца не найдена. Пожалуйста, обратитесь к администратору.',
             'cannot-delete-self' => 'Вы не можете деактивировать свою собственную учетную запись.',
-            'no-owners' => 'Владельцы не найдены.',
+            'no-owners' => 'Пользователи не найдены.',
             'topup-title' => 'Пополнить счет',
             'topup-amount' => 'Сумма',
             'topup-notes' => 'Заметки',
@@ -421,6 +443,13 @@ return [
             'resend-email-confirm' => 'Вы уверены, что хотите отправить копию email уведомления о регистрации?',
             'email-resent-success' => 'Копия email уведомления о регистрации успешно отправлена.',
             'email-resent-failed' => 'Не удалось отправить копию email уведомления о регистрации.',
+            'impersonate-title' => 'Войти в панель под этим пользователем',
+            'impersonate-confirm' => 'Вы уверены, что хотите войти в панель под пользователем :name?',
+            'impersonate-success' => 'Вы вошли в панель под пользователем :name.',
+            'stop-impersonate-title' => 'Вернуться в панель администратора',
+            'stop-impersonate-success' => 'Вы вернулись в панель администратора.',
+            'return-to-admin' => 'Вернуться к администратору',
+            'cannot-impersonate-inactive' => 'Невозможно войти под неактивным пользователем.',
         ],
 
         'account' => [
@@ -487,6 +516,7 @@ return [
         'owners.toggle-status' => 'Изменение статуса владельца',
         'owners.topup' => 'Пополнение счета владельца',
         'whatsapp-instances' => 'WhatsApp экземпляры',
+        'channel-instances' => 'Инстансы каналов',
         'customer-numbers' => 'Номера клиентов',
         'contacts' => 'Контакты',
         'account' => 'Счет',
@@ -504,10 +534,10 @@ return [
 
     'sidebar' => [
         'newsletters' => 'Рассылки',
-        'administration' => 'Администрирование',
+        'administration' => 'Управление',
         'companies' => 'Компании',
-        'clients' => 'Клиенты',
-        'owners' => 'Владельцы компаний',
+        'clients' => 'Пользователи',
+        'owners' => 'Пользователи компании',
         'registration-requests' => 'Заявки',
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'mailing-lists' => 'Списки рассылки',
@@ -517,6 +547,7 @@ return [
         'messages' => 'Сообщения',
         'reports' => 'Отчеты',
         'contact-groups' => 'Группы контактов',
+        'channel-instances'         => 'Каналы рассылок'
     ],
 
     'common' => [
