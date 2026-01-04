@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\CompanyRepository;
+use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Webkul\Newsletters\Traits\HasNewsletterRole;
+use Webkul\User\Repositories\AdminRepository;
+use Webkul\User\Repositories\RoleRepository;
 use Illuminate\Support\Str;
 
 class CompanyController extends Controller
@@ -17,7 +20,10 @@ class CompanyController extends Controller
      * Create a new controller instance.
      */
     public function __construct(
-        protected CompanyRepository $companyRepository
+        protected CompanyRepository $companyRepository,
+        protected CompanyAccountRepository $accountRepository,
+        protected AdminRepository $adminRepository,
+        protected RoleRepository $roleRepository
     ) {}
 
     /**
@@ -38,6 +44,13 @@ class CompanyController extends Controller
             $companies = collect([$this->companyRepository->find($admin->company_id)])->filter();
         } else {
             $companies = collect();
+        }
+
+        // Load accounts for each company
+        foreach ($companies as $company) {
+            if ($company) {
+                $company->account = $this->accountRepository->getOrCreateForCompany($company->id);
+            }
         }
 
         return view('newsletters::admin.companies.index', compact('companies'));
@@ -96,7 +109,21 @@ class CompanyController extends Controller
             $this->ensureSameCompany($company->id);
         }
 
-        return view('newsletters::admin.companies.edit', compact('company'));
+        // Load account for the company
+        $company->account = $this->accountRepository->getOrCreateForCompany($company->id);
+
+        // Load owners for the company
+        $owners = $this->adminRepository
+            ->where('company_id', $company->id)
+            ->with(['role'])
+            ->get();
+
+        // Get roles for creating new owner (excluding admin roles 1 and 2)
+        $roles = $this->roleRepository
+            ->whereNotIn('id', [1, 2])
+            ->get();
+
+        return view('newsletters::admin.companies.edit', compact('company', 'owners', 'roles'));
     }
 
     /**

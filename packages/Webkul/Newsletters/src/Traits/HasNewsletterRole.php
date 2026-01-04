@@ -17,12 +17,17 @@ trait HasNewsletterRole
             return false;
         }
         
-        // Проверка: владелец имеет permission_type 'all' для newsletters
-        // или имеет специальное разрешение 'newsletters.companies.manage'
-        if ($admin->role->permission_type === 'all') {
+        // Проверка по названию роли "Владелец компании"
+        if ($admin->role && $admin->role->name === 'Владелец компании') {
             return true;
         }
         
+        // Обратная совместимость: супер-админ с permission_type 'all'
+        if ($admin->role && $admin->role->permission_type === 'all') {
+            return true;
+        }
+        
+        // Обратная совместимость: проверка по разрешениям
         return $admin->hasPermission('newsletters.companies.manage')
             || $admin->hasPermission('newsletters.managers.create');
     }

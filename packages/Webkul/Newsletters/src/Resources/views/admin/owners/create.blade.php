@@ -1,6 +1,6 @@
 <x-admin::layouts>
     <x-slot:title>
-        {{ __('newsletters::app.admin.owners.create-title') }}
+        {{ $context['type'] === 'super_admin' ? __('newsletters::app.admin.owners.create-title') : __('newsletters::app.admin.managers.create-title') }}
     </x-slot:title>
 
     <form method="POST" action="{{ route('admin.newsletters.owners.store') }}">
@@ -8,7 +8,7 @@
 
         <div class="flex items-center justify-between">
             <p class="text-xl font-bold text-gray-800 dark:text-white">
-                {{ __('newsletters::app.admin.owners.create-title') }}
+                {{ $context['type'] === 'super_admin' ? __('newsletters::app.admin.owners.create-title') : __('newsletters::app.admin.managers.create-title') }}
             </p>
 
             <div class="flex items-center gap-x-2.5">
@@ -61,6 +61,41 @@
                     @enderror
                 </div>
 
+                <!-- Role -->
+                <div>
+                    <label for="role_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {{ __('newsletters::app.admin.owners.role') }}
+                        <span class="text-red-600 dark:text-red-400">*</span>
+                    </label>
+                    <select
+                        name="role_id"
+                        id="role_id"
+                        required
+                        onchange="checkRoleAndToggleCompanyOption()"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors"
+                    >
+                        <option value="">{{ __('newsletters::app.admin.owners.select-role') }}</option>
+                        @foreach($roles as $role)
+                            @php
+                                $isOwnerRole = $role->name === 'Владелец компании' || $role->permission_type === 'all';
+                            @endphp
+                            <option 
+                                value="{{ $role->id }}" 
+                                data-is-owner="{{ $isOwnerRole ? '1' : '0' }}"
+                                {{ (old('role_id', $defaultRole?->id) == $role->id) ? 'selected' : '' }}
+                            >
+                                {{ $role->name }}
+                                @if($role->description)
+                                    - {{ $role->description }}
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('role_id')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Password -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -94,8 +129,9 @@
                     >
                 </div>
 
+                @if($context['type'] === 'super_admin' && $context['can_create_companies'])
                 <!-- Company Option -->
-                <div>
+                <div id="company-option-group">
                     <label for="company_option" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         {{ __('newsletters::app.admin.owners.company-option') }}
                         <span class="text-red-600 dark:text-red-400">*</span>
@@ -110,7 +146,7 @@
                         <option value="existing" {{ old('company_option') === 'existing' ? 'selected' : '' }}>
                             {{ __('newsletters::app.admin.owners.select-existing-company') }}
                         </option>
-                        <option value="new" {{ old('company_option') === 'new' ? 'selected' : '' }}>
+                        <option value="new" id="new-company-option" {{ old('company_option') === 'new' ? 'selected' : '' }}>
                             {{ __('newsletters::app.admin.owners.create-new-company') }}
                         </option>
                     </select>
@@ -176,6 +212,7 @@
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
                 </div>
+                @endif
 
                 <!-- Status -->
                 <div>
@@ -196,6 +233,7 @@
         </div>
     </form>
 
+    @if($context['type'] === 'super_admin' && $context['can_create_companies'])
     <script>
         function toggleCompanyFields() {
             const companyOption = document.getElementById('company_option').value;
@@ -220,10 +258,53 @@
             }
         }
 
+        function checkRoleAndToggleCompanyOption() {
+            const roleSelect = document.getElementById('role_id');
+            const companyOptionGroup = document.getElementById('company-option-group');
+            const companyOption = document.getElementById('company_option');
+            const newCompanyOption = document.getElementById('new-company-option');
+            
+            if (!roleSelect || !companyOptionGroup) return;
+            
+            const selectedRoleId = roleSelect.value;
+            if (!selectedRoleId) {
+                if (companyOptionGroup) companyOptionGroup.style.display = 'block';
+                return;
+            }
+            
+            // Получаем data-атрибут выбранной роли
+            const selectedOption = roleSelect.options[roleSelect.selectedIndex];
+            const isOwnerRole = selectedOption.getAttribute('data-is-owner') === '1';
+            
+            if (!isOwnerRole) {
+                // Для менеджеров скрываем опцию создания новой компании
+                if (newCompanyOption) {
+                    newCompanyOption.style.display = 'none';
+                }
+                if (companyOption && companyOption.value === 'new') {
+                    companyOption.value = 'existing';
+                    toggleCompanyFields();
+                }
+            } else {
+                // Для владельцев показываем опцию создания новой компании
+                if (newCompanyOption) {
+                    newCompanyOption.style.display = 'block';
+                }
+            }
+        }
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleCompanyFields();
+            checkRoleAndToggleCompanyOption();
+            
+            // Отслеживаем изменение роли
+            const roleSelect = document.getElementById('role_id');
+            if (roleSelect) {
+                roleSelect.addEventListener('change', checkRoleAndToggleCompanyOption);
+            }
         });
     </script>
+    @endif
 </x-admin::layouts>
 

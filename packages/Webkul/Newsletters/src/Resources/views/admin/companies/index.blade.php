@@ -23,6 +23,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.companies.name') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.companies.slug') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.companies.status') }}</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.account.current-balance') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.companies.created_at') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.common.actions.title') }}</th>
             </tr>
@@ -37,6 +38,15 @@
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $company->is_active ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100' : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100' }}">
                             {{ $company->is_active ? __('newsletters::app.admin.companies.active') : __('newsletters::app.admin.companies.inactive') }}
                         </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        @if($company->account)
+                            <span class="{{ $company->account->balance <= 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white' }}">
+                                {{ number_format($company->account->balance, 2) }}
+                            </span>
+                        @else
+                            <span class="text-gray-500">-</span>
+                        @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $company->created_at->format('Y-m-d H:i') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -60,7 +70,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center">
+                    <td colspan="7" class="px-6 py-12 text-center">
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.common.messages.no_data') }}</p>
                     </td>
                 </tr>

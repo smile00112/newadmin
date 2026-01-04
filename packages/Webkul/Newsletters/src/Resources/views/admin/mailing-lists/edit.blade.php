@@ -45,9 +45,25 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="editMailingListForm">
         @csrf
         @method('PUT')
+        
+        @if($mailingList->channel_type === 'email')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('editMailingListForm').addEventListener('submit', function(e) {
+                    if (typeof tinymce !== 'undefined') {
+                        const editor = tinymce.get('message_text_editor');
+                        if (editor) {
+                            const content = editor.getContent();
+                            document.getElementById('message_text_editor').value = content;
+                        }
+                    }
+                });
+            });
+        </script>
+        @endif
 
         <!-- Mailing List Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 my-5 p5">
@@ -75,14 +91,31 @@
                             {{ __('newsletters::app.admin.mailing-lists.message-text') }}
                             <span class="text-red-500">*</span>
                         </label>
-                        <textarea
-                            name="message_text"
-                            id="message_text"
-                        rows="6"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            placeholder="{{ __('newsletters::app.admin.mailing-lists.message-text') }}"
-                            required
-                        >{{ old('message_text', $mailingList->message_text) }}</textarea>
+                        
+                        @if($mailingList->channel_type === 'email')
+                            <!-- TinyMCE Editor for Email -->
+                            <textarea
+                                name="message_text"
+                                id="message_text_editor"
+                                rows="6"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                placeholder="{{ __('newsletters::app.admin.mailing-lists.message-text') }}"
+                            >{{ old('message_text', $mailingList->message_text) }}</textarea>
+                            <x-admin::tinymce
+                                selector="textarea#message_text_editor"
+                            />
+                        @else
+                            <!-- Regular Textarea for WhatsApp/Telegram -->
+                            <textarea
+                                name="message_text"
+                                id="message_text"
+                                rows="6"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                placeholder="{{ __('newsletters::app.admin.mailing-lists.message-text') }}"
+                                required
+                            >{{ old('message_text', $mailingList->message_text) }}</textarea>
+                        @endif
+                        
                         @error('message_text')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror

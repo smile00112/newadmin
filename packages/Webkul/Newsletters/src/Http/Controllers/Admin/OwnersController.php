@@ -32,202 +32,402 @@ class OwnersController extends Controller
     ) {}
 
     /**
-     * Display a listing of all company owners.
+     * Get context for current user.
+     */
+    protected function getContext(): array
+    {
+        $admin = auth()->guard('admin')->user();
+        
+        // Супер-админ (без company_id)
+        if (!$admin->company_id && $admin->role && $admin->role->permission_type === 'all') {
+            return [
+                'type' => 'super_admin',
+                'can_create_companies' => true,
+                'can_assign_owner_role' => true,
+                'can_topup' => true,
+                'can_resend_email' => true,
+            ];
+        }
+        
+        // Владелец компании
+        if ($admin->company_id && $this->isCompanyOwner()) {
+            return [
+                'type' => 'company_owner',
+                'company_id' => $admin->company_id,
+                'can_create_companies' => false,
+                'can_assign_owner_role' => false,
+                'can_topup' => false,
+                'can_resend_email' => false,
+            ];
+        }
+        
+        abort(403);
+    }
+
+    /**
+     * Display a listing of company owners or managers.
      */
     public function index()
     {
-        $this->requireNewsletterPermission('newsletters.owners.view');
+        $context = $this->getContext();
+        $admin = auth()->guard('admin')->user();
 
-        // Получить всех админов с ролью permission_type 'all' и company_id (owners)
-        $owners = $this->adminRepository
-            ->getModel()
-            ->leftJoin('roles', 'admins.role_id', '=', 'roles.id')
-            ->where('roles.permission_type', 'all')
-            ->whereNotNull('admins.company_id')
-            ->select('admins.*')
-            ->get()
-            ->load(['role', 'company', 'company.account']);
+        if ($context['type'] === 'super_admin') {
+            // Для супер-админов показываем всех пользователей компаний (владельцев и менеджеров)
+            $this->requireNewsletterPermission('newsletters.owners.view');
+            
+            $users = $this->adminRepository
+                ->whereNotNull('company_id')
+                ->with(['role', 'company'])
+                ->get();
+        } else {
+            // Для владельцев компаний показываем менеджеров
+            $this->requireNewsletterPermission('newsletters.managers');
+            
+            $users = $this->adminRepository
+                ->where('company_id', $admin->company_id)
+                ->where('id', '!=', $admin->id) // Исключить текущего админа
+                ->whereHas('role', function($query) {
+                    $query->where('name', '!=', 'Владелец компании')
+                          ->where('permission_type', '!=', 'all');
+                })
+                ->with('role')
+                ->get();
+        }
 
-        return view('newsletters::admin.owners.index', compact('owners'));
+        return view('newsletters::admin.owners.index', compact('users', 'context'));
     }
 
     /**
-     * Show the form for creating a new owner.
+     * Show the form for creating a new owner or manager.
      */
     public function create()
     {
-        $this->requireNewsletterPermission('newsletters.owners.create');
+        $context = $this->getContext();
+        
+        if ($context['type'] === 'super_admin') {
+            $this->requireNewsletterPermission('newsletters.owners.create');
+            
+            // Получить все компании для выбора
+            $companies = $this->companyRepository->all();
+            
+            // Получить все роли (включая владельцев и менеджеров), исключая роли администраторов (ID 1 и 2)
+            $roles = $this->roleRepository
+                ->whereNotIn('id', [1, 2])
+                ->get();
+            
+            $defaultRole = $roles->firstWhere('name', 'Владелец компании') 
+                        ?? $roles->firstWhere('permission_type', 'all');
+        } else {
+            $this->requireNewsletterPermission('newsletters.managers.create');
+            
+            $companies = null;
+            
+            // Получить роли для менеджеров (исключая "Владелец компании")
+            $roles = $this->roleRepository
+                ->where('permission_type', 'custom')
+                ->where('name', '!=', 'Владелец компании')
+                ->get();
+            
+            $defaultRole = $roles->firstWhere('name', 'Менеджер рассылок');
+        }
 
-        // Получить все компании для выбора
-        $companies = $this->companyRepository->all();
-
-        return view('newsletters::admin.owners.create', compact('companies'));
+        return view('newsletters::admin.owners.create', compact('companies', 'roles', 'defaultRole', 'context'));
     }
 
     /**
-     * Store a newly created owner.
+     * Store a newly created owner or manager.
      */
     public function store(Request $request)
     {
-        $this->requireNewsletterPermission('newsletters.owners.create');
+        $context = $this->getContext();
+        $admin = auth()->guard('admin')->user();
 
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:admins,email',
-            'password' => 'required|min:6|confirmed',
-            'company_option' => 'required|in:existing,new',
-            'company_id' => 'required_if:company_option,existing|exists:companies,id',
-            'company_name' => 'required_if:company_option,new|string|max:255',
-            'company_description' => 'nullable|string',
-            'status' => 'boolean',
-        ]);
+        if ($context['type'] === 'super_admin') {
+            $this->requireNewsletterPermission('newsletters.owners.create');
 
-        // Получаем роль с permission_type 'all' (роль для owners)
-        $ownerRole = $this->roleRepository->findOneWhere(['permission_type' => 'all']);
+            // Для супер-админов разрешены все роли
+            $role = $this->roleRepository->findOrFail($request->input('role_id'));
+            $isOwnerRole = $role->name === 'Владелец компании' || $role->permission_type === 'all';
 
-        if (!$ownerRole) {
-            session()->flash('error', trans('newsletters::app.admin.owners.role-not-found'));
-            return redirect()->back()->withInput();
-        }
-
-        // Определяем компанию
-        if ($data['company_option'] === 'new') {
-            // Создаем новую компанию
-            $companySlug = Str::slug($data['company_name']);
-
-            // Проверяем уникальность slug
-            $slugCounter = 1;
-            $originalSlug = $companySlug;
-            while ($this->companyRepository->findOneWhere(['slug' => $companySlug])) {
-                $companySlug = $originalSlug . '-' . $slugCounter;
-                $slugCounter++;
+            // Валидация в зависимости от роли
+            if ($isOwnerRole) {
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:admins,email',
+                    'password' => 'required|min:6|confirmed',
+                    'role_id' => 'required|exists:roles,id',
+                    'company_option' => 'required|in:existing,new',
+                    'company_id' => 'required_if:company_option,existing|exists:companies,id',
+                    'company_name' => 'required_if:company_option,new|string|max:255',
+                    'company_description' => 'nullable|string',
+                    'status' => 'boolean',
+                ]);
+            } else {
+                // Для менеджеров только существующая компания
+                $data = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'email' => 'required|email|unique:admins,email',
+                    'password' => 'required|min:6|confirmed',
+                    'role_id' => 'required|exists:roles,id',
+                    'company_id' => 'required|exists:companies,id',
+                    'status' => 'boolean',
+                ]);
             }
 
-            $company = $this->companyRepository->create([
-                'name' => $data['company_name'],
-                'slug' => $companySlug,
-                'description' => $data['company_description'] ?? 'Company for ' . $data['name'],
-                'is_active' => true,
-            ]);
+            // Определяем компанию
+            if ($isOwnerRole && isset($data['company_option']) && $data['company_option'] === 'new') {
+                // Создаем новую компанию для владельца
+                $companySlug = Str::slug($data['company_name']);
+                $slugCounter = 1;
+                $originalSlug = $companySlug;
+                while ($this->companyRepository->findOneWhere(['slug' => $companySlug])) {
+                    $companySlug = $originalSlug . '-' . $slugCounter;
+                    $slugCounter++;
+                }
+
+                $company = $this->companyRepository->create([
+                    'name' => $data['company_name'],
+                    'slug' => $companySlug,
+                    'description' => $data['company_description'] ?? 'Company for ' . $data['name'],
+                    'is_active' => true,
+                ]);
+                $companyId = $company->id;
+            } else {
+                // Используем существующую компанию
+                $company = $this->companyRepository->findOrFail($data['company_id']);
+                $companyId = $company->id;
+            }
+
+            $sendEmail = $isOwnerRole;
         } else {
-            // Используем существующую компанию
-            $company = $this->companyRepository->findOrFail($data['company_id']);
+            $this->requireNewsletterPermission('newsletters.managers.create');
+
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:admins,email',
+                'password' => 'required|min:6|confirmed',
+                'role_id' => 'required|exists:roles,id',
+            ]);
+
+            // Проверяем, что роль не является ролью владельца
+            $role = $this->roleRepository->findOrFail($data['role_id']);
+            if ($role->permission_type === 'all' || $role->name === 'Владелец компании') {
+                abort(403, trans('newsletters::app.admin.errors.cannot-assign-owner-role'));
+            }
+
+            $companyId = $admin->company_id;
+            $sendEmail = false;
         }
 
-        // Создаем admin аккаунт с ролью owner
-        $admin = $this->adminRepository->create([
+        // Создаем admin аккаунт
+        $newAdmin = $this->adminRepository->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role_id' => $ownerRole->id,
-            'company_id' => $company->id,
+            'role_id' => $data['role_id'],
+            'company_id' => $companyId,
             'status' => $request->has('status') ? (bool) $request->input('status') : 1,
             'api_token' => Str::random(80),
         ]);
 
-        // Отправляем приветственное письмо с данными для входа
-        try {
-            Mail::send(new WelcomeAdminNotification($admin, $data['password']));
-            Log::info('Welcome email sent for admin: ' . $admin->email . ' (Company: ' . $company->name . ')');
-        } catch (\Exception $mailException) {
-            Log::error('Failed to send welcome email: ' . $mailException->getMessage(), [
-                'trace' => $mailException->getTraceAsString(),
-                'admin_id' => $admin->id,
-                'admin_email' => $admin->email
-            ]);
-            // Продолжаем выполнение, даже если письмо не отправилось
+        // Отправляем приветственное письмо только для владельцев
+        if ($sendEmail) {
+            try {
+                Mail::send(new WelcomeAdminNotification($newAdmin, $data['password']));
+                Log::info('Welcome email sent for admin: ' . $newAdmin->email);
+            } catch (\Exception $mailException) {
+                Log::error('Failed to send welcome email: ' . $mailException->getMessage());
+            }
         }
 
-        session()->flash('success', trans('newsletters::app.admin.owners.create-success'));
+        $message = $context['type'] === 'super_admin' 
+            ? trans('newsletters::app.admin.owners.create-success')
+            : trans('newsletters::app.admin.managers.create-success');
+
+        session()->flash('success', $message);
+
+        // Если создание происходит со страницы редактирования компании, возвращаемся туда
+        if ($request->has('redirect_to_company') && $request->input('redirect_to_company')) {
+            return redirect()->route('admin.newsletters.companies.edit', $companyId);
+        }
 
         return redirect()->route('admin.newsletters.owners.index');
     }
 
     /**
-     * Show the form for editing the specified owner.
+     * Show the form for editing the specified owner or manager.
      */
     public function edit(int $id)
     {
-        $this->requireNewsletterPermission('newsletters.owners.edit');
+        $context = $this->getContext();
+        $admin = auth()->guard('admin')->user();
+        $user = $this->adminRepository->findOrFail($id);
+        $user->load(['role', 'company']);
 
-        $owner = $this->adminRepository->findOrFail($id);
+        if ($context['type'] === 'super_admin') {
+            $this->requireNewsletterPermission('newsletters.owners.edit');
 
-        // Проверка, что это owner (имеет permission_type 'all' и company_id)
-        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
-            abort(404, trans('newsletters::app.admin.owners.not-found'));
+            // Для супер-админов можно редактировать любых пользователей с company_id
+            if (!$user->company_id) {
+                abort(404, trans('newsletters::app.admin.owners.not-found'));
+            }
+
+            // Показываем все роли для супер-админов, исключая роли администраторов (ID 1 и 2)
+            $roles = $this->roleRepository
+                ->whereNotIn('id', [1, 2])
+                ->get();
+        } else {
+            $this->requireNewsletterPermission('newsletters.managers.edit');
+
+            // Проверка, что пользователь принадлежит той же компании
+            if ($user->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
+
+            // Нельзя редактировать владельца
+            if ($user->role->permission_type === 'all' || $user->role->name === 'Владелец компании') {
+                abort(403, trans('newsletters::app.admin.errors.cannot-edit-owner'));
+            }
+
+            $roles = $this->roleRepository
+                ->where('permission_type', 'custom')
+                ->where('name', '!=', 'Владелец компании')
+                ->get();
         }
 
-        $owner->load(['role', 'company', 'company.account']);
-
-        return view('newsletters::admin.owners.edit', compact('owner'));
+        return view('newsletters::admin.owners.edit', compact('user', 'roles', 'context'));
     }
 
     /**
-     * Update the specified owner.
+     * Update the specified owner or manager.
      */
     public function update(Request $request, int $id)
     {
-        $this->requireNewsletterPermission('newsletters.owners.edit');
+        $context = $this->getContext();
+        $admin = auth()->guard('admin')->user();
+        $user = $this->adminRepository->findOrFail($id);
 
-        $owner = $this->adminRepository->findOrFail($id);
+        if ($context['type'] === 'super_admin') {
+            $this->requireNewsletterPermission('newsletters.owners.edit');
 
-        // Проверка, что это owner
-        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
-            abort(404, trans('newsletters::app.admin.owners.not-found'));
+            // Для супер-админов можно редактировать любых пользователей с company_id
+            if (!$user->company_id) {
+                abort(404, trans('newsletters::app.admin.owners.not-found'));
+            }
+
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:admins,email,' . $id,
+                'role_id' => 'required|exists:roles,id',
+                'status' => 'boolean',
+            ]);
+
+            // Для супер-админов разрешены все роли
+            $role = $this->roleRepository->findOrFail($data['role_id']);
+
+            $successMessage = trans('newsletters::app.admin.owners.update-success');
+        } else {
+            $this->requireNewsletterPermission('newsletters.managers.edit');
+
+            // Проверка, что пользователь принадлежит той же компании
+            if ($user->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
+
+            // Нельзя редактировать владельца
+            if ($user->role->permission_type === 'all' || $user->role->name === 'Владелец компании') {
+                abort(403, trans('newsletters::app.admin.errors.cannot-edit-owner'));
+            }
+
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:admins,email,' . $id,
+                'password' => 'nullable|min:6|confirmed',
+                'role_id' => 'required|exists:roles,id',
+                'status' => 'boolean',
+            ]);
+
+            // Проверяем роль
+            $role = $this->roleRepository->findOrFail($data['role_id']);
+            if ($role->permission_type === 'all' || $role->name === 'Владелец компании') {
+                abort(403, trans('newsletters::app.admin.errors.cannot-assign-owner-role'));
+            }
+
+            // Хешировать пароль, если он указан
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+
+            $successMessage = trans('newsletters::app.admin.managers.update-success');
         }
-
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:admins,email,' . $id,
-            'status' => 'boolean',
-        ]);
 
         $this->adminRepository->update($data, $id);
 
-        session()->flash('success', trans('newsletters::app.admin.owners.update-success'));
+        session()->flash('success', $successMessage);
 
         return redirect()->route('admin.newsletters.owners.index');
     }
 
     /**
-     * Toggle owner status (enable/disable).
+     * Toggle user status (enable/disable).
      */
     public function toggleStatus(int $id)
     {
-        $this->requireNewsletterPermission('newsletters.owners.toggle-status');
+        $context = $this->getContext();
+        $user = $this->adminRepository->findOrFail($id);
 
-        $owner = $this->adminRepository->findOrFail($id);
+        if ($context['type'] === 'super_admin') {
+            $this->requireNewsletterPermission('newsletters.owners.toggle-status');
 
-        // Проверка, что это owner
-        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
-            abort(404, trans('newsletters::app.admin.owners.not-found'));
+            // Для супер-админов можно изменять статус любых пользователей с company_id
+            if (!$user->company_id) {
+                abort(404, trans('newsletters::app.admin.owners.not-found'));
+            }
+        } else {
+            $admin = auth()->guard('admin')->user();
+            
+            // Проверка, что пользователь принадлежит той же компании
+            if ($user->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
         }
 
-        $owner->status = !$owner->status;
-        $owner->save();
+        $user->status = !$user->status;
+        $user->save();
 
-        $message = $owner->status
+        $message = $user->status
             ? trans('newsletters::app.admin.owners.enabled-success')
             : trans('newsletters::app.admin.owners.disabled-success');
 
         return response()->json([
             'success' => true,
             'message' => $message,
-            'status' => $owner->status,
+            'status' => $user->status,
         ]);
     }
 
     /**
-     * Top up account for owner's company.
+     * Top up account for owner's company (super admin only).
      */
     public function topup(Request $request, int $id)
     {
+        $context = $this->getContext();
+        
+        if ($context['type'] !== 'super_admin') {
+            abort(403);
+        }
+
         $this->requireNewsletterPermission('newsletters.owners.topup');
 
         $owner = $this->adminRepository->findOrFail($id);
 
-        // Проверка, что это owner
-        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
+        // Проверка, что это владелец компании
+        if (!$owner->role || 
+            ($owner->role->name !== 'Владелец компании' && $owner->role->permission_type !== 'all') || 
+            !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
         }
 
@@ -256,16 +456,24 @@ class OwnersController extends Controller
     }
 
     /**
-     * Resend registration email notification to owner.
+     * Resend registration email notification to owner (super admin only).
      */
     public function resendRegistrationEmail(int $id)
     {
+        $context = $this->getContext();
+        
+        if ($context['type'] !== 'super_admin') {
+            abort(403);
+        }
+
         $this->requireNewsletterPermission('newsletters.owners.edit');
 
         $owner = $this->adminRepository->findOrFail($id);
 
-        // Проверка, что это owner
-        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
+        // Проверка, что это владелец компании
+        if (!$owner->role || 
+            ($owner->role->name !== 'Владелец компании' && $owner->role->permission_type !== 'all') || 
+            !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
         }
 
@@ -291,43 +499,113 @@ class OwnersController extends Controller
     }
 
     /**
-     * Remove the specified owner (soft delete or disable).
+     * Remove the specified owner or manager.
      */
     public function destroy(int $id)
     {
-        $this->requireNewsletterPermission('newsletters.owners.delete');
+        $context = $this->getContext();
+        $admin = auth()->guard('admin')->user();
+        $user = $this->adminRepository->findOrFail($id);
 
-        $owner = $this->adminRepository->findOrFail($id);
+        if ($context['type'] === 'super_admin') {
+            $this->requireNewsletterPermission('newsletters.owners.delete');
 
-        // Проверка, что это owner
-        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
-            abort(404, trans('newsletters::app.admin.owners.not-found'));
+            // Для супер-админов можно удалять любых пользователей с company_id
+            if (!$user->company_id) {
+                abort(404, trans('newsletters::app.admin.owners.not-found'));
+            }
+
+            // Нельзя удалить самого себя
+            if ($user->id === $admin->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.owners.cannot-delete-self'),
+                ], 403);
+            }
+
+            try {
+                // Вместо удаления отключаем
+                $user->status = 0;
+                $user->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => trans('newsletters::app.admin.owners.delete-success'),
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('newsletters::app.admin.owners.delete-failed'),
+                ], 500);
+            }
+        } else {
+            $this->requireNewsletterPermission('newsletters.managers.delete');
+
+            // Проверка, что пользователь принадлежит той же компании
+            if ($user->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
+
+            // Нельзя удалить владельца
+            if ($user->role->permission_type === 'all' || $user->role->name === 'Владелец компании') {
+                abort(403, trans('newsletters::app.admin.errors.cannot-delete-owner'));
+            }
+
+            // Нельзя удалить самого себя
+            if ($user->id === $admin->id) {
+                abort(403, trans('newsletters::app.admin.errors.cannot-delete-self'));
+            }
+
+            try {
+                $this->adminRepository->delete($id);
+
+                return response()->json([
+                    'message' => trans('newsletters::app.admin.managers.delete-success'),
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'message' => trans('newsletters::app.admin.managers.delete-failed'),
+                ], 500);
+            }
+        }
+    }
+
+    /**
+     * Update user permissions (for managers only).
+     */
+    public function updatePermissions(Request $request, int $id)
+    {
+        $context = $this->getContext();
+        
+        if ($context['type'] !== 'company_owner') {
+            abort(403);
         }
 
-        // Нельзя удалить самого себя
-        $currentAdmin = auth()->guard('admin')->user();
-        if ($owner->id === $currentAdmin->id) {
-            return response()->json([
-                'success' => false,
-                'message' => trans('newsletters::app.admin.owners.cannot-delete-self'),
-            ], 403);
+        $this->requireNewsletterPermission('newsletters.managers.edit');
+        
+        $admin = auth()->guard('admin')->user();
+        $user = $this->adminRepository->findOrFail($id);
+
+        // Проверка, что пользователь принадлежит той же компании
+        if ($user->company_id !== $admin->company_id) {
+            abort(403, trans('newsletters::app.admin.errors.different-company'));
         }
 
-        try {
-            // Вместо удаления отключаем owner
-            $owner->status = 0;
-            $owner->save();
+        // Обновить разрешения роли
+        $role = $user->role;
+        $permissions = $request->input('permissions', []);
+        
+        // Фильтровать только разрешения newsletters
+        $newsletterPermissions = array_filter($permissions, function($permission) {
+            return strpos($permission, 'newsletters.') === 0;
+        });
+        
+        $role->permissions = array_values($newsletterPermissions);
+        $role->save();
 
-            return response()->json([
-                'success' => true,
-                'message' => trans('newsletters::app.admin.owners.delete-success'),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => trans('newsletters::app.admin.owners.delete-failed'),
-            ], 500);
-        }
+        session()->flash('success', trans('newsletters::app.admin.managers.permissions-updated'));
+
+        return redirect()->route('admin.newsletters.owners.index');
     }
 }
 
