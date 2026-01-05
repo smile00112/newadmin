@@ -412,13 +412,14 @@ return [
         'sort'       => 6,
         'icon'       => '',
     ],
+    [
+        'key'        => 'settings.roles',
+        'name'       => 'admin::app.components.layouts.sidebar.roles',
+        'route'      => 'admin.settings.roles.index',
+        'sort'       => 7,
+        'icon'       => '',
+    ],
 //    [
-//        'key'        => 'settings.roles',
-//        'name'       => 'admin::app.components.layouts.sidebar.roles',
-//        'route'      => 'admin.settings.roles.index',
-//        'sort'       => 7,
-//        'icon'       => '',
-//    ], [
 //        'key'        => 'settings.themes',
 //        'name'       => 'admin::app.components.layouts.sidebar.themes',
 //        'route'      => 'admin.settings.themes.index',

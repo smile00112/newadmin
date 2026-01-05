@@ -42,6 +42,14 @@ class NewslettersContactGroup extends Model
     }
 
     /**
+     * Get the filters for the group.
+     */
+    public function filters(): HasMany
+    {
+        return $this->hasMany(NewslettersContactFilter::class, 'contact_group_id');
+    }
+
+    /**
      * Get the company that owns the contact group.
      */
     public function company(): BelongsTo

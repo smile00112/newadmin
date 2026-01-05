@@ -62,17 +62,27 @@ class ContactController extends Controller
     public function getContacts(Request $request)
     {
         try {
-            $query = $this->contactRepository->newQuery();
+            $model = $this->contactRepository->makeModel();
+            $query = $model->newQuery();
+
+            // Apply company filter
+            $admin = auth()->guard('admin')->user();
+            if ($admin && $admin->company_id) {
+                $query->where('company_id', $admin->company_id);
+            }
 
             // Filter by contact group if provided
             if ($request->has('contact_group_id') && $request->contact_group_id) {
                 $query->where('contact_group_id', (int) $request->contact_group_id);
             }
 
-            // Search by phone number if provided
+            // Search by phone number or name if provided
             if ($request->has('search') && !empty($request->search)) {
                 $searchTerm = $request->search;
-                $query->where('phone', 'like', '%' . $searchTerm . '%');
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('phone', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('full_name', 'like', '%' . $searchTerm . '%');
+                });
             }
 
             // Sorting
@@ -96,7 +106,25 @@ class ContactController extends Controller
 
             // Convert models to arrays for proper JSON serialization
             $contactsArray = collect($contacts->items())->map(function ($contact) {
-                return $contact->toArray();
+                return [
+                    'id' => $contact->id,
+                    'full_name' => $contact->full_name,
+                    'phone' => $contact->phone,
+                    'email' => $contact->email,
+                    'gender' => $contact->gender,
+                    'last_order_date' => $contact->last_order_date ? $contact->last_order_date->format('Y-m-d') : null,
+                    'registration_date' => $contact->registration_date ? $contact->registration_date->format('Y-m-d') : null,
+                    'birth_date' => $contact->birth_date ? $contact->birth_date->format('Y-m-d') : null,
+                    'orders_count' => $contact->orders_count,
+                    'average_check' => $contact->average_check,
+                    'total_check' => $contact->total_check,
+                    'average_order_rating' => $contact->average_order_rating,
+                    'favorite_category' => $contact->favorite_category,
+                    'favorite_dish' => $contact->favorite_dish,
+                    'store' => $contact->store,
+                    'contact_group_id' => $contact->contact_group_id,
+                    'company_id' => $contact->company_id,
+                ];
             })->toArray();
 
             return response()->json([

@@ -9,6 +9,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\CustomerNumberController;
 use Webkul\Newsletters\Http\Controllers\Admin\StopListController;
 use Webkul\Newsletters\Http\Controllers\Admin\UnifiedNewsletterController;
 use Webkul\Newsletters\Http\Controllers\Admin\ContactGroupController;
+use Webkul\Newsletters\Http\Controllers\Admin\ContactFilterController;
 use Webkul\Newsletters\Http\Controllers\Admin\ContactController;
 use Webkul\Newsletters\Http\Controllers\Admin\ReportsController;
 use Webkul\Newsletters\Http\Controllers\Admin\ManagerController;
@@ -302,6 +303,18 @@ Route::group([
             Route::middleware('newsletters.permission:newsletters.contact-groups.edit')->group(function () {
                 Route::get('edit/{id}', 'edit')->name('admin.newsletters.contact-groups.edit');
                 Route::put('edit/{id}', 'update')->name('admin.newsletters.contact-groups.update');
+            });
+            
+            // Contact Filters routes
+            Route::middleware('newsletters.permission:newsletters.contact-groups.edit')->group(function () {
+                Route::controller(ContactFilterController::class)->prefix('{groupId}/filters')->group(function () {
+                    Route::get('', 'index')->name('admin.newsletters.contact-filters.index');
+                    Route::post('', 'store')->name('admin.newsletters.contact-filters.store');
+                    Route::put('{id}', 'update')->name('admin.newsletters.contact-filters.update');
+                    Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-filters.destroy');
+                    Route::get('field-values', 'getFieldValues')->name('admin.newsletters.contact-filters.field-values');
+                    Route::get('{id}/apply', 'applyFilter')->name('admin.newsletters.contact-filters.apply');
+                });
             });
             Route::middleware('newsletters.permission:newsletters.contact-groups.delete')->group(function () {
                 Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-groups.destroy');

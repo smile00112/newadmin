@@ -57,20 +57,53 @@ class Menu
                 $this->configMenu = $configMenu
                     ->filter(function ($item) {
                         // Для пункта "administration" и всех его дочерних элементов проверяем роль
-                        if ($item['key'] === 'administration' || str_starts_with($item['key'], 'administration.')) {
+                        if ($item['key'] === 'administration' || str_starts_with($item['key'], 'administration.'))
+                        {
                             $admin = auth()->guard('admin')->user();
                             if (!$admin || !$admin->role) {
                                 return false;
                             }
-                            // Показываем только для роли "Admin", не для owner
-                            // Проверяем, что роль загружена и имеет свойство name
+
+                            // Показываем для роли "Admin"
+                            if (isset($admin->role->name) && $admin->role->name === 'Admin') {
+                                return bouncer()->hasPermission($item['key']);
+                            }
+
+                            // Показываем для роли "Владелец компании" (owner) для определенных пунктов
+                            if (isset($admin->role->name) && $admin->role->name === 'Владелец компании' && $admin->company_id) {
+                                // Владельцы могут видеть только определенные пункты меню
+                                $allowedKeys = [
+                                    'administration',
+                                    'administration.companies',
+                                    'administration.clients',
+                                    'administration.channel-instances',
+                                ];
+
+                                if (in_array($item['key'], $allowedKeys)) {
+                                    // Владельцы имеют все разрешения для своей компании
+                                    // согласно hasNewsletterPermission в трейте HasNewsletterRole
+                                    return true;
+                                }
+
+                                return false;
+                            }
+
+                            return false;
+                        }
+                        // Для пункта "settings.users" проверяем роль
+                        if ($item['key'] === 'settings.users' || str_starts_with($item['key'], 'settings.users.')) {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role) {
+                                return false;
+                            }
+                            // Показываем только для роли "Admin"
                             if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
                                 return false;
                             }
                             return bouncer()->hasPermission($item['key']);
                         }
-                        // Для пункта "settings.users" проверяем роль
-                        if ($item['key'] === 'settings.users' || str_starts_with($item['key'], 'settings.users.')) {
+                        // Для пункта "settings.roles" проверяем роль
+                        if ($item['key'] === 'settings.roles' || str_starts_with($item['key'], 'settings.roles.')) {
                             $admin = auth()->guard('admin')->user();
                             if (!$admin || !$admin->role) {
                                 return false;
@@ -163,11 +196,11 @@ class Menu
                 if (!is_array($value)) {
                     return false;
                 }
-                
+
                 // Проверяем наличие обязательных полей
-                return isset($value['key']) 
-                    && isset($value['name']) 
-                    && isset($value['route']) 
+                return isset($value['key'])
+                    && isset($value['name'])
+                    && isset($value['route'])
                     && isset($value['sort']);
             })
             ->map(function ($subMenuItem) {

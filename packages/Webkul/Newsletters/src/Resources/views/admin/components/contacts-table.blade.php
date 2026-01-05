@@ -98,7 +98,11 @@
     let currentSortBy = 'id';
     let currentSortDir = 'desc';
     let currentSearch = '';
-    let contactGroupId = @if(isset($contactGroupId) && $contactGroupId) {{ $contactGroupId }} @else null @endif;
+    // contactGroupId should be declared before this script (in edit.blade.php)
+    // If not defined, assign it (for standalone usage of this component)
+    if (typeof contactGroupId === 'undefined') {
+        contactGroupId = @if(isset($contactGroupId) && $contactGroupId) {{ $contactGroupId }} @else null @endif;
+    }
     let searchTimeout;
 
     // Initialize on page load

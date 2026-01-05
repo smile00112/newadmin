@@ -362,6 +362,7 @@ return [
         ],
 
         'companies' => [
+            'company' => 'Компания',
             'title' => 'Компании',
             'create-title' => 'Создать компанию',
             'edit-title' => 'Редактировать компанию',
@@ -450,6 +451,8 @@ return [
             'stop-impersonate-success' => 'Вы вернулись в панель администратора.',
             'return-to-admin' => 'Вернуться к администратору',
             'cannot-impersonate-inactive' => 'Невозможно войти под неактивным пользователем.',
+            'role' => 'Роль',
+            'select-role' => 'Выберите роль',
         ],
 
         'account' => [
@@ -502,6 +505,30 @@ return [
             'cannot-delete-owner' => 'Нельзя удалить учетную запись владельца.',
             'cannot-delete-self' => 'Вы не можете удалить свою собственную учетную запись.',
         ],
+
+        'contact-filters' => [
+            'name' => 'Название',
+            'field' => 'Параметр',
+            'operator' => 'Оператор',
+            'operator-equals' => 'Равно',
+            'operator-between' => 'Между',
+            'operator-gte' => 'Больше',
+            'operator-lte' => 'Меньше',
+            'operator-in' => 'Принадлежит',
+            'multi-select-hint' => 'Выберите одно или несколько значений',
+            'title' => 'Фильтры',
+            'values' => 'Значения',
+            'value' => 'Значение',
+            'value-from' => 'От',
+            'value-to' => 'До',
+            'create' => 'Создать фильтр',
+            'create-success' => 'Фильтр создан',
+            'update-success' => 'Фильтр обновлён',
+            'delete-success' => 'Фильтр удалён',
+            'add-condition' => 'Добавить условие',
+            'condition' => 'Условие',
+            'conditions' => 'Условия',
+        ]
     ],
 
     'acl' => [
@@ -629,5 +656,7 @@ return [
             'date' => 'Поле :field должно содержать действительную дату.',
             'after' => 'Поле :field должно быть датой после :date.',
         ],
+
+
     ],
 ];
