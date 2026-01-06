@@ -1175,17 +1175,23 @@
                     const fieldSelect = document.querySelector(`#${conditionId} select[name*="[field]"]`);
                     if (fieldSelect) {
                         fieldSelect.value = conditionData.field;
+                        // Trigger change event to populate operator options
+                        fieldSelect.dispatchEvent(new Event('change'));
                         updateConditionForm(conditionId, index);
+                        
                         setTimeout(() => {
                             const operatorSelect = document.getElementById(`${conditionId}_operator`);
-                            if (operatorSelect) {
+                            if (operatorSelect && conditionData.operator) {
                                 operatorSelect.value = conditionData.operator;
-                                updateConditionForm(conditionId, index);
+                                // Trigger change event to show value inputs
+                                operatorSelect.dispatchEvent(new Event('change'));
+                                showConditionValueInputs(conditionId, index, conditionData.field, conditionData.operator);
+                                
                                 setTimeout(() => {
                                     populateConditionValues(conditionId, index, conditionData);
-                                }, 100);
+                                }, 200);
                             }
-                        }, 100);
+                        }, 150);
                     }
                 }, 50);
             }

@@ -222,7 +222,7 @@ class ContactFilterController extends Controller
     /**
      * Get unique values for a field.
      */
-    public function getFieldValues(Request $request,  int $groupId)
+    public function getFieldValues(Request $request, int $groupId)
     {
         $request->validate([
             'field' => 'required|string|in:' . implode(',', $this->textFields),
@@ -230,14 +230,15 @@ class ContactFilterController extends Controller
         ]);
 
         $field = $request->input('field');
-        $groupId = $request->input('contact_group_id');
+        // Use route parameter if contact_group_id is not provided in query
+        $queryGroupId = $request->input('contact_group_id', $groupId);
 
         $query = NewslettersContact::select($field)
             ->whereNotNull($field)
             ->where($field, '!=', '');
 
-        if ($groupId) {
-            $query->where('contact_group_id', $groupId);
+        if ($queryGroupId) {
+            $query->where('contact_group_id', $queryGroupId);
         }
 
         // Apply company filter

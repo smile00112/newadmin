@@ -231,7 +231,7 @@ return [
         ],
 
         'messages' => [
-            'title' => 'Сообщения',
+            'title' => 'Входящие сообщения whatsapp',
             'incoming-message' => 'Входящее сообщение',
             'whatsapp-instance' => 'WhatsApp экземпляр',
             'status' => 'Статус',
@@ -522,6 +522,7 @@ return [
             'value-from' => 'От',
             'value-to' => 'До',
             'create' => 'Создать фильтр',
+            'edit' => 'Редактирование фильтра',
             'create-success' => 'Фильтр создан',
             'update-success' => 'Фильтр обновлён',
             'delete-success' => 'Фильтр удалён',
