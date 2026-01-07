@@ -64,6 +64,9 @@
                             {{ __('newsletters::app.admin.mailing-lists.message-text') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            {{ __('newsletters::app.admin.mailing-lists.channel-type') }}
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.mailing-lists.active') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -103,6 +106,23 @@
                                 <a href="{{ route('admin.newsletters.mailing-lists.edit', $mailingList->id) }}">
                                     {{ Str::limit($mailingList->message_text, 50) }}
                                 </a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                @php
+                                    $channelTypeLabels = [
+                                        'whatsapp' => 'WhatsApp',
+                                        'email' => 'Email',
+                                        'telegram' => 'Telegram',
+                                    ];
+                                    $channelType = $mailingList->channel_type ?? 'whatsapp';
+                                    $channelTypeLabel = $channelTypeLabels[$channelType] ?? ucfirst($channelType);
+                                @endphp
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {{ $channelType === 'whatsapp' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                    {{ $channelType === 'email' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                    {{ $channelType === 'telegram' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : '' }}">
+                                    {{ $channelTypeLabel }}
+                                </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $mailingList->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
@@ -190,7 +210,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="9" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
                                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -475,7 +495,7 @@
 
                         // Update active status badge
                         if (row) {
-                            const statusBadge = row.querySelector('td:nth-child(3) span');
+                            const statusBadge = row.querySelector('td:nth-child(4) span');
                             if (statusBadge) {
                                 statusBadge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800';
                                 statusBadge.textContent = '{{ __("newsletters::app.admin.mailing-lists.is-active") }}';
@@ -559,7 +579,7 @@
 
                         // Update active status badge
                         if (row) {
-                            const statusBadge = row.querySelector('td:nth-child(3) span');
+                            const statusBadge = row.querySelector('td:nth-child(4) span');
                             if (statusBadge) {
                                 statusBadge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800';
                                 statusBadge.textContent = '{{ __("newsletters::app.admin.mailing-lists.not-active") }}';

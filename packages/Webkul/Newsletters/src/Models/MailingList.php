@@ -37,6 +37,7 @@ class MailingList extends Model
         'max_messages_per_instance',
         'company_id',
         'channel_type', // whatsapp, email, telegram
+        'filter_id',
     ];
 
     /**
@@ -90,6 +91,14 @@ class MailingList extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    /**
+     * Get the contact filter associated with the mailing list.
+     */
+    public function contactFilter(): BelongsTo
+    {
+        return $this->belongsTo(NewslettersContactFilter::class, 'filter_id');
     }
 
     /**

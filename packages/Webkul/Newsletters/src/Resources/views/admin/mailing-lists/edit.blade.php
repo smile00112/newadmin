@@ -48,7 +48,10 @@
     <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="editMailingListForm">
         @csrf
         @method('PUT')
-        
+
+        <!-- Hidden field to preserve channel_type -->
+        <input type="hidden" name="channel_type" value="{{ old('channel_type', $mailingList->channel_type) }}">
+
         @if($mailingList->channel_type === 'email')
         <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -91,7 +94,7 @@
                             {{ __('newsletters::app.admin.mailing-lists.message-text') }}
                             <span class="text-red-500">*</span>
                         </label>
-                        
+
                         @if($mailingList->channel_type === 'email')
                             <!-- TinyMCE Editor for Email -->
                             <textarea
@@ -115,7 +118,7 @@
                                 required
                             >{{ old('message_text', $mailingList->message_text) }}</textarea>
                         @endif
-                        
+
                         @error('message_text')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -139,7 +142,7 @@
                         @error('media_file')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-                        
+
                         <!-- Existing Media Display -->
                         @if($mailingList->message_links && isset($mailingList->message_links[0]))
                             @php
@@ -161,7 +164,7 @@
                                 </div>
                             </div>
                         @endif
-                        
+
                         <!-- New Media Preview -->
                         <div id="media_preview" class="mt-2 hidden">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -495,6 +498,7 @@
             </div>
             </div>
 
+            @if($mailingList->channel_type !== 'email')
             <!-- WhatsApp Instances Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -579,6 +583,53 @@
                     </div>
                 </div>
             </div>
+            @endif
+
+            @if($mailingList->channel_type === 'email')
+            <!-- Email Instances Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            {{ __('newsletters::app.admin.mail-instances.title') }}
+                        </h2>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <!-- Select existing mail instances -->
+                    @if(isset($mailInstances) && $mailInstances->count() > 0)
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.mail-instances.select-existing') }}
+                        </label>
+                        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3 dark:bg-gray-700">
+                            @foreach($mailInstances as $mailInstance)
+                                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
+                                    <input
+                                        type="checkbox"
+                                        name="mail_instance_ids[]"
+                                        value="{{ $mailInstance->id }}"
+                                        {{ in_array($mailInstance->id, $selectedMailInstanceIds ?? []) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    >
+                                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                                        {{ $mailInstance->name ?: $mailInstance->from_email }} ({{ $mailInstance->host }})
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {{ __('newsletters::app.admin.mail-instances.select-existing-hint') }}
+                        </p>
+                    </div>
+                    @else
+                    <div class="text-center py-8">
+                        <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.channel-instances.no-instances', ['type' => __('newsletters::app.admin.channel-instances.type.email')]) }}</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
 
         </div>
         </div>
@@ -2094,7 +2145,7 @@
                     const preview = document.getElementById('media_preview');
                     const previewImage = document.getElementById('media_preview_image');
                     const previewVideo = document.getElementById('media_preview_video');
-                    
+
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
@@ -2120,7 +2171,7 @@
             const preview = document.getElementById('media_preview');
             const previewImage = document.getElementById('media_preview_image');
             const previewVideo = document.getElementById('media_preview_video');
-            
+
             if (mediaFileInput) {
                 mediaFileInput.value = '';
             }
@@ -2161,18 +2212,48 @@
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Filters response data:', data);
+                    const filterSelect = document.getElementById('filter_id');
                     filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
-                    if (data.filters && data.filters.length > 0) {
-                        data.filters.forEach(filter => {
+
+                    // Handle different response formats
+                    let filters = [];
+                    if (data.filters) {
+                        // If filters is an array
+                        if (Array.isArray(data.filters)) {
+                            filters = data.filters;
+                        }
+                        // If filters is an object with data property (Laravel collection)
+                        else if (data.filters.data && Array.isArray(data.filters.data)) {
+                            filters = data.filters.data;
+                        }
+                        // If filters is an object, convert to array
+                        else if (typeof data.filters === 'object') {
+                            filters = Object.values(data.filters);
+                        }
+                    }
+
+                    console.log('Processed filters:', filters);
+
+                    if (filters.length > 0) {
+                        filters.forEach(filter => {
                             const option = document.createElement('option');
                             option.value = filter.id;
-                            option.textContent = filter.name;
-                            if (selectedFilterId && filter.id == selectedFilterId) {
+                            option.textContent = filter.name || filter.name || 'Filter #' + filter.id;
+                            if (selectedFilterId && (filter.id == selectedFilterId || String(filter.id) === String(selectedFilterId))) {
                                 option.selected = true;
                             }
+                            console.warn('selectedFilterId------',selectedFilterId);
+                            console.warn('filterSelect------',filterSelect);
+                            console.warn('option------',filterSelect, option);
+
                             filterSelect.appendChild(option);
                         });
+                    } else {
+                        console.warn('No filters found in response');
                     }
+
+
                     filterSelect.disabled = false;
                 })
                 .catch(error => {
@@ -2186,7 +2267,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const contactGroupSelect = document.getElementById('contact_group_id');
             const savedFilterId = @json(old('filter_id', $savedFilterId ?? null));
-            
+
             if (contactGroupSelect && contactGroupSelect.value) {
                 loadFiltersForGroup(contactGroupSelect.value, savedFilterId);
             }

@@ -79,11 +79,23 @@ class UnifiedNewsletterController extends Controller
             if ($request->has('customer_numbers')) {
                 foreach ($request->input('customer_numbers') as $customerData) {
                     if (!empty($customerData['phone_number']) && !empty($customerData['name'])) {
-                        $customerNumbers[] = $this->customerNumberRepository->create([
+                        $createData = [
                             'phone_number' => $customerData['phone_number'],
                             'name' => $customerData['name'],
                             'mailing_list_id' => $mailingList->id,
-                        ]);
+                        ];
+                        
+                        // Add email if provided
+                        if (isset($customerData['email'])) {
+                            $createData['email'] = $customerData['email'];
+                        }
+                        
+                        // Add telegram_id if provided
+                        if (isset($customerData['telegram_id'])) {
+                            $createData['telegram_id'] = $customerData['telegram_id'];
+                        }
+                        
+                        $customerNumbers[] = $this->customerNumberRepository->create($createData);
                     }
                 }
             }
@@ -153,11 +165,23 @@ class UnifiedNewsletterController extends Controller
                 // Create new customer numbers
                 foreach ($request->input('customer_numbers') as $customerData) {
                     if (!empty($customerData['phone_number']) && !empty($customerData['name'])) {
-                        $this->customerNumberRepository->create([
+                        $createData = [
                             'phone_number' => $customerData['phone_number'],
                             'name' => $customerData['name'],
                             'mailing_list_id' => $mailingListId,
-                        ]);
+                        ];
+                        
+                        // Add email if provided
+                        if (isset($customerData['email'])) {
+                            $createData['email'] = $customerData['email'];
+                        }
+                        
+                        // Add telegram_id if provided
+                        if (isset($customerData['telegram_id'])) {
+                            $createData['telegram_id'] = $customerData['telegram_id'];
+                        }
+                        
+                        $this->customerNumberRepository->create($createData);
                     }
                 }
             }

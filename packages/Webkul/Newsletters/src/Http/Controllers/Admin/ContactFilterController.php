@@ -84,7 +84,7 @@ class ContactFilterController extends Controller
 
         return response()->json([
             'success' => true,
-            'filters' => $filters,
+            'filters' => $filters->values()->toArray(), // Convert collection to array
         ]);
     }
 

@@ -11,6 +11,7 @@ use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\CustomerNumberRepository;
 use Webkul\Newsletters\Events\CustomerNumberMessageRead;
 use Webkul\Newsletters\Services\WhatsAppMailingService;
+use Webkul\Newsletters\Models\NewslettersContact;
 
 class CustomerNumberController extends Controller
 {
@@ -108,7 +109,17 @@ class CustomerNumberController extends Controller
             'mailing_list_id' => 'required|exists:newsletters_mailing_lists,id',
         ]);
 
-        $customerNumber = $this->customerNumberRepository->create($request->all());
+        $data = $request->all();
+        
+        // Get telegram_id from contact if contact_id is provided
+        if (empty($data['telegram_id']) && !empty($data['contact_id'])) {
+            $contact = NewslettersContact::find($data['contact_id']);
+            if ($contact && !empty($contact->telegram_user_id)) {
+                $data['telegram_id'] = $contact->telegram_user_id;
+            }
+        }
+
+        $customerNumber = $this->customerNumberRepository->create($data);
 
         session()->flash('success', trans('newsletters::app.admin.customer-numbers.create-success'));
 
@@ -153,7 +164,15 @@ class CustomerNumberController extends Controller
         
         $this->validate($request, $rules);
 
-        $data = $request->only(['phone_number', 'name', 'delivered', 'viewed']);
+        $data = $request->only(['phone_number', 'name', 'delivered', 'viewed', 'telegram_id', 'contact_id', 'email']);
+        
+        // Get telegram_id from contact if contact_id is provided and telegram_id is not set
+        if (empty($data['telegram_id']) && !empty($data['contact_id'])) {
+            $contact = NewslettersContact::find($data['contact_id']);
+            if ($contact && !empty($contact->telegram_user_id)) {
+                $data['telegram_id'] = $contact->telegram_user_id;
+            }
+        }
         
         // Keep the original mailing_list_id if not provided in request
         if ($request->has('mailing_list_id')) {
@@ -244,11 +263,26 @@ class CustomerNumberController extends Controller
                         continue;
                     }
 
-                    $this->customerNumberRepository->create([
+                    $createData = [
                         'phone_number' => $phoneNumber,
                         'name' => $name ?: null,
                         'mailing_list_id' => $mailingListId,
-                    ]);
+                    ];
+                    
+                    // Try to get telegram_id from contact if contact_id is in CSV
+                    if (isset($data['contact_id']) && !empty($data['contact_id'])) {
+                        $contact = NewslettersContact::find($data['contact_id']);
+                        if ($contact && !empty($contact->telegram_user_id)) {
+                            $createData['telegram_id'] = $contact->telegram_user_id;
+                            $createData['contact_id'] = $contact->id;
+                        }
+                    }
+                    // Also check if telegram_id is directly in CSV
+                    if (isset($data['telegram_id']) && !empty($data['telegram_id'])) {
+                        $createData['telegram_id'] = $data['telegram_id'];
+                    }
+                    
+                    $this->customerNumberRepository->create($createData);
 
                     $imported++;
 

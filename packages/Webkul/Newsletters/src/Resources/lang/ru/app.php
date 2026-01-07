@@ -29,7 +29,7 @@ return [
             'from-name' => 'Имя отправителя',
             'select-existing' => 'Выбрать существующий SMTP аккаунт',
             'create-new' => '-- Создать новый --',
-            'select-existing-hint' => 'Выберите существующий SMTP аккаунт или создайте новый ниже',
+            'select-existing-hint' => 'Выберите существующий SMTP аккаунт или создайте новый',
         ],
 
         'telegram-instances' => [
@@ -37,6 +37,9 @@ return [
             'bot-token' => 'Токен бота',
             'bot-username' => 'Username бота',
             'bot-name' => 'Название бота',
+            'select-existing' => 'Выбрать tg бота',
+            'select-existing-hint' => 'Выберите существующий tg бот или создайте новый',
+
         ],
 
         'channel-instances' => [

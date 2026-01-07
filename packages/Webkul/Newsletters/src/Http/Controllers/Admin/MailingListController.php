@@ -165,6 +165,7 @@ class MailingListController extends Controller
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance'),
                 'channel_type' => $request->input('channel_type', 'whatsapp'),
+                'filter_id' => $request->input('filter_id'),
             ];
 
             Log::info('Creating mailing list', [
@@ -363,18 +364,38 @@ class MailingListController extends Controller
 
             // Prepare customer numbers array
             $allCustomerNumbers = [];
+            $seenPhones = []; // Track phone numbers to avoid duplicates within the array
 
             // Add customer numbers from filter
             foreach ($contactsFromFilter as $contactData) {
                 $contact = is_array($contactData) ? (object) $contactData : $contactData;
                 if (!empty($contact->phone) && !empty($contact->full_name)) {
-                    $allCustomerNumbers[] = [
-                        'phone_number' => $contact->phone,
-                        'name' => $contact->full_name ?? '',
-                        'email' => $contact->email ?? null,
-                        'mailing_list_id' => $mailingList->id,
-                        'contact_id' => $contact->id ?? null,
-                    ];
+                    $phoneKey = $contact->phone . '-' . $mailingList->id;
+                    // Skip if we've already seen this phone number in the array
+                    if (!isset($seenPhones[$phoneKey])) {
+                        // Get telegram_id from contact if available
+                        $telegramId = null;
+                        if (!empty($contact->id)) {
+                            $contactModel = NewslettersContact::find($contact->id);
+                            if ($contactModel && !empty($contactModel->telegram_user_id)) {
+                                $telegramId = $contactModel->telegram_user_id;
+                            }
+                        }
+                        // Fallback to telegram_user_id from contactData if available
+                        if (empty($telegramId) && !empty($contact->telegram_user_id)) {
+                            $telegramId = $contact->telegram_user_id;
+                        }
+                        
+                        $allCustomerNumbers[] = [
+                            'phone_number' => $contact->phone,
+                            'name' => $contact->full_name ?? '',
+                            'email' => $contact->email ?? null,
+                            'telegram_id' => $telegramId,
+                            'mailing_list_id' => $mailingList->id,
+                            'contact_id' => $contact->id ?? null,
+                        ];
+                        $seenPhones[$phoneKey] = true;
+                    }
                 }
             }
 
@@ -386,13 +407,28 @@ class MailingListController extends Controller
                 });
 
                 foreach ($validCustomers as $customerData) {
-                    $allCustomerNumbers[] = [
-                        'phone_number' => $customerData['phone_number'],
-                        'name' => $customerData['name'],
-                        'email' => $customerData['email'] ?? null,
-                        'mailing_list_id' => $mailingList->id,
-                        'contact_id' => $customerData['contact_id'] ?? null,
-                    ];
+                    $phoneKey = $customerData['phone_number'] . '-' . $mailingList->id;
+                    // Skip if we've already seen this phone number in the array
+                    if (!isset($seenPhones[$phoneKey])) {
+                        // Get telegram_id from contact if contact_id is provided
+                        $telegramId = $customerData['telegram_id'] ?? null;
+                        if (empty($telegramId) && !empty($customerData['contact_id'])) {
+                            $contact = NewslettersContact::find($customerData['contact_id']);
+                            if ($contact && !empty($contact->telegram_user_id)) {
+                                $telegramId = $contact->telegram_user_id;
+                            }
+                        }
+                        
+                        $allCustomerNumbers[] = [
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'email' => $customerData['email'] ?? null,
+                            'telegram_id' => $telegramId,
+                            'mailing_list_id' => $mailingList->id,
+                            'contact_id' => $customerData['contact_id'] ?? null,
+                        ];
+                        $seenPhones[$phoneKey] = true;
+                    }
                 }
             }
 
@@ -407,6 +443,24 @@ class MailingListController extends Controller
 
                 foreach ($allCustomerNumbers as $index => $customerData) {
                     // company_id will be automatically set by repository
+
+                    // Check if customer with same phone_number and mailing_list_id already exists
+                    $existingCustomerByPhone = $this->customerNumberRepository
+                        ->where('phone_number', $customerData['phone_number'])
+                        ->where('mailing_list_id', $mailingList->id)
+                        ->first();
+
+                    if ($existingCustomerByPhone) {
+                        // Skip duplicate - log and continue
+                        Log::info('Skipping duplicate customer number', [
+                            'customer_index' => $index,
+                            'existing_customer_id' => $existingCustomerByPhone->id,
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'mailing_list_id' => $mailingList->id,
+                        ]);
+                        continue;
+                    }
 
                     Log::info('Creating customer number', [
                         'customer_index' => $index,
@@ -465,7 +519,10 @@ class MailingListController extends Controller
     public function edit(int $id)
     {
         $mailingList = $this->mailingListRepository->findOrFail($id);
-        $whatsappInstances = $mailingList->whatsappInstances;
+        // Only load WhatsApp instances if channel_type is not email
+        $whatsappInstances = $mailingList->channel_type !== 'email' 
+            ? $mailingList->whatsappInstances 
+            : collect();
 
         // Get customer numbers with sorting and pagination
         $customerNumbers = $this->customerNumberRepository
@@ -529,19 +586,48 @@ class MailingListController extends Controller
         // Get contact groups for filter selection
         $contactGroups = $this->contactGroupRepository->all();
         
-        // Try to determine saved contact_group_id and filter_id from customer numbers
-        // If customer numbers have contact_id, we can get the contact group
+        // Get saved filter_id and contact_group_id from database
+        $savedFilterId = $mailingList->filter_id;
         $savedContactGroupId = null;
-        $savedFilterId = null;
         
-        // Check if any customer number has contact_id
-        $customerWithContact = $customerNumbers->firstWhere('contact_id', '!=', null);
-        if ($customerWithContact && $customerWithContact->contact_id) {
-            $contact = \Webkul\Newsletters\Models\NewslettersContact::find($customerWithContact->contact_id);
-            if ($contact) {
-                $savedContactGroupId = $contact->contact_group_id;
+        // If filter_id exists, get contact_group_id from the filter
+        if ($savedFilterId) {
+            try {
+                $filter = $this->contactFilterRepository->findOrFail($savedFilterId);
+                $savedContactGroupId = $filter->contact_group_id;
+                
+                Log::info('Loaded filter from database', [
+                    'mailing_list_id' => $id,
+                    'filter_id' => $savedFilterId,
+                    'contact_group_id' => $savedContactGroupId,
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Filter not found in database', [
+                    'mailing_list_id' => $id,
+                    'filter_id' => $savedFilterId,
+                    'error' => $e->getMessage(),
+                ]);
+                // If filter was deleted, reset filter_id
+                $savedFilterId = null;
             }
         }
+        
+        // Fallback: Try to determine contact_group_id from customer numbers if filter_id is not set
+        if (!$savedContactGroupId) {
+            $contactIds = $customerNumbers->whereNotNull('contact_id')->pluck('contact_id')->unique()->toArray();
+            if (!empty($contactIds)) {
+                $firstContact = NewslettersContact::whereIn('id', $contactIds)->first();
+                if ($firstContact) {
+                    $savedContactGroupId = $firstContact->contact_group_id;
+                }
+            }
+        }
+        
+        Log::info('Saved filter determination result', [
+            'mailing_list_id' => $id,
+            'saved_contact_group_id' => $savedContactGroupId,
+            'saved_filter_id' => $savedFilterId,
+        ]);
         
         return view('newsletters::admin.mailing-lists.edit', compact(
             'mailingList', 
@@ -650,7 +736,8 @@ class MailingListController extends Controller
                 'message_delay_from' => $request->input('message_delay_from', 5),
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance'),
-                'channel_type' => $request->input('channel_type', 'whatsapp'),
+                'channel_type' => $request->input('channel_type', $existingMailingList->channel_type ?? 'whatsapp'),
+                'filter_id' => $request->input('filter_id'),
             ];
 
             Log::info('Updating mailing list', [
@@ -900,18 +987,38 @@ class MailingListController extends Controller
 
             // Prepare customer numbers array
             $allCustomerNumbers = [];
+            $seenPhones = []; // Track phone numbers to avoid duplicates within the array
 
             // Add customer numbers from filter
             foreach ($contactsFromFilter as $contactData) {
                 $contact = is_array($contactData) ? (object) $contactData : $contactData;
                 if (!empty($contact->phone) && !empty($contact->full_name)) {
-                    $allCustomerNumbers[] = [
-                        'phone_number' => $contact->phone,
-                        'name' => $contact->full_name ?? '',
-                        'email' => $contact->email ?? null,
-                        'mailing_list_id' => $id,
-                        'contact_id' => $contact->id ?? null,
-                    ];
+                    $phoneKey = $contact->phone . '-' . $id;
+                    // Skip if we've already seen this phone number in the array
+                    if (!isset($seenPhones[$phoneKey])) {
+                        // Get telegram_id from contact if available
+                        $telegramId = null;
+                        if (!empty($contact->id)) {
+                            $contactModel = NewslettersContact::find($contact->id);
+                            if ($contactModel && !empty($contactModel->telegram_user_id)) {
+                                $telegramId = $contactModel->telegram_user_id;
+                            }
+                        }
+                        // Fallback to telegram_user_id from contactData if available
+                        if (empty($telegramId) && !empty($contact->telegram_user_id)) {
+                            $telegramId = $contact->telegram_user_id;
+                        }
+                        
+                        $allCustomerNumbers[] = [
+                            'phone_number' => $contact->phone,
+                            'name' => $contact->full_name ?? '',
+                            'email' => $contact->email ?? null,
+                            'telegram_id' => $telegramId,
+                            'mailing_list_id' => $id,
+                            'contact_id' => $contact->id ?? null,
+                        ];
+                        $seenPhones[$phoneKey] = true;
+                    }
                 }
             }
 
@@ -926,18 +1033,33 @@ class MailingListController extends Controller
                 });
 
                 foreach ($validCustomers as $customerData) {
-                    $allCustomerNumbers[] = [
-                        'phone_number' => $customerData['phone_number'],
-                        'name' => $customerData['name'],
-                        'email' => $customerData['email'] ?? null,
-                        'mailing_list_id' => $id,
-                        'contact_id' => $customerData['contact_id'] ?? null,
-                        'id' => $customerData['id'] ?? null, // Preserve ID for updates
-                        'delivered' => $customerData['delivered'] ?? null,
-                        'viewed' => $customerData['viewed'] ?? null,
-                        'incoming_message' => $customerData['incoming_message'] ?? null,
-                        'whatsapp_instance_id' => $customerData['whatsapp_instance_id'] ?? null,
-                    ];
+                    $phoneKey = $customerData['phone_number'] . '-' . $id;
+                    // Skip if we've already seen this phone number in the array
+                    if (!isset($seenPhones[$phoneKey])) {
+                        // Get telegram_id from contact if contact_id is provided
+                        $telegramId = $customerData['telegram_id'] ?? null;
+                        if (empty($telegramId) && !empty($customerData['contact_id'])) {
+                            $contact = NewslettersContact::find($customerData['contact_id']);
+                            if ($contact && !empty($contact->telegram_user_id)) {
+                                $telegramId = $contact->telegram_user_id;
+                            }
+                        }
+                        
+                        $allCustomerNumbers[] = [
+                            'phone_number' => $customerData['phone_number'],
+                            'name' => $customerData['name'],
+                            'email' => $customerData['email'] ?? null,
+                            'telegram_id' => $telegramId,
+                            'mailing_list_id' => $id,
+                            'contact_id' => $customerData['contact_id'] ?? null,
+                            'id' => $customerData['id'] ?? null, // Preserve ID for updates
+                            'delivered' => $customerData['delivered'] ?? null,
+                            'viewed' => $customerData['viewed'] ?? null,
+                            'incoming_message' => $customerData['incoming_message'] ?? null,
+                            'whatsapp_instance_id' => $customerData['whatsapp_instance_id'] ?? null,
+                        ];
+                        $seenPhones[$phoneKey] = true;
+                    }
                 }
             }
 
@@ -986,6 +1108,10 @@ class MailingListController extends Controller
                         if (isset($customerData['contact_id'])) {
                             $updateData['contact_id'] = $customerData['contact_id'];
                         }
+                        // Add telegram_id if provided
+                        if (isset($customerData['telegram_id'])) {
+                            $updateData['telegram_id'] = $customerData['telegram_id'];
+                        }
 
                         // Only include these fields if they are explicitly set and not empty
                         if (isset($customerData['delivered'])) {
@@ -1012,7 +1138,7 @@ class MailingListController extends Controller
                             'mailing_list_id' => $id,
                         ]);
                     } else {
-                        // Create new customer
+                        // Create new customer - but first check for duplicates by phone_number
                         Log::info('Creating new customer number', [
                             'customer_index' => $index,
                             'phone_number' => $customerData['phone_number'],
@@ -1020,32 +1146,92 @@ class MailingListController extends Controller
                             'mailing_list_id' => $id,
                         ]);
 
-                        // Prepare create data
-                        $createData = [
-                            'phone_number' => $customerData['phone_number'],
-                            'name' => $customerData['name'],
-                            'email' => $customerData['email'] ?? null,
-                            'mailing_list_id' => $id,
-                            'contact_id' => $customerData['contact_id'] ?? null,
-                            'delivered' => false,
-                            'viewed' => false,
-                            'incoming_message' => false,
-                        ];
+                        // Check if customer with same phone_number and mailing_list_id already exists
+                        $existingCustomerByPhone = $this->customerNumberRepository
+                            ->where('phone_number', $customerData['phone_number'])
+                            ->where('mailing_list_id', $id)
+                            ->first();
 
-                        // Add whatsapp_instance_id if provided
-                        if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
-                            $createData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
+                        if ($existingCustomerByPhone) {
+                            // Update existing customer instead of creating duplicate
+                            Log::info('Customer with same phone number exists, updating instead', [
+                                'existing_customer_id' => $existingCustomerByPhone->id,
+                                'phone_number' => $customerData['phone_number'],
+                                'mailing_list_id' => $id,
+                            ]);
+
+                            // Prepare update data
+                            $updateData = [
+                                'phone_number' => $customerData['phone_number'],
+                                'name' => $customerData['name'],
+                                'mailing_list_id' => $id,
+                            ];
+
+                            // Add email and contact_id if provided
+                            if (isset($customerData['email'])) {
+                                $updateData['email'] = $customerData['email'];
+                            }
+                            if (isset($customerData['contact_id'])) {
+                                $updateData['contact_id'] = $customerData['contact_id'];
+                            }
+                            // Add telegram_id if provided
+                            if (isset($customerData['telegram_id'])) {
+                                $updateData['telegram_id'] = $customerData['telegram_id'];
+                            }
+
+                            // Only include these fields if they are explicitly set and not empty
+                            if (isset($customerData['delivered'])) {
+                                $updateData['delivered'] = (bool)$customerData['delivered'];
+                            }
+                            if (isset($customerData['viewed'])) {
+                                $updateData['viewed'] = (bool)$customerData['viewed'];
+                            }
+                            if (isset($customerData['incoming_message'])) {
+                                $updateData['incoming_message'] = (bool)$customerData['incoming_message'];
+                            }
+                            // Only update whatsapp_instance_id if it's explicitly provided and not empty
+                            if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
+                                $updateData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
+                            }
+
+                            $this->customerNumberRepository->update($updateData, $existingCustomerByPhone->id);
+                            $processedCustomerIds[] = $existingCustomerByPhone->id;
+
+                            Log::info('Existing customer number updated successfully', [
+                                'customer_id' => $existingCustomerByPhone->id,
+                                'phone_number' => $customerData['phone_number'],
+                                'name' => $customerData['name'],
+                                'mailing_list_id' => $id,
+                            ]);
+                        } else {
+                            // Prepare create data
+                            $createData = [
+                                'phone_number' => $customerData['phone_number'],
+                                'name' => $customerData['name'],
+                                'email' => $customerData['email'] ?? null,
+                                'telegram_id' => $customerData['telegram_id'] ?? null,
+                                'mailing_list_id' => $id,
+                                'contact_id' => $customerData['contact_id'] ?? null,
+                                'delivered' => false,
+                                'viewed' => false,
+                                'incoming_message' => false,
+                            ];
+
+                            // Add whatsapp_instance_id if provided
+                            if (isset($customerData['whatsapp_instance_id']) && !empty($customerData['whatsapp_instance_id'])) {
+                                $createData['whatsapp_instance_id'] = $customerData['whatsapp_instance_id'];
+                            }
+
+                            $customer = $this->customerNumberRepository->create($createData);
+                            $processedCustomerIds[] = $customer->id;
+
+                            Log::info('Customer number created successfully', [
+                                'customer_id' => $customer->id,
+                                'phone_number' => $customer->phone_number,
+                                'name' => $customer->name,
+                                'mailing_list_id' => $customer->mailing_list_id,
+                            ]);
                         }
-
-                        $customer = $this->customerNumberRepository->create($createData);
-                        $processedCustomerIds[] = $customer->id;
-
-                        Log::info('Customer number created successfully', [
-                            'customer_id' => $customer->id,
-                            'phone_number' => $customer->phone_number,
-                            'name' => $customer->name,
-                            'mailing_list_id' => $customer->mailing_list_id,
-                        ]);
                     }
                 }
 
