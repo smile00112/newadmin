@@ -5,11 +5,13 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Event;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\ContactGroupRepository;
 use Webkul\Newsletters\Repositories\ContactRepository;
 use Webkul\Newsletters\Repositories\ContactImportMappingRepository;
 use Webkul\Newsletters\Models\NewslettersContact;
+use Webkul\Newsletters\Events\ContactCacheInvalidated;
 
 class ContactGroupController extends Controller
 {
@@ -356,6 +358,11 @@ class ContactGroupController extends Controller
             }
 
             DB::commit();
+
+            // Invalidate cache for contact filters after import
+            if ($imported > 0) {
+                Event::dispatch(new ContactCacheInvalidated($groupId));
+            }
 
             \Log::info('CSV Import completed', [
                 'group_id' => $groupId,

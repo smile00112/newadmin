@@ -27,6 +27,7 @@ class NewslettersContact extends Model
         'full_name',
         'phone',
         'email',
+        'telegram_user_id',
         'gender',
         'last_order_date',
         'registration_date',

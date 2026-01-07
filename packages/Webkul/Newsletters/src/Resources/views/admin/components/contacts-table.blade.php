@@ -63,6 +63,9 @@
                             <span id="sort-indicator-phone" class="ml-1"></span>
                         </div>
                     </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {{ __('newsletters::app.admin.contacts.table.telegram-user-id') }}
+                    </th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column"
                         data-sort="gender"
                         onclick="handleSort('gender')">
@@ -193,14 +196,14 @@
                 updateSortIndicators();
             } else {
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
                 }
             }
         })
         .catch(error => {
             console.error('Error loading contacts:', error);
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-red-500">{{ __('newsletters::app.common.messages.error') }}: ' + (error.message || 'Unknown error') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-red-500">{{ __('newsletters::app.common.messages.error') }}: ' + (error.message || 'Unknown error') + '</td></tr>';
             }
         })
         .finally(() => {
@@ -225,7 +228,7 @@
         const tbody = document.getElementById('contacts-tbody');
 
         if (contacts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
             return;
         }
 
@@ -234,6 +237,7 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${contact.id}</td>
                 <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${escapeHtml(contact.full_name || '-')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${escapeHtml(contact.phone || '-')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${escapeHtml(contact.telegram_user_id || '-')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${getGenderLabel(contact.gender)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${formatNumber(contact.total_check)}</td>
             </tr>

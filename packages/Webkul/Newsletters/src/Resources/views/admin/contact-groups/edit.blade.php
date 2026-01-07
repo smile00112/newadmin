@@ -378,6 +378,24 @@
                         </div>
                     </div>
 
+                    <!-- Contact Count Display -->
+                    <div id="filter_contact_count" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-start gap-1">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ __('newsletters::app.admin.contact-filters.contacts-count') }}:
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span id="filter_contact_count_value" class="text-sm font-semibold text-red-600 dark:text-red-500 ">
+                                    -
+                                </span>
+                                <span id="filter_contact_count_loading" class="hidden text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="icon-loader animate-spin"></span>
+                                </span>
+                            </div>
+                        </div>
+                        <p id="filter_contact_count_error" class="hidden mt-1 text-xs text-red-600 dark:text-red-400"></p>
+                    </div>
+
                     <div class="flex justify-end gap-x-2 pt-4 mt-6">
                         <button type="button" onclick="closeFilterModal()" class="secondary-button">
                             {{ __('newsletters::app.common.actions.cancel') }}
@@ -943,6 +961,8 @@
         // contactGroupId is already declared above
         let currentFilterId = null;
         let conditionCounter = 0;
+        let recalculateTimeout = null;
+        let isLoadingFilter = false; // Flag to track filter loading state
 
         // Field type mappings
         const numericFields = ['orders_count', 'average_check', 'total_check', 'average_order_rating'];
@@ -1060,12 +1080,14 @@
                 title.textContent = '{{ __('newsletters::app.admin.contact-filters.create') }}';
                 resetFilterForm();
                 addFilterCondition(); // Add first condition by default
+                // Recalculate will be called automatically after condition is added
             }
 
             modal.classList.remove('hidden');
         }
 
         function loadFilterForEdit(filterId) {
+            isLoadingFilter = true; // Set flag when starting to load
             fetch(`{{ route('admin.newsletters.contact-filters.index', $group->id) }}`, {
                 method: 'GET',
                 headers: {
@@ -1083,21 +1105,44 @@
 
                         // Clear existing conditions
                         document.getElementById('filter_conditions_container').innerHTML = '';
+                        conditionCounter = 0; // Reset counter
 
                         // Add conditions
                         if (filter.conditions && filter.conditions.length > 0) {
-                            filter.conditions.forEach(condition => {
-                                addFilterCondition(condition);
+                            const conditionsToAdd = filter.conditions;
+                            let addedCount = 0;
+                            
+                            // Add all conditions first without recalculating
+                            conditionsToAdd.forEach((condition) => {
+                                addFilterCondition(condition, false); // Pass false to skip recalculate
+                                addedCount++;
+                                
+                                // After all conditions are added, wait for them to be populated
+                                if (addedCount === conditionsToAdd.length) {
+                                    // Wait for all conditions to be fully populated
+                                    // Calculate max wait time: 50ms (initial) + 150ms (operator) + 200ms (values) + 300ms (populate) = ~700ms
+                                    // Add extra buffer for async operations
+                                    setTimeout(() => {
+                                        isLoadingFilter = false; // Clear flag
+                                        recalculateContactCount(); // Call once with all conditions
+                                    }, 1200); // Increased timeout to ensure all conditions are populated
+                                }
                             });
                         } else {
                             addFilterCondition();
+                            isLoadingFilter = false;
                         }
+                    } else {
+                        isLoadingFilter = false;
                     }
+                } else {
+                    isLoadingFilter = false;
                 }
             })
             .catch(error => {
                 console.error('Error loading filter:', error);
                 alert('{{ __('newsletters::app.common.messages.error') }}: ' + error.message);
+                isLoadingFilter = false;
             });
         }
 
@@ -1114,7 +1159,7 @@
             document.getElementById('filter_conditions_container').innerHTML = '';
         }
 
-        function addFilterCondition(conditionData = null) {
+        function addFilterCondition(conditionData = null, shouldRecalculate = true) {
             const container = document.getElementById('filter_conditions_container');
             const index = conditionCounter++;
             const conditionId = `condition_${index}`;
@@ -1134,9 +1179,9 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 {{ __('newsletters::app.admin.contact-filters.field') }} <span class="text-red-500">*</span>
                             </label>
-                            <select name="conditions[${index}][field]" 
+                            <select name="conditions[${index}][field]"
                                     class="condition-field w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
-                                    onchange="updateConditionForm('${conditionId}', ${index})"
+                                    onchange="updateConditionForm('${conditionId}', ${index}); if (!isLoadingFilter) recalculateContactCount();"
                                     required>
                                 <option value="">{{ __('newsletters::app.common.actions.select') }}</option>
                                 <option value="gender" ${conditionData && conditionData.field === 'gender' ? 'selected' : ''}>{{ __('newsletters::app.admin.contacts.field-gender') }}</option>
@@ -1156,7 +1201,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 {{ __('newsletters::app.admin.contact-filters.operator') }} <span class="text-red-500">*</span>
                             </label>
-                            <select name="conditions[${index}][operator]" 
+                            <select name="conditions[${index}][operator]"
                                     id="${conditionId}_operator"
                                     class="condition-operator w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
                                     onchange="updateConditionForm('${conditionId}', ${index})"
@@ -1170,6 +1215,11 @@
 
             container.insertAdjacentHTML('beforeend', conditionHtml);
 
+            // Only recalculate if not loading filter and shouldRecalculate is true
+            if (shouldRecalculate && !isLoadingFilter) {
+                recalculateContactCount();
+            }
+
             if (conditionData) {
                 setTimeout(() => {
                     const fieldSelect = document.querySelector(`#${conditionId} select[name*="[field]"]`);
@@ -1178,7 +1228,7 @@
                         // Trigger change event to populate operator options
                         fieldSelect.dispatchEvent(new Event('change'));
                         updateConditionForm(conditionId, index);
-                        
+
                         setTimeout(() => {
                             const operatorSelect = document.getElementById(`${conditionId}_operator`);
                             if (operatorSelect && conditionData.operator) {
@@ -1186,9 +1236,10 @@
                                 // Trigger change event to show value inputs
                                 operatorSelect.dispatchEvent(new Event('change'));
                                 showConditionValueInputs(conditionId, index, conditionData.field, conditionData.operator);
-                                
+
                                 setTimeout(() => {
                                     populateConditionValues(conditionId, index, conditionData);
+                                    // Don't recalculate during loading - will be called once after all conditions are loaded
                                 }, 200);
                             }
                         }, 150);
@@ -1203,6 +1254,7 @@
             if (condition && container.children.length > 1) {
                 condition.remove();
                 updateConditionNumbers();
+                recalculateContactCount();
             } else if (container.children.length === 1) {
                 alert('{{ __('newsletters::app.admin.contact-filters.min-conditions') }}');
             }
@@ -1258,6 +1310,9 @@
             // Add change listener
             operatorSelect.onchange = function() {
                 showConditionValueInputs(conditionId, index, field, this.value);
+                if (!isLoadingFilter) {
+                    recalculateContactCount();
+                }
             };
         }
 
@@ -1272,20 +1327,24 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 {{ __('newsletters::app.admin.contact-filters.value-from') }} <span class="text-red-500">*</span>
                             </label>
-                            <input type="${dateFields.includes(field) ? 'date' : 'number'}" 
-                                   name="conditions[${index}][value_from]" 
+                            <input type="${dateFields.includes(field) ? 'date' : 'number'}"
+                                   name="conditions[${index}][value_from]"
                                    step="${dateFields.includes(field) ? '' : '0.01'}"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                   class="condition-value w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                   onchange="if (!isLoadingFilter) recalculateContactCount()"
+                                   oninput="if (!isLoadingFilter) recalculateContactCount()"
                                    required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 {{ __('newsletters::app.admin.contact-filters.value-to') }} <span class="text-red-500">*</span>
                             </label>
-                            <input type="${dateFields.includes(field) ? 'date' : 'number'}" 
-                                   name="conditions[${index}][value_to]" 
+                            <input type="${dateFields.includes(field) ? 'date' : 'number'}"
+                                   name="conditions[${index}][value_to]"
                                    step="${dateFields.includes(field) ? '' : '0.01'}"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                   class="condition-value w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                   onchange="if (!isLoadingFilter) recalculateContactCount()"
+                                   oninput="if (!isLoadingFilter) recalculateContactCount()"
                                    required>
                         </div>
                     </div>
@@ -1296,11 +1355,12 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {{ __('newsletters::app.admin.contact-filters.values') }} <span class="text-red-500">*</span>
                         </label>
-                        <select name="conditions[${index}][values][]" 
+                        <select name="conditions[${index}][values][]"
                                 id="${conditionId}_values_multi"
                                 multiple
                                 size="5"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                class="condition-value w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                onchange="if (!isLoadingFilter) recalculateContactCount()"
                                 required>
                             <option value="">{{ __('newsletters::app.common.messages.loading') }}</option>
                         </select>
@@ -1316,9 +1376,10 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {{ __('newsletters::app.admin.contact-filters.value') }} <span class="text-red-500">*</span>
                         </label>
-                        <select name="conditions[${index}][value]" 
+                        <select name="conditions[${index}][value]"
                                 id="${conditionId}_value_select"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                class="condition-value w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                onchange="if (!isLoadingFilter) recalculateContactCount()"
                                 required>
                             <option value="">{{ __('newsletters::app.common.messages.loading') }}</option>
                         </select>
@@ -1331,10 +1392,12 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {{ __('newsletters::app.admin.contact-filters.value') }} <span class="text-red-500">*</span>
                         </label>
-                        <input type="${dateFields.includes(field) ? 'date' : (numericFields.includes(field) ? 'number' : 'text')}" 
-                               name="conditions[${index}][value]" 
+                        <input type="${dateFields.includes(field) ? 'date' : (numericFields.includes(field) ? 'number' : 'text')}"
+                               name="conditions[${index}][value]"
                                step="${dateFields.includes(field) ? '' : (numericFields.includes(field) ? '0.01' : '')}"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                               class="condition-value w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                               onchange="if (!isLoadingFilter) recalculateContactCount()"
+                               oninput="if (!isLoadingFilter) recalculateContactCount()"
                                required>
                     </div>
                 `;
@@ -1358,16 +1421,20 @@
                     }
                 }
             } else if (operator === 'in') {
-                loadConditionFieldValues(conditionId, field, true).then(() => {
-                    const multiSelect = document.getElementById(`${conditionId}_values_multi`);
-                    if (multiSelect && Array.isArray(conditionData.values)) {
-                        setTimeout(() => {
-                            Array.from(multiSelect.options).forEach(option => {
-                                option.selected = conditionData.values.includes(option.value);
-                            });
-                        }, 200);
-                    }
-                });
+                        loadConditionFieldValues(conditionId, field, true).then(() => {
+                            const multiSelect = document.getElementById(`${conditionId}_values_multi`);
+                            if (multiSelect && Array.isArray(conditionData.values)) {
+                                setTimeout(() => {
+                                    Array.from(multiSelect.options).forEach(option => {
+                                        option.selected = conditionData.values.includes(option.value);
+                                    });
+                                    // Don't recalculate during loading
+                                    if (!isLoadingFilter) {
+                                        recalculateContactCount();
+                                    }
+                                }, 200);
+                            }
+                        });
             } else {
                 const valueInput = document.querySelector(`#${conditionId} input[name*="[value]"], #${conditionId} select[name*="[value]"]`);
                 if (valueInput) {
@@ -1377,10 +1444,18 @@
                         loadConditionFieldValues(conditionId, field, false).then(() => {
                             setTimeout(() => {
                                 valueInput.value = conditionData.value || '';
+                                // Don't recalculate during loading
+                                if (!isLoadingFilter) {
+                                    recalculateContactCount();
+                                }
                             }, 200);
                         });
                     } else {
                         valueInput.value = conditionData.value || '';
+                        // Don't recalculate during loading
+                        if (!isLoadingFilter) {
+                            recalculateContactCount();
+                        }
                     }
                 }
             }
@@ -1523,6 +1598,120 @@
                 console.error('Error deleting filter:', error);
                 alert('{{ __('newsletters::app.admin.contact-filters.delete-error') }}');
             });
+        }
+
+        /**
+         * Recalculate contact count based on current filter conditions.
+         * Uses debounce to prevent excessive API calls.
+         */
+        function recalculateContactCount() {
+            // Clear existing timeout
+            if (recalculateTimeout) {
+                clearTimeout(recalculateTimeout);
+            }
+
+            // Set new timeout for debounce (500ms)
+            recalculateTimeout = setTimeout(() => {
+                const countValue = document.getElementById('filter_contact_count_value');
+                const countLoading = document.getElementById('filter_contact_count_loading');
+                const countError = document.getElementById('filter_contact_count_error');
+
+                // Show loading state
+                countValue.textContent = '-';
+                countLoading.classList.remove('hidden');
+                countError.classList.add('hidden');
+
+                // Collect all conditions from form
+                const conditions = [];
+                const conditionDivs = document.querySelectorAll('#filter_conditions_container > div');
+
+                let hasValidConditions = false;
+                conditionDivs.forEach((div) => {
+                    const condition = {};
+                    const field = div.querySelector('select[name*="[field]"]')?.value;
+                    const operator = div.querySelector('select[name*="[operator]"]')?.value;
+
+                    if (!field || !operator) {
+                        return;
+                    }
+
+                    condition.field = field;
+                    condition.operator = operator;
+
+                    if (operator === 'between') {
+                        const valueFrom = div.querySelector('input[name*="[value_from]"]')?.value;
+                        const valueTo = div.querySelector('input[name*="[value_to]"]')?.value;
+                        if (valueFrom && valueTo) {
+                            condition.value_from = valueFrom;
+                            condition.value_to = valueTo;
+                            hasValidConditions = true;
+                        } else {
+                            return; // Skip incomplete condition
+                        }
+                    } else if (operator === 'in') {
+                        const multiSelect = div.querySelector('select[name*="[values]"]');
+                        const selectedValues = Array.from(multiSelect?.selectedOptions || [])
+                            .map(opt => opt.value)
+                            .filter(v => v);
+                        if (selectedValues.length > 0) {
+                            condition.values = selectedValues;
+                            hasValidConditions = true;
+                        } else {
+                            return; // Skip incomplete condition
+                        }
+                    } else {
+                        const valueInput = div.querySelector('input[name*="[value]"], select[name*="[value]"]');
+                        const value = valueInput?.value;
+                        if (value) {
+                            condition.value = value;
+                            hasValidConditions = true;
+                        } else {
+                            return; // Skip incomplete condition
+                        }
+                    }
+
+                    conditions.push(condition);
+                });
+
+                // Only make request if we have at least one valid condition
+                if (!hasValidConditions || conditions.length === 0) {
+                    countValue.textContent = '-';
+                    countLoading.classList.add('hidden');
+                    return;
+                }
+
+                // Make API request
+                fetch(`{{ route('admin.newsletters.contact-filters.count', $group->id) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        conditions: conditions
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    countLoading.classList.add('hidden');
+                    if (data.success) {
+                        countValue.textContent = data.count.toLocaleString();
+                        countError.classList.add('hidden');
+                    } else {
+                        countValue.textContent = '-';
+                        countError.textContent = data.message || '{{ __('newsletters::app.common.messages.error') }}';
+                        countError.classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error calculating contact count:', error);
+                    countLoading.classList.add('hidden');
+                    countValue.textContent = '-';
+                    countError.textContent = '{{ __('newsletters::app.common.messages.error') }}: ' + error.message;
+                    countError.classList.remove('hidden');
+                });
+            }, 500);
         }
     </script>
     @endpush

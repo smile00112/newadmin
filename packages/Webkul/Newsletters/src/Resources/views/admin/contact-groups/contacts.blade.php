@@ -189,6 +189,7 @@
             'full_name': '{{ __('newsletters::app.admin.contacts.field-full-name') }}',
             'phone': '{{ __('newsletters::app.admin.contacts.field-phone') }}',
             'email': '{{ __('newsletters::app.admin.contacts.field-email') }}',
+            'telegram_user_id': '{{ __('newsletters::app.admin.contacts.field-telegram-user-id') }}',
             'gender': '{{ __('newsletters::app.admin.contacts.field-gender') }}',
             'last_order_date': '{{ __('newsletters::app.admin.contacts.field-last-order-date') }}',
             'registration_date': '{{ __('newsletters::app.admin.contacts.field-registration-date') }}',
@@ -681,6 +682,9 @@
                             {{ __('newsletters::app.admin.contacts.phone') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            {{ __('newsletters::app.admin.contacts.table.telegram-user-id') }}
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.admin.contacts.email') }}
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -704,6 +708,9 @@
                                 {{ $contact->phone }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {{ $contact->telegram_user_id ?? '-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                 {{ $contact->email ?? '-' }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
@@ -715,7 +722,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="7" class="px-6 py-12 text-center">
                                 <p class="text-gray-500 dark:text-gray-400">
                                     {{ __('newsletters::app.admin.contacts.no-contacts') }}
                                 </p>

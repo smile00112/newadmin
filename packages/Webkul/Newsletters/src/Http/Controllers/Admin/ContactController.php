@@ -111,6 +111,7 @@ class ContactController extends Controller
                     'full_name' => $contact->full_name,
                     'phone' => $contact->phone,
                     'email' => $contact->email,
+                    'telegram_user_id' => $contact->telegram_user_id,
                     'gender' => $contact->gender,
                     'last_order_date' => $contact->last_order_date ? $contact->last_order_date->format('Y-m-d') : null,
                     'registration_date' => $contact->registration_date ? $contact->registration_date->format('Y-m-d') : null,

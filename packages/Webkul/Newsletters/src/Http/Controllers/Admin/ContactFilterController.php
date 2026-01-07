@@ -4,6 +4,7 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\ContactFilterRepository;
 use Webkul\Newsletters\Repositories\ContactFilterConditionRepository;
@@ -134,9 +135,9 @@ class ContactFilterController extends Controller
     /**
      * Update the specified filter.
      */
-    public function update(Request $request, int $groupId, int $id)
+    public function update(Request $request, int $groupId, int $filterId)
     {
-        $filter = $this->contactFilterRepository->findOrFail($id);
+        $filter = $this->contactFilterRepository->findOrFail($filterId);
 
         $validated = $this->validateFilter($request);
 
@@ -146,7 +147,7 @@ class ContactFilterController extends Controller
             // Update filter name
             $this->contactFilterRepository->update([
                 'name' => $validated['name'],
-            ], $id);
+            ], $filterId);
 
             // Delete existing conditions
             $filter->conditions()->delete();
@@ -179,11 +180,11 @@ class ContactFilterController extends Controller
     /**
      * Remove the specified filter.
      */
-    public function destroy(int $groupId, int $id)
+    public function destroy(int $id)
     {
         try {
-
             $filter = $this->contactFilterRepository->findOrFail($id);
+
             DB::beginTransaction();
 
             try {
@@ -203,7 +204,7 @@ class ContactFilterController extends Controller
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => trans('newsletters::app.admin.contact-filters.delete-error 1') . ': ' . $e->getMessage(),
+                    'message' => trans('newsletters::app.admin.contact-filters.delete-error') . ': ' . $e->getMessage(),
                 ], 500);
             }
         } catch (ModelNotFoundException | NotFoundHttpException $e) {
@@ -214,7 +215,7 @@ class ContactFilterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => trans('newsletters::app.admin.contact-filters.delete-error 2') . ': ' . $e->getMessage(),
+                'message' => trans('newsletters::app.admin.contact-filters.delete-error') . ': ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -222,7 +223,7 @@ class ContactFilterController extends Controller
     /**
      * Get unique values for a field.
      */
-    public function getFieldValues(Request $request, int $groupId)
+    public function getFieldValues(Request $request)
     {
         $request->validate([
             'field' => 'required|string|in:' . implode(',', $this->textFields),
@@ -230,15 +231,14 @@ class ContactFilterController extends Controller
         ]);
 
         $field = $request->input('field');
-        // Use route parameter if contact_group_id is not provided in query
-        $queryGroupId = $request->input('contact_group_id', $groupId);
+        $groupId = $request->input('contact_group_id');
 
         $query = NewslettersContact::select($field)
             ->whereNotNull($field)
             ->where($field, '!=', '');
 
-        if ($queryGroupId) {
-            $query->where('contact_group_id', $queryGroupId);
+        if ($groupId) {
+            $query->where('contact_group_id', $groupId);
         }
 
         // Apply company filter
@@ -261,11 +261,82 @@ class ContactFilterController extends Controller
     }
 
     /**
+     * Count contacts matching filter conditions.
+     */
+    public function countContacts(Request $request, int $groupId)
+    {
+        $request->validate([
+            'conditions' => 'required|array|min:1',
+        ]);
+
+        $group = $this->contactGroupRepository->findOrFail($groupId);
+
+        $conditions = $request->input('conditions', []);
+
+        // Generate cache key based on groupId and conditions hash
+        $conditionsHash = md5(json_encode($conditions));
+        $cacheKey = "contact_filter_count_{$groupId}_{$conditionsHash}";
+
+        // Get count from cache or calculate it
+        $count = Cache::remember($cacheKey, 3600, function () use ($groupId, $conditions) {
+            $query = NewslettersContact::query()
+                ->where('contact_group_id', $groupId);
+
+            // Apply company filter
+            $admin = auth()->guard('admin')->user();
+            if ($admin && $admin->company_id) {
+                $query->where('company_id', $admin->company_id);
+            }
+
+            // Apply all conditions with AND logic
+            foreach ($conditions as $conditionData) {
+                // Create a temporary condition object for applyConditionToQuery
+                $condition = (object) [
+                    'field' => $conditionData['field'] ?? null,
+                    'operator' => $conditionData['operator'] ?? null,
+                    'value' => $conditionData['value'] ?? null,
+                    'value_from' => $conditionData['value_from'] ?? null,
+                    'value_to' => $conditionData['value_to'] ?? null,
+                    'values' => $conditionData['values'] ?? null,
+                ];
+
+                // Convert date values from string to timestamp if needed
+                if (in_array($condition->field, $this->dateFields)) {
+                    if ($condition->value_from) {
+                        $condition->value_from = is_numeric($condition->value_from)
+                            ? $condition->value_from
+                            : strtotime($condition->value_from);
+                    }
+                    if ($condition->value_to) {
+                        $condition->value_to = is_numeric($condition->value_to)
+                            ? $condition->value_to
+                            : strtotime($condition->value_to);
+                    }
+                    if ($condition->value) {
+                        $condition->value = is_numeric($condition->value)
+                            ? $condition->value
+                            : strtotime($condition->value);
+                    }
+                }
+
+                $this->applyConditionToQuery($query, $condition);
+            }
+
+            return $query->count();
+        });
+
+        return response()->json([
+            'success' => true,
+            'count' => $count,
+        ]);
+    }
+
+    /**
      * Apply filter and get matching contacts.
      */
-    public function applyFilter( int $groupId, int $id)
+    public function applyFilter(int $filterId)
     {
-        $filter = $this->contactFilterRepository->findOrFail($id);
+        $filter = $this->contactFilterRepository->findOrFail($filterId);
         $filter->load('conditions');
 
         $query = NewslettersContact::query()

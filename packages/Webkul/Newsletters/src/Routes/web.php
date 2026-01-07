@@ -310,6 +310,7 @@ Route::group([
                 Route::controller(ContactFilterController::class)->prefix('{groupId}/filters')->group(function () {
                     Route::get('', 'index')->name('admin.newsletters.contact-filters.index');
                     Route::post('', 'store')->name('admin.newsletters.contact-filters.store');
+                    Route::post('count', 'countContacts')->name('admin.newsletters.contact-filters.count');
                     Route::put('{id}', 'update')->name('admin.newsletters.contact-filters.update');
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.contact-filters.destroy');
                     Route::get('field-values', 'getFieldValues')->name('admin.newsletters.contact-filters.field-values');

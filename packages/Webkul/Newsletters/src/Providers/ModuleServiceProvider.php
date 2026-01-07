@@ -6,10 +6,15 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Models\Company;
+use Webkul\Newsletters\Models\NewslettersContact;
 use Webkul\Newsletters\Observers\CustomerNumberObserver;
 use Webkul\Newsletters\Observers\CompanyObserver;
+use Webkul\Newsletters\Observers\ContactObserver;
+use Webkul\Newsletters\Events\ContactCacheInvalidated;
+use Webkul\Newsletters\Listeners\ClearContactFilterCache;
 use Webkul\Newsletters\Console\Commands\TestWebSocketBroadcast;
 use Webkul\Newsletters\Console\Commands\ResetBlockedInstances;
+use Illuminate\Support\Facades\Event;
 
 class ModuleServiceProvider extends ServiceProvider
 {
@@ -37,6 +42,13 @@ class ModuleServiceProvider extends ServiceProvider
         // Register model observers
         CustomerNumber::observe(CustomerNumberObserver::class);
         Company::observe(CompanyObserver::class);
+        NewslettersContact::observe(ContactObserver::class);
+
+        // Register event listeners
+        Event::listen(
+            ContactCacheInvalidated::class,
+            ClearContactFilterCache::class
+        );
 
         // Register scheduled tasks
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {

@@ -309,6 +309,7 @@ return [
             'field-full-name' => 'ФИО',
             'field-phone' => 'Телефон',
             'field-email' => 'Email',
+            'field-telegram-user-id' => 'ID пользователя в Telegram',
             'field-gender' => 'Пол',
             'field-last-order-date' => 'Дата последнего заказа',
             'field-registration-date' => 'Дата регистрации',
@@ -325,6 +326,7 @@ return [
                 'id' => 'ID',
                 'full-name' => 'ФИО',
                 'phone' => 'Телефон',
+                'telegram-user-id' => 'ID пользователя в Telegram',
                 'gender' => 'Пол',
                 'total-check' => 'Общий чек',
             ],
@@ -529,6 +531,7 @@ return [
             'add-condition' => 'Добавить условие',
             'condition' => 'Условие',
             'conditions' => 'Условия',
+            'contacts-count' => 'Записей',
         ]
     ],
 
@@ -545,7 +548,7 @@ return [
         'owners.topup' => 'Пополнение счета владельца',
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'channel-instances' => 'Инстансы каналов',
-        'customer-numbers' => 'Номера клиентов',
+        'customer-numbers' => 'Клиенты',
         'contacts' => 'Контакты',
         'account' => 'Счет',
         'admin-accounts' => 'Счета администраторов',
