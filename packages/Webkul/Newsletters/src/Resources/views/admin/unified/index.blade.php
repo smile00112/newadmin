@@ -268,8 +268,7 @@
                                     {{ __('newsletters::app.admin.mailing-lists.message-text') }} <span class="text-red-500">*</span>
                                 </label>
                                 <textarea name="mailing_list[message_text]" id="mailing_list_message_text" rows="3" 
-                                    class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" 
-                                    required></textarea>
+                                    class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
@@ -493,5 +492,75 @@
             container.appendChild(newRow);
             customerNumberIndex++;
         }
+
+        // Add form submission handler to prevent HTML5 validation on hidden fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('unifiedForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Ensure modal is visible before validation
+                    const modal = document.getElementById('createEditModal');
+                    if (modal && modal.classList.contains('hidden')) {
+                        modal.classList.remove('hidden');
+                    }
+
+                    // Manual validation for message_text
+                    const messageText = document.getElementById('mailing_list_message_text');
+                    if (!messageText || !messageText.value.trim()) {
+                        e.preventDefault();
+                        alert('{{ __("newsletters::app.admin.mailing-lists.message-text") }} {{ __("admin::app.datagrid.is-required") }}');
+                        messageText.focus();
+                        return false;
+                    }
+
+                    // Validate WhatsApp instance fields
+                    const linkName = document.getElementById('whatsapp_instance_link_name');
+                    const login = document.getElementById('whatsapp_instance_login');
+                    const password = document.getElementById('whatsapp_instance_password');
+                    
+                    if (!linkName || !linkName.value.trim()) {
+                        e.preventDefault();
+                        alert('{{ __("newsletters::app.admin.whatsapp-instances.link-name") }} {{ __("admin::app.datagrid.is-required") }}');
+                        linkName.focus();
+                        return false;
+                    }
+                    
+                    if (!login || !login.value.trim()) {
+                        e.preventDefault();
+                        alert('{{ __("newsletters::app.admin.whatsapp-instances.login") }} {{ __("admin::app.datagrid.is-required") }}');
+                        login.focus();
+                        return false;
+                    }
+                    
+                    if (!password || !password.value.trim()) {
+                        e.preventDefault();
+                        alert('{{ __("newsletters::app.admin.whatsapp-instances.password") }} {{ __("admin::app.datagrid.is-required") }}');
+                        password.focus();
+                        return false;
+                    }
+
+                    // Validate customer numbers
+                    const customerRows = document.querySelectorAll('.customer-number-row');
+                    for (let row of customerRows) {
+                        const phoneInput = row.querySelector('input[name*="[phone_number]"]');
+                        const nameInput = row.querySelector('input[name*="[name]"]');
+                        
+                        if (phoneInput && !phoneInput.value.trim()) {
+                            e.preventDefault();
+                            alert('{{ __("newsletters::app.admin.customer-numbers.phone-number") }} {{ __("admin::app.datagrid.is-required") }}');
+                            phoneInput.focus();
+                            return false;
+                        }
+                        
+                        if (nameInput && !nameInput.value.trim()) {
+                            e.preventDefault();
+                            alert('{{ __("newsletters::app.admin.customer-numbers.name") }} {{ __("admin::app.datagrid.is-required") }}');
+                            nameInput.focus();
+                            return false;
+                        }
+                    }
+                });
+            }
+        });
     </script>
 </x-admin::layouts>

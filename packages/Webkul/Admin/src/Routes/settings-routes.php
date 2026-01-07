@@ -12,6 +12,7 @@ use Webkul\Admin\Http\Controllers\Settings\Tax\TaxCategoryController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxRateController;
 use Webkul\Admin\Http\Controllers\Settings\ThemeController;
 use Webkul\Admin\Http\Controllers\Settings\UserController;
+use Webkul\Newsletters\Http\Controllers\Admin\Settings\NewslettersSettingsController;
 
 /**
  * Settings routes.
@@ -222,5 +223,14 @@ Route::prefix('settings')->group(function () {
 
             Route::get('download-error-report/{id}', 'downloadErrorReport')->name('admin.settings.data_transfer.imports.download_error_report');
         });
+    });
+
+    /**
+     * Newsletters settings routes.
+     */
+    Route::controller(NewslettersSettingsController::class)->prefix('newsletters')->group(function () {
+        Route::get('', 'index')->name('admin.settings.newsletters.index');
+
+        Route::post('', 'store')->name('admin.settings.newsletters.store');
     });
 });

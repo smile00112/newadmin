@@ -393,6 +393,21 @@
                                 </span>
                             </div>
                         </div>
+                        <!-- Channel Breakdown -->
+                        <div id="filter_contact_channels" class="hidden mt-3 space-y-2">
+                            <div class="flex items-center justify-start gap-1 text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">Email:</span>
+                                <span id="filter_contact_count_email" class="font-semibold text-gray-700 dark:text-gray-300">-</span>
+                            </div>
+                            <div class="flex items-center justify-start gap-1 text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">Telegram:</span>
+                                <span id="filter_contact_count_telegram" class="font-semibold text-gray-700 dark:text-gray-300">-</span>
+                            </div>
+                            <div class="flex items-center justify-start gap-1 text-xs">
+                                <span class="text-gray-600 dark:text-gray-400">WhatsApp:</span>
+                                <span id="filter_contact_count_whatsapp" class="font-semibold text-gray-700 dark:text-gray-300">-</span>
+                            </div>
+                        </div>
                         <p id="filter_contact_count_error" class="hidden mt-1 text-xs text-red-600 dark:text-red-400"></p>
                     </div>
 
@@ -1111,12 +1126,12 @@
                         if (filter.conditions && filter.conditions.length > 0) {
                             const conditionsToAdd = filter.conditions;
                             let addedCount = 0;
-                            
+
                             // Add all conditions first without recalculating
                             conditionsToAdd.forEach((condition) => {
                                 addFilterCondition(condition, false); // Pass false to skip recalculate
                                 addedCount++;
-                                
+
                                 // After all conditions are added, wait for them to be populated
                                 if (addedCount === conditionsToAdd.length) {
                                     // Wait for all conditions to be fully populated
@@ -1677,8 +1692,15 @@
                 if (!hasValidConditions || conditions.length === 0) {
                     countValue.textContent = '-';
                     countLoading.classList.add('hidden');
+                    document.getElementById('filter_contact_channels').classList.add('hidden');
                     return;
                 }
+
+                // Get channel count elements
+                const channelsContainer = document.getElementById('filter_contact_channels');
+                const emailCount = document.getElementById('filter_contact_count_email');
+                const telegramCount = document.getElementById('filter_contact_count_telegram');
+                const whatsappCount = document.getElementById('filter_contact_count_whatsapp');
 
                 // Make API request
                 fetch(`{{ route('admin.newsletters.contact-filters.count', $group->id) }}`, {
@@ -1698,8 +1720,19 @@
                     if (data.success) {
                         countValue.textContent = data.count.toLocaleString();
                         countError.classList.add('hidden');
+
+                        // Display channel breakdown if available
+                        if (data.channels) {
+                            emailCount.textContent = data.channels.email.toLocaleString();
+                            telegramCount.textContent = data.channels.telegram.toLocaleString();
+                            whatsappCount.textContent = data.channels.whatsapp.toLocaleString();
+                            channelsContainer.classList.remove('hidden');
+                        } else {
+                            channelsContainer.classList.add('hidden');
+                        }
                     } else {
                         countValue.textContent = '-';
+                        channelsContainer.classList.add('hidden');
                         countError.textContent = data.message || '{{ __('newsletters::app.common.messages.error') }}';
                         countError.classList.remove('hidden');
                     }

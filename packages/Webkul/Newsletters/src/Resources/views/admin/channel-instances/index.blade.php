@@ -73,9 +73,9 @@
                                 {{ __('newsletters::app.admin.telegram-instances.bot-username') }}
                             </th>
                         @endif
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            {{ __('newsletters::app.admin.channel-instances.mailing-list') }}
-                        </th>
+{{--                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
+{{--                            {{ __('newsletters::app.admin.channel-instances.mailing-list') }}--}}
+{{--                        </th>--}}
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             {{ __('newsletters::app.common.fields.status') }}
                         </th>
@@ -143,12 +143,12 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex items-center space-x-2">
-                                    <a href="{{ route('admin.newsletters.channel-instances.edit', ['type' => $type, 'id' => $instance->id]) }}" 
+                                    <a href="{{ route('admin.newsletters.channel-instances.edit', ['type' => $type, 'id' => $instance->id]) }}"
                                        class="text-blue-600 hover:text-blue-900 dark:text-blue-400">
                                         {{ __('newsletters::app.common.actions.edit') }}
                                     </a>
-                                    <form action="{{ route('admin.newsletters.channel-instances.destroy', ['type' => $type, 'id' => $instance->id]) }}" 
-                                          method="POST" 
+                                    <form action="{{ route('admin.newsletters.channel-instances.destroy', ['type' => $type, 'id' => $instance->id]) }}"
+                                          method="POST"
                                           class="inline"
                                           onsubmit="return confirm('{{ __('newsletters::app.admin.channel-instances.delete-confirm') }}');">
                                         @csrf

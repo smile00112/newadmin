@@ -419,6 +419,13 @@ return [
         'sort'       => 7,
         'icon'       => '',
     ],
+    [
+        'key'        => 'settings.newsletters',
+        'name'       => 'newsletters::app.admin.settings.newsletters.title',
+        'route'      => 'admin.settings.newsletters.index',
+        'sort'       => 8,
+        'icon'       => '',
+    ],
 //    [
 //        'key'        => 'settings.themes',
 //        'name'       => 'admin::app.components.layouts.sidebar.themes',

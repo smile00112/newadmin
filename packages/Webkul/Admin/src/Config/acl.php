@@ -1129,6 +1129,56 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Administration
+    |--------------------------------------------------------------------------
+    |
+    | All ACLs related to administration will be placed here.
+    |
+    */
+    [
+        'key'   => 'administration',
+        'name'  => 'newsletters::app.sidebar.administration',
+        'route' => 'admin.newsletters.companies.index',
+        'sort'  => 8,
+    ], [
+        'key'   => 'administration.companies',
+        'name'  => 'newsletters::app.sidebar.companies',
+        'route' => 'admin.newsletters.companies.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'administration.clients',
+        'name'  => 'newsletters::app.sidebar.clients',
+        'route' => 'admin.newsletters.owners.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'administration.registration-requests',
+        'name'  => 'newsletters::app.sidebar.registration-requests',
+        'route' => 'admin.newsletters.registration-requests.index',
+        'sort'  => 3,
+    ], [
+        'key'   => 'administration.channel-instances',
+        'name'  => 'newsletters::app.sidebar.channel-instances',
+        'route' => 'admin.newsletters.channel-instances.index',
+        'sort'  => 4,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings - Newsletters
+    |--------------------------------------------------------------------------
+    |
+    | ACL for newsletters settings
+    |
+    */
+    [
+        'key'   => 'settings.newsletters',
+        'name'  => 'newsletters::app.admin.settings.newsletters.title',
+        'route' => 'admin.settings.newsletters.index',
+        'sort'  => 11,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuration
     |--------------------------------------------------------------------------
     |

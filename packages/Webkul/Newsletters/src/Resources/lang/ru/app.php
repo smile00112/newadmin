@@ -508,6 +508,15 @@ return [
             'cannot-delete-self' => 'Вы не можете удалить свою собственную учетную запись.',
         ],
 
+        'settings' => [
+            'newsletters' => [
+                'title' => 'Рассылки',
+                'timezone' => 'Часовой пояс',
+                'select-timezone' => 'Выберите часовой пояс',
+                'save-success' => 'Настройки успешно сохранены.',
+            ],
+        ],
+
         'contact-filters' => [
             'name' => 'Название',
             'field' => 'Параметр',

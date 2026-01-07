@@ -11,6 +11,7 @@ use Webkul\Newsletters\Repositories\ContactFilterConditionRepository;
 use Webkul\Newsletters\Repositories\ContactGroupRepository;
 use Webkul\Newsletters\Repositories\ContactRepository;
 use Webkul\Newsletters\Models\NewslettersContact;
+use Webkul\Core\Models\CoreConfig;
 
 class ContactFilterController extends Controller
 {
@@ -180,7 +181,7 @@ class ContactFilterController extends Controller
     /**
      * Remove the specified filter.
      */
-    public function destroy(int $id)
+    public function destroy(int $groupId, int $id)
     {
         try {
             $filter = $this->contactFilterRepository->findOrFail($id);
@@ -277,57 +278,234 @@ class ContactFilterController extends Controller
         $conditionsHash = md5(json_encode($conditions));
         $cacheKey = "contact_filter_count_{$groupId}_{$conditionsHash}";
 
-        // Get count from cache or calculate it
-        $count = Cache::remember($cacheKey, 3600, function () use ($groupId, $conditions) {
-            $query = NewslettersContact::query()
-                ->where('contact_group_id', $groupId);
+        // Get counts from cache or calculate them
+        $result = Cache::remember($cacheKey, 3600, function () use ($groupId, $conditions) {
+            // Helper function to build base query with conditions
+            $buildQuery = function () use ($groupId, $conditions) {
+                $query = NewslettersContact::query()
+                    ->where('contact_group_id', $groupId);
 
-            // Apply company filter
-            $admin = auth()->guard('admin')->user();
-            if ($admin && $admin->company_id) {
-                $query->where('company_id', $admin->company_id);
-            }
-
-            // Apply all conditions with AND logic
-            foreach ($conditions as $conditionData) {
-                // Create a temporary condition object for applyConditionToQuery
-                $condition = (object) [
-                    'field' => $conditionData['field'] ?? null,
-                    'operator' => $conditionData['operator'] ?? null,
-                    'value' => $conditionData['value'] ?? null,
-                    'value_from' => $conditionData['value_from'] ?? null,
-                    'value_to' => $conditionData['value_to'] ?? null,
-                    'values' => $conditionData['values'] ?? null,
-                ];
-
-                // Convert date values from string to timestamp if needed
-                if (in_array($condition->field, $this->dateFields)) {
-                    if ($condition->value_from) {
-                        $condition->value_from = is_numeric($condition->value_from)
-                            ? $condition->value_from
-                            : strtotime($condition->value_from);
-                    }
-                    if ($condition->value_to) {
-                        $condition->value_to = is_numeric($condition->value_to)
-                            ? $condition->value_to
-                            : strtotime($condition->value_to);
-                    }
-                    if ($condition->value) {
-                        $condition->value = is_numeric($condition->value)
-                            ? $condition->value
-                            : strtotime($condition->value);
-                    }
+                // Apply company filter
+                $admin = auth()->guard('admin')->user();
+                if ($admin && $admin->company_id) {
+                    $query->where('company_id', $admin->company_id);
                 }
 
-                $this->applyConditionToQuery($query, $condition);
-            }
+                // Apply all conditions with AND logic
+                foreach ($conditions as $conditionData) {
+                    // Create a temporary condition object for applyConditionToQuery
+                    $condition = (object) [
+                        'field' => $conditionData['field'] ?? null,
+                        'operator' => $conditionData['operator'] ?? null,
+                        'value' => $conditionData['value'] ?? null,
+                        'value_from' => $conditionData['value_from'] ?? null,
+                        'value_to' => $conditionData['value_to'] ?? null,
+                        'values' => $conditionData['values'] ?? null,
+                    ];
 
-            return $query->count();
+                     // Convert date values from string to timestamp if needed
+                     if (in_array($condition->field, $this->dateFields)) {
+                         // Для дат без времени всегда используем UTC при парсинге, чтобы избежать смещения
+                         // Часовой пояс из настроек используется только для отображения, но не для парсинга
+                         $utcTimezone = new \DateTimeZone('UTC');
+
+                         if ($condition->value_from) {
+                            if (is_numeric($condition->value_from)) {
+                                // Уже timestamp
+                                $condition->value_from = $condition->value_from;
+                            } else {
+                                // Парсим дату как полночь UTC, чтобы избежать смещения
+                                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition->value_from, $utcTimezone);
+                                if ($dateTime === false) {
+                                    // Если парсинг не удался, пробуем через new DateTime
+                                    $dateTime = new \DateTime($condition->value_from . ' 00:00:00', $utcTimezone);
+                                } else {
+                                    $dateTime->setTime(0, 0, 0);
+                                }
+                                $condition->value_from = $dateTime->getTimestamp();
+                            }
+                        }
+                        if ($condition->value_to) {
+                            if (is_numeric($condition->value_to)) {
+                                // Уже timestamp
+                                $condition->value_to = $condition->value_to;
+                            } else {
+                                // Парсим дату как полночь UTC, чтобы избежать смещения
+                                $utcTimezone = new \DateTimeZone('UTC');
+                                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition->value_to, $utcTimezone);
+                                if ($dateTime === false) {
+                                    // Если парсинг не удался, пробуем через new DateTime
+                                    $dateTime = new \DateTime($condition->value_to . ' 00:00:00', $utcTimezone);
+                                } else {
+                                    $dateTime->setTime(0, 0, 0);
+                                }
+                                $condition->value_to = $dateTime->getTimestamp();
+                            }
+                        }
+                        if ($condition->value) {
+                            if (is_numeric($condition->value)) {
+                                // Уже timestamp
+                                $condition->value = $condition->value;
+                            } else {
+                                // Парсим дату как полночь UTC, чтобы избежать смещения
+                                $utcTimezone = new \DateTimeZone('UTC');
+                                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition->value, $utcTimezone);
+                                if ($dateTime === false) {
+                                    // Если парсинг не удался, пробуем через new DateTime
+                                    $dateTime = new \DateTime($condition->value . ' 00:00:00', $utcTimezone);
+                                } else {
+                                    $dateTime->setTime(0, 0, 0);
+                                }
+                                $condition->value = $dateTime->getTimestamp();
+                            }
+                        }
+                    }
+
+                    $this->applyConditionToQuery($query, $condition);
+                }
+
+                return $query;
+            };
+
+            // Build base query
+            $baseQuery = $buildQuery();
+
+            // Total count
+            $totalCount = (clone $baseQuery)->count();
+
+            // Email channel count (where email is not null and not empty)
+            $emailCount = (clone $baseQuery)
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->count();
+
+            // Telegram channel count (where telegram_user_id is not null and not empty)
+            $telegramCount = (clone $baseQuery)
+                ->whereNotNull('telegram_user_id')
+                ->where('telegram_user_id', '!=', '')
+                ->count();
+
+            // WhatsApp channel count (where phone is not null and not empty)
+            $whatsappCount = (clone $baseQuery)
+                ->whereNotNull('phone')
+                ->where('phone', '!=', '')
+                ->count();
+
+            return [
+                'count' => $totalCount,
+                'channels' => [
+                    'email' => $emailCount,
+                    'telegram' => $telegramCount,
+                    'whatsapp' => $whatsappCount,
+                ],
+            ];
         });
+
+        // Handle old cache format (when result is just an integer)
+        if (is_int($result) || (is_numeric($result) && !is_array($result))) {
+            // Old format: just a count number, clear cache and recalculate
+            Cache::forget($cacheKey);
+
+            // Recalculate with new format
+            $buildQuery = function () use ($groupId, $conditions) {
+                $query = NewslettersContact::query()
+                    ->where('contact_group_id', $groupId);
+
+                $admin = auth()->guard('admin')->user();
+                if ($admin && $admin->company_id) {
+                    $query->where('company_id', $admin->company_id);
+                }
+
+                foreach ($conditions as $conditionData) {
+                    $condition = (object) [
+                        'field' => $conditionData['field'] ?? null,
+                        'operator' => $conditionData['operator'] ?? null,
+                        'value' => $conditionData['value'] ?? null,
+                        'value_from' => $conditionData['value_from'] ?? null,
+                        'value_to' => $conditionData['value_to'] ?? null,
+                        'values' => $conditionData['values'] ?? null,
+                    ];
+
+                    if (in_array($condition->field, $this->dateFields)) {
+                        $utcTimezone = new \DateTimeZone('UTC');
+
+                        if ($condition->value_from) {
+                            if (!is_numeric($condition->value_from)) {
+                                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition->value_from, $utcTimezone);
+                                if ($dateTime === false) {
+                                    $dateTime = new \DateTime($condition->value_from . ' 00:00:00', $utcTimezone);
+                                } else {
+                                    $dateTime->setTime(0, 0, 0);
+                                }
+                                $condition->value_from = $dateTime->getTimestamp();
+                            }
+                        }
+                        if ($condition->value_to) {
+                            if (!is_numeric($condition->value_to)) {
+                                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition->value_to, $utcTimezone);
+                                if ($dateTime === false) {
+                                    $dateTime = new \DateTime($condition->value_to . ' 00:00:00', $utcTimezone);
+                                } else {
+                                    $dateTime->setTime(0, 0, 0);
+                                }
+                                $condition->value_to = $dateTime->getTimestamp();
+                            }
+                        }
+                        if ($condition->value) {
+                            if (!is_numeric($condition->value)) {
+                                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition->value, $utcTimezone);
+                                if ($dateTime === false) {
+                                    $dateTime = new \DateTime($condition->value . ' 00:00:00', $utcTimezone);
+                                } else {
+                                    $dateTime->setTime(0, 0, 0);
+                                }
+                                $condition->value = $dateTime->getTimestamp();
+                            }
+                        }
+                    }
+
+                    $this->applyConditionToQuery($query, $condition);
+                }
+
+                return $query;
+            };
+
+            $baseQuery = $buildQuery();
+            $totalCount = (clone $baseQuery)->count();
+            $emailCount = (clone $baseQuery)->whereNotNull('email')->where('email', '!=', '')->count();
+            $telegramCount = (clone $baseQuery)->whereNotNull('telegram_user_id')->where('telegram_user_id', '!=', '')->count();
+            $whatsappCount = (clone $baseQuery)->whereNotNull('phone')->where('phone', '!=', '')->count();
+
+            $result = [
+                'count' => $totalCount,
+                'channels' => [
+                    'email' => $emailCount,
+                    'telegram' => $telegramCount,
+                    'whatsapp' => $whatsappCount,
+                ],
+            ];
+
+            // Cache the new format
+            Cache::put($cacheKey, $result, 3600);
+        }
+
+        // Ensure result is in correct format
+        if (!is_array($result) || !isset($result['count']) || !isset($result['channels'])) {
+            // Fallback: return zero counts if format is invalid
+            $result = [
+                'count' => 0,
+                'channels' => [
+                    'email' => 0,
+                    'telegram' => 0,
+                    'whatsapp' => 0,
+                ],
+            ];
+        }
 
         return response()->json([
             'success' => true,
-            'count' => $count,
+            'count' => $result['count'],
+            'channels' => $result['channels'],
         ]);
     }
 
@@ -379,14 +557,42 @@ class ContactFilterController extends Controller
 
         // Convert date values to timestamps for storage
         if (in_array($field, $this->dateFields)) {
+            // Для дат без времени всегда используем UTC, чтобы избежать смещения при сохранении
+            // Часовой пояс из настроек используется только для отображения и фильтрации
+            $utcTimezone = new \DateTimeZone('UTC');
+
             if (isset($condition['value_from'])) {
-                $data['value_from'] = strtotime($condition['value_from']);
+                // Парсим дату как полночь UTC, чтобы избежать смещения
+                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition['value_from'], $utcTimezone);
+                if ($dateTime === false) {
+                    // Если парсинг не удался, пробуем через new DateTime
+                    $dateTime = new \DateTime($condition['value_from'] . ' 00:00:00', $utcTimezone);
+                } else {
+                    $dateTime->setTime(0, 0, 0);
+                }
+                $data['value_from'] = $dateTime->getTimestamp();
             }
             if (isset($condition['value_to'])) {
-                $data['value_to'] = strtotime($condition['value_to']);
+                // Парсим дату как полночь UTC, чтобы избежать смещения
+                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition['value_to'], $utcTimezone);
+                if ($dateTime === false) {
+                    // Если парсинг не удался, пробуем через new DateTime
+                    $dateTime = new \DateTime($condition['value_to'] . ' 00:00:00', $utcTimezone);
+                } else {
+                    $dateTime->setTime(0, 0, 0);
+                }
+                $data['value_to'] = $dateTime->getTimestamp();
             }
             if (isset($condition['value'])) {
-                $data['value'] = strtotime($condition['value']);
+                // Парсим дату как полночь UTC, чтобы избежать смещения
+                $dateTime = \DateTime::createFromFormat('Y-m-d', $condition['value'], $utcTimezone);
+                if ($dateTime === false) {
+                    // Если парсинг не удался, пробуем через new DateTime
+                    $dateTime = new \DateTime($condition['value'] . ' 00:00:00', $utcTimezone);
+                } else {
+                    $dateTime->setTime(0, 0, 0);
+                }
+                $data['value'] = $dateTime->getTimestamp();
             }
         } else {
             // For numeric and text fields, store as is
@@ -514,10 +720,10 @@ class ContactFilterController extends Controller
                         // Normal range within same year
                         if ($fromMonth == $toMonth) {
                             // Same month: day between fromDay and toDay
-                            $query->whereRaw('MONTH(birth_date) = ? AND DAY(birth_date) >= ? AND DAY(birth_date) <= ?', 
+                            $query->whereRaw('MONTH(birth_date) = ? AND DAY(birth_date) >= ? AND DAY(birth_date) <= ?',
                                 [$fromMonth, $fromDay, $toDay]);
                         } else {
-                            // Different months: (month > fromMonth AND month < toMonth) OR 
+                            // Different months: (month > fromMonth AND month < toMonth) OR
                             // (month = fromMonth AND day >= fromDay) OR (month = toMonth AND day <= toDay)
                             $query->where(function($q) use ($fromMonth, $fromDay, $toMonth, $toDay) {
                                 $q->whereRaw('MONTH(birth_date) > ? AND MONTH(birth_date) < ?', [$fromMonth, $toMonth])
