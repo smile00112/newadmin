@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'datagrid' => [
+        'back' => 'Назад',
+        'add' => 'Добавить',
+    ],
     'users' => [
         'sessions' => [
             'email'                  => 'Адрес электронной почты',
@@ -4861,6 +4865,7 @@ return [
         ],
 
         'datagrid' => [
+
             'index' => [
                 'no-records-selected'              => 'Не выбрано ни одной записи.',
                 'must-select-a-mass-action-option' => 'Вы должны выбрать опцию массового действия.',

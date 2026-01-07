@@ -13,6 +13,10 @@ use Webkul\Newsletters\Repositories\CustomerNumberRepository;
 use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Webkul\Newsletters\Repositories\MailInstanceRepository;
 use Webkul\Newsletters\Repositories\TelegramBotInstanceRepository;
+use Webkul\Newsletters\Repositories\ContactGroupRepository;
+use Webkul\Newsletters\Repositories\ContactFilterRepository;
+use Webkul\Newsletters\Http\Controllers\Admin\ContactFilterController;
+use Webkul\Newsletters\Models\NewslettersContact;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -29,7 +33,10 @@ class MailingListController extends Controller
         protected CustomerNumberRepository $customerNumberRepository,
         protected CompanyAccountRepository $accountRepository,
         protected MailInstanceRepository $mailInstanceRepository,
-        protected TelegramBotInstanceRepository $telegramBotInstanceRepository
+        protected TelegramBotInstanceRepository $telegramBotInstanceRepository,
+        protected ContactGroupRepository $contactGroupRepository,
+        protected ContactFilterRepository $contactFilterRepository,
+        protected ContactFilterController $contactFilterController
     ) {}
 
     /**
@@ -72,7 +79,10 @@ class MailingListController extends Controller
         $telegramInstances = $this->telegramBotInstanceRepository->getAllForCompany();
         $whatsappInstances = $this->vacapInstanceRepository->all();
         
-        return view('newsletters::admin.mailing-lists.create', compact('mailInstances', 'telegramInstances', 'whatsappInstances'));
+        // Get contact groups for filter selection
+        $contactGroups = $this->contactGroupRepository->all();
+        
+        return view('newsletters::admin.mailing-lists.create', compact('mailInstances', 'telegramInstances', 'whatsappInstances', 'contactGroups'));
     }
 
     /**
@@ -106,9 +116,13 @@ class MailingListController extends Controller
             'whatsapp_instances.*.login' => 'required|string|max:255',
             'whatsapp_instances.*.password' => 'required|string|max:255',
 
-            // Customer Numbers validation
-            'customer_numbers.*.phone_number' => 'required|string|max:20',
-            'customer_numbers.*.name' => 'required|string|max:255',
+            // Contact Group and Filter validation
+            'contact_group_id' => 'nullable|integer|exists:newsletters_contact_groups,id',
+            'filter_id' => 'nullable|integer|exists:newsletters_contact_filters,id|required_with:contact_group_id',
+
+            // Customer Numbers validation - optional if filter is used
+            'customer_numbers.*.phone_number' => 'nullable|string|max:20',
+            'customer_numbers.*.name' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -322,21 +336,76 @@ class MailingListController extends Controller
                 }
             }
 
-            // Create customer numbers
+            // Get contacts from filter if filter_id is provided
+            $contactsFromFilter = [];
+            if ($request->has('filter_id') && $request->filter_id) {
+                try {
+                    $filter = $this->contactFilterRepository->findOrFail($request->filter_id);
+                    $response = $this->contactFilterController->applyFilter($filter->id);
+                    $responseData = json_decode($response->getContent(), true);
+                    
+                    if (isset($responseData['contacts']) && is_array($responseData['contacts'])) {
+                        $contactsFromFilter = $responseData['contacts'];
+                        
+                        Log::info('Got contacts from filter', [
+                            'filter_id' => $filter->id,
+                            'contacts_count' => count($contactsFromFilter),
+                            'mailing_list_id' => $mailingList->id,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to get contacts from filter', [
+                        'filter_id' => $request->filter_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Prepare customer numbers array
+            $allCustomerNumbers = [];
+
+            // Add customer numbers from filter
+            foreach ($contactsFromFilter as $contactData) {
+                $contact = is_array($contactData) ? (object) $contactData : $contactData;
+                if (!empty($contact->phone) && !empty($contact->full_name)) {
+                    $allCustomerNumbers[] = [
+                        'phone_number' => $contact->phone,
+                        'name' => $contact->full_name ?? '',
+                        'email' => $contact->email ?? null,
+                        'mailing_list_id' => $mailingList->id,
+                        'contact_id' => $contact->id ?? null,
+                    ];
+                }
+            }
+
+            // Add manually entered customer numbers
             if ($request->has('customer_numbers')) {
                 $customerNumbers = $request->input('customer_numbers');
                 $validCustomers = array_filter($customerNumbers, function($customer) {
                     return !empty($customer['phone_number']) && !empty($customer['name']);
                 });
 
+                foreach ($validCustomers as $customerData) {
+                    $allCustomerNumbers[] = [
+                        'phone_number' => $customerData['phone_number'],
+                        'name' => $customerData['name'],
+                        'email' => $customerData['email'] ?? null,
+                        'mailing_list_id' => $mailingList->id,
+                        'contact_id' => $customerData['contact_id'] ?? null,
+                    ];
+                }
+            }
+
+            // Create customer numbers
+            if (!empty($allCustomerNumbers)) {
                 Log::info('Processing customer numbers', [
-                    'total_customers' => count($customerNumbers),
-                    'valid_customers' => count($validCustomers),
+                    'total_customers' => count($allCustomerNumbers),
+                    'from_filter' => count($contactsFromFilter),
+                    'manual' => $request->has('customer_numbers') ? count($request->input('customer_numbers')) : 0,
                     'mailing_list_id' => $mailingList->id,
                 ]);
 
-                foreach ($validCustomers as $index => $customerData) {
-                    $customerData['mailing_list_id'] = $mailingList->id;
+                foreach ($allCustomerNumbers as $index => $customerData) {
                     // company_id will be automatically set by repository
 
                     Log::info('Creating customer number', [
@@ -457,6 +526,23 @@ class MailingListController extends Controller
         $selectedTelegramInstanceIds = $mailingList->telegramInstances->pluck('id')->toArray();
         $selectedWhatsappInstanceIds = $whatsappInstances->pluck('id')->toArray();
         
+        // Get contact groups for filter selection
+        $contactGroups = $this->contactGroupRepository->all();
+        
+        // Try to determine saved contact_group_id and filter_id from customer numbers
+        // If customer numbers have contact_id, we can get the contact group
+        $savedContactGroupId = null;
+        $savedFilterId = null;
+        
+        // Check if any customer number has contact_id
+        $customerWithContact = $customerNumbers->firstWhere('contact_id', '!=', null);
+        if ($customerWithContact && $customerWithContact->contact_id) {
+            $contact = \Webkul\Newsletters\Models\NewslettersContact::find($customerWithContact->contact_id);
+            if ($contact) {
+                $savedContactGroupId = $contact->contact_group_id;
+            }
+        }
+        
         return view('newsletters::admin.mailing-lists.edit', compact(
             'mailingList', 
             'whatsappInstances', 
@@ -470,7 +556,10 @@ class MailingListController extends Controller
             'allWhatsappInstances',
             'selectedMailInstanceIds',
             'selectedTelegramInstanceIds',
-            'selectedWhatsappInstanceIds'
+            'selectedWhatsappInstanceIds',
+            'contactGroups',
+            'savedContactGroupId',
+            'savedFilterId'
         ));
     }
 
@@ -504,6 +593,10 @@ class MailingListController extends Controller
             'whatsapp_instances.*.link_name' => 'nullable|string|max:255',
             'whatsapp_instances.*.login' => 'nullable|string|max:255',
             'whatsapp_instances.*.password' => 'nullable|string|max:255',
+
+            // Contact Group and Filter validation
+            'contact_group_id' => 'nullable|integer|exists:newsletters_contact_groups,id',
+            'filter_id' => 'nullable|integer|exists:newsletters_contact_filters,id|required_with:contact_group_id',
 
             // Customer Numbers validation - nullable because we filter them later
             'customer_numbers.*.phone_number' => 'nullable|string|max:20',
@@ -780,7 +873,49 @@ class MailingListController extends Controller
                 ]);
             }
 
-            // Update customer numbers
+            // Get contacts from filter if filter_id is provided
+            $contactsFromFilter = [];
+            if ($request->has('filter_id') && $request->filter_id) {
+                try {
+                    $filter = $this->contactFilterRepository->findOrFail($request->filter_id);
+                    $response = $this->contactFilterController->applyFilter($filter->id);
+                    $responseData = json_decode($response->getContent(), true);
+                    
+                    if (isset($responseData['contacts']) && is_array($responseData['contacts'])) {
+                        $contactsFromFilter = $responseData['contacts'];
+                        
+                        Log::info('Got contacts from filter for update', [
+                            'filter_id' => $filter->id,
+                            'contacts_count' => count($contactsFromFilter),
+                            'mailing_list_id' => $id,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Failed to get contacts from filter for update', [
+                        'filter_id' => $request->filter_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Prepare customer numbers array
+            $allCustomerNumbers = [];
+
+            // Add customer numbers from filter
+            foreach ($contactsFromFilter as $contactData) {
+                $contact = is_array($contactData) ? (object) $contactData : $contactData;
+                if (!empty($contact->phone) && !empty($contact->full_name)) {
+                    $allCustomerNumbers[] = [
+                        'phone_number' => $contact->phone,
+                        'name' => $contact->full_name ?? '',
+                        'email' => $contact->email ?? null,
+                        'mailing_list_id' => $id,
+                        'contact_id' => $contact->id ?? null,
+                    ];
+                }
+            }
+
+            // Add manually entered customer numbers
             if ($request->has('customer_numbers')) {
                 $customerNumbers = $request->input('customer_numbers');
 
@@ -790,9 +925,28 @@ class MailingListController extends Controller
                     return !empty($customer['phone_number']) && !empty($customer['name']);
                 });
 
+                foreach ($validCustomers as $customerData) {
+                    $allCustomerNumbers[] = [
+                        'phone_number' => $customerData['phone_number'],
+                        'name' => $customerData['name'],
+                        'email' => $customerData['email'] ?? null,
+                        'mailing_list_id' => $id,
+                        'contact_id' => $customerData['contact_id'] ?? null,
+                        'id' => $customerData['id'] ?? null, // Preserve ID for updates
+                        'delivered' => $customerData['delivered'] ?? null,
+                        'viewed' => $customerData['viewed'] ?? null,
+                        'incoming_message' => $customerData['incoming_message'] ?? null,
+                        'whatsapp_instance_id' => $customerData['whatsapp_instance_id'] ?? null,
+                    ];
+                }
+            }
+
+            // Update customer numbers
+            if (!empty($allCustomerNumbers) || $request->has('customer_numbers')) {
                 Log::info('Processing customer numbers for update', [
-                    'total_customers' => count($customerNumbers),
-                    'valid_customers' => count($validCustomers),
+                    'total_customers' => count($allCustomerNumbers),
+                    'from_filter' => count($contactsFromFilter),
+                    'manual' => $request->has('customer_numbers') ? count($request->input('customer_numbers')) : 0,
                     'mailing_list_id' => $id,
                 ]);
 
@@ -800,9 +954,7 @@ class MailingListController extends Controller
                 $existingCustomers = $this->customerNumberRepository->where('mailing_list_id', $id)->get()->keyBy('id');
                 $processedCustomerIds = [];
 
-                foreach ($validCustomers as $index => $customerData) {
-                    $customerData['mailing_list_id'] = $id;
-
+                foreach ($allCustomerNumbers as $index => $customerData) {
                     // Check if this is an update (has ID) or new customer
                     if (isset($customerData['id']) && !empty($customerData['id']) && $existingCustomers->has($customerData['id'])) {
                         // Update existing customer
@@ -826,6 +978,14 @@ class MailingListController extends Controller
                             'name' => $customerData['name'],
                             'mailing_list_id' => $id,
                         ];
+
+                        // Add email and contact_id if provided
+                        if (isset($customerData['email'])) {
+                            $updateData['email'] = $customerData['email'];
+                        }
+                        if (isset($customerData['contact_id'])) {
+                            $updateData['contact_id'] = $customerData['contact_id'];
+                        }
 
                         // Only include these fields if they are explicitly set and not empty
                         if (isset($customerData['delivered'])) {
@@ -864,7 +1024,9 @@ class MailingListController extends Controller
                         $createData = [
                             'phone_number' => $customerData['phone_number'],
                             'name' => $customerData['name'],
+                            'email' => $customerData['email'] ?? null,
                             'mailing_list_id' => $id,
+                            'contact_id' => $customerData['contact_id'] ?? null,
                             'delivered' => false,
                             'viewed' => false,
                             'incoming_message' => false,

@@ -432,6 +432,13 @@ class ContactFilterController extends Controller
     {
         $field = $condition->field;
 
+        // Special handling for birth_date - compare only day and month, ignore year
+        if ($field === 'birth_date') {
+            $this->applyBirthDateCondition($query, $condition);
+            return;
+        }
+
+        // Standard date comparison for other date fields
         switch ($condition->operator) {
             case 'between':
                 $from = $condition->value_from ? date('Y-m-d', $condition->value_from) : null;
@@ -459,6 +466,94 @@ class ContactFilterController extends Controller
                 $value = $condition->value ? date('Y-m-d', $condition->value) : null;
                 if ($value) {
                     $query->where($field, $value);
+                }
+                break;
+        }
+    }
+
+    /**
+     * Apply birth date condition - compare only day and month, ignore year.
+     */
+    protected function applyBirthDateCondition($query, $condition)
+    {
+        switch ($condition->operator) {
+            case 'equals':
+                $value = $condition->value ? date('Y-m-d', $condition->value) : null;
+                if ($value) {
+                    $month = date('m', $condition->value);
+                    $day = date('d', $condition->value);
+                    $query->whereRaw('MONTH(birth_date) = ? AND DAY(birth_date) = ?', [$month, $day]);
+                }
+                break;
+
+            case 'between':
+                $from = $condition->value_from ? date('Y-m-d', $condition->value_from) : null;
+                $to = $condition->value_to ? date('Y-m-d', $condition->value_to) : null;
+                if ($from && $to) {
+                    $fromMonth = (int)date('m', $condition->value_from);
+                    $fromDay = (int)date('d', $condition->value_from);
+                    $toMonth = (int)date('m', $condition->value_to);
+                    $toDay = (int)date('d', $condition->value_to);
+
+                    // Handle range that crosses year boundary (e.g., Dec 25 - Jan 5)
+                    if ($fromMonth > $toMonth || ($fromMonth == $toMonth && $fromDay > $toDay)) {
+                        // Range crosses year boundary: (fromMonth/fromDay to Dec 31) OR (Jan 1 to toMonth/toDay)
+                        $query->where(function($q) use ($fromMonth, $fromDay, $toMonth, $toDay) {
+                            $q->where(function($q1) use ($fromMonth, $fromDay) {
+                                // From date to end of year: month > fromMonth OR (month = fromMonth AND day >= fromDay)
+                                $q1->whereRaw('MONTH(birth_date) > ?', [$fromMonth])
+                                   ->orWhereRaw('(MONTH(birth_date) = ? AND DAY(birth_date) >= ?)', [$fromMonth, $fromDay]);
+                            })
+                            ->orWhere(function($q1) use ($toMonth, $toDay) {
+                                // Start of year to to date: month < toMonth OR (month = toMonth AND day <= toDay)
+                                $q1->whereRaw('MONTH(birth_date) < ?', [$toMonth])
+                                   ->orWhereRaw('(MONTH(birth_date) = ? AND DAY(birth_date) <= ?)', [$toMonth, $toDay]);
+                            });
+                        });
+                    } else {
+                        // Normal range within same year
+                        if ($fromMonth == $toMonth) {
+                            // Same month: day between fromDay and toDay
+                            $query->whereRaw('MONTH(birth_date) = ? AND DAY(birth_date) >= ? AND DAY(birth_date) <= ?', 
+                                [$fromMonth, $fromDay, $toDay]);
+                        } else {
+                            // Different months: (month > fromMonth AND month < toMonth) OR 
+                            // (month = fromMonth AND day >= fromDay) OR (month = toMonth AND day <= toDay)
+                            $query->where(function($q) use ($fromMonth, $fromDay, $toMonth, $toDay) {
+                                $q->whereRaw('MONTH(birth_date) > ? AND MONTH(birth_date) < ?', [$fromMonth, $toMonth])
+                                   ->orWhereRaw('(MONTH(birth_date) = ? AND DAY(birth_date) >= ?)', [$fromMonth, $fromDay])
+                                   ->orWhereRaw('(MONTH(birth_date) = ? AND DAY(birth_date) <= ?)', [$toMonth, $toDay]);
+                            });
+                        }
+                    }
+                }
+                break;
+
+            case 'gte':
+                $value = $condition->value ? date('Y-m-d', $condition->value) : null;
+                if ($value) {
+                    $month = (int)date('m', $condition->value);
+                    $day = (int)date('d', $condition->value);
+                    $query->where(function($q) use ($month, $day) {
+                        $q->whereRaw('MONTH(birth_date) > ?', [$month])
+                          ->orWhere(function($q1) use ($month, $day) {
+                              $q1->whereRaw('MONTH(birth_date) = ? AND DAY(birth_date) >= ?', [$month, $day]);
+                          });
+                    });
+                }
+                break;
+
+            case 'lte':
+                $value = $condition->value ? date('Y-m-d', $condition->value) : null;
+                if ($value) {
+                    $month = (int)date('m', $condition->value);
+                    $day = (int)date('d', $condition->value);
+                    $query->where(function($q) use ($month, $day) {
+                        $q->whereRaw('MONTH(birth_date) < ?', [$month])
+                          ->orWhere(function($q1) use ($month, $day) {
+                              $q1->whereRaw('MONTH(birth_date) = ? AND DAY(birth_date) <= ?', [$month, $day]);
+                          });
+                    });
                 }
                 break;
         }

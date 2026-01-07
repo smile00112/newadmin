@@ -239,26 +239,6 @@
                 </div>
             @endif
 
-            <!-- Common fields -->
-            <div class="mt-6">
-                <label for="mailing_list_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {{ __('newsletters::app.admin.channel-instances.mailing-list') }}
-                </label>
-                <select name="mailing_list_id"
-                        id="mailing_list_id"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white">
-                    <option value="">{{ __('newsletters::app.common.actions.select') }}</option>
-                    @foreach($mailingLists as $mailingList)
-                        <option value="{{ $mailingList->id }}" {{ old('mailing_list_id', $instance->mailing_list_id) == $mailingList->id ? 'selected' : '' }}>
-                            {{ Str::limit($mailingList->message_text, 50) }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('mailing_list_id')
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
             @if($type === 'email' || $type === 'telegram')
                 <div class="mt-6">
                     <label class="flex items-center">

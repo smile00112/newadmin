@@ -457,19 +457,64 @@
                             {{ __('newsletters::app.admin.customer-numbers.title') }}
                         </h2>
                         <div class="flex space-x-2 gap-2">
-                            <button type="button" onclick="addCustomerNumberRow()"
+                            {{-- Закомментировано: ручное добавление контактов заменено на выбор фильтра --}}
+                            {{-- <button type="button" onclick="addCustomerNumberRow()"
                                 class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 {{ __('newsletters::app.common.actions.add') }}
                             </button>
                             <button type="button" onclick="openCSVImportModal('customers')"
                                 class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 {{ __('newsletters::app.common.actions.import') }} CSV
-                            </button>
+                            </button> --}}
                         </div>
                     </div>
                 </div>
                 <div class="p-6">
-                    <div id="customerNumbersContainer">
+                    <!-- Contact Group and Filter Selection -->
+                    <div class="mb-6 space-y-4">
+                        <div>
+                            <label for="contact_group_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.contact-groups.title') }}
+                            </label>
+                            <select
+                                name="contact_group_id"
+                                id="contact_group_id"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                onchange="loadFiltersForGroup(this.value)"
+                            >
+                                <option value="">{{ __('newsletters::app.common.actions.select') }} {{ __('newsletters::app.admin.contact-groups.title') }}</option>
+                                @if(isset($contactGroups) && $contactGroups->count() > 0)
+                                    @foreach($contactGroups as $group)
+                                        <option value="{{ $group->id }}" {{ old('contact_group_id') == $group->id ? 'selected' : '' }}>
+                                            {{ $group->name }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            @error('contact_group_id')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="filter_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('newsletters::app.admin.contact-filters.title') }}
+                            </label>
+                            <select
+                                name="filter_id"
+                                id="filter_id"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            >
+                                <option value="">{{ __('newsletters::app.common.actions.select') }} {{ __('newsletters::app.admin.contact-filters.title') }}</option>
+                            </select>
+                            @error('filter_id')
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    {{-- Закомментировано: ручное добавление контактов заменено на выбор фильтра --}}
+                    <div id="customerNumbersContainer" style="display: none;">
 {{--                        <div class="customer-number-row grid grid-cols-1 gap-4 mb-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">--}}
 {{--                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">--}}
 {{--                                <div>--}}
@@ -1287,5 +1332,57 @@
             document.getElementById('media_preview_image').src = '';
             document.getElementById('media_preview_video').src = '';
         }
+
+        // Load filters for selected contact group
+        function loadFiltersForGroup(groupId) {
+            const filterSelect = document.getElementById('filter_id');
+            if (!filterSelect) return;
+
+            if (!groupId) {
+                filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
+                return;
+            }
+
+            filterSelect.disabled = true;
+            filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.loading") }}...</option>';
+
+            fetch(`/admin/newsletters/contact-groups/${groupId}/filters`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
+                    if (data.filters && data.filters.length > 0) {
+                        data.filters.forEach(filter => {
+                            const option = document.createElement('option');
+                            option.value = filter.id;
+                            option.textContent = filter.name;
+                            filterSelect.appendChild(option);
+                        });
+                    }
+                    filterSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error loading filters:', error);
+                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.error-loading") }}</option>';
+                    filterSelect.disabled = false;
+                });
+        }
+
+        // Initialize filter loading on page load if contact_group_id is preselected
+        document.addEventListener('DOMContentLoaded', function() {
+            const contactGroupSelect = document.getElementById('contact_group_id');
+            if (contactGroupSelect && contactGroupSelect.value) {
+                loadFiltersForGroup(contactGroupSelect.value);
+            }
+        });
     </script>
 </x-admin::layouts>
