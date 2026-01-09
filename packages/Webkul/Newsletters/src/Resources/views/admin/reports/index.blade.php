@@ -26,7 +26,7 @@
     </div>
 
     <!-- Charts Section -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <!-- Messages Statistics Chart -->
         <div class="box-shadow rounded bg-white dark:bg-gray-900">
             @include('newsletters::admin.reports.messages-stats')
@@ -35,6 +35,61 @@
         <!-- Mailing Lists Statistics Chart -->
         <div class="box-shadow rounded bg-white dark:bg-gray-900">
             @include('newsletters::admin.reports.mailing-lists-stats')
+        </div>
+    </div>
+
+    <!-- Channel Type Reports Section -->
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+            @lang('newsletters::app.admin.reports.channel-reports.title')
+        </h2>
+        
+        <!-- WhatsApp Reports -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                @include('newsletters::admin.reports.channel-stats', [
+                    'channelType' => 'whatsapp',
+                    'channelLabel' => 'WhatsApp'
+                ])
+            </div>
+            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                @include('newsletters::admin.reports.channel-lists-stats', [
+                    'channelType' => 'whatsapp',
+                    'channelLabel' => 'WhatsApp'
+                ])
+            </div>
+        </div>
+
+        <!-- Email Reports -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                @include('newsletters::admin.reports.channel-stats', [
+                    'channelType' => 'email',
+                    'channelLabel' => 'Email'
+                ])
+            </div>
+            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                @include('newsletters::admin.reports.channel-lists-stats', [
+                    'channelType' => 'email',
+                    'channelLabel' => 'Email'
+                ])
+            </div>
+        </div>
+
+        <!-- Telegram Reports -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                @include('newsletters::admin.reports.channel-stats', [
+                    'channelType' => 'telegram',
+                    'channelLabel' => 'Telegram'
+                ])
+            </div>
+            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                @include('newsletters::admin.reports.channel-lists-stats', [
+                    'channelType' => 'telegram',
+                    'channelLabel' => 'Telegram'
+                ])
+            </div>
         </div>
     </div>
 

@@ -373,6 +373,9 @@ return [
             ],
             'mailing-lists-stats' => [
                 'title' => 'Mailing Lists Statistics'
+            ],
+            'channel-reports' => [
+                'title' => 'Reports by Channel Type'
             ]
         ],
 

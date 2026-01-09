@@ -4855,7 +4855,7 @@ return [
                 'themes'                   => 'Темы',
                 'transactions'             => 'Транзакции',
                 'url-rewrites'             => 'Перезапись URL',
-                'users'                    => 'Пользователи',
+                'users'                    => 'Администраторы',
                 'ingredients'                    => 'Ингредиенты',
 
             ],

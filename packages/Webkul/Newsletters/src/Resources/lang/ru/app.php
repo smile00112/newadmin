@@ -363,6 +363,9 @@ return [
             ],
             'mailing-lists-stats' => [
                 'title' => 'Статистика рассылок'
+            ],
+            'channel-reports' => [
+                'title' => 'Отчеты по типам рассылок'
             ]
         ],
 

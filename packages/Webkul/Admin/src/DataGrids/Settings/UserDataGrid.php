@@ -39,7 +39,8 @@ class UserDataGrid extends DataGrid
                 'admins.status',
                 'admins.email',
                 'roles.name as role_name'
-            );
+            )
+            ->whereIn('roles.name', ['администратор', 'admin']);
 
         $this->addFilter('user_id', 'admins.id');
         $this->addFilter('user_name', 'admins.name');

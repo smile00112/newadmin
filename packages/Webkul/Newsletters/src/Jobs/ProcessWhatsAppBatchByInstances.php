@@ -284,7 +284,10 @@ class ProcessWhatsAppBatchByInstances implements ShouldQueue
                 ->onQueue('whatsapp-batch-instances');
         } else {
 
-            $mailingList->update(['status' =>  'completed']);
+            $mailingList->update([
+                'status' => 'completed',
+                'active' => false,
+            ]);
 
             Log::info('All batches processed', [
                 'mailing_list_id' => $this->mailingListId,

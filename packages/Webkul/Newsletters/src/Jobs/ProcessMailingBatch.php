@@ -192,7 +192,10 @@ class ProcessMailingBatch implements ShouldQueue
                 ->delay(now()->addSeconds($messageDelay))
                 ->onQueue('mailing-batch');
         } else {
-            $mailingList->update(['status' => 'completed']);
+            $mailingList->update([
+                'status' => 'completed',
+                'active' => false,
+            ]);
             Log::info('All batches processed', [
                 'mailing_list_id' => $this->mailingListId,
                 'last_batch_index' => $this->batchIndex,

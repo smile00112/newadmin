@@ -33,6 +33,14 @@ class TelegramChannel implements MailingChannelInterface
         }
 
         try {
+            Log::info('TelegramChannel: sending message', [
+                'instance_id'  => $instance->id,
+                'customer_id'  => $customer->id,
+                'chat_id'      => $chatId,
+                'mailing_list_id' => $customer->mailing_list_id ?? null,
+                'message_preview' => mb_substr($message, 0, 200),
+            ]);
+
             $response = Http::post(self::TELEGRAM_API_URL . $instance->bot_token . '/sendMessage', [
                 'chat_id' => $chatId,
                 'text' => $message,

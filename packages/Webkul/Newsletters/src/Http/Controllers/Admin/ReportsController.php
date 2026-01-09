@@ -35,11 +35,26 @@ class ReportsController extends Controller
     public function stats()
     {
         $type = request()->query('type', 'messages');
+        $channelType = request()->query('channel_type');
+        
+        // Validate channel type if provided
+        $validChannelTypes = ['whatsapp', 'email', 'telegram'];
+        if ($channelType && !in_array($channelType, $validChannelTypes)) {
+            $channelType = null;
+        }
         
         if ($type === 'mailing-lists') {
-            $stats = $this->dashboardHelper->getMailingListsStats();
+            if ($channelType) {
+                $stats = $this->dashboardHelper->getMailingListsStatsByChannelType($channelType);
+            } else {
+                $stats = $this->dashboardHelper->getMailingListsStats();
+            }
         } else {
-            $stats = $this->dashboardHelper->getMessagesStats();
+            if ($channelType) {
+                $stats = $this->dashboardHelper->getMessagesStatsByChannelType($channelType);
+            } else {
+                $stats = $this->dashboardHelper->getMessagesStats();
+            }
         }
 
         return response()->json([

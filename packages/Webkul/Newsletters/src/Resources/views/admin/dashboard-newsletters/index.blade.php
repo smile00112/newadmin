@@ -71,6 +71,61 @@
 {{--            </div>--}}
 
             {!! view_render_event('bagisto.admin.dashboard.stock_threshold.after') !!}
+
+            <!-- Channel Type Reports Section -->
+            <div class="flex flex-col gap-2">
+                <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
+                    @lang('newsletters::app.admin.reports.channel-reports.title')
+                </p>
+
+                <!-- WhatsApp Reports -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                        @include('newsletters::admin.dashboard.channel-stats', [
+                            'channelType' => 'whatsapp',
+                            'channelLabel' => 'WhatsApp'
+                        ])
+                    </div>
+                    <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                        @include('newsletters::admin.dashboard.channel-lists-stats', [
+                            'channelType' => 'whatsapp',
+                            'channelLabel' => 'WhatsApp'
+                        ])
+                    </div>
+                </div>
+
+                <!-- Email Reports -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                        @include('newsletters::admin.dashboard.channel-stats', [
+                            'channelType' => 'email',
+                            'channelLabel' => 'Email'
+                        ])
+                    </div>
+                    <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                        @include('newsletters::admin.dashboard.channel-lists-stats', [
+                            'channelType' => 'email',
+                            'channelLabel' => 'Email'
+                        ])
+                    </div>
+                </div>
+
+                <!-- Telegram Reports -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                        @include('newsletters::admin.dashboard.channel-stats', [
+                            'channelType' => 'telegram',
+                            'channelLabel' => 'Telegram'
+                        ])
+                    </div>
+                    <div class="box-shadow rounded bg-white dark:bg-gray-900">
+                        @include('newsletters::admin.dashboard.channel-lists-stats', [
+                            'channelType' => 'telegram',
+                            'channelLabel' => 'Telegram'
+                        ])
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Right Section -->

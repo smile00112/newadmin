@@ -313,4 +313,160 @@ class Dashboard
             'over_time' => $overTime,
         ];
     }
+
+    /**
+     * Returns messages statistics by day filtered by channel type.
+     *
+     * @param string $channelType
+     * @return array
+     */
+    public function getMessagesStatsByChannelType(string $channelType): array
+    {
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
+        
+        // Get all days in the range
+        $days = [];
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
+            $days[] = [
+                'date' => $currentDate->format('Y-m-d'),
+                'label' => $currentDate->format('d M'),
+                'dayOfYear' => $currentDate->dayOfYear,
+            ];
+            $currentDate->addDay();
+        }
+
+        // Get sent messages filtered by channel type
+        $sentMessages = DB::table('newsletters_customer_numbers')
+            ->join('newsletters_mailing_lists', 'newsletters_customer_numbers.mailing_list_id', '=', 'newsletters_mailing_lists.id')
+            ->select(
+                DB::raw('DATE(COALESCE(newsletters_customer_numbers.sent_at, newsletters_customer_numbers.created_at)) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('newsletters_mailing_lists.channel_type', $channelType)
+            ->where(function ($query) {
+                $query->where('newsletters_customer_numbers.delivered', true)
+                    ->orWhere('newsletters_customer_numbers.sending', true)
+                    ->orWhere('newsletters_customer_numbers.send_error', true);
+            })
+            ->whereBetween(DB::raw('DATE(COALESCE(newsletters_customer_numbers.sent_at, newsletters_customer_numbers.created_at))'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Get delivered messages filtered by channel type
+        $deliveredMessages = DB::table('newsletters_customer_numbers')
+            ->join('newsletters_mailing_lists', 'newsletters_customer_numbers.mailing_list_id', '=', 'newsletters_mailing_lists.id')
+            ->select(
+                DB::raw('DATE(newsletters_customer_numbers.updated_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('newsletters_mailing_lists.channel_type', $channelType)
+            ->where('newsletters_customer_numbers.delivered', true)
+            ->whereBetween(DB::raw('DATE(newsletters_customer_numbers.updated_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Get incoming messages filtered by channel type
+        $incomingMessages = DB::table('newsletters_customer_numbers')
+            ->join('newsletters_mailing_lists', 'newsletters_customer_numbers.mailing_list_id', '=', 'newsletters_mailing_lists.id')
+            ->select(
+                DB::raw('DATE(newsletters_customer_numbers.updated_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('newsletters_mailing_lists.channel_type', $channelType)
+            ->where('newsletters_customer_numbers.incoming_message', true)
+            ->whereBetween(DB::raw('DATE(newsletters_customer_numbers.updated_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Get read messages filtered by channel type
+        $readMessages = DB::table('newsletters_customer_numbers')
+            ->join('newsletters_mailing_lists', 'newsletters_customer_numbers.mailing_list_id', '=', 'newsletters_mailing_lists.id')
+            ->select(
+                DB::raw('DATE(newsletters_customer_numbers.updated_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('newsletters_mailing_lists.channel_type', $channelType)
+            ->where('newsletters_customer_numbers.viewed', true)
+            ->whereBetween(DB::raw('DATE(newsletters_customer_numbers.updated_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Build the over_time array
+        $overTime = [];
+        foreach ($days as $day) {
+            $sentItem = $sentMessages->get($day['date']);
+            $deliveredItem = $deliveredMessages->get($day['date']);
+            $incomingItem = $incomingMessages->get($day['date']);
+            $readItem = $readMessages->get($day['date']);
+            
+            $overTime[] = [
+                'label' => $day['label'],
+                'sent' => $sentItem ? (int) $sentItem->count : 0,
+                'received' => $deliveredItem ? (int) $deliveredItem->count : 0,
+                'incoming' => $incomingItem ? (int) $incomingItem->count : 0,
+                'read' => $readItem ? (int) $readItem->count : 0,
+            ];
+        }
+
+        return [
+            'over_time' => $overTime,
+        ];
+    }
+
+    /**
+     * Returns mailing lists statistics by day filtered by channel type.
+     *
+     * @param string $channelType
+     * @return array
+     */
+    public function getMailingListsStatsByChannelType(string $channelType): array
+    {
+        $startDate = $this->getStartDate();
+        $endDate = $this->getEndDate();
+        
+        // Get all days in the range
+        $days = [];
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
+            $days[] = [
+                'date' => $currentDate->format('Y-m-d'),
+                'label' => $currentDate->format('d M'),
+                'dayOfYear' => $currentDate->dayOfYear,
+            ];
+            $currentDate->addDay();
+        }
+
+        // Get mailing lists count by day filtered by channel type
+        $mailingLists = DB::table('newsletters_mailing_lists')
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('channel_type', $channelType)
+            ->whereBetween(DB::raw('DATE(created_at)'), [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Build the over_time array
+        $overTime = [];
+        foreach ($days as $day) {
+            $mailingListItem = $mailingLists->get($day['date']);
+            
+            $overTime[] = [
+                'label' => $day['label'],
+                'count' => $mailingListItem ? (int) $mailingListItem->count : 0,
+            ];
+        }
+
+        return [
+            'over_time' => $overTime,
+        ];
+    }
 }

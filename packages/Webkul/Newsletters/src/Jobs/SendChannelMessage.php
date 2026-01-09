@@ -35,6 +35,13 @@ class SendChannelMessage implements ShouldQueue
 
     public function handle()
     {
+        Log::info('SendChannelMessage handle started', [
+            'channel_type'   => $this->channelType,
+            'instance_id'    => $this->instanceId,
+            'customer_id'    => $this->customerId,
+            'mailing_list_id'=> $this->mailingListId,
+        ]);
+
         $customer = CustomerNumber::with('mailingList')->findOrFail($this->customerId);
         $mailingList = MailingList::findOrFail($this->mailingListId);
 
