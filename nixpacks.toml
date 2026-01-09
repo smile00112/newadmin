@@ -130,7 +130,7 @@ stderr_logfile=/var/log/worker-laravel.log
 
 [program:laravel-redis-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=bash -c 'exec php /app/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,whatsapp-batch,whatsapp-send,whatsapp-batch-instances'
+command=bash -c 'exec php /app/artisan queue:work redis --queue=whatsapp-mailing,broadcastable,whatsapp-batch,whatsapp-send,whatsapp-batch-instances,mailing-batch'
 autostart=true
 autorestart=true
 user=www-data

@@ -17,10 +17,12 @@ use Webkul\Newsletters\Repositories\ContactGroupRepository;
 use Webkul\Newsletters\Repositories\ContactFilterRepository;
 use Webkul\Newsletters\Http\Controllers\Admin\ContactFilterController;
 use Webkul\Newsletters\Models\NewslettersContact;
+use Webkul\Newsletters\Models\VacapInstance;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Newsletters\Jobs\ProcessWhatsAppMailingList;
+use Webkul\Newsletters\Services\MailingListStarterService;
 
 class MailingListController extends Controller
 {
@@ -36,7 +38,8 @@ class MailingListController extends Controller
         protected TelegramBotInstanceRepository $telegramBotInstanceRepository,
         protected ContactGroupRepository $contactGroupRepository,
         protected ContactFilterRepository $contactFilterRepository,
-        protected ContactFilterController $contactFilterController
+        protected ContactFilterController $contactFilterController,
+        protected MailingListStarterService $mailingListStarterService
     ) {}
 
     /**
@@ -1454,110 +1457,24 @@ class MailingListController extends Controller
 
     public function startMailing(int $id)
     {
-        $mailingList = $this->mailingListRepository->findOrFail($id);
-
-        // Check account balance
-        if ($mailingList->company_id) {
-            $account = $this->accountRepository->getOrCreateForCompany($mailingList->company_id);
-            if ($account->balance <= 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => trans('newsletters::app.admin.account.insufficient-balance'),
-                ], 402);
-            }
-        }
-
-        if ($mailingList->whatsappInstances()->count() === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => trans('newsletters::app.admin.mailing-lists.no-whatsapp-instances')
-            ], 400);
-        }
-
-        if ($mailingList->customerNumbers()->count() === 0) {
-            return response()->json([
-                'success' => false,
-                'message' => trans('newsletters::app.admin.mailing-lists.no-customer-numbers')
-            ], 400);
-        }
-
         try {
-            // Activate mailing list and dispatch the job
-            $this->mailingListRepository->update([
-                'active' => true,
-                'status' => 'pending'
-            ], $id);
-
-            Log::info('Starting mailing list', [
-                'mailing_list_id' => $id,
-                'user_id' => auth()->id(),
-            ]);
-
-            // Calculate delay based on mailing list parameters
-            $delay = $this->calculateMailingDelay($mailingList);
-            // Список id клиентов
-            $customerIds = $mailingList->customerNumbers()
-                ->where('sending', false)
-                ->where('send_error', false)
-                ->pluck('id')
-                ->toArray();
-
-            // Get company_id from mailing list
-            $companyId = $mailingList->company_id;
-
-            // Dispatch the mailing job with delay if needed
-            if ($delay > 0) {
-                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0, $companyId)
-                    ->delay(now()->addSeconds($delay))
-                    ->onQueue('whatsapp-batch-instances');
-
-                Log::info('Mailing list scheduled with delay', [
-                    'mailing_list_id' => $id,
-                    'delay_seconds' => $delay,
-                    'customers_count' => count($customerIds),
-                    'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
-                ]);
-            } else {
-                ProcessWhatsAppBatchByInstances::dispatch($id, $customerIds, 0, $companyId)
-                    ->onQueue('whatsapp-batch-instances');
-
-                Log::info('Starting mailing list without delay', [
-                    'mailing_list_id' => $id,
-                    'customers_count' => count($customerIds),
-                ]);
-            }
-
-//            if ($delay > 0) {
-//                ProcessWhatsAppMailingList::dispatch($id)
-//                    ->delay(now()->addSeconds($delay));
-//
-//                Log::info('Mailing list scheduled with delay', [
-//                    'mailing_list_id' => $id,
-//                    'delay_seconds' => $delay,
-//                    'scheduled_at' => now()->addSeconds($delay)->toDateTimeString(),
-//                ]);
-//            } else {
-//
-//                Log::info('Starting mailing list without delay', [
-//                    'mailing_list_id' => $id,
-//                ]);
-//
-//                ProcessWhatsAppMailingList::dispatch($id);
-//            }
+            $mailingList = $this->mailingListRepository->findOrFail($id);
+            $result = $this->mailingListStarterService->start($mailingList);
 
             return response()->json([
-                'success' => true,
-                'message' => trans('newsletters::app.admin.mailing-lists.mailing-started')
-            ]);
+                'success' => $result['success'],
+                'message' => $result['message']
+            ], $result['status_code']);
         } catch (\Exception $e) {
             Log::error('Failed to start mailing list', [
                 'mailing_list_id' => $id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => trans('newsletters::app.admin.mailing-lists.mailing-start-failed')
+                'message' => trans('newsletters::app.admin.mailing-lists.mailing-start-failed') . ': ' . $e->getMessage()
             ], 500);
         }
     }
