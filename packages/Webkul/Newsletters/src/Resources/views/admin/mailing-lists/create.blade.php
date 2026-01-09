@@ -648,6 +648,15 @@
                 // Hide TinyMCE, show regular textarea
                 document.getElementById('email_editor_wrapper').style.display = 'none';
                 document.getElementById('regular_textarea_wrapper').style.display = 'block';
+                // Управление атрибутом required
+                const messageTextEditor = document.getElementById('message_text_editor');
+                const messageText = document.getElementById('message_text');
+                if (messageTextEditor) {
+                    messageTextEditor.removeAttribute('required');
+                }
+                if (messageText) {
+                    messageText.setAttribute('required', 'required');
+                }
             } else if (channelType === 'email') {
                 document.getElementById('emailInstancesSection').classList.remove('hidden');
                 // Copy value from regular textarea to TinyMCE textarea before switching
@@ -661,6 +670,16 @@
                 // Show TinyMCE, hide regular textarea
                 document.getElementById('email_editor_wrapper').style.display = 'block';
                 document.getElementById('regular_textarea_wrapper').style.display = 'none';
+                
+                // Управление атрибутом required
+                const messageTextEditor = document.getElementById('message_text_editor');
+                const messageText = document.getElementById('message_text');
+                if (messageTextEditor) {
+                    messageTextEditor.setAttribute('required', 'required');
+                }
+                if (messageText) {
+                    messageText.removeAttribute('required');
+                }
                 
                 // Set value in textarea
                 const editorTextarea = document.getElementById('message_text_editor');
@@ -750,6 +769,15 @@
                 // Hide TinyMCE, show regular textarea
                 document.getElementById('email_editor_wrapper').style.display = 'none';
                 document.getElementById('regular_textarea_wrapper').style.display = 'block';
+                // Управление атрибутом required
+                const messageTextEditor = document.getElementById('message_text_editor');
+                const messageText = document.getElementById('message_text');
+                if (messageTextEditor) {
+                    messageTextEditor.removeAttribute('required');
+                }
+                if (messageText) {
+                    messageText.setAttribute('required', 'required');
+                }
             }
         }
         
@@ -768,7 +796,18 @@
                 const editor = tinymce.get('message_text_editor');
                 if (editor) {
                     const content = editor.getContent();
-                    document.getElementById('message_text_editor').value = content;
+                    // Обновляем значение в textarea, который используется TinyMCE
+                    const editorTextarea = document.getElementById('message_text_editor');
+                    if (editorTextarea) {
+                        editorTextarea.value = content;
+                    }
+                    
+                    // Убираем required и копируем значение в скрытое поле
+                    const hiddenMessageText = document.getElementById('message_text');
+                    if (hiddenMessageText) {
+                        hiddenMessageText.removeAttribute('required');
+                        hiddenMessageText.value = content;
+                    }
                 }
             }
         });

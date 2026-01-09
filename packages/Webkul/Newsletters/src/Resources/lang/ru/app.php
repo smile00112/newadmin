@@ -588,9 +588,9 @@ return [
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'mailing-lists' => 'Списки рассылки',
         'customer-numbers' => 'Номера клиентов',
-        'stop-list' => 'Стоп-лист',
+        'stop-list' => 'Стоп-лист контактов whatsapp',
         'unified' => 'Унифицированное управление',
-        'messages' => 'Сообщения',
+        'messages' => 'Вход. сообщения whatsapp',
         'reports' => 'Отчеты',
         'contact-groups' => 'Группы контактов',
         'channel-instances'         => 'Каналы рассылок'

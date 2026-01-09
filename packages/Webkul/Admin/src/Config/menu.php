@@ -301,19 +301,19 @@ return [
         'key'        => 'newsletters.stop-list',
         'name'       => 'newsletters::app.sidebar.stop-list',
         'route'      => 'admin.newsletters.stop-list.index',
-        'sort'       => 4,
+        'sort'       => 14,
         'icon'       => '',
     ], [
         'key'        => 'newsletters.messages',
         'name'       => 'newsletters::app.sidebar.messages',
         'route'      => 'admin.newsletters.messages.index',
-        'sort'       => 3,
+        'sort'       => 13,
         'icon'       => '',
     ], [
         'key'        => 'newsletters.reports',
         'name'       => 'newsletters::app.sidebar.reports',
         'route'      => 'admin.newsletters.reports.index',
-        'sort'       => 5,
+        'sort'       => 7,
         'icon'       => '',
     ],
     [
@@ -323,13 +323,13 @@ return [
         'sort'       => 5,
         'icon'       => '',
     ],
-    [
-        'key'        => 'newsletters.contact-groups',
-        'name'       => 'newsletters::app.sidebar.contact-groups',
-        'route'      => 'admin.newsletters.contact-groups.index',
-        'sort'       => 5,
-        'icon'       => '',
-    ],
+//    [
+//        'key'        => 'newsletters.contact-groups',
+//        'name'       => 'newsletters::app.sidebar.contact-groups',
+//        'route'      => 'admin.newsletters.contact-groups.index',
+//        'sort'       => 5,
+//        'icon'       => '',
+//    ],
 
     /**
      * Reporting.

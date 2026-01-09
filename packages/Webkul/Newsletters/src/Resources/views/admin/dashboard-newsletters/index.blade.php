@@ -129,31 +129,33 @@
         </div>
 
         <!-- Right Section -->
-        <div class="flex w-[360px] max-w-full flex-col gap-2 max-sm:w-full">
-            <!-- First Component -->
-            <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
-                @lang('newsletters::app.admin.dashboard.index.store-stats')
-            </p>
+{{--       --}}
+{{--        <div class="flex w-[360px] max-w-full flex-col gap-2 max-sm:w-full">--}}
+{{--            <!-- First Component -->--}}
+{{--            <p class="text-base font-semibold text-gray-600 dark:text-gray-300">--}}
+{{--                @lang('newsletters::app.admin.dashboard.index.store-stats')--}}
+{{--            </p>--}}
 
-            {!! view_render_event('bagisto.admin.dashboard.store_stats.before') !!}
+{{--            {!! view_render_event('bagisto.admin.dashboard.store_stats.before') !!}--}}
 
-            <!-- Store Stats -->
-            <div class="box-shadow rounded bg-white dark:bg-gray-900">
-                <!-- Total Sales Details -->
-                @include('admin::dashboard.total-sales')
+{{--            <!-- Store Stats -->--}}
+{{--            <div class="box-shadow rounded bg-white dark:bg-gray-900">--}}
+{{--                <!-- Total Sales Details -->--}}
+{{--                @include('admin::dashboard.total-sales')--}}
 
-                <!-- Total Visitors Details -->
-                @include('admin::dashboard.total-visitors')
+{{--                <!-- Total Visitors Details -->--}}
+{{--                @include('admin::dashboard.total-visitors')--}}
 
 {{--                <!-- Top Selling Products -->--}}
 {{--                @include('admin::dashboard.top-selling-products')--}}
 
 {{--                <!-- Top Customers -->--}}
 {{--                @include('admin::dashboard.top-customers')--}}
-            </div>
+{{--            </div>--}}
 
-            {!! view_render_event('bagisto.admin.dashboard.store_stats.after') !!}
-        </div>
+{{--            {!! view_render_event('bagisto.admin.dashboard.store_stats.after') !!}--}}
+{{--        </div>--}}
+{{--        --}}
     </div>
 
     @pushOnce('scripts')
