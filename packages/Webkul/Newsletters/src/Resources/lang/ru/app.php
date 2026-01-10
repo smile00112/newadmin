@@ -641,7 +641,7 @@ return [
         'customer-numbers' => 'Номера клиентов',
         'stop-list' => 'Стоп-лист контактов whatsapp',
         'unified' => 'Унифицированное управление',
-        'messages' => 'Вход. сообщения whatsapp',
+        'messages' => 'Входящие whatsapp ',
         'reports' => 'Отчеты',
         'contact-groups' => 'Группы контактов',
         'channel-instances'         => 'Каналы рассылок'

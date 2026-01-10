@@ -15,6 +15,9 @@ use Webkul\Newsletters\Repositories\StopListRepository;
 use Webkul\Newsletters\Events\MailingListStatsUpdated;
 use Webkul\Newsletters\Repositories\VacapInstanceRepository;
 use Webkul\Newsletters\Events\CustomerNumberIncomingMessage;
+use Webkul\Newsletters\Models\CustomerNumber;
+use Webkul\Newsletters\Models\MailingList;
+use Webkul\Newsletters\Services\GreenAPIService;
 
 class HooksController extends Controller
 {
@@ -57,7 +60,9 @@ class HooksController extends Controller
 //                    Log::info("HOOK__GreenAPI hook TYPE:", [
 //                        'body' => '//входящее сообщение',
 //                    ]);
-                    $this->handleIncomingMessage($senderData['sender'], $instanceData);
+                    if (!empty($senderData) && !empty($senderData['sender']) && !empty($instanceData)) {
+                        $this->handleIncomingMessage($senderData['sender'], $instanceData, $messageData);
+                    }
                     break;
                 case 'outgoingMessageStatus':   //статус отправленного сообщения
 //                    Log::info("HOOK__GreenAPI hook TYPE:", [
@@ -88,16 +93,16 @@ class HooksController extends Controller
     /**
      * Handle incoming message webhook.
      */
-    private function handleIncomingMessage(string $chatId, array $instanceData): void
+    private function handleIncomingMessage(string $chatId, array $instanceData, ?array $messageData = null): void
     {
-
         // Extract phone number from chatId (remove @c.us suffix)
         $phoneNumber = str_replace('@c.us', '', $chatId);
 
-        $idInstance = $instanceData['idInstance'];
+        $idInstance = $instanceData['idInstance'] ?? null;
+        $customerNumber = null;
+
         if($idInstance){
             $instance = VacapInstance::with('customerNumbers')
-                //->where('login', $phoneNumber)
                 ->whereHas('customerNumbers', function($q) use($phoneNumber){
                     $q->where('phone_number', $phoneNumber);
             })->first();
@@ -106,7 +111,7 @@ class HooksController extends Controller
                 $customerNumber = $instance->customerNumbers->count() ? $instance->customerNumbers->first() : null;
 
                 //добавляем прикперлённый номер телефона к инстансу
-                $instancePhoneNumber = str_replace('@c.us', '', $instanceData['wid']);
+                $instancePhoneNumber = str_replace('@c.us', '', $instanceData['wid'] ?? '');
                 if($instancePhoneNumber){
                     $instance->update([
                         'phone' => $instancePhoneNumber
@@ -123,20 +128,6 @@ class HooksController extends Controller
 
             return;
         }
-
-        // Find customer number by phone
-//        $customerNumber = DB::table('newsletters_customer_numbers')
-//            ->where('phone_number', $phoneNumber)
-//            ->orderBy('id', 'desc')
-//            ->first();
-
-
-//        Log::info("HOOK__handleIncomingMessage", [
-//            'chatId' => $chatId,
-//            'phone_number' => $phoneNumber,
-//            '$customerNumber' => $customerNumber,
-//        ]);
-
 
         if ($customerNumber) {
             // Update incoming_message status
@@ -160,6 +151,11 @@ class HooksController extends Controller
                     'customer_number_id' => $customerNumber->id,
                     'error' => $e->getMessage(),
                 ]);
+            }
+
+            // Process auto-reply if enabled
+            if ($messageData) {
+                $this->processAutoReply($customerNumber, $messageData);
             }
 
 //            Log::info("HOOK__Incoming message processed", [
@@ -370,6 +366,144 @@ class HooksController extends Controller
             'stateInstance' => $stateInstance,
             'active' => $active,
         ]);
+    }
+
+    /**
+     * Process auto-reply for incoming message.
+     */
+    private function processAutoReply(CustomerNumber $customerNumber, array $messageData): void
+    {
+        try {
+            // Get mailing list
+            $mailingList = $customerNumber->mailingList;
+            
+            if (!$mailingList) {
+                Log::warning('HOOK__processAutoReply: Mailing list not found', [
+                    'customer_number_id' => $customerNumber->id,
+                ]);
+                return;
+            }
+
+            // Check if auto-reply is enabled and channel is WhatsApp
+            if ($mailingList->channel_type !== 'whatsapp' || !$mailingList->auto_reply_enabled) {
+                return;
+            }
+
+            // Check if auto-replies are configured
+            $autoReplies = $mailingList->auto_replies;
+            if (empty($autoReplies) || !is_array($autoReplies)) {
+                return;
+            }
+
+            // Extract message text from messageData
+            $messageText = $this->extractMessageText($messageData);
+            if (empty($messageText)) {
+                Log::info('HOOK__processAutoReply: No text message found in messageData', [
+                    'customer_number_id' => $customerNumber->id,
+                    'message_data' => $messageData,
+                ]);
+                return;
+            }
+
+            // Convert message text to lowercase for case-insensitive matching
+            $messageTextLower = mb_strtolower($messageText, 'UTF-8');
+
+            // Search for matching phrase
+            foreach ($autoReplies as $autoReply) {
+                if (empty($autoReply['phrase']) || empty($autoReply['response'])) {
+                    continue;
+                }
+
+                // Case-insensitive substring search
+                $phraseLower = mb_strtolower($autoReply['phrase'], 'UTF-8');
+                if (mb_strpos($messageTextLower, $phraseLower) !== false) {
+                    // Found a match, send auto-reply
+                    $this->sendAutoReply($customerNumber, $autoReply['response']);
+                    return; // Send only first match
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('HOOK__processAutoReply: Error processing auto-reply', [
+                'customer_number_id' => $customerNumber->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * Extract message text from messageData.
+     */
+    private function extractMessageText(array $messageData): ?string
+    {
+        // Try to get text from textMessage or extendedTextMessage
+        if (!empty($messageData['textMessage'])) {
+            return $messageData['textMessage'];
+        }
+
+        if (!empty($messageData['extendedTextMessage']['text'])) {
+            return $messageData['extendedTextMessage']['text'];
+        }
+
+        // Check for typeMessage field
+        $typeMessage = $messageData['typeMessage'] ?? null;
+        if ($typeMessage === 'textMessage' && !empty($messageData['textMessage'])) {
+            return $messageData['textMessage'];
+        }
+
+        if ($typeMessage === 'extendedTextMessage' && !empty($messageData['extendedTextMessage']['text'])) {
+            return $messageData['extendedTextMessage']['text'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Send auto-reply message.
+     */
+    private function sendAutoReply(CustomerNumber $customerNumber, string $response): void
+    {
+        try {
+            // Get WhatsApp instance
+            $instance = $customerNumber->whatsAppInstance;
+            if (!$instance) {
+                Log::warning('HOOK__sendAutoReply: WhatsApp instance not found', [
+                    'customer_number_id' => $customerNumber->id,
+                ]);
+                return;
+            }
+
+            // Get phone number
+            $phoneNumber = $customerNumber->phone_number;
+            if (empty($phoneNumber)) {
+                Log::warning('HOOK__sendAutoReply: Phone number not found', [
+                    'customer_number_id' => $customerNumber->id,
+                ]);
+                return;
+            }
+
+            // Format phone number (ensure it's in correct format)
+            $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+            $chatId = $phoneNumber . '@c.us';
+
+            // Create GreenAPI service and send message
+            $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
+            $result = $greenApiService->sendMessage($chatId, $response);
+
+            Log::info('HOOK__sendAutoReply: Auto-reply sent successfully', [
+                'customer_number_id' => $customerNumber->id,
+                'phone_number' => $phoneNumber,
+                'response_id' => $result['idMessage'] ?? null,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('HOOK__sendAutoReply: Error sending auto-reply', [
+                'customer_number_id' => $customerNumber->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
     }
 
     /**

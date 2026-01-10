@@ -38,6 +38,8 @@ class MailingList extends Model
         'company_id',
         'channel_type', // whatsapp, email, telegram
         'filter_id',
+        'auto_reply_enabled',
+        'auto_replies',
     ];
 
     /**
@@ -51,6 +53,8 @@ class MailingList extends Model
         'message_delay_to' => 'integer',
         'message_links' => 'array',
         'max_messages_per_instance' => 'integer',
+        'auto_reply_enabled' => 'boolean',
+        'auto_replies' => 'array',
     ];
 
     /**

@@ -126,6 +126,12 @@ class MailingListController extends Controller
             // Customer Numbers validation - optional if filter is used
             'customer_numbers.*.phone_number' => 'nullable|string|max:20',
             'customer_numbers.*.name' => 'nullable|string|max:255',
+
+            // Auto-reply validation
+            'auto_reply_enabled' => 'nullable|boolean',
+            'auto_replies' => 'nullable|array',
+            'auto_replies.*.phrase' => 'required_with:auto_replies|string|max:500',
+            'auto_replies.*.response' => 'required_with:auto_replies|string|max:2000',
         ]);
 
         try {
@@ -156,6 +162,19 @@ class MailingListController extends Controller
                 ];
             }
 
+            // Process auto-replies
+            $autoReplies = null;
+            if ($request->has('auto_replies') && is_array($request->input('auto_replies'))) {
+                $autoReplies = array_filter($request->input('auto_replies'), function($reply) {
+                    return !empty($reply['phrase']) && !empty($reply['response']);
+                });
+                // Re-index array and ensure proper structure
+                $autoReplies = array_values($autoReplies);
+                if (empty($autoReplies)) {
+                    $autoReplies = null;
+                }
+            }
+
             // Create mailing list first
             $mailingListData = [
                 'message_text' => $request->input('message_text'),
@@ -169,6 +188,8 @@ class MailingListController extends Controller
                 'max_messages_per_instance' => $request->input('max_messages_per_instance'),
                 'channel_type' => $request->input('channel_type', 'whatsapp'),
                 'filter_id' => $request->input('filter_id'),
+                'auto_reply_enabled' => (bool) $request->input('auto_reply_enabled', false),
+                'auto_replies' => $autoReplies,
             ];
 
             Log::info('Creating mailing list', [
@@ -690,6 +711,12 @@ class MailingListController extends Controller
             // Customer Numbers validation - nullable because we filter them later
             'customer_numbers.*.phone_number' => 'nullable|string|max:20',
             'customer_numbers.*.name' => 'nullable|string|max:255',
+
+            // Auto-reply validation
+            'auto_reply_enabled' => 'nullable|boolean',
+            'auto_replies' => 'nullable|array',
+            'auto_replies.*.phrase' => 'required_with:auto_replies|string|max:500',
+            'auto_replies.*.response' => 'required_with:auto_replies|string|max:2000',
         ]);
 
         try {
@@ -728,6 +755,19 @@ class MailingListController extends Controller
                 ];
             }
 
+            // Process auto-replies
+            $autoReplies = null;
+            if ($request->has('auto_replies') && is_array($request->input('auto_replies'))) {
+                $autoReplies = array_filter($request->input('auto_replies'), function($reply) {
+                    return !empty($reply['phrase']) && !empty($reply['response']);
+                });
+                // Re-index array and ensure proper structure
+                $autoReplies = array_values($autoReplies);
+                if (empty($autoReplies)) {
+                    $autoReplies = null;
+                }
+            }
+
             // Update mailing list
             $mailingListData = [
                 'message_text' => $request->input('message_text'),
@@ -741,6 +781,8 @@ class MailingListController extends Controller
                 'max_messages_per_instance' => $request->input('max_messages_per_instance'),
                 'channel_type' => $request->input('channel_type', $existingMailingList->channel_type ?? 'whatsapp'),
                 'filter_id' => $request->input('filter_id'),
+                'auto_reply_enabled' => (bool) $request->input('auto_reply_enabled', false),
+                'auto_replies' => $autoReplies,
             ];
 
             Log::info('Updating mailing list', [

@@ -287,6 +287,123 @@
                         @enderror
                     </div>
                 </div>
+            </div>
+
+            <!-- Auto-Reply Section (only for WhatsApp) -->
+            @if($mailingList->channel_type === 'whatsapp')
+            <div id="autoReplySection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 my-5">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        Автоответы
+                    </h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- Enable Auto-Reply Checkbox -->
+                    <div>
+                        <label class="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                name="auto_reply_enabled"
+                                value="1"
+                                {{ old('auto_reply_enabled', $mailingList->auto_reply_enabled) ? 'checked' : '' }}
+                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                onchange="toggleAutoRepliesFields(this.checked)"
+                            >
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Включить автоответы
+                            </span>
+                        </label>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            При получении входящего сообщения система будет автоматически искать фразы и отправлять соответствующие ответы
+                        </p>
+                        @error('auto_reply_enabled')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Auto-Replies Fields -->
+                    <div id="autoRepliesFields" class="space-y-4" style="display: {{ old('auto_reply_enabled', $mailingList->auto_reply_enabled) ? 'block' : 'none' }};">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Пары фраза-ответ
+                            </label>
+                            <button
+                                type="button"
+                                onclick="addAutoReplyRow()"
+                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Добавить автоответ
+                            </button>
+                        </div>
+
+                        <div id="autoRepliesContainer" class="space-y-4">
+                            @php
+                                $autoReplies = old('auto_replies', $mailingList->auto_replies ?? []);
+                                if (empty($autoReplies) || !is_array($autoReplies)) {
+                                    $autoReplies = [];
+                                }
+                            @endphp
+                            @foreach($autoReplies as $index => $autoReply)
+                                <div class="auto-reply-row grid grid-cols-1 gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Фраза <span class="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="auto_replies[{{ $index }}][phrase]"
+                                                value="{{ old("auto_replies.$index.phrase", $autoReply['phrase'] ?? '') }}"
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                                placeholder="Например: привет"
+                                                maxlength="500"
+                                            >
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Фраза для поиска в входящем сообщении (без учета регистра)
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Ответ <span class="text-red-500">*</span>
+                                            </label>
+                                            <textarea
+                                                name="auto_replies[{{ $index }}][response]"
+                                                rows="3"
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                                placeholder="Текст ответа"
+                                                maxlength="2000"
+                                            >{{ old("auto_replies.$index.response", $autoReply['response'] ?? '') }}</textarea>
+                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                Текст ответа, который будет отправлен при обнаружении фразы
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button
+                                            type="button"
+                                            onclick="removeAutoReplyRow(this)"
+                                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        >
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @error('auto_replies')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                        @error('auto_replies.*')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            @endif
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Active Status -->
@@ -2195,6 +2312,82 @@
             }
             if (previewVideo) {
                 previewVideo.src = '';
+            }
+        }
+
+        // Auto-reply functions
+        @php
+            $existingAutoReplies = old('auto_replies', $mailingList->auto_replies ?? []);
+            $autoReplyCount = is_array($existingAutoReplies) ? count($existingAutoReplies) : 0;
+        @endphp
+        let autoReplyIndex = {{ $autoReplyCount }};
+
+        function toggleAutoRepliesFields(enabled) {
+            const fields = document.getElementById('autoRepliesFields');
+            if (enabled) {
+                fields.style.display = 'block';
+            } else {
+                fields.style.display = 'none';
+            }
+        }
+
+        function addAutoReplyRow() {
+            const container = document.getElementById('autoRepliesContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'auto-reply-row grid grid-cols-1 gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
+            newRow.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Фраза <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="auto_replies[${autoReplyIndex}][phrase]"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="Например: привет"
+                            maxlength="500"
+                        >
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Фраза для поиска в входящем сообщении (без учета регистра)
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Ответ <span class="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            name="auto_replies[${autoReplyIndex}][response]"
+                            rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            placeholder="Текст ответа"
+                            maxlength="2000"
+                        ></textarea>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Текст ответа, который будет отправлен при обнаружении фразы
+                        </p>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button
+                        type="button"
+                        onclick="removeAutoReplyRow(this)"
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        Удалить
+                    </button>
+                </div>
+            `;
+            container.appendChild(newRow);
+            autoReplyIndex++;
+        }
+
+        function removeAutoReplyRow(button) {
+            if (confirm('Удалить этот автоответ?')) {
+                button.closest('.auto-reply-row').remove();
             }
         }
 
