@@ -17,6 +17,7 @@ use Webkul\Newsletters\Http\Controllers\Admin\AccountController;
 use Webkul\Newsletters\Http\Controllers\Admin\AdminAccountController;
 use Webkul\Newsletters\Http\Controllers\Admin\OwnersController;
 use Webkul\Newsletters\Http\Controllers\Admin\RegistrationRequestController;
+use Webkul\Newsletters\Http\Controllers\Admin\AccountWarmingController;
 use Webkul\Newsletters\Http\Controllers\LandingPageController;
 
 /**
@@ -211,6 +212,30 @@ Route::group([
                 Route::post('{id}/send', 'send')->name('admin.newsletters.mailing-lists.send');
                 Route::post('{id}/start', 'startMailing')->name('admin.newsletters.mailing-lists.start');
                 Route::post('{id}/pause', 'pauseMailing')->name('admin.newsletters.mailing-lists.pause');
+            });
+        });
+    });
+
+    /**
+     * Account Warmings routes.
+     */
+    Route::middleware('newsletters.permission:newsletters.account-warmings')->group(function () {
+        Route::controller(AccountWarmingController::class)->prefix('account-warmings')->group(function () {
+            Route::get('', 'index')->name('admin.newsletters.account-warmings.index');
+            Route::middleware('newsletters.permission:newsletters.account-warmings.create')->group(function () {
+                Route::get('create', 'create')->name('admin.newsletters.account-warmings.create');
+                Route::post('', 'store')->name('admin.newsletters.account-warmings.store');
+            });
+            Route::middleware('newsletters.permission:newsletters.account-warmings.edit')->group(function () {
+                Route::get('{id}/edit', 'edit')->name('admin.newsletters.account-warmings.edit');
+                Route::put('{id}', 'update')->name('admin.newsletters.account-warmings.update');
+            });
+            Route::middleware('newsletters.permission:newsletters.account-warmings.delete')->group(function () {
+                Route::delete('{id}', 'destroy')->name('admin.newsletters.account-warmings.destroy');
+            });
+            Route::middleware(['newsletters.permission:newsletters.account-warmings.send'])->group(function () {
+                Route::post('{id}/start', 'start')->name('admin.newsletters.account-warmings.start');
+                Route::post('{id}/pause', 'pause')->name('admin.newsletters.account-warmings.pause');
             });
         });
     });

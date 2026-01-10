@@ -11,23 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('newsletters_mailing_list_whatsapp_instance', function (Blueprint $table) {
+        Schema::create('newsletters_account_warming_whatsapp_instance', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('mailing_list_id');
+            $table->unsignedBigInteger('account_warming_id');
             $table->unsignedBigInteger('whatsapp_instance_id');
             $table->timestamps();
 
-            $table->foreign('mailing_list_id', 'mlwa_mll_wa')
+            $table->foreign('account_warming_id', 'awwi_aw')
                 ->references('id')
-                ->on('newsletters_mailing_lists')
+                ->on('newsletters_account_warmings')
                 ->onDelete('cascade');
 
-            $table->foreign('whatsapp_instance_id', 'mlwa_wai')
+            $table->foreign('whatsapp_instance_id', 'awwi_wai')
                 ->references('id')
                 ->on('newsletters_whatsapp_instances')
                 ->onDelete('cascade');
 
-            $table->unique(['mailing_list_id', 'whatsapp_instance_id'], 'mlwa_ml_wai_uk');
+            $table->unique(['account_warming_id', 'whatsapp_instance_id'], 'awwi_aw_wai_uk');
         });
     }
 
@@ -36,10 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('newsletters_mailing_list_whatsapp_instance');
+        Schema::dropIfExists('newsletters_account_warming_whatsapp_instance');
     }
 };
-
-
 
 

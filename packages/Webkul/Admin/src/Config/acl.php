@@ -951,6 +951,31 @@ return [
         'route' => 'admin.newsletters.mailing-lists.pause',
         'sort'  => 6,
     ], [
+        'key'   => 'newsletters.account-warmings',
+        'name'  => 'newsletters::app.sidebar.account-warmings',
+        'route' => 'admin.newsletters.account-warmings.index',
+        'sort'  => 4,
+    ], [
+        'key'   => 'newsletters.account-warmings.create',
+        'name'  => 'newsletters::app.acl.create',
+        'route' => 'admin.newsletters.account-warmings.create',
+        'sort'  => 1,
+    ], [
+        'key'   => 'newsletters.account-warmings.edit',
+        'name'  => 'newsletters::app.acl.edit',
+        'route' => 'admin.newsletters.account-warmings.edit',
+        'sort'  => 2,
+    ], [
+        'key'   => 'newsletters.account-warmings.delete',
+        'name'  => 'newsletters::app.acl.delete',
+        'route' => 'admin.newsletters.account-warmings.destroy',
+        'sort'  => 3,
+    ], [
+        'key'   => 'newsletters.account-warmings.send',
+        'name'  => 'newsletters::app.acl.send',
+        'route' => 'admin.newsletters.account-warmings.start',
+        'sort'  => 4,
+    ], [
         'key'   => 'newsletters.channel-instances',
         'name'  => 'newsletters::app.acl.channel-instances',
         'route' => 'admin.newsletters.channel-instances.index',

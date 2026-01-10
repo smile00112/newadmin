@@ -298,6 +298,12 @@ return [
         'sort'       => 2,
         'icon'       => '',
     ], [
+        'key'        => 'newsletters.account-warmings',
+        'name'       => 'newsletters::app.sidebar.account-warmings',
+        'route'      => 'admin.newsletters.account-warmings.index',
+        'sort'       => 15,
+        'icon'       => '',
+    ], [
         'key'        => 'newsletters.stop-list',
         'name'       => 'newsletters::app.sidebar.stop-list',
         'route'      => 'admin.newsletters.stop-list.index',
