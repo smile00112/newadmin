@@ -150,13 +150,13 @@ return [
     /**
      * CMS.
      */
-//    [
-//        'key'        => 'cms',
-//        'name'       => 'admin::app.components.layouts.sidebar.cms',
-//        'route'      => 'admin.cms.index',
-//        'sort'       => 5,
-//        'icon'       => 'icon-cms',
-//    ],
+    [
+        'key'        => 'cms',
+        'name'       => 'admin::app.components.layouts.sidebar.cms',
+        'route'      => 'admin.cms.index',
+        'sort'       => 15,
+        'icon'       => 'icon-cms',
+    ],
 //
 //    /**
 //     * Marketing.

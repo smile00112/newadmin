@@ -34,7 +34,7 @@
                 <!-- Preview Button -->
                 @if ($page->translate($currentLocale->code))
                     <a
-                        href="{{ route('shop.cms.page', $page->translate($currentLocale->code)['url_key']) }}"
+                        href="/mailing-service/{{ $page->translate($currentLocale->code)['url_key'] }}"
                         class="secondary-button"
                         target="_blank"
                     >

@@ -101,7 +101,7 @@ class CMSPageDataGrid extends DataGrid
             'index'  => 'url_key',
             'target' => '_blank',
             'url'    => function ($row) {
-                return route('shop.cms.page', $row->url_key);
+                return '/mailing-service/' . $row->url_key;
             },
         ]);
 

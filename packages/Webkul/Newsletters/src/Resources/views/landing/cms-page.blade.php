@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Сервис рассылки - Профессиональные решения для массовых рассылок</title>
+    <title>{{ $page->meta_title ?? $page->page_title ?? 'Сервис рассылки' }}</title>
+    
+    @if($page->meta_description)
+    <meta name="description" content="{{ $page->meta_description }}">
+    @endif
+    
+    @if($page->meta_keywords)
+    <meta name="keywords" content="{{ $page->meta_keywords }}">
+    @endif
+
     <style>
         /* Bagisto Shop Icon Font */
         @font-face {
@@ -79,6 +88,21 @@
             color: #2563eb;
         }
 
+        .logo a {
+            display: inline-block;
+        }
+
+        .logo img {
+            height: 32px;
+            width: auto;
+        }
+
+        @media (min-width: 640px) {
+            .logo img {
+                height: 40px;
+            }
+        }
+
         .nav-links {
             display: flex;
             gap: 30px;
@@ -144,207 +168,6 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
-        }
-
-        /* Hero Section */
-        .hero {
-            padding: 100px 0;
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .hero h1 {
-            font-size: 56px;
-            font-weight: 800;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
-
-        .hero p {
-            font-size: 20px;
-            margin-bottom: 40px;
-            opacity: 0.95;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 80px 0;
-            background: #f9fafb;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 40px;
-            font-weight: 700;
-            margin-bottom: 60px;
-            color: #1a1a1a;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: #e0e7ff;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            margin-bottom: 20px;
-            color: #2563eb;
-        }
-
-        .benefit-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            display: inline-block;
-            font-size: 50px;
-            line-height: normal;
-        }
-
-        .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #1a1a1a;
-        }
-
-        .feature-card p {
-            color: #6b7280;
-            line-height: 1.7;
-        }
-
-        /* Benefits Section */
-        .benefits {
-            padding: 80px 0;
-        }
-
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-        }
-
-        .benefit-item {
-            text-align: center;
-            padding: 30px;
-        }
-
-        .benefit-item h3 {
-            font-size: 20px;
-            margin: 15px 0 10px;
-            color: #1a1a1a;
-        }
-
-        .benefit-item p {
-            color: #6b7280;
-        }
-
-        /* Pricing Section */
-        .pricing {
-            padding: 80px 0;
-            background: #f9fafb;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .pricing-card {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.3s, box-shadow 0.3s;
-            position: relative;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-
-        .pricing-card.featured {
-            border: 2px solid #2563eb;
-            transform: scale(1.05);
-        }
-
-        .pricing-card.featured::before {
-            content: 'Популярный';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2563eb;
-            color: white;
-            padding: 6px 20px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .pricing-plan {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #1a1a1a;
-        }
-
-        .pricing-price {
-            font-size: 48px;
-            font-weight: 800;
-            color: #2563eb;
-            margin: 20px 0;
-        }
-
-        .pricing-price span {
-            font-size: 20px;
-            color: #6b7280;
-            font-weight: 400;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin: 30px 0;
-        }
-
-        .pricing-features li {
-            padding: 10px 0;
-            color: #4b5563;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .pricing-features li:last-child {
-            border-bottom: none;
-        }
-
-        .pricing-features li::before {
-            content: '✓';
-            color: #10b981;
-            font-weight: bold;
-            margin-right: 10px;
         }
 
         /* Footer */
@@ -475,170 +298,150 @@
         }
 
         @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 36px;
-            }
-
-            .hero p {
-                font-size: 18px;
-            }
-
             .nav-links {
                 display: none;
             }
+        }
 
-            .pricing-card.featured {
-                transform: scale(1);
-            }
+        /* Стили для информационных страниц */
+        body.cms-info-page ul {
+            padding-left: 40px;
+        }
+
+        /* CMS Content Styles */
+        .cms-content {
+            padding: 40px 0;
+            min-height: 60vh;
+        }
+
+        .cms-content h1,
+        .cms-content h2,
+        .cms-content h3,
+        .cms-content h4,
+        .cms-content h5,
+        .cms-content h6 {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .cms-content h1 {
+            font-size: 36px;
+        }
+
+        .cms-content h2 {
+            font-size: 30px;
+        }
+
+        .cms-content h3 {
+            font-size: 24px;
+        }
+
+        .cms-content p {
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+
+        .cms-content ul,
+        .cms-content ol {
+            margin-bottom: 20px;
+        }
+
+        .cms-content li {
+            margin-bottom: 8px;
+        }
+
+        .cms-content a {
+            color: #2563eb;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .cms-content a:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        .cms-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .cms-content blockquote {
+            border-left: 4px solid #2563eb;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .cms-content code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .cms-content pre {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .cms-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .cms-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .cms-content table th,
+        .cms-content table td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .cms-content table th {
+            background: #f9fafb;
+            font-weight: 600;
         }
     </style>
 </head>
-<body>
+<body class="cms-info-page">
     <!-- Header -->
     <header>
         <nav class="container">
             <div class="logo">
                 <a href="/" class="flex-shrink-0">
-                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin"></a>
+                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin">
+                </a>
             </div>
             <ul class="nav-links">
-                <li><a href="#features">Возможности</a></li>
-                <li><a href="#benefits">Преимущества</a></li>
-                <li><a href="#pricing">Тарифы</a></li>
+                <li><a href="/#features">Возможности</a></li>
+                <li><a href="/#benefits">Преимущества</a></li>
+                <li><a href="/#pricing">Тарифы</a></li>
             </ul>
             <button class="btn-primary" onclick="openModal()">Начать</button>
         </nav>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Профессиональный сервис рассылки</h1>
-            <p>Эффективные массовые рассылки через Email, WhatsApp и Telegram для вашего бизнеса</p>
-            <button class="btn-primary" onclick="openModal()" style="font-size: 18px; padding: 16px 32px;">
-                Получить доступ
-            </button>
+    <!-- CMS Content -->
+    <div class="container">
+        <div class="cms-content">
+            {!! $page->html_content !!}
         </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <div class="container">
-            <h2 class="section-title">Возможности платформы</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon icon-eye"></div>
-                    <h3>Аналитика и отчеты</h3>
-                    <p>Детальная статистика по каждой рассылке: открытия, клики, конверсии и многое другое.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-arrow-right"></div>
-                    <h3>Высокая скорость</h3>
-                    <p>Мгновенная доставка сообщений тысячам получателей одновременно.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-filter"></div>
-                    <h3>Таргетирование</h3>
-                    <p>Сегментация аудитории и персонализация сообщений для максимальной эффективности.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-tick"></div>
-                    <h3>Безопасность</h3>
-                    <p>Защита данных и соответствие всем требованиям безопасности и конфиденциальности.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-product"></div>
-                    <h3>Мультиканальность</h3>
-                    <p>Рассылки через Email, WhatsApp, Telegram и другие популярные каналы связи.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon icon-email"></div>
-                    <h3>Автоматизация</h3>
-                    <p>Настройка автоматических рассылок по триггерам и событиям.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Benefits Section -->
-    <section class="benefits" id="benefits">
-        <div class="container">
-            <h2 class="section-title">Почему выбирают нас</h2>
-            <div class="benefits-grid">
-                <div class="benefit-item">
-                    <div class="benefit-icon ">⚡</div>
-                    <h3>Быстрый старт</h3>
-                    <p>Начните работу уже сегодня. Простая настройка за несколько минут.</p>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon">💼</div>
-                    <h3>Для бизнеса</h3>
-                    <p>Решения для компаний любого размера - от стартапов до корпораций.</p>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon icon-support"></div>
-                    <h3>Поддержка 24/7</h3>
-                    <p>Наша команда всегда готова помочь вам с любыми вопросами.</p>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-icon">📱</div>
-                    <h3>Масштабируемость</h3>
-                    <p>Растите вместе с нами. Платформа легко масштабируется под ваши нужды.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section class="pricing" id="pricing">
-        <div class="container">
-            <h2 class="section-title">Выберите тариф</h2>
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <div class="pricing-plan">Start</div>
-                    <div class="pricing-price">4 000<span> ₽/мес</span></div>
-                    <ul class="pricing-features">
-                        <li>До 10 000 сообщений</li>
-                        <li>Базовые шаблоны</li>
-                        <li>Email поддержка</li>
-                        <li>Базовая аналитика</li>
-                    </ul>
-                    <button class="btn-primary" style="width: 100%;" onclick="openModal('start')">
-                        Выбрать тариф
-                    </button>
-                </div>
-                <div class="pricing-card featured">
-                    <div class="pricing-plan">Pro</div>
-                    <div class="pricing-price">8 000<span> ₽/мес</span></div>
-                    <ul class="pricing-features">
-                        <li>До 50 000 сообщений</li>
-                        <li>Все шаблоны</li>
-                        <li>Приоритетная поддержка</li>
-                        <li>Расширенная аналитика</li>
-                        <li>Автоматизация</li>
-                    </ul>
-                    <button class="btn-primary" style="width: 100%;" onclick="openModal('pro')">
-                        Выбрать тариф
-                    </button>
-                </div>
-                <div class="pricing-card">
-                    <div class="pricing-plan">Corporate</div>
-                    <div class="pricing-price">20 000<span> ₽/мес</span></div>
-                    <ul class="pricing-features">
-                        <li>Неограниченно сообщений</li>
-                        <li>Все возможности</li>
-                        <li>Персональный менеджер</li>
-                        <li>Полная аналитика</li>
-                        <li>API доступ</li>
-                        <li>Кастомные интеграции</li>
-                    </ul>
-                    <button class="btn-primary" style="width: 100%;" onclick="openModal('corporate')">
-                        Выбрать тариф
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
+    </div>
 
     <!-- Footer -->
     <footer>
@@ -652,7 +455,7 @@
         </div>
     </footer>
 
-    <!-- Modal -->
+    <!-- Registration Modal -->
     <div id="registrationModal" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">&times;</button>
@@ -931,7 +734,9 @@
                 }
             });
         });
+
+        // Make openModal available globally
+        window.openModal = openModal;
     </script>
 </body>
 </html>
-

@@ -15,6 +15,7 @@ use Webkul\Newsletters\Repositories\CompanyRepository;
 use Webkul\Newsletters\Mail\WelcomeAdminNotification;
 use Webkul\Newsletters\Mail\NewUserNotification;
 use Webkul\Newsletters\Models\RegistrationRequest;
+use Webkul\CMS\Repositories\PageRepository;
 
 class LandingPageController
 {
@@ -26,7 +27,8 @@ class LandingPageController
     public function __construct(
         protected AdminRepository $adminRepository,
         protected RoleRepository $roleRepository,
-        protected CompanyRepository $companyRepository
+        protected CompanyRepository $companyRepository,
+        protected PageRepository $pageRepository
     ) {}
 
     /**
@@ -34,7 +36,19 @@ class LandingPageController
      */
     public function index()
     {
-        return view('newsletters::landing.index');
+        $page = $this->pageRepository
+            ->whereHas('channels', function ($query) {
+                $query->where('id', core()->getCurrentChannel()->id);
+            })
+            ->whereTranslation('url_key', 'home')
+            ->first();
+
+        if (!$page) {
+            // Fallback to old view if CMS page doesn't exist
+            return view('newsletters::landing.index');
+        }
+
+        return view('newsletters::landing.cms-page', compact('page'));
     }
 
     /**
@@ -42,7 +56,19 @@ class LandingPageController
      */
     public function paymentTerms()
     {
-        return view('newsletters::landing.payment-terms');
+        $page = $this->pageRepository
+            ->whereHas('channels', function ($query) {
+                $query->where('id', core()->getCurrentChannel()->id);
+            })
+            ->whereTranslation('url_key', 'payment-terms')
+            ->first();
+
+        if (!$page) {
+            // Fallback to old view if CMS page doesn't exist
+            return view('newsletters::landing.payment-terms');
+        }
+
+        return view('newsletters::landing.cms-static-page', compact('page'));
     }
 
     /**
@@ -50,7 +76,19 @@ class LandingPageController
      */
     public function privacyPolicy()
     {
-        return view('newsletters::landing.privacy-policy');
+        $page = $this->pageRepository
+            ->whereHas('channels', function ($query) {
+                $query->where('id', core()->getCurrentChannel()->id);
+            })
+            ->whereTranslation('url_key', 'privacy-policy')
+            ->first();
+
+        if (!$page) {
+            // Fallback to old view if CMS page doesn't exist
+            return view('newsletters::landing.privacy-policy');
+        }
+
+        return view('newsletters::landing.cms-static-page', compact('page'));
     }
 
     /**

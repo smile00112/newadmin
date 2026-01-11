@@ -118,8 +118,8 @@
 <body>
     <header>
         <nav>
-            <a href="{{ route('newsletters.landing.index') }}" class="logo">📧 {{ config('app.name') }}</a>
-            <a href="{{ route('newsletters.landing.index') }}" class="back-link">← Вернуться на главную</a>
+            <a href="/" class="logo">📧 {{ config('app.name') }}</a>
+            <a href="/" class="back-link">← Вернуться на главную</a>
         </nav>
     </header>
 
@@ -161,9 +161,9 @@
 
     <footer>
         <div class="footer-links">
-            <a href="{{ route('newsletters.landing.payment-terms') }}">Условия оплаты</a>
-            <a href="{{ route('newsletters.landing.privacy-policy') }}">Политика конфиденциальности</a>
-            <a href="{{ route('newsletters.landing.offer') }}">Оферта</a>
+            <a href="/">Условия оплаты</a>
+            <a href="/">Политика конфиденциальности</a>
+            <a href="/">Оферта</a>
         </div>
         <p>&copy; 2025 {{ config('app.name') }}. Все права защищены.</p>
     </footer>

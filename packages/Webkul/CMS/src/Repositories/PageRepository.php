@@ -23,6 +23,10 @@ class PageRepository extends Repository
     {
         $model = $this->getModel();
 
+        // Extract channels before processing locales
+        $channels = $data['channels'] ?? [];
+        unset($data['channels']);
+
         foreach (core()->getAllLocales() as $locale) {
             foreach ($model->translatedAttributes as $attribute) {
                 if (isset($data[$attribute])) {
@@ -35,7 +39,9 @@ class PageRepository extends Repository
 
         $page = parent::create($data);
 
-        $page->channels()->sync($data['channels']);
+        if (!empty($channels)) {
+            $page->channels()->sync($channels);
+        }
 
         return $page;
     }
@@ -48,13 +54,24 @@ class PageRepository extends Repository
     {
         $page = $this->find($id);
 
+        // Extract channels and locale before processing
+        $channels = $data['channels'] ?? null;
+        if (isset($data['channels'])) {
+            unset($data['channels']);
+        }
+
         $locale = $data['locale'] ?? app()->getLocale();
+        if (isset($data['locale'])) {
+            unset($data['locale']);
+        }
 
         $data[$locale]['html_content'] = str_replace('=&gt;', '=>', $data[$locale]['html_content']);
 
         $page = parent::update($data, $id);
 
-        $page->channels()->sync($data['channels']);
+        if ($channels !== null) {
+            $page->channels()->sync($channels);
+        }
 
         return $page;
     }
