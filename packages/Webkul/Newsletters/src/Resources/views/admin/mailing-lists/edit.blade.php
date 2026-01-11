@@ -45,39 +45,9 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="editMailingListForm">
+    <form action="{{ route('admin.newsletters.mailing-lists.update', $mailingList->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @method('PUT')
-
-        <!-- Hidden field to preserve channel_type -->
-        <input type="hidden" name="channel_type" value="{{ old('channel_type', $mailingList->channel_type) }}">
-
-        @if($mailingList->channel_type === 'email')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                document.getElementById('editMailingListForm').addEventListener('submit', function(e) {
-                    if (typeof tinymce !== 'undefined') {
-                        const editor = tinymce.get('message_text_editor');
-                        if (editor) {
-                            const content = editor.getContent();
-                            // Обновляем значение в textarea, который используется TinyMCE
-                            const editorTextarea = document.getElementById('message_text_editor');
-                            if (editorTextarea) {
-                                editorTextarea.value = content;
-                            }
-                            
-                            // Убираем required и копируем значение в скрытое поле, если оно существует
-                            const hiddenMessageText = document.getElementById('message_text');
-                            if (hiddenMessageText && hiddenMessageText !== editorTextarea) {
-                                hiddenMessageText.removeAttribute('required');
-                                hiddenMessageText.value = content;
-                            }
-                        }
-                    }
-                });
-            });
-        </script>
-        @endif
 
         <!-- Mailing List Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 my-5 p5">
@@ -106,30 +76,30 @@
                             <span class="text-red-500">*</span>
                         </label>
 
-                        @if($mailingList->channel_type === 'email')
-                            <!-- TinyMCE Editor for Email -->
+                        <!-- TinyMCE Editor for Email -->
+                        <div id="email_editor_wrapper" style="display: none;">
                             <textarea
                                 name="message_text"
                                 id="message_text_editor"
                                 rows="6"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                 placeholder="{{ __('newsletters::app.admin.mailing-lists.message-text') }}"
-                                required
                             >{{ old('message_text', $mailingList->message_text) }}</textarea>
                             <x-admin::tinymce
                                 selector="textarea#message_text_editor"
                             />
-                        @else
-                            <!-- Regular Textarea for WhatsApp/Telegram -->
+                        </div>
+
+                        <!-- Regular Textarea for WhatsApp/Telegram -->
+                        <div id="regular_textarea_wrapper">
                             <textarea
                                 name="message_text"
                                 id="message_text"
                                 rows="6"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                 placeholder="{{ __('newsletters::app.admin.mailing-lists.message-text') }}"
-                                required
                             >{{ old('message_text', $mailingList->message_text) }}</textarea>
-                        @endif
+                        </div>
 
                         @error('message_text')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -154,7 +124,7 @@
                         @error('media_file')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-
+                        
                         <!-- Existing Media Display -->
                         @if($mailingList->message_links && isset($mailingList->message_links[0]))
                             @php
@@ -176,7 +146,7 @@
                                 </div>
                             </div>
                         @endif
-
+                        
                         <!-- New Media Preview -->
                         <div id="media_preview" class="mt-2 hidden">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -276,7 +246,7 @@
                             type="number"
                             name="max_messages_per_instance"
                             id="max_messages_per_instance"
-                            value="{{ old('max_messages_per_instance', $mailingList->max_messages_per_instance) }}"
+                            value="{{ old('max_messages_per_instance', $mailingList->max_messages_per_instance ?? 500) }}"
                             min="1"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             placeholder=""
@@ -287,123 +257,6 @@
                         @enderror
                     </div>
                 </div>
-            </div>
-
-            <!-- Auto-Reply Section (only for WhatsApp) -->
-            @if($mailingList->channel_type === 'whatsapp')
-            <div id="autoReplySection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 my-5">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Автоответы
-                    </h2>
-                </div>
-                <div class="p-6 space-y-6">
-                    <!-- Enable Auto-Reply Checkbox -->
-                    <div>
-                        <label class="flex items-center space-x-3">
-                            <input
-                                type="checkbox"
-                                name="auto_reply_enabled"
-                                value="1"
-                                {{ old('auto_reply_enabled', $mailingList->auto_reply_enabled) ? 'checked' : '' }}
-                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                                onchange="toggleAutoRepliesFields(this.checked)"
-                            >
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Включить автоответы
-                            </span>
-                        </label>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            При получении входящего сообщения система будет автоматически искать фразы и отправлять соответствующие ответы
-                        </p>
-                        @error('auto_reply_enabled')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Auto-Replies Fields -->
-                    <div id="autoRepliesFields" class="space-y-4" style="display: {{ old('auto_reply_enabled', $mailingList->auto_reply_enabled) ? 'block' : 'none' }};">
-                        <div class="flex items-center justify-between">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Пары фраза-ответ
-                            </label>
-                            <button
-                                type="button"
-                                onclick="addAutoReplyRow()"
-                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                                Добавить автоответ
-                            </button>
-                        </div>
-
-                        <div id="autoRepliesContainer" class="space-y-4">
-                            @php
-                                $autoReplies = old('auto_replies', $mailingList->auto_replies ?? []);
-                                if (empty($autoReplies) || !is_array($autoReplies)) {
-                                    $autoReplies = [];
-                                }
-                            @endphp
-                            @foreach($autoReplies as $index => $autoReply)
-                                <div class="auto-reply-row grid grid-cols-1 gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Фраза <span class="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="auto_replies[{{ $index }}][phrase]"
-                                                value="{{ old("auto_replies.$index.phrase", $autoReply['phrase'] ?? '') }}"
-                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                                placeholder="Например: привет"
-                                                maxlength="500"
-                                            >
-                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                Фраза для поиска в входящем сообщении (без учета регистра)
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Ответ <span class="text-red-500">*</span>
-                                            </label>
-                                            <textarea
-                                                name="auto_replies[{{ $index }}][response]"
-                                                rows="3"
-                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                                placeholder="Текст ответа"
-                                                maxlength="2000"
-                                            >{{ old("auto_replies.$index.response", $autoReply['response'] ?? '') }}</textarea>
-                                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                Текст ответа, который будет отправлен при обнаружении фразы
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-end">
-                                        <button
-                                            type="button"
-                                            onclick="removeAutoReplyRow(this)"
-                                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                        >
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                            </svg>
-                                            Удалить
-                                        </button>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        @error('auto_replies')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                        @error('auto_replies.*')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-            @endif
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Active Status -->
@@ -461,11 +314,10 @@
                             </span>
                     </h2>
                     <div class="flex space-x-2 gap-2">
-                        {{-- Закомментировано: ручное добавление контактов заменено на выбор фильтра --}}
-                        {{-- <button type="button" onclick="addCustomerNumberRow()"
+                        <button type="button" onclick="addCustomerNumberRow()"
                             class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             {{ __('newsletters::app.common.actions.add') }} {{ __('newsletters::app.admin.customer-numbers.title') }}
-                        </button> --}}
+                        </button>
 {{--                        <button type="button" onclick="openCSVImportModal('customers')"--}}
 {{--                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">--}}
 {{--                            {{ __('newsletters::app.common.actions.import') }} CSV--}}
@@ -491,49 +343,6 @@
                 </div>
 
                 <div class="px-6 py-2">
-                    <!-- Contact Group and Filter Selection -->
-                    <div class="mb-6 space-y-4">
-                        <div>
-                            <label for="contact_group_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {{ __('newsletters::app.admin.contact-groups.title') }}
-                            </label>
-                            <select
-                                name="contact_group_id"
-                                id="contact_group_id"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                onchange="loadFiltersForGroup(this.value)"
-                            >
-                                <option value="">{{ __('newsletters::app.common.actions.select') }} {{ __('newsletters::app.admin.contact-groups.title') }}</option>
-                                @if(isset($contactGroups) && $contactGroups->count() > 0)
-                                    @foreach($contactGroups as $group)
-                                        <option value="{{ $group->id }}" {{ (old('contact_group_id', $savedContactGroupId) == $group->id) ? 'selected' : '' }}>
-                                            {{ $group->name }}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                            @error('contact_group_id')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="filter_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {{ __('newsletters::app.admin.contact-filters.title') }}
-                            </label>
-                            <select
-                                name="filter_id"
-                                id="filter_id"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            >
-                                <option value="">{{ __('newsletters::app.common.actions.select') }} {{ __('newsletters::app.admin.contact-filters.title') }}</option>
-                            </select>
-                            @error('filter_id')
-                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
                 <div id="customerNumbersContainer">
                     @forelse($customerNumbers as $index => $customer)
                             <!-- Hidden fields for existing customer data -->
@@ -627,7 +436,6 @@
             </div>
             </div>
 
-            @if($mailingList->channel_type !== 'email')
             <!-- WhatsApp Instances Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -712,53 +520,6 @@
                     </div>
                 </div>
             </div>
-            @endif
-
-            @if($mailingList->channel_type === 'email')
-            <!-- Email Instances Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            {{ __('newsletters::app.admin.mail-instances.title') }}
-                        </h2>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <!-- Select existing mail instances -->
-                    @if(isset($mailInstances) && $mailInstances->count() > 0)
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {{ __('newsletters::app.admin.mail-instances.select-existing') }}
-                        </label>
-                        <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-3 dark:bg-gray-700">
-                            @foreach($mailInstances as $mailInstance)
-                                <label class="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 p-2 rounded">
-                                    <input
-                                        type="checkbox"
-                                        name="mail_instance_ids[]"
-                                        value="{{ $mailInstance->id }}"
-                                        {{ in_array($mailInstance->id, $selectedMailInstanceIds ?? []) ? 'checked' : '' }}
-                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    >
-                                    <span class="text-sm text-gray-700 dark:text-gray-300">
-                                        {{ $mailInstance->name ?: $mailInstance->from_email }} ({{ $mailInstance->host }})
-                                    </span>
-                                </label>
-                            @endforeach
-                        </div>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {{ __('newsletters::app.admin.mail-instances.select-existing-hint') }}
-                        </p>
-                    </div>
-                    @else
-                    <div class="text-center py-8">
-                        <p class="text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.channel-instances.no-instances', ['type' => __('newsletters::app.admin.channel-instances.type.email')]) }}</p>
-                    </div>
-                    @endif
-                </div>
-            </div>
-            @endif
 
         </div>
         </div>
@@ -2274,7 +2035,7 @@
                     const preview = document.getElementById('media_preview');
                     const previewImage = document.getElementById('media_preview_image');
                     const previewVideo = document.getElementById('media_preview_video');
-
+                    
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
@@ -2300,7 +2061,7 @@
             const preview = document.getElementById('media_preview');
             const previewImage = document.getElementById('media_preview_image');
             const previewVideo = document.getElementById('media_preview_video');
-
+            
             if (mediaFileInput) {
                 mediaFileInput.value = '';
             }
@@ -2315,166 +2076,159 @@
             }
         }
 
-        // Auto-reply functions
-        @php
-            $existingAutoReplies = old('auto_replies', $mailingList->auto_replies ?? []);
-            $autoReplyCount = is_array($existingAutoReplies) ? count($existingAutoReplies) : 0;
-        @endphp
-        let autoReplyIndex = {{ $autoReplyCount }};
-
-        function toggleAutoRepliesFields(enabled) {
-            const fields = document.getElementById('autoRepliesFields');
-            if (enabled) {
-                fields.style.display = 'block';
-            } else {
-                fields.style.display = 'none';
-            }
-        }
-
-        function addAutoReplyRow() {
-            const container = document.getElementById('autoRepliesContainer');
-            const newRow = document.createElement('div');
-            newRow.className = 'auto-reply-row grid grid-cols-1 gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg';
-            newRow.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Фраза <span class="text-red-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            name="auto_replies[${autoReplyIndex}][phrase]"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            placeholder="Например: привет"
-                            maxlength="500"
-                        >
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Фраза для поиска в входящем сообщении (без учета регистра)
-                        </p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Ответ <span class="text-red-500">*</span>
-                        </label>
-                        <textarea
-                            name="auto_replies[${autoReplyIndex}][response]"
-                            rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                            placeholder="Текст ответа"
-                            maxlength="2000"
-                        ></textarea>
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Текст ответа, который будет отправлен при обнаружении фразы
-                        </p>
-                    </div>
-                </div>
-                <div class="flex justify-end">
-                    <button
-                        type="button"
-                        onclick="removeAutoReplyRow(this)"
-                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                        Удалить
-                    </button>
-                </div>
-            `;
-            container.appendChild(newRow);
-            autoReplyIndex++;
-        }
-
-        function removeAutoReplyRow(button) {
-            if (confirm('Удалить этот автоответ?')) {
-                button.closest('.auto-reply-row').remove();
-            }
-        }
-
-        // Load filters for selected contact group
-        function loadFiltersForGroup(groupId, selectedFilterId = null) {
-            const filterSelect = document.getElementById('filter_id');
-            if (!filterSelect) return;
-
-            if (!groupId) {
-                filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
-                return;
-            }
-
-            filterSelect.disabled = true;
-            filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.loading") }}...</option>';
-
-            fetch(`/admin/newsletters/contact-groups/${groupId}/filters`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                }
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Filters response data:', data);
-                    const filterSelect = document.getElementById('filter_id');
-                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
-
-                    // Handle different response formats
-                    let filters = [];
-                    if (data.filters) {
-                        // If filters is an array
-                        if (Array.isArray(data.filters)) {
-                            filters = data.filters;
-                        }
-                        // If filters is an object with data property (Laravel collection)
-                        else if (data.filters.data && Array.isArray(data.filters.data)) {
-                            filters = data.filters.data;
-                        }
-                        // If filters is an object, convert to array
-                        else if (typeof data.filters === 'object') {
-                            filters = Object.values(data.filters);
-                        }
-                    }
-
-                    console.log('Processed filters:', filters);
-
-                    if (filters.length > 0) {
-                        filters.forEach(filter => {
-                            const option = document.createElement('option');
-                            option.value = filter.id;
-                            option.textContent = filter.name || filter.name || 'Filter #' + filter.id;
-                            if (selectedFilterId && (filter.id == selectedFilterId || String(filter.id) === String(selectedFilterId))) {
-                                option.selected = true;
-                            }
-                            console.warn('selectedFilterId------',selectedFilterId);
-                            console.warn('filterSelect------',filterSelect);
-                            console.warn('option------',filterSelect, option);
-
-                            filterSelect.appendChild(option);
-                        });
-                    } else {
-                        console.warn('No filters found in response');
-                    }
-
-
-                    filterSelect.disabled = false;
-                })
-                .catch(error => {
-                    console.error('Error loading filters:', error);
-                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.error-loading") }}</option>';
-                    filterSelect.disabled = false;
-                });
-        }
-
-        // Initialize filter loading on page load if contact_group_id is preselected
+        // Инициализация TinyMCE и синхронизация для edit.blade.php
         document.addEventListener('DOMContentLoaded', function() {
-            const contactGroupSelect = document.getElementById('contact_group_id');
-            const savedFilterId = @json(old('filter_id', $savedFilterId ?? null));
+            const channelType = '{{ $mailingList->channel_type ?? 'whatsapp' }}';
+            const messageTextValue = document.getElementById('message_text').value;
 
-            if (contactGroupSelect && contactGroupSelect.value) {
-                loadFiltersForGroup(contactGroupSelect.value, savedFilterId);
+            // Если канал - email, инициализируем TinyMCE
+            if (channelType === 'email') {
+                // Показываем TinyMCE, скрываем обычный textarea
+                document.getElementById('email_editor_wrapper').style.display = 'block';
+                document.getElementById('regular_textarea_wrapper').style.display = 'none';
+
+                // Инициализируем TinyMCE
+                setTimeout(function() {
+                    if (typeof tinymce !== 'undefined') {
+                        // Удаляем существующий редактор, если есть
+                        let existingEditor = tinymce.get('message_text_editor');
+                        if (existingEditor) {
+                            existingEditor.remove();
+                        }
+
+                        setTimeout(function() {
+                            const imageUploadHandler = (blobInfo, progress) => new Promise((resolve, reject) => {
+                                const xhr = new XMLHttpRequest();
+                                xhr.withCredentials = false;
+                                xhr.open('POST', '{{ route('admin.tinymce.upload') }}');
+
+                                xhr.upload.onprogress = (e) => progress((e.loaded / e.total) * 100);
+
+                                xhr.onload = function() {
+                                    if (xhr.status === 403) {
+                                        reject('HTTP Error', { remove: true });
+                                        return;
+                                    }
+
+                                    if (xhr.status < 200 || xhr.status >= 300) {
+                                        reject('HTTP Error');
+                                        return;
+                                    }
+
+                                    const json = JSON.parse(xhr.responseText);
+                                    if (!json || typeof json.location != 'string') {
+                                        reject('Invalid JSON: ' + xhr.responseText);
+                                        return;
+                                    }
+
+                                    resolve(json.location);
+                                };
+
+                                xhr.onerror = () => reject('Upload failed');
+
+                                const formData = new FormData();
+                                formData.append('_token', '{{ csrf_token() }}');
+                                formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                                xhr.send(formData);
+                            });
+
+                            tinymce.init({
+                                selector: '#message_text_editor',
+                                plugins: 'image media wordcount save fullscreen code table lists link',
+                                toolbar1: 'formatselect | bold italic strikethrough forecolor backcolor image alignleft aligncenter alignright alignjustify | link hr |numlist bullist outdent indent  | removeformat | code | table',
+                                image_advtab: true,
+                                height: 400,
+                                relative_urls: false,
+                                menubar: false,
+                                remove_script_host: false,
+                                document_base_url: '{{ asset('/') }}',
+                                skin: document.documentElement.classList.contains('dark') ? 'oxide-dark' : 'oxide',
+                                content_css: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
+                                images_upload_handler: imageUploadHandler,
+                                setup: function(editor) {
+                                    editor.on('init', function() {
+                                        editor.setContent(messageTextValue);
+                                    });
+                                    
+                                    // Синхронизация при изменении содержимого TinyMCE
+                                    editor.on('change keyup input', function() {
+                                        const content = editor.getContent();
+                                        const messageText = document.getElementById('message_text');
+                                        if (messageText) {
+                                            messageText.value = content;
+                                        }
+                                    });
+                                    
+                                    // Синхронизация при программном изменении
+                                    editor.on('SetContent', function() {
+                                        const content = editor.getContent();
+                                        const messageText = document.getElementById('message_text');
+                                        if (messageText) {
+                                            messageText.value = content;
+                                        }
+                                    });
+                                }
+                            });
+                        }, 100);
+                    }
+                }, 200);
+            } else {
+                // Для WhatsApp/Telegram показываем обычный textarea
+                document.getElementById('email_editor_wrapper').style.display = 'none';
+                document.getElementById('regular_textarea_wrapper').style.display = 'block';
+            }
+
+            // Синхронизация при изменении обычного textarea
+            const messageText = document.getElementById('message_text');
+            if (messageText) {
+                messageText.addEventListener('input', function() {
+                    // Если TinyMCE активен, обновляем его содержимое
+                    if (typeof tinymce !== 'undefined') {
+                        const editor = tinymce.get('message_text_editor');
+                        if (editor && !editor.isHidden()) {
+                            const currentContent = editor.getContent();
+                            const newContent = this.value;
+                            // Обновляем только если содержимое действительно изменилось
+                            if (currentContent !== newContent) {
+                                editor.setContent(newContent);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        // Копирование содержимого TinyMCE в textarea перед отправкой формы
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const channelType = '{{ $mailingList->channel_type ?? 'whatsapp' }}';
+            if (channelType === 'email' && typeof tinymce !== 'undefined') {
+                const editor = tinymce.get('message_text_editor');
+                if (editor) {
+                    const content = editor.getContent();
+
+                    // Проверяем, что контент не пустой
+                    const textContent = editor.getContent({format: 'text'}).trim();
+                    if (!textContent) {
+                        e.preventDefault();
+                        alert('Пожалуйста, заполните поле "Текст сообщения"');
+                        editor.focus();
+                        return false;
+                    }
+
+                    // Обновляем значение в textarea, который используется TinyMCE
+                    const editorTextarea = document.getElementById('message_text_editor');
+                    if (editorTextarea) {
+                        editorTextarea.value = content;
+                    }
+
+                    // Копируем значение в скрытое поле
+                    const hiddenMessageText = document.getElementById('message_text');
+                    if (hiddenMessageText) {
+                        hiddenMessageText.removeAttribute('required');
+                        hiddenMessageText.value = content;
+                    }
+                }
             }
         });
 

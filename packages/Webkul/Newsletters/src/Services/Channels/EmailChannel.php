@@ -8,6 +8,7 @@ use Webkul\Newsletters\Models\MailInstance;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Collection;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
 use Symfony\Component\Mailer\Mailer;
@@ -51,6 +52,33 @@ class EmailChannel implements MailingChannelInterface
                 ->to($email)
                 ->subject($this->extractSubject($message))
                 ->html($message);
+
+            // Проверяем наличие медиа файлов в message_links
+            $mailingList = $customer->mailingList;
+            if ($mailingList && $mailingList->message_links && !empty($mailingList->message_links)) {
+                $media = $mailingList->message_links[0];
+                $filePath = $media['path'] ?? null;
+                
+                if ($filePath && Storage::disk('public')->exists($filePath)) {
+                    $fullPath = Storage::disk('public')->path($filePath);
+                    $fileName = $media['original_name'] ?? basename($filePath);
+                    
+                    $emailMessage->attachFromPath($fullPath, $fileName);
+                    
+                    Log::info('Email attachment added', [
+                        'instance_id' => $instance->id,
+                        'customer_id' => $customer->id,
+                        'file_path' => $filePath,
+                        'file_name' => $fileName,
+                    ]);
+                } else {
+                    Log::warning('Email attachment file not found', [
+                        'instance_id' => $instance->id,
+                        'customer_id' => $customer->id,
+                        'file_path' => $filePath,
+                    ]);
+                }
+            }
 
             $mailer->send($emailMessage);
 

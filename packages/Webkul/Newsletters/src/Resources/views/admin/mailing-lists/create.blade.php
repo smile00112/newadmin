@@ -56,7 +56,7 @@
                             {{ __('newsletters::app.admin.mailing-lists.message-text') }}
                             <span class="text-red-500">*</span>
                         </label>
-                        
+
                         <!-- TinyMCE Editor for Email -->
                         <div id="email_editor_wrapper" style="display: none;">
                             <textarea
@@ -70,7 +70,7 @@
                                 selector="textarea#message_text_editor"
                             />
                         </div>
-                        
+
                         <!-- Regular Textarea for WhatsApp/Telegram -->
                         <div id="regular_textarea_wrapper">
                             <textarea
@@ -79,11 +79,11 @@
                                 rows="6"
                                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                                 placeholder="{{ __('newsletters::app.admin.mailing-lists.message-text') }}"
-                                required
+
                             >{{ old('message_text') }}</textarea>
                         </div>
-                        
-                        
+
+
                         @error('message_text')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -241,7 +241,7 @@
                             type="number"
                             name="max_messages_per_instance"
                             id="max_messages_per_instance"
-                            value="{{ old('max_messages_per_instance') }}"
+                            value="{{ old('max_messages_per_instance', 500) }}"
                             min="1"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                             placeholder=""
@@ -724,44 +724,44 @@
                 document.getElementById('email_editor_wrapper').style.display = 'none';
                 document.getElementById('regular_textarea_wrapper').style.display = 'block';
                 // Управление атрибутом required
-                const messageTextEditor = document.getElementById('message_text_editor');
-                const messageText = document.getElementById('message_text');
-                if (messageTextEditor) {
-                    messageTextEditor.removeAttribute('required');
-                }
-                if (messageText) {
-                    messageText.setAttribute('required', 'required');
-                }
+                // const messageTextEditor = document.getElementById('message_text_editor');
+                // const messageText = document.getElementById('message_text');
+                // if (messageTextEditor) {
+                //     messageTextEditor.removeAttribute('required');
+                // }
+                // if (messageText) {
+                //     messageText.setAttribute('required', 'required');
+                // }
             } else if (channelType === 'email') {
                 document.getElementById('emailInstancesSection').classList.remove('hidden');
                 // Copy value from regular textarea to TinyMCE textarea before switching
                 const regularValue = document.getElementById('message_text').value;
-                
+
                 // Destroy existing TinyMCE editor if it exists
                 if (typeof tinymce !== 'undefined' && tinymce.get('message_text_editor')) {
                     tinymce.get('message_text_editor').remove();
                 }
-                
+
                 // Show TinyMCE, hide regular textarea
                 document.getElementById('email_editor_wrapper').style.display = 'block';
                 document.getElementById('regular_textarea_wrapper').style.display = 'none';
-                
+
                 // Управление атрибутом required
-                const messageTextEditor = document.getElementById('message_text_editor');
-                const messageText = document.getElementById('message_text');
-                if (messageTextEditor) {
-                    messageTextEditor.setAttribute('required', 'required');
-                }
-                if (messageText) {
-                    messageText.removeAttribute('required');
-                }
-                
+                // const messageTextEditor = document.getElementById('message_text_editor');
+                // const messageText = document.getElementById('message_text');
+                // if (messageTextEditor) {
+                //     messageTextEditor.setAttribute('required', 'required');
+                // }
+                // if (messageText) {
+                //     messageText.removeAttribute('required');
+                // }
+
                 // Set value in textarea
                 const editorTextarea = document.getElementById('message_text_editor');
                 if (editorTextarea) {
                     editorTextarea.value = regularValue;
                 }
-                
+
                 // Force reinitialize TinyMCE - always reinitialize to ensure it works
                 // Wait a bit for DOM to update and Vue component to potentially mount
                 setTimeout(function() {
@@ -771,7 +771,7 @@
                         if (existingEditor) {
                             existingEditor.remove();
                         }
-                        
+
                         // Wait a bit more before initializing
                         setTimeout(function() {
                             // Initialize TinyMCE with same config as Vue component
@@ -779,38 +779,38 @@
                                 const xhr = new XMLHttpRequest();
                                 xhr.withCredentials = false;
                                 xhr.open('POST', '{{ route('admin.tinymce.upload') }}');
-                                
+
                                 xhr.upload.onprogress = (e) => progress((e.loaded / e.total) * 100);
-                                
+
                                 xhr.onload = function() {
                                     if (xhr.status === 403) {
                                         reject('HTTP Error', { remove: true });
                                         return;
                                     }
-                                    
+
                                     if (xhr.status < 200 || xhr.status >= 300) {
                                         reject('HTTP Error');
                                         return;
                                     }
-                                    
+
                                     const json = JSON.parse(xhr.responseText);
                                     if (!json || typeof json.location != 'string') {
                                         reject('Invalid JSON: ' + xhr.responseText);
                                         return;
                                     }
-                                    
+
                                     resolve(json.location);
                                 };
-                                
+
                                 xhr.onerror = () => reject('Upload failed');
-                                
+
                                 const formData = new FormData();
                                 formData.append('_token', '{{ csrf_token() }}');
                                 formData.append('file', blobInfo.blob(), blobInfo.filename());
-                                
+
                                 xhr.send(formData);
                             });
-                            
+
                             tinymce.init({
                                 selector: '#message_text_editor',
                                 plugins: 'image media wordcount save fullscreen code table lists link',
@@ -827,6 +827,24 @@
                                 setup: function(editor) {
                                     editor.on('init', function() {
                                         editor.setContent(regularValue);
+                                    });
+                                    
+                                    // Синхронизация при изменении содержимого TinyMCE
+                                    editor.on('change keyup input', function() {
+                                        const content = editor.getContent();
+                                        const messageText = document.getElementById('message_text');
+                                        if (messageText) {
+                                            messageText.value = content;
+                                        }
+                                    });
+                                    
+                                    // Синхронизация при программном изменении
+                                    editor.on('SetContent', function() {
+                                        const content = editor.getContent();
+                                        const messageText = document.getElementById('message_text');
+                                        if (messageText) {
+                                            messageText.value = content;
+                                        }
                                     });
                                 }
                             });
@@ -845,25 +863,54 @@
                 document.getElementById('email_editor_wrapper').style.display = 'none';
                 document.getElementById('regular_textarea_wrapper').style.display = 'block';
                 // Управление атрибутом required
-                const messageTextEditor = document.getElementById('message_text_editor');
-                const messageText = document.getElementById('message_text');
-                if (messageTextEditor) {
-                    messageTextEditor.removeAttribute('required');
-                }
-                if (messageText) {
-                    messageText.setAttribute('required', 'required');
-                }
+                // const messageTextEditor = document.getElementById('message_text_editor');
+                // const messageText = document.getElementById('message_text');
+                // if (messageTextEditor) {
+                //     messageTextEditor.removeAttribute('required');
+                // }
+                // if (messageText) {
+                //     messageText.setAttribute('required', 'required');
+                // }
             }
         }
-        
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             const channelType = document.getElementById('channel_type').value;
             if (channelType) {
                 toggleChannelInstances(channelType);
             }
+
+            // Убираем required у textarea для email после инициализации TinyMCE
+            setTimeout(function() {
+                if (document.getElementById('channel_type').value === 'email') {
+                    const editorTextarea = document.getElementById('message_text_editor');
+                    if (editorTextarea) {
+                        editorTextarea.removeAttribute('required');
+                    }
+                }
+            }, 500);
+            
+            // Синхронизация при изменении обычного textarea
+            const messageText = document.getElementById('message_text');
+            if (messageText) {
+                messageText.addEventListener('input', function() {
+                    // Если TinyMCE активен, обновляем его содержимое
+                    if (typeof tinymce !== 'undefined') {
+                        const editor = tinymce.get('message_text_editor');
+                        if (editor && !editor.isHidden()) {
+                            const currentContent = editor.getContent();
+                            const newContent = this.value;
+                            // Обновляем только если содержимое действительно изменилось
+                            if (currentContent !== newContent) {
+                                editor.setContent(newContent);
+                            }
+                        }
+                    }
+                });
+            }
         });
-        
+
         // Copy TinyMCE content to textarea before form submit
         document.querySelector('form').addEventListener('submit', function(e) {
             const channelType = document.getElementById('channel_type').value;
@@ -871,12 +918,22 @@
                 const editor = tinymce.get('message_text_editor');
                 if (editor) {
                     const content = editor.getContent();
+
+                    // Проверяем, что контент не пустой
+                    const textContent = editor.getContent({format: 'text'}).trim();
+                    if (!textContent) {
+                        e.preventDefault();
+                        alert('Пожалуйста, заполните поле "Текст сообщения"');
+                        editor.focus();
+                        return false;
+                    }
+
                     // Обновляем значение в textarea, который используется TinyMCE
                     const editorTextarea = document.getElementById('message_text_editor');
                     if (editorTextarea) {
                         editorTextarea.value = content;
                     }
-                    
+
                     // Убираем required и копируем значение в скрытое поле
                     const hiddenMessageText = document.getElementById('message_text');
                     if (hiddenMessageText) {

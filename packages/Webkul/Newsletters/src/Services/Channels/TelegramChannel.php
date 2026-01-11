@@ -41,6 +41,54 @@ class TelegramChannel implements MailingChannelInterface
                 'message_preview' => mb_substr($message, 0, 200),
             ]);
 
+            // Проверяем наличие медиа файлов в message_links
+            $mailingList = $customer->mailingList;
+            if ($mailingList && $mailingList->message_links && !empty($mailingList->message_links)) {
+                $media = $mailingList->message_links[0];
+                $fileUrl = $media['url'] ?? null;
+                
+                if ($fileUrl) {
+                    // Если URL относительный, делаем его абсолютным
+                    if (!preg_match('/^https?:\/\//', $fileUrl)) {
+                        $fileUrl = url($fileUrl);
+                    }
+                    
+                    $mediaType = $media['type'] ?? 'document';
+                    $mimeType = $media['mime_type'] ?? '';
+                    
+                    // Определяем, является ли файл изображением
+                    $isImage = $mediaType === 'image' || strpos($mimeType, 'image/') === 0;
+                    
+                    // Отправляем медиа файл с текстом сообщения как подписью
+                    if ($isImage) {
+                        $messageId = $this->sendPhoto($instance, $chatId, $fileUrl, $message);
+                    } else {
+                        $messageId = $this->sendDocument($instance, $chatId, $fileUrl, $message);
+                    }
+                    
+                    if ($messageId) {
+                        Log::info('Telegram media sent successfully', [
+                            'instance_id' => $instance->id,
+                            'customer_id' => $customer->id,
+                            'chat_id' => $chatId,
+                            'message_id' => $messageId,
+                            'media_type' => $mediaType,
+                            'media_url' => $fileUrl,
+                        ]);
+                        
+                        return (string) $messageId;
+                    } else {
+                        Log::warning('Telegram media sending failed, falling back to text message', [
+                            'instance_id' => $instance->id,
+                            'customer_id' => $customer->id,
+                            'chat_id' => $chatId,
+                        ]);
+                        // Продолжаем отправку текстового сообщения как fallback
+                    }
+                }
+            }
+
+            // Отправляем обычное текстовое сообщение
             $response = Http::post(self::TELEGRAM_API_URL . $instance->bot_token . '/sendMessage', [
                 'chat_id' => $chatId,
                 'text' => $message,
