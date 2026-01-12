@@ -66,15 +66,12 @@
                                title="{{ __('admin::app.datagrid.edit') }}">
                                 <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-edit"></span>
                             </a>
-                            <form method="POST" action="{{ route('admin.newsletters.registration-requests.destroy', $request->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.registration-requests.delete-confirm') }}')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                        title="{{ __('admin::app.datagrid.delete') }}">
-                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-trash"></span>
-                                </button>
-                            </form>
+                            <button type="button"
+                                    onclick="deleteRequest({{ $request->id }})"
+                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                    title="{{ __('admin::app.datagrid.delete') }}">
+                                <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-delete"></span>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -88,6 +85,43 @@
             </tbody>
         </table>
     </div>
+
+    <script>
+        function deleteRequest(id) {
+            if (confirm('{{ __('newsletters::app.admin.registration-requests.delete-confirm') }}')) {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                if (!csrfToken) {
+                    alert('Security token not found. Please refresh the page.');
+                    return;
+                }
+
+                fetch('{{ route('admin.newsletters.registration-requests.destroy', ':id') }}'.replace(':id', id), {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('{{ __('newsletters::app.admin.registration-requests.delete-failed') }}');
+                });
+            }
+        }
+    </script>
 </x-admin::layouts>
 
 

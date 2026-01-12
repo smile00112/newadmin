@@ -51,7 +51,7 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $company->created_at->format('Y-m-d H:i') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex items-center gap-x-2.5">
-                            <a href="{{ route('admin.newsletters.companies.edit', $company->id) }}" 
+                            <a href="{{ route('admin.newsletters.companies.edit', $company->id) }}"
                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                title="{{ __('admin::app.datagrid.edit') }}">
                                 <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-edit"></span>
@@ -59,10 +59,10 @@
                             <form method="POST" action="{{ route('admin.newsletters.companies.destroy', $company->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.companies.delete-confirm') }}')" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" 
+                                <button type="submit"
                                         class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                         title="{{ __('admin::app.datagrid.delete') }}">
-                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-trash"></span>
+                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-delete"></span>
                                 </button>
                             </form>
                         </div>
