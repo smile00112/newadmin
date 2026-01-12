@@ -27,7 +27,10 @@ class WelcomeAdminNotification extends Mailable
     {
         return new Envelope(
             to: new Address($this->admin->email, $this->admin->name),
-            from: new Address('support@targetx.su', 'TargetX'),
+            from: new Address(
+                config('mail.from.address', 'support@targetx.su'),
+                config('mail.from.name', 'TargetX')
+            ),
             subject: 'Добро пожаловать в TargetX!',
         );
     }
