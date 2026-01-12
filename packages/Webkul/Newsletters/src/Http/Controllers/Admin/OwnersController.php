@@ -515,10 +515,22 @@ class OwnersController extends Controller
             abort(404, trans('newsletters::app.admin.owners.not-found'));
         }
 
-        try {
-            Log::error('resend registration email: ' , [
-                'owner' => $owner,
+        // Валидация email адреса перед отправкой
+        if (empty($owner->email) || !filter_var($owner->email, FILTER_VALIDATE_EMAIL)) {
+            Log::error('Failed to resend registration email: Invalid or empty email address', [
+                'admin_id' => $owner->id,
+                'admin_email' => $owner->email,
+                'admin_name' => $owner->name,
             ]);
+
+            session()->flash('error', trans('newsletters::app.admin.owners.email-invalid', [
+                'email' => $owner->email ?? 'empty'
+            ]));
+
+            return redirect()->route('admin.newsletters.owners.index');
+        }
+
+        try {
             // Отправляем копию приветственного письма
             // Используем placeholder для пароля, так как оригинальный пароль недоступен
 
@@ -530,7 +542,8 @@ class OwnersController extends Controller
             Log::error('Failed to resend registration email: ' . $mailException->getMessage(), [
                 'trace' => $mailException->getTraceAsString(),
                 'admin_id' => $owner->id,
-                'admin_email' => $owner->email
+                'admin_email' => $owner->email,
+                'admin_name' => $owner->name,
             ]);
 
             session()->flash('error', trans('newsletters::app.admin.owners.email-resent-failed'));

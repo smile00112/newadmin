@@ -25,8 +25,18 @@ class WelcomeAdminNotification extends Mailable
      */
     public function envelope(): Envelope
     {
+        // Убеждаемся, что email валиден перед созданием Address
+        $email = $this->admin->email ?? '';
+        $name = $this->admin->name ?? '';
+
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException("Invalid email address: " . ($email ?: 'empty'));
+        }
+
         return new Envelope(
-            to: new Address($this->admin->email, $this->admin->name),
+            to: [
+                new Address($email, $name),
+            ],
             from: new Address(
                 config('mail.from.address', 'support@targetx.su'),
                 config('mail.from.name', 'TargetX')
