@@ -38,7 +38,7 @@ class OwnersController extends Controller
     protected function getContext(): array
     {
         $admin = auth()->guard('admin')->user();
-        
+
         // Супер-админ (без company_id)
         if (!$admin->company_id && $admin->role && $admin->role->permission_type === 'all') {
             return [
@@ -49,7 +49,7 @@ class OwnersController extends Controller
                 'can_resend_email' => true,
             ];
         }
-        
+
         // Владелец компании
         if ($admin->company_id && $this->isCompanyOwner()) {
             return [
@@ -61,7 +61,7 @@ class OwnersController extends Controller
                 'can_resend_email' => false,
             ];
         }
-        
+
         abort(403);
     }
 
@@ -76,7 +76,7 @@ class OwnersController extends Controller
         if ($context['type'] === 'super_admin') {
             // Для супер-админов показываем всех пользователей компаний (владельцев и менеджеров)
             $this->requireNewsletterPermission('newsletters.owners.view');
-            
+
             $users = $this->adminRepository
                 ->whereNotNull('company_id')
                 ->with(['role', 'company'])
@@ -84,7 +84,7 @@ class OwnersController extends Controller
         } else {
             // Для владельцев компаний показываем менеджеров
             $this->requireNewsletterPermission('newsletters.managers');
-            
+
             $users = $this->adminRepository
                 ->where('company_id', $admin->company_id)
                 ->where('id', '!=', $admin->id) // Исключить текущего админа
@@ -105,31 +105,31 @@ class OwnersController extends Controller
     public function create()
     {
         $context = $this->getContext();
-        
+
         if ($context['type'] === 'super_admin') {
             $this->requireNewsletterPermission('newsletters.owners.create');
-            
+
             // Получить все компании для выбора
             $companies = $this->companyRepository->all();
-            
+
             // Получить все роли (включая владельцев и менеджеров), исключая роли администраторов (ID 1 и 2)
             $roles = $this->roleRepository
                 ->whereNotIn('id', [1, 2])
                 ->get();
-            
-            $defaultRole = $roles->firstWhere('name', 'Владелец компании') 
+
+            $defaultRole = $roles->firstWhere('name', 'Владелец компании')
                         ?? $roles->firstWhere('permission_type', 'all');
         } else {
             $this->requireNewsletterPermission('newsletters.managers.create');
-            
+
             $companies = null;
-            
+
             // Получить роли для менеджеров (исключая "Владелец компании")
             $roles = $this->roleRepository
                 ->where('permission_type', 'custom')
                 ->where('name', '!=', 'Владелец компании')
                 ->get();
-            
+
             $defaultRole = $roles->firstWhere('name', 'Менеджер рассылок');
         }
 
@@ -279,7 +279,7 @@ class OwnersController extends Controller
             // Продолжаем выполнение, даже если уведомления не отправились
         }
 
-        $message = $context['type'] === 'super_admin' 
+        $message = $context['type'] === 'super_admin'
             ? trans('newsletters::app.admin.owners.create-success')
             : trans('newsletters::app.admin.managers.create-success');
 
@@ -426,7 +426,7 @@ class OwnersController extends Controller
             }
         } else {
             $admin = auth()->guard('admin')->user();
-            
+
             // Проверка, что пользователь принадлежит той же компании
             if ($user->company_id !== $admin->company_id) {
                 abort(403, trans('newsletters::app.admin.errors.different-company'));
@@ -453,7 +453,7 @@ class OwnersController extends Controller
     public function topup(Request $request, int $id)
     {
         $context = $this->getContext();
-        
+
         if ($context['type'] !== 'super_admin') {
             abort(403);
         }
@@ -463,8 +463,8 @@ class OwnersController extends Controller
         $owner = $this->adminRepository->findOrFail($id);
 
         // Проверка, что это владелец компании
-        if (!$owner->role || 
-            ($owner->role->name !== 'Владелец компании' && $owner->role->permission_type !== 'all') || 
+        if (!$owner->role ||
+            ($owner->role->name !== 'Владелец компании' && $owner->role->permission_type !== 'all') ||
             !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
         }
@@ -499,7 +499,7 @@ class OwnersController extends Controller
     public function resendRegistrationEmail(int $id)
     {
         $context = $this->getContext();
-        
+
         if ($context['type'] !== 'super_admin') {
             abort(403);
         }
@@ -509,13 +509,16 @@ class OwnersController extends Controller
         $owner = $this->adminRepository->findOrFail($id);
 
         // Проверка, что это владелец компании
-        if (!$owner->role || 
-            ($owner->role->name !== 'Владелец компании' && $owner->role->permission_type !== 'all') || 
+        if (!$owner->role ||
+            ($owner->role->name !== 'Владелец компании' && $owner->role->permission_type !== 'all') ||
             !$owner->company_id) {
             abort(404, trans('newsletters::app.admin.owners.not-found'));
         }
 
         try {
+            Log::error('resend registration email: ' , [
+                'owner' => $owner,
+            ]);
             // Отправляем копию приветственного письма
             // Используем placeholder для пароля, так как оригинальный пароль недоступен
 
@@ -604,13 +607,13 @@ class OwnersController extends Controller
     public function updatePermissions(Request $request, int $id)
     {
         $context = $this->getContext();
-        
+
         if ($context['type'] !== 'company_owner') {
             abort(403);
         }
 
         $this->requireNewsletterPermission('newsletters.managers.edit');
-        
+
         $admin = auth()->guard('admin')->user();
         $user = $this->adminRepository->findOrFail($id);
 
@@ -622,12 +625,12 @@ class OwnersController extends Controller
         // Обновить разрешения роли
         $role = $user->role;
         $permissions = $request->input('permissions', []);
-        
+
         // Фильтровать только разрешения newsletters
         $newsletterPermissions = array_filter($permissions, function($permission) {
             return strpos($permission, 'newsletters.') === 0;
         });
-        
+
         $role->permissions = array_values($newsletterPermissions);
         $role->save();
 
@@ -642,7 +645,7 @@ class OwnersController extends Controller
     public function impersonate(int $id)
     {
         $context = $this->getContext();
-        
+
         if ($context['type'] !== 'super_admin') {
             abort(403);
         }
