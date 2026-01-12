@@ -28,6 +28,10 @@ class NewUserNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(
+                config('mail.from.address', 'support@targetx.su'),
+                config('mail.from.name', 'TargetX')
+            ),
             subject: 'Новый пользователь зарегистрирован в системе',
         );
     }
