@@ -89,12 +89,32 @@ class MenuItem
         if( !empty($_GET['ingredient']) && strpos($this->getUrl(), 'admin/catalog/ingredients') !== false){
             return true;
         }
-        if (request()->fullUrlIs($this->getUrl().'*')) {
+
+        // Более надежная проверка через имя маршрута
+        $currentRoute = request()->route()?->getName();
+        $menuRoute = $this->getRoute();
+
+        if ($currentRoute === $menuRoute) {
             /*TODO refactor*/
             if(!empty($_GET['ingredient']) && strpos($this->getUrl(), 'admin/catalog/products') !== false){
                 return false;
             }
+            return true;
+        }
 
+        // Fallback: проверка по пути (без домена) - более надежно чем fullUrlIs
+        $currentPath = request()->path();
+        $menuPath = parse_url($this->getUrl(), PHP_URL_PATH);
+
+        // Убираем начальный слэш для сравнения
+        $menuPath = ltrim($menuPath, '/');
+        $currentPath = ltrim($currentPath, '/');
+
+        if ($menuPath && str_starts_with($currentPath, $menuPath)) {
+            /*TODO refactor*/
+            if(!empty($_GET['ingredient']) && strpos($this->getUrl(), 'admin/catalog/products') !== false){
+                return false;
+            }
             return true;
         }
 
