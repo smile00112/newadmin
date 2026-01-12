@@ -82,17 +82,17 @@
                                 onclick="toggleStatus({{ $user->id }})"
                                 class="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
                                 title="{{ __('newsletters::app.admin.owners.status') }}">
-                                <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-{{ $user->status ? 'cancel' : 'check' }}"></span>
+                                <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-{{ $user->status ? 'cancel' : 'checked' }}"></span>
                             </button>
-                            <form method="POST" action="{{ route('admin.newsletters.owners.delete', $user->id) }}" onsubmit="return confirm('{{ $context['type'] === 'super_admin' ? __('newsletters::app.admin.owners.delete-confirm') : __('newsletters::app.admin.managers.delete-confirm') }}')" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                        title="{{ __('admin::app.datagrid.delete') }}">
-                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-delete"></span>
-                                </button>
-                            </form>
+{{--                            <form method="POST" action="{{ route('admin.newsletters.owners.delete', $user->id) }}" onsubmit="return confirm('{{ $context['type'] === 'super_admin' ? __('newsletters::app.admin.owners.delete-confirm') : __('newsletters::app.admin.managers.delete-confirm') }}')" class="inline">--}}
+{{--                                @csrf--}}
+{{--                                @method('DELETE')--}}
+{{--                                <button type="submit"--}}
+{{--                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"--}}
+{{--                                        title="{{ __('admin::app.datagrid.delete') }}">--}}
+{{--                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-delete"></span>--}}
+{{--                                </button>--}}
+{{--                            </form>--}}
                         </div>
                     </td>
                 </tr>

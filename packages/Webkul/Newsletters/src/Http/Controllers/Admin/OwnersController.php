@@ -517,10 +517,8 @@ class OwnersController extends Controller
 
             // Нельзя удалить самого себя
             if ($user->id === $admin->id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => trans('newsletters::app.admin.owners.cannot-delete-self'),
-                ], 403);
+                session()->flash('error', trans('newsletters::app.admin.owners.cannot-delete-self'));
+                return redirect()->route('admin.newsletters.owners.index');
             }
 
             try {
@@ -528,15 +526,9 @@ class OwnersController extends Controller
                 $user->status = 0;
                 $user->save();
 
-                return response()->json([
-                    'success' => true,
-                    'message' => trans('newsletters::app.admin.owners.delete-success'),
-                ]);
+                session()->flash('success', trans('newsletters::app.admin.owners.delete-success'));
             } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => trans('newsletters::app.admin.owners.delete-failed'),
-                ], 500);
+                session()->flash('error', trans('newsletters::app.admin.owners.delete-failed'));
             }
         } else {
             $this->requireNewsletterPermission('newsletters.managers.delete');
@@ -559,15 +551,13 @@ class OwnersController extends Controller
             try {
                 $this->adminRepository->delete($id);
 
-                return response()->json([
-                    'message' => trans('newsletters::app.admin.managers.delete-success'),
-                ]);
+                session()->flash('success', trans('newsletters::app.admin.managers.delete-success'));
             } catch (\Exception $e) {
-                return response()->json([
-                    'message' => trans('newsletters::app.admin.managers.delete-failed'),
-                ], 500);
+                session()->flash('error', trans('newsletters::app.admin.managers.delete-failed'));
             }
         }
+
+        return redirect()->route('admin.newsletters.owners.index');
     }
 
     /**

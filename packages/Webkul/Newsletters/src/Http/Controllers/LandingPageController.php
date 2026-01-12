@@ -113,11 +113,11 @@ class LandingPageController
             // Генерируем случайный пароль
             $password = Str::random(12);
 
-            // Получаем роль с permission_type 'all' (роль для owners)
-            $ownerRole = $this->roleRepository->findOneWhere(['permission_type' => 'all']);
+            // Получаем роль "Владелец компании"
+            $ownerRole = $this->roleRepository->findOneWhere(['name' => 'Владелец компании']);
 
             if (!$ownerRole) {
-                Log::error('Owner role not found (role with permission_type "all")');
+                Log::error('Owner role not found (role with name "Владелец компании")');
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка конфигурации системы. Пожалуйста, обратитесь к администратору.'
