@@ -494,7 +494,7 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
+{{--    <!-- Header -->
     <header>
         <nav class="container">
             <div class="logo">
@@ -696,7 +696,7 @@
             </form>
         </div>
     </div>
-
+--}}
     <script>
         const modal = document.getElementById('registrationModal');
         const form = document.getElementById('registrationForm');

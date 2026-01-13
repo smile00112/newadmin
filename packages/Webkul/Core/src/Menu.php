@@ -62,6 +62,8 @@ class Menu
                             if (!$admin || !$admin->role) {
                                 return false;
                             }
+
+                            echo $admin->role->name. ' - ';
                             // Показываем только для роли "Admin", не для owner
                             // Проверяем, что роль загружена и имеет свойство name
                             if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
@@ -163,11 +165,11 @@ class Menu
                 if (!is_array($value)) {
                     return false;
                 }
-                
+
                 // Проверяем наличие обязательных полей
-                return isset($value['key']) 
-                    && isset($value['name']) 
-                    && isset($value['route']) 
+                return isset($value['key'])
+                    && isset($value['name'])
+                    && isset($value['route'])
                     && isset($value['sort']);
             })
             ->map(function ($subMenuItem) {

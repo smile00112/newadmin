@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $page->meta_title ?? $page->page_title ?? 'Сервис рассылки' }}</title>
-    
+
     @if($page->meta_description)
     <meta name="description" content="{{ $page->meta_description }}">
     @endif
-    
+
     @if($page->meta_keywords)
     <meta name="keywords" content="{{ $page->meta_keywords }}">
     @endif
@@ -420,41 +420,41 @@
 </head>
 <body class="cms-info-page">
     <!-- Header -->
-    <header>
-        <nav class="container">
-            <div class="logo">
-                <a href="/" class="flex-shrink-0">
-                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin">
-                </a>
-            </div>
-            <ul class="nav-links">
-                <li><a href="/#features">Возможности</a></li>
-                <li><a href="/#benefits">Преимущества</a></li>
-                <li><a href="/#pricing">Тарифы</a></li>
-            </ul>
-            <button class="btn-primary" onclick="openModal()">Начать</button>
-        </nav>
-    </header>
-
-    <!-- CMS Content -->
-    <div class="container">
-        <div class="cms-content">
-            {!! $page->html_content !!}
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer>
+{{--    <header>--}}
+{{--        <nav class="container">--}}
+{{--            <div class="logo">--}}
+{{--                <a href="/" class="flex-shrink-0">--}}
+{{--                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin">--}}
+{{--                </a>--}}
+{{--            </div>--}}
+{{--            <ul class="nav-links">--}}
+{{--                <li><a href="/#features">Возможности</a></li>--}}
+{{--                <li><a href="/#benefits">Преимущества</a></li>--}}
+{{--                <li><a href="/#pricing">Тарифы</a></li>--}}
+{{--            </ul>--}}
+{{--            <button class="btn-primary" onclick="openModal()">Начать</button>--}}
+{{--        </nav>--}}
+{{--    </header>--}}
+    {{--
+        <!-- CMS Content -->
         <div class="container">
-            <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
+            <div class="cms-content">
+                {!! $page->html_content !!}
             </div>
-            <p>&copy; 2025 TargetX. Все права защищены.</p>
         </div>
-    </footer>
 
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
+                    <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
+                    <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
+                </div>
+                <p>&copy; 2025 TargetX. Все права защищены.</p>
+            </div>
+        </footer>
+    --}}
     <!-- Registration Modal -->
     <div id="registrationModal" class="modal">
         <div class="modal-content">
