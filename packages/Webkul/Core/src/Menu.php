@@ -95,6 +95,18 @@ class Menu
                             }
                             return bouncer()->hasPermission($item['key']);
                         }
+                        // Для пункта "cms" проверяем роль
+                        if ($item['key'] === 'cms' || str_starts_with($item['key'], 'cms.')) {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role) {
+                                return false;
+                            }
+                            // Показываем только для роли "Admin"
+                            if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
+                                return false;
+                            }
+                            return bouncer()->hasPermission($item['key']);
+                        }
                         return bouncer()->hasPermission($item['key']);
                     })
                     ->toArray();
