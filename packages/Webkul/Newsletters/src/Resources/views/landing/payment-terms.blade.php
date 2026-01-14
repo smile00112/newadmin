@@ -163,7 +163,7 @@
         <div class="footer-links">
             <a href="/">Условия оплаты</a>
             <a href="/">Политика конфиденциальности</a>
-            <a href="/">Оферта</a>
+            <a href="{{ route('shop.cms.page', 'oferta') }}">Оферта</a>
         </div>
         <p>&copy; 2025 {{ config('app.name') }}. Все права защищены.</p>
     </footer>

@@ -746,10 +746,20 @@ return [
         'route' => 'admin.settings.users.delete',
         'sort'  => 3,
     ], [
+        'key'   => 'settings.registration-notifications',
+        'name'  => 'admin::app.acl.registration-notifications',
+        'route' => 'admin.settings.registration-notifications.index',
+        'sort'  => 7,
+    ], [
+        'key'   => 'settings.registration-notifications.edit',
+        'name'  => 'admin::app.acl.edit',
+        'route' => 'admin.settings.registration-notifications.update',
+        'sort'  => 1,
+    ], [
         'key'   => 'settings.roles',
         'name'  => 'admin::app.acl.roles',
         'route' => 'admin.settings.roles.index',
-        'sort'  => 7,
+        'sort'  => 8,
     ], [
         'key'   => 'settings.roles.create',
         'name'  => 'admin::app.acl.create',

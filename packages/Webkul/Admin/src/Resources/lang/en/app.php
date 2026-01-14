@@ -3442,6 +3442,19 @@ return [
             'update-success'     => 'User updated successfully.',
         ],
 
+        'registration-notifications' => [
+            'index' => [
+                'title'            => 'Registration Notifications',
+                'description'      => 'Configure email addresses to receive notifications about new registration requests.',
+                'emails-label'     => 'Email Addresses',
+                'emails-placeholder' => 'Enter email addresses separated by commas (e.g., admin@example.com, support@example.com)',
+                'emails-help'      => 'Enter one or more email addresses separated by commas. These emails will receive notifications when new registration requests are submitted.',
+                'save-btn'         => 'Save Settings',
+                'update-success'   => 'Registration notification settings updated successfully.',
+                'invalid-email'     => 'The email address :email is invalid.',
+            ],
+        ],
+
         'roles' => [
             'index' => [
                 'create-btn' => 'Create Role',
@@ -4768,6 +4781,7 @@ return [
                 'products'                 => 'Products',
                 'promotions'               => 'Promotions',
                 'refunds'                  => 'Refunds',
+                'registration-notifications' => 'Registration Notifications',
                 'reporting'                => 'Reporting',
                 'reviews'                  => 'Reviews',
                 'roles'                    => 'Roles',
@@ -5021,6 +5035,7 @@ return [
         'products'                 => 'Products',
         'promotions'               => 'Promotions',
         'refunds'                  => 'Refunds',
+        'registration-notifications' => 'Registration Notifications',
         'reporting'                => 'Reporting',
         'reviews'                  => 'Reviews',
         'roles'                    => 'Roles',

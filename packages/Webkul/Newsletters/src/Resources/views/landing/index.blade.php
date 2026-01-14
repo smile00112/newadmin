@@ -646,7 +646,7 @@
             <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
                 <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
                 <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
+                <a href="{{ route('shop.cms.page', 'oferta') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
             </div>
             <p>&copy; 2025 TargetX. Все права защищены.</p>
         </div>

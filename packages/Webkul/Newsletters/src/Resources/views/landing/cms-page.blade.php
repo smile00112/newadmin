@@ -15,7 +15,7 @@
     @endif
 
     <style>
-        /* Bagisto Shop Icon Font */
+        /* Bagisto Shop Icon Font 33333333333*/
         @font-face {
             font-family: "bagisto-shop";
             src: url("{{ asset('themes/shop/default/build/assets/bagisto-shop-BHAKyv0r.woff') }}") format("woff");
@@ -88,21 +88,6 @@
             color: #2563eb;
         }
 
-        .logo a {
-            display: inline-block;
-        }
-
-        .logo img {
-            height: 32px;
-            width: auto;
-        }
-
-        @media (min-width: 640px) {
-            .logo img {
-                height: 40px;
-            }
-        }
-
         .nav-links {
             display: flex;
             gap: 30px;
@@ -168,6 +153,207 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 100px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background: #f9fafb;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 40px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            color: #1a1a1a;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: #e0e7ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #2563eb;
+        }
+
+        .benefit-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: inline-block;
+            font-size: 50px;
+            line-height: normal;
+        }
+
+        .feature-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+
+        .feature-card p {
+            color: #6b7280;
+            line-height: 1.7;
+        }
+
+        /* Benefits Section */
+        .benefits {
+            padding: 80px 0;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .benefit-item {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .benefit-item h3 {
+            font-size: 20px;
+            margin: 15px 0 10px;
+            color: #1a1a1a;
+        }
+
+        .benefit-item p {
+            color: #6b7280;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 80px 0;
+            background: #f9fafb;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid #2563eb;
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured::before {
+            content: 'Популярный';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2563eb;
+            color: white;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pricing-plan {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+        }
+
+        .pricing-price {
+            font-size: 48px;
+            font-weight: 800;
+            color: #2563eb;
+            margin: 20px 0;
+        }
+
+        .pricing-price span {
+            font-size: 20px;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 30px 0;
+        }
+
+        .pricing-features li {
+            padding: 10px 0;
+            color: #4b5563;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 10px;
         }
 
         /* Footer */
@@ -298,144 +484,42 @@
         }
 
         @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
             .nav-links {
                 display: none;
             }
-        }
 
-        /* Стили для информационных страниц */
-        body.cms-info-page ul {
-            padding-left: 40px;
-        }
-
-        /* CMS Content Styles */
-        .cms-content {
-            padding: 40px 0;
-            min-height: 60vh;
-        }
-
-        .cms-content h1,
-        .cms-content h2,
-        .cms-content h3,
-        .cms-content h4,
-        .cms-content h5,
-        .cms-content h6 {
-            margin-top: 30px;
-            margin-bottom: 15px;
-            font-weight: 700;
-            color: #1a1a1a;
-        }
-
-        .cms-content h1 {
-            font-size: 36px;
-        }
-
-        .cms-content h2 {
-            font-size: 30px;
-        }
-
-        .cms-content h3 {
-            font-size: 24px;
-        }
-
-        .cms-content p {
-            margin-bottom: 15px;
-            line-height: 1.7;
-        }
-
-        .cms-content ul,
-        .cms-content ol {
-            margin-bottom: 20px;
-        }
-
-        .cms-content li {
-            margin-bottom: 8px;
-        }
-
-        .cms-content a {
-            color: #2563eb;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .cms-content a:hover {
-            color: #1d4ed8;
-            text-decoration: underline;
-        }
-
-        .cms-content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .cms-content blockquote {
-            border-left: 4px solid #2563eb;
-            padding-left: 20px;
-            margin: 20px 0;
-            color: #6b7280;
-            font-style: italic;
-        }
-
-        .cms-content code {
-            background: #f3f4f6;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-
-        .cms-content pre {
-            background: #f3f4f6;
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 20px 0;
-        }
-
-        .cms-content pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .cms-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-
-        .cms-content table th,
-        .cms-content table td {
-            border: 1px solid #e5e7eb;
-            padding: 12px;
-            text-align: left;
-        }
-
-        .cms-content table th {
-            background: #f9fafb;
-            font-weight: 600;
+            .pricing-card.featured {
+                transform: scale(1);
+            }
         }
     </style>
 </head>
 <body class="cms-info-page">
     <!-- Header -->
-{{--    <header>--}}
-{{--        <nav class="container">--}}
-{{--            <div class="logo">--}}
-{{--                <a href="/" class="flex-shrink-0">--}}
-{{--                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin">--}}
-{{--                </a>--}}
-{{--            </div>--}}
-{{--            <ul class="nav-links">--}}
-{{--                <li><a href="/#features">Возможности</a></li>--}}
-{{--                <li><a href="/#benefits">Преимущества</a></li>--}}
-{{--                <li><a href="/#pricing">Тарифы</a></li>--}}
-{{--            </ul>--}}
-{{--            <button class="btn-primary" onclick="openModal()">Начать</button>--}}
-{{--        </nav>--}}
-{{--    </header>--}}
-    {{--
+    <header>
+        <nav class="container">
+            <div class="logo">
+                <a href="/" class="flex-shrink-0">
+                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin">
+                </a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/#features">Возможности</a></li>
+                <li><a href="/#benefits">Преимущества</a></li>
+                <li><a href="/#pricing">Тарифы</a></li>
+            </ul>
+            <button class="btn-primary" onclick="openModal()">Начать</button>
+        </nav>
+    </header>
+
         <!-- CMS Content -->
         <div class="container">
             <div class="cms-content">
@@ -447,14 +531,14 @@
         <footer>
             <div class="container">
                 <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
-                    <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
-                    <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
-                    <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
+                    <a href="{{ route('newsletters.landing.payment-terms', 'payment-terms') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Условия оплаты</a>
+                    <a href="{{ route('newsletters.landing.privacy-policy', 'privacy-policy') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Политика конфиденциальности</a>
+                    <a href="{{ route('newsletters.landing.oferta', 'oferta') }}" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Оферта</a>
                 </div>
                 <p>&copy; 2025 TargetX. Все права защищены.</p>
             </div>
         </footer>
-    --}}
+
     <!-- Registration Modal -->
     <div id="registrationModal" class="modal">
         <div class="modal-content">

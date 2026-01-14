@@ -10,6 +10,7 @@ use Webkul\Admin\Http\Controllers\Settings\LocaleController;
 use Webkul\Admin\Http\Controllers\Settings\RoleController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxCategoryController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxRateController;
+use Webkul\Admin\Http\Controllers\Settings\RegistrationNotificationSettingsController;
 use Webkul\Admin\Http\Controllers\Settings\ThemeController;
 use Webkul\Admin\Http\Controllers\Settings\UserController;
 
@@ -166,6 +167,15 @@ Route::prefix('settings')->group(function () {
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.users.delete');
 
         Route::put('confirm', 'destroySelf')->name('admin.settings.users.destroy');
+    });
+
+    /**
+     * Registration notifications routes.
+     */
+    Route::controller(RegistrationNotificationSettingsController::class)->prefix('registration-notifications')->group(function () {
+        Route::get('', 'index')->name('admin.settings.registration-notifications.index');
+
+        Route::put('', 'update')->name('admin.settings.registration-notifications.update');
     });
 
     Route::controller(ThemeController::class)->prefix('themes')->group(function () {

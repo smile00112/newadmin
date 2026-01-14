@@ -92,6 +92,26 @@ class LandingPageController
     }
 
     /**
+     * Display public function oferta()
+     * page.
+     */
+    public function oferta()
+    {
+        $page = $this->pageRepository
+            ->whereHas('channels', function ($query) {
+                $query->where('id', core()->getCurrentChannel()->id);
+            })
+            ->whereTranslation('url_key', 'oferta')
+            ->first();
+
+        if (!$page) {
+            // Fallback to old view if CMS page doesn't exist
+            return view('newsletters::landing.oferta');
+        }
+
+        return view('newsletters::landing.cms-static-page', compact('page'));
+    }
+    /**
      * Display offer page.
      */
     public function offer()

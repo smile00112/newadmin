@@ -55,6 +55,18 @@ class LandingPagesSeeder extends Seeder
             'политика, конфиденциальность, защита данных',
             $channelIds
         );
+
+        $privacyPolicyContent = $this->getOfertaContent();
+        $this->createOrUpdatePage(
+            $pageRepository,
+            'oferta',
+            'Оферта',
+            $privacyPolicyContent,
+            'Оферта - ' . config('app.name'),
+            'Оферта сервиса рассылки',
+            'Оферта',
+            $channelIds
+        );
     }
 
     /**
@@ -89,7 +101,7 @@ class LandingPagesSeeder extends Seeder
                 'channels' => $channelIds,
                 'locale' => $locale,
             ];
-            
+
             $pageRepository->update($data, $existingPage->id);
         } else {
             // Create new page - format without locale keys (repository handles all locales)
@@ -104,7 +116,7 @@ class LandingPagesSeeder extends Seeder
                 'meta_keywords' => $metaKeywords,
                 'channels' => $channelIds,
             ];
-            
+
             $pageRepository->create($data);
         }
     }
@@ -115,21 +127,6 @@ class LandingPagesSeeder extends Seeder
     private function getHomePageContent(): string
     {
         return '
-    <!-- Header -->
-    <header>
-        <nav class="container">
-            <div class="logo">
-                <a href="/" class="flex-shrink-0">
-                    <img src="/themes/admin/default/build/assets/logo-DVDU6gpe.svg" class="h-8 w-auto sm:h-10" id="logo-image" alt="DolingerAdmin"></a>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#features">Возможности</a></li>
-                <li><a href="#benefits">Преимущества</a></li>
-                <li><a href="#pricing">Тарифы</a></li>
-            </ul>
-            <button class="btn-primary" onclick="openModal()">Начать</button>
-        </nav>
-    </header>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -261,17 +258,7 @@ class LandingPagesSeeder extends Seeder
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-bottom: 20px;">
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity=\'0.8\'" onmouseout="this.style.opacity=\'1\'">Условия оплаты</a>
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity=\'0.8\'" onmouseout="this.style.opacity=\'1\'">Политика конфиденциальности</a>
-                <a href="/" style="color: white; text-decoration: none; transition: opacity 0.3s;" onmouseover="this.style.opacity=\'0.8\'" onmouseout="this.style.opacity=\'1\'">Оферта</a>
-            </div>
-            <p>&copy; 2025 TargetX. Все права защищены.</p>
-        </div>
-    </footer>';
+    ';
     }
 
     /**
@@ -281,7 +268,7 @@ class LandingPagesSeeder extends Seeder
     {
         return '
         <h1>Условия оплаты</h1>
-        
+
         <p>Настоящие условия оплаты регулируют порядок оплаты услуг, предоставляемых сервисом ' . config('app.name') . '.</p>
 
         <h2>1. Способы оплаты</h2>
@@ -322,7 +309,7 @@ class LandingPagesSeeder extends Seeder
     {
         return '
         <h1>Политика конфиденциальности</h1>
-        
+
         <p>Настоящая политика конфиденциальности описывает, как ' . config('app.name') . ' собирает, использует и защищает персональные данные пользователей.</p>
 
         <h2>1. Сбор персональных данных</h2>
@@ -367,5 +354,82 @@ class LandingPagesSeeder extends Seeder
         <p>По вопросам обработки персональных данных обращайтесь в службу поддержки через форму обратной связи на сайте.</p>
 
         <p><strong>Дата последнего обновления:</strong> ' . date('d.m.Y') . '</p>';
+    }
+
+    /**
+     * Get oferta (without header and footer)
+     */
+    private function getOfertaContent(): string
+    {
+        return '
+        <h1>Политика конфиденциальности</h1>
+
+        <div class="wrapper">
+            <h1>ЛИЦЕНЗИОННАЯ ПУБЛИЧНАЯ ОФЕРТА</h1>
+            <p>на предоставление права использования программы TargetX</p>
+
+            <h2 class="section-title">1. Общие положения</h2>
+            <p>1.1. Настоящая Лицензионная оферта (далее — «Оферта») является официальным предложением индивидуального предпринимателя Филиной Анастасии Константиновны, ИНН 222409994314, ОГРИП 325220200129143 (далее — «Исполнитель», «Правообладатель»), адресованным любому дееспособному лицу (далее — «Клиент», «Лицензиат») о заключении договора предоставления неисключительной лицензии на использование программы TargetX.</p>
+            <p>1.2. Акцептом Оферты является: оплата тарифа и/или вход в личный кабинет, и/или использование функционала программы.</p>
+            <p>1.3. Акцепт означает заключение Лицензионного договора в порядке ст. 437–438 Гражданского кодекса Российской Федерации.</p>
+
+            <h2 class="section-title">2. Предмет договора (Лицензии)</h2>
+            <p>2.1. Исполнитель предоставляет Клиенту простую (неисключительную), возмездную, отзывную лицензию на использование программы TargetX.</p>
+            <p>2.2. Программа доступна по адресам:</p>
+          <p>— веб-платформа:<br>
+            <a href="https://newsletters.sinicaxo.store/admin" target="_blank">
+                https://newsletters.sinicaxo.store/admin
+            </a>
+        </p>
+
+        <p>— Telegram-бот:<br>
+            <a href="https://t.me/targetx24_bot" target="_blank">
+                https://t.me/targetx24_bot
+            </a>
+        </p>
+            <p>2.3. Лицензия предоставляет Клиенту право использования функционала программы, включая: создание и управление рассылками, загрузку контактных баз, аналитику, прогрев номеров, автоматизацию коммуникаций и иные доступные функции.</p>
+            <p>2.4. Исполнитель не оказывает услуги; Клиент приобретает право использования программы (лицензию).</p>
+            <p>2.5. Лицензия предоставляется на срок действия оплаченного тарифа. По окончании срока доступ и лицензия прекращают действовать автоматически.</p>
+
+            <h2 class="section-title">3. Ограничения использования программы</h2>
+            <p>3.1. Клиенту запрещается:</p>
+            <p>— копировать, модифицировать, декомпилировать программу;</p>
+            <p>— пытаться получить исходный код программы;</p>
+            <p>— передавать доступ третьим лицам;</p>
+            <p>— сдавать доступ в аренду, субаренду, перепродавать или иным образом уступать права использования;</p>
+            <p>— использовать программу для создания конкурирующих решений;</p>
+            <p>— осуществлять вмешательство в работу системы, атаки, взлом или обход технических ограничений.</p>
+            <p>3.2. Исполнитель имеет право блокировать доступ к программе без возврата средств при нарушении Клиентом условий Оферты и/или указанных ограничений.</p>
+
+            <h2 class="section-title">4. Ответственность сторон</h2>
+            <p>4.1. Клиент полностью и самостоятельно отвечает за законность баз, содержание сообщений, соблюдение ФЗ-152 и ФЗ «О рекламе», а также наличие согласий адресатов.</p>
+            <p>4.2. Исполнитель не несёт ответственности за блокировки аккаунтов, незаконные действия Клиента, последствия рассылок, корректность данных.</p>
+            <p>4.3. Программа предоставляется «как есть» (AS IS).</p>
+
+            <h2 class="section-title">5. Стоимость и порядок оплаты</h2>
+            <p>100% предоплата. Средства не возвращаются, кроме случаев, предусмотренных законом.</p>
+            <p>Услуги считаются принятыми, если в течение 7 дней нет претензий.</p>
+
+            <h2 class="section-title">6. Порядок предоставления доступа</h2>
+            <p>Доступ предоставляется после оплаты.</p>
+            <p>Переписка с доступами удаляется в течение 12 часов.</p>
+
+            <h2 class="section-title">7. Политика обработки персональных данных</h2>
+            <p>Исполнитель обрабатывает только данные Клиента. Данные получателей рассылок не обрабатываются.</p>
+
+            <h2 class="section-title">8. Форс-мажор</h2>
+            <p>Стороны освобождаются от ответственности при обстоятельствах непреодолимой силы.</p>
+
+            <h2 class="section-title">9. Разрешение споров</h2>
+            <p>Досудебный порядок обязателен. Суд — по месту регистрации Исполнителя.</p>
+
+            <h2 class="section-title">10. Реквизиты</h2>
+            <p>ИП Филина Анастасия Константиновна<br>
+            ИНН 222409994314<br>
+            ОГРИП 325220200129143<br>
+            Адрес: 656010, Алтайский край, г Барнаул, ул Эмилии Алексеевой, д. 5, к. 1, кв. 113<br>
+            Email: support@targetx.su</p>
+        </div>
+         ' . date('d.m.Y') . '</p>';
     }
 }

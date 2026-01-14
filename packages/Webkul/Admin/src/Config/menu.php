@@ -373,7 +373,7 @@ return [
     [
         'key'        => 'settings',
         'name'       => 'admin::app.components.layouts.sidebar.settings',
-        'route'      => 'admin.settings.locales.index',
+        'route'      => 'admin.settings.users.index',
         'sort'       => 9,
         'icon'       => 'icon-settings',
         'icon-class' => 'settings-icon',
@@ -416,6 +416,12 @@ return [
         'name'       => 'admin::app.components.layouts.sidebar.users',
         'route'      => 'admin.settings.users.index',
         'sort'       => 6,
+        'icon'       => '',
+    ], [
+        'key'        => 'settings.registration-notifications',
+        'name'       => 'admin::app.components.layouts.sidebar.registration-notifications',
+        'route'      => 'admin.settings.registration-notifications.index',
+        'sort'       => 7,
         'icon'       => '',
     ],
 //    [

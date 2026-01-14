@@ -3448,6 +3448,19 @@ return [
             'update-success'     => 'Пользователь успешно обновлен.',
         ],
 
+        'registration-notifications' => [
+            'index' => [
+                'title'            => 'Оповещения о регистрации',
+                'description'      => 'Настройте email-адреса для получения уведомлений о новых заявках на регистрацию.',
+                'emails-label'     => 'Email-адреса',
+                'emails-placeholder' => 'Введите email-адреса через запятую (например, admin@example.com, support@example.com)',
+                'emails-help'      => 'Введите один или несколько email-адресов через запятую. На эти адреса будут приходить уведомления при подаче новых заявок на регистрацию.',
+                'save-btn'         => 'Сохранить настройки',
+                'update-success'   => 'Настройки оповещений о регистрации успешно обновлены.',
+                'invalid-email'     => 'Email-адрес :email неверен.',
+            ],
+        ],
+
         'roles' => [
             'index' => [
                 'create-btn' => 'Создать роль',
@@ -4834,6 +4847,7 @@ return [
                 'products'                 => 'Продукты',
                 'promotions'               => 'Акции',
                 'refunds'                  => 'Возвраты',
+                'registration-notifications' => 'Оповещения о регистрации',
                 'reporting'                => 'Отчетность',
                 'reviews'                  => 'Отзывы',
                 'roles'                    => 'Роли',
@@ -5088,6 +5102,7 @@ return [
         'products'                 => 'Продукты',
         'promotions'               => 'Акции',
         'refunds'                  => 'Возвраты',
+        'registration-notifications' => 'Оповещения о регистрации',
         'reporting'                => 'Отчетность',
         'reviews'                  => 'Отзывы',
         'roles'                    => 'Роли',

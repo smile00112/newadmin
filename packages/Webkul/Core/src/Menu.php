@@ -63,7 +63,6 @@ class Menu
                                 return false;
                             }
 
-                            echo $admin->role->name. ' - ';
                             // Показываем только для роли "Admin", не для owner
                             // Проверяем, что роль загружена и имеет свойство name
                             if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
@@ -77,7 +76,20 @@ class Menu
                             if (!$admin || !$admin->role) {
                                 return false;
                             }
+
                             // Показываем только для роли "Admin"
+                            if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
+                                return false;
+                            }
+
+                        }
+                        // Для пункта "settings.registration-notifications" проверяем role_id
+                        if ($item['key'] === 'settings.registration-notifications' || str_starts_with($item['key'], 'settings.registration-notifications.')) {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role_id) {
+                                return false;
+                            }
+                            // Показываем только для админа с role_id = 2
                             if (!isset($admin->role->name) || $admin->role->name !== 'Admin') {
                                 return false;
                             }
@@ -140,6 +152,54 @@ class Menu
             }
 
             $subMenuItems = $this->processSubMenuItems($menuItem);
+
+            // Для пункта "settings" проверяем доступность дочерних элементов и устанавливаем route на первый доступный
+            if ($menuItemKey === 'settings') {
+                $admin = auth()->guard('admin')->user();
+
+                // Если у пользователя role_id = 2, ищем registration-notifications
+                if ($admin && $admin->role_id == 2) {
+                    // Сначала проверяем в уже обработанных subMenuItems
+                    $registrationNotificationsItem = $subMenuItems->first(function ($item) {
+                        return str_starts_with($item->getKey(), 'settings.registration-notifications');
+                    });
+
+                    if ($registrationNotificationsItem) {
+                        $menuItem['route'] = $registrationNotificationsItem->getRoute();
+                    } else {
+                        // Если не найден в subMenuItems, ищем в configMenu напрямую
+                        $registrationNotificationsConfig = collect($this->configMenu)
+                            ->first(function ($item) {
+                                return $item['key'] === 'settings.registration-notifications';
+                            });
+
+                        if ($registrationNotificationsConfig && isset($registrationNotificationsConfig['route'])) {
+                            $menuItem['route'] = $registrationNotificationsConfig['route'];
+                        }
+                    }
+                } else {
+                    // Для других пользователей ищем первый доступный дочерний элемент из configMenu
+                    if ($subMenuItems->isNotEmpty()) {
+                        $firstAvailableChild = $subMenuItems->first();
+                        if ($firstAvailableChild) {
+                            $menuItem['route'] = $firstAvailableChild->getRoute();
+                        }
+                    } else {
+                        // Если нет дочерних элементов, ищем в configMenu
+                        $firstAvailableChild = collect($this->configMenu)
+                            ->filter(function ($item) use ($menuItemKey) {
+                                return str_starts_with($item['key'], $menuItemKey . '.')
+                                    && bouncer()->hasPermission($item['key']);
+                            })
+                            ->sortBy('sort')
+                            ->first();
+
+                        if ($firstAvailableChild && isset($firstAvailableChild['route'])) {
+                            $menuItem['route'] = $firstAvailableChild['route'];
+                        }
+                    }
+                }
+            }
 
             $this->addItem(new MenuItem(
                 key: $menuItemKey,
