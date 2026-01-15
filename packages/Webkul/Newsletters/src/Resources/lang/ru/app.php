@@ -317,6 +317,9 @@ return [
             'frequency-every-2-days' => 'Каждый 2-й день',
             'frequency-every-3-days' => 'Каждый 3-й день',
             'frequency-weekly' => 'Раз в неделю',
+            'download-template' => 'Скачать шаблон CSV',
+            'csv-import-hint' => 'Загрузите CSV файл с контактами. Файл должен содержать заголовки в первой строке.',
+            'csv-delimiter-hint' => 'Разделитель полей: запятая (,).',
             'external-import' => [
                 'title' => 'Ручной импорт из внешней системы',
                 'description' => 'Запустите обмен с внешним сервером и автоматически добавьте новых пользователей в группу контактов.',
@@ -393,6 +396,8 @@ return [
             'clear-success' => 'Успешно очищено :count контактов из группы.',
             'clear-success-default' => 'Контакты успешно очищены.',
             'no-group-selected' => 'Группа контактов не выбрана.',
+            'view-details' => 'Просмотр данных контакта',
+            'contact-details' => 'Данные контакта',
         ],
 
         'dashboard' => [
@@ -597,6 +602,7 @@ return [
             'condition' => 'Условие',
             'conditions' => 'Условия',
             'contacts-count' => 'Записей',
+            'no-filters' => 'Фильтров пока нет',
         ]
     ],
 
@@ -716,6 +722,7 @@ return [
             'numbers_count' => 'Получателей',
             'sent_count' => 'Отправлено',
             'incoming_count' => 'Входящие',
+            'company' => 'Компания',
         ],
         'validation' => [
             'required' => 'Поле :field обязательно для заполнения.',

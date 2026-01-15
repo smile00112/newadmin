@@ -82,6 +82,9 @@
                             <span id="sort-indicator-total_check" class="ml-1"></span>
                         </div>
                     </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        {{ __('newsletters::app.common.actions.title') }}
+                    </th>
                 </tr>
             </thead>
             <tbody id="contacts-tbody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -93,6 +96,34 @@
     <!-- Pagination -->
     <div id="pagination-wrapper" class="px-4 py-3 border-t border-gray-200 dark:border-gray-700">
         <!-- Pagination will be loaded here via AJAX -->
+    </div>
+</div>
+
+<!-- Contact Details Modal -->
+<div id="contactDetailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[10001]">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {{ __('newsletters::app.admin.contacts.contact-details') }}
+                </h3>
+                <button onclick="closeContactDetailsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="contactDetailsContent" class="space-y-4">
+                <!-- Contact details will be loaded here -->
+            </div>
+
+            <div class="flex justify-end gap-x-2 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeContactDetailsModal()" class="secondary-button">
+                    {{ __('newsletters::app.common.actions.close') }}
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -196,14 +227,14 @@
                 updateSortIndicators();
             } else {
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
                 }
             }
         })
         .catch(error => {
             console.error('Error loading contacts:', error);
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-red-500">{{ __('newsletters::app.common.messages.error') }}: ' + (error.message || 'Unknown error') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-red-500">{{ __('newsletters::app.common.messages.error') }}: ' + (error.message || 'Unknown error') + '</td></tr>';
             }
         })
         .finally(() => {
@@ -228,11 +259,22 @@
         const tbody = document.getElementById('contacts-tbody');
 
         if (contacts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.contacts.no-contacts') }}</td></tr>';
             return;
         }
 
-        tbody.innerHTML = contacts.map(contact => `
+        // Store contacts in global object for access in modal
+        if (!window.contactsCache) {
+            window.contactsCache = {};
+        }
+
+        tbody.innerHTML = contacts.map(contact => {
+            // Store contact data in cache
+            window.contactsCache[contact.id] = contact;
+
+            const contactDataJson = JSON.stringify(contact).replace(/"/g, '&quot;');
+
+            return `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${contact.id}</td>
                 <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${escapeHtml(contact.full_name || '-')}</td>
@@ -240,8 +282,20 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${escapeHtml(contact.telegram_user_id || '-')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${getGenderLabel(contact.gender)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">${formatNumber(contact.total_check)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <button type="button" onclick="showContactDetails(${contact.id})"
+                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-blue-500 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800"
+                            title="{{ __('newsletters::app.admin.contacts.view-details') }}">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        {{ __('newsletters::app.common.actions.view') }}
+                    </button>
+                </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
     }
 
     function renderPagination(pagination) {
@@ -388,6 +442,116 @@
             tableWrapper.classList.remove('opacity-50');
         });
     }
+
+    // Contact details modal functions
+    function showContactDetails(contactId) {
+        const contact = window.contactsCache && window.contactsCache[contactId];
+
+        if (!contact) {
+            alert('{{ __('newsletters::app.common.messages.error') }}: Contact data not found');
+            return;
+        }
+
+        const modal = document.getElementById('contactDetailsModal');
+        const content = document.getElementById('contactDetailsContent');
+
+        // Field labels mapping
+        const fieldLabels = {
+            'id': '{{ __('newsletters::app.common.fields.id') }}',
+            'full_name': '{{ __('newsletters::app.admin.contacts.field-full-name') }}',
+            'phone': '{{ __('newsletters::app.admin.contacts.field-phone') }}',
+            'email': '{{ __('newsletters::app.admin.contacts.field-email') }}',
+            'telegram_user_id': '{{ __('newsletters::app.admin.contacts.table.telegram-user-id') }}',
+            'gender': '{{ __('newsletters::app.admin.contacts.field-gender') }}',
+            'last_order_date': '{{ __('newsletters::app.admin.contacts.field-last-order-date') }}',
+            'registration_date': '{{ __('newsletters::app.admin.contacts.field-registration-date') }}',
+            'birth_date': '{{ __('newsletters::app.admin.contacts.field-birth-date') }}',
+            'orders_count': '{{ __('newsletters::app.admin.contacts.field-orders-count') }}',
+            'average_check': '{{ __('newsletters::app.admin.contacts.field-average-check') }}',
+            'total_check': '{{ __('newsletters::app.admin.contacts.field-total-check') }}',
+            'average_order_rating': '{{ __('newsletters::app.admin.contacts.field-average-rating') }}',
+            'favorite_category': '{{ __('newsletters::app.admin.contacts.field-favorite-category') }}',
+            'favorite_dish': '{{ __('newsletters::app.admin.contacts.field-favorite-dish') }}',
+            'store': '{{ __('newsletters::app.admin.contacts.field-store') }}',
+            'contact_group_id': '{{ __('newsletters::app.admin.contact-groups.title') }} ID',
+            'company_id': '{{ __('newsletters::app.common.fields.company') }} ID',
+        };
+
+        // Format field value
+        function formatFieldValue(key, value) {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            // Format dates
+            if (key.includes('date') && value) {
+                return value;
+            }
+
+            // Format gender
+            if (key === 'gender') {
+                return getGenderLabel(value);
+            }
+
+            // Format numbers
+            if (['orders_count', 'average_check', 'total_check', 'average_order_rating'].includes(key)) {
+                if (key === 'total_check' || key === 'average_check') {
+                    return formatNumber(value);
+                }
+                return value;
+            }
+
+            return escapeHtml(value);
+        }
+
+        // Build HTML content
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+
+        Object.keys(fieldLabels).forEach(key => {
+            const value = contact[key];
+            const label = fieldLabels[key];
+            const formattedValue = formatFieldValue(key, value);
+
+            html += `
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        ${label}
+                    </div>
+                    <div class="text-sm text-gray-900 dark:text-white">
+                        ${formattedValue}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+
+        content.innerHTML = html;
+        modal.classList.remove('hidden');
+    }
+
+    function closeContactDetailsModal() {
+        const modal = document.getElementById('contactDetailsModal');
+        modal.classList.add('hidden');
+    }
+
+    // Close modal on outside click
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('contactDetailsModal');
+        if (event.target === modal) {
+            closeContactDetailsModal();
+        }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('contactDetailsModal');
+            if (!modal.classList.contains('hidden')) {
+                closeContactDetailsModal();
+            }
+        }
+    });
 </script>
 
 <style>

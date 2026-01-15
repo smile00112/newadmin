@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <form action="{{ route('admin.newsletters.contact-groups.store') }}" method="POST" class="space-y-6">
+    <form action="{{ route('admin.newsletters.contact-groups.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
         
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -46,6 +46,31 @@
                     @error('description')
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="csv_file" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ __('newsletters::app.common.fields.csv_file') }}
+                        </label>
+                        <a href="{{ route('admin.newsletters.contact-groups.import-template.download') }}" 
+                           class="inline-flex items-center gap-1.5 px-2 py-1 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
+                           title="{{ __('newsletters::app.admin.contact-groups.download-template') }}">
+                            <span class="icon-download text-lg"></span>
+                            <span>{{ __('newsletters::app.admin.contact-groups.download-template') }}</span>
+                        </a>
+                    </div>
+                    <input type="file" 
+                           name="csv_file" 
+                           id="csv_file" 
+                           accept=".csv,.txt"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    @error('csv_file')
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {{ __('newsletters::app.admin.contact-groups.csv-import-hint') }} {{ __('newsletters::app.admin.contact-groups.csv-delimiter-hint') }}
+                    </p>
                 </div>
 
                 <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">

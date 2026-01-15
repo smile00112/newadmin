@@ -124,7 +124,7 @@
                         @error('media_file')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
-                        
+
                         <!-- Existing Media Display -->
                         @if($mailingList->message_links && isset($mailingList->message_links[0]))
                             @php
@@ -146,7 +146,7 @@
                                 </div>
                             </div>
                         @endif
-                        
+
                         <!-- New Media Preview -->
                         <div id="media_preview" class="mt-2 hidden">
                             <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -354,7 +354,7 @@
         </div>
 
         <!-- WhatsApp Instances, Customer Numbers, and User Numbers Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
 
             <!-- Customer Numbers Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -365,12 +365,13 @@
                             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
                                 ({{ count($customerNumbers) }}/{{ $totalCustomerNumbers }})
                             </span>
+                            </span>
                     </h2>
                     <div class="flex space-x-2 gap-2">
-                        <button type="button" onclick="addCustomerNumberRow()"
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            {{ __('newsletters::app.common.actions.add') }} {{ __('newsletters::app.admin.customer-numbers.title') }}
-                        </button>
+{{--                        <button type="button" onclick="addCustomerNumberRow()"--}}
+{{--                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">--}}
+{{--                            {{ __('newsletters::app.common.actions.add') }} {{ __('newsletters::app.admin.customer-numbers.title') }}--}}
+{{--                        </button>--}}
 {{--                        <button type="button" onclick="openCSVImportModal('customers')"--}}
 {{--                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">--}}
 {{--                            {{ __('newsletters::app.common.actions.import') }} CSV--}}
@@ -489,6 +490,7 @@
             </div>
             </div>
 
+            @if($mailingList->channel_type === 'whatsapp')
             <!-- WhatsApp Instances Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -573,6 +575,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
         </div>
         </div>
@@ -2088,7 +2091,7 @@
                     const preview = document.getElementById('media_preview');
                     const previewImage = document.getElementById('media_preview_image');
                     const previewVideo = document.getElementById('media_preview_video');
-                    
+
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
@@ -2114,7 +2117,7 @@
             const preview = document.getElementById('media_preview');
             const previewImage = document.getElementById('media_preview_image');
             const previewVideo = document.getElementById('media_preview_video');
-            
+
             if (mediaFileInput) {
                 mediaFileInput.value = '';
             }
@@ -2203,7 +2206,7 @@
                                     editor.on('init', function() {
                                         editor.setContent(messageTextValue);
                                     });
-                                    
+
                                     // Синхронизация при изменении содержимого TinyMCE
                                     editor.on('change keyup input', function() {
                                         const content = editor.getContent();
@@ -2212,7 +2215,7 @@
                                             messageText.value = content;
                                         }
                                     });
-                                    
+
                                     // Синхронизация при программном изменении
                                     editor.on('SetContent', function() {
                                         const content = editor.getContent();
@@ -2291,12 +2294,48 @@
             if (!filterSelect) return;
 
             if (!groupId) {
-                filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
+                filterSelect.innerHTML = '';
+                // Add "Select All" option first
+                const selectAllOption = document.createElement('option');
+                selectAllOption.value = '0';
+                selectAllOption.textContent = 'Выбрать всех';
+                filterSelect.appendChild(selectAllOption);
+                // Add disabled "Select Filter" option
+                const selectFilterOption = document.createElement('option');
+                selectFilterOption.value = '';
+                selectFilterOption.disabled = true;
+                selectFilterOption.textContent = '{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}';
+                filterSelect.appendChild(selectFilterOption);
                 return;
             }
 
             filterSelect.disabled = true;
             filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.loading") }}...</option>';
+
+            // Add timeout to prevent hanging on "Loading..."
+            const timeoutId = setTimeout(() => {
+                filterSelect.innerHTML = '';
+                // Add "Select All" option first
+                const selectAllOption = document.createElement('option');
+                selectAllOption.value = '0';
+                selectAllOption.textContent = 'Выбрать всех';
+                filterSelect.appendChild(selectAllOption);
+                // Add disabled "Select Filter" option
+                const selectFilterOption = document.createElement('option');
+                selectFilterOption.value = '';
+                selectFilterOption.disabled = true;
+                selectFilterOption.textContent = '{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}';
+                filterSelect.appendChild(selectFilterOption);
+                @if(isset($savedFilterId))
+                    const savedFilterId = {{ $savedFilterId !== null ? $savedFilterId : 'null' }};
+                    if (savedFilterId === null || savedFilterId === undefined) {
+                        filterSelect.value = '0';
+                    }
+                @else
+                    filterSelect.value = '0';
+                @endif
+                filterSelect.disabled = false;
+            }, 10000); // 10 second timeout
 
             fetch(`/admin/newsletters/contact-groups/${groupId}/filters`, {
                 headers: {
@@ -2311,13 +2350,23 @@
                     return response.json();
                 })
                 .then(data => {
-                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
-                    // Add "Select All" option with value "0"
+                    clearTimeout(timeoutId);
+                    const filterSelect = document.getElementById('filter_id');
+                    filterSelect.disabled = false;
+                    filterSelect.innerHTML = '';
+                    // Add "Select All" option first
                     const selectAllOption = document.createElement('option');
                     selectAllOption.value = '0';
                     selectAllOption.textContent = 'Выбрать всех';
                     filterSelect.appendChild(selectAllOption);
-                    if (data.filters && data.filters.length > 0) {
+                    // Add disabled "Select Filter" option
+                    const selectFilterOption = document.createElement('option');
+                    selectFilterOption.value = '';
+                    selectFilterOption.disabled = true;
+                    selectFilterOption.textContent = '{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}';
+                    filterSelect.appendChild(selectFilterOption);
+                    // Add filters if they exist and data is valid
+                    if (data && data.filters && Array.isArray(data.filters) && data.filters.length > 0){
                         data.filters.forEach(filter => {
                             const option = document.createElement('option');
                             option.value = filter.id;
@@ -2325,26 +2374,85 @@
                             filterSelect.appendChild(option);
                         });
                     }
-                    // Set saved filter_id if exists
+
+                    // Set saved filter_id if exists, otherwise set to "0" (Select All) if filter_id was null
                     @if(isset($savedFilterId))
                         const savedFilterId = {{ $savedFilterId !== null ? $savedFilterId : 'null' }};
                         if (savedFilterId !== null && savedFilterId !== undefined) {
                             filterSelect.value = savedFilterId.toString();
+                        } else {
+                            // If filter_id is null, select "For all users" option
+                            filterSelect.value = '0';
+
                         }
+                    @else
+                        // If savedFilterId is not set, select "For all users" option
+                        filterSelect.value = '0';
                     @endif
-                    filterSelect.disabled = false;
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId);
                     console.error('Error loading filters:', error);
-                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.error-loading") }}</option>';
+                    filterSelect.innerHTML = '';
+                    // Add "Select All" option first
+                    const selectAllOption = document.createElement('option');
+                    selectAllOption.value = '0';
+                    selectAllOption.textContent = 'Выбрать всех';
+                    filterSelect.appendChild(selectAllOption);
+                    // Add disabled "Select Filter" option
+                    const selectFilterOption = document.createElement('option');
+                    selectFilterOption.value = '';
+                    selectFilterOption.disabled = true;
+                    selectFilterOption.textContent = '{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}';
+                    filterSelect.appendChild(selectFilterOption);
+                    // If filter_id was null, select "For all users" option
+                    @if(isset($savedFilterId))
+                        const savedFilterId = {{ $savedFilterId !== null ? $savedFilterId : 'null' }};
+                        if (savedFilterId === null || savedFilterId === undefined) {
+                            filterSelect.value = '0';
+                        }
+                    @else
+                        filterSelect.value = '0';
+                    @endif
                     filterSelect.disabled = false;
                 });
         }
 
-        // Initialize filter loading on page load if contact_group_id is preselected
+        // Initialize filter loading on page load
         document.addEventListener('DOMContentLoaded', function() {
             const contactGroupSelect = document.getElementById('contact_group_id');
-            if (contactGroupSelect && contactGroupSelect.value) {
+            const filterSelect = document.getElementById('filter_id');
+
+            if (!filterSelect) return;
+
+            // If contact_group_id is not selected, show "For all users" option
+            if (!contactGroupSelect || !contactGroupSelect.value) {
+                filterSelect.innerHTML = '';
+                // Add "Select All" option first
+                const selectAllOption = document.createElement('option');
+                selectAllOption.value = '0';
+                selectAllOption.textContent = 'Выбрать всех';
+                filterSelect.appendChild(selectAllOption);
+                // Add disabled "Select Filter" option
+                const selectFilterOption = document.createElement('option');
+                selectFilterOption.value = '';
+                selectFilterOption.disabled = true;
+                selectFilterOption.textContent = '{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}';
+                filterSelect.appendChild(selectFilterOption);
+                // If filter_id is null, select "For all users" option
+                @if(isset($savedFilterId))
+                    const savedFilterId = {{ $savedFilterId !== null ? $savedFilterId : 'null' }};
+                    if (savedFilterId === null || savedFilterId === undefined) {
+                        filterSelect.value = '0';
+                    }
+                @else
+                    filterSelect.value = '0';
+                @endif
+                return;
+            }
+
+            // If contact_group_id is selected, load filters
+            if (contactGroupSelect.value) {
                 loadFiltersForGroup(contactGroupSelect.value);
             }
         });

@@ -296,6 +296,9 @@ return [
             'update-success' => 'Contact group updated successfully.',
             'delete-success' => 'Contact group and all its contacts deleted successfully.',
             'delete-confirm' => 'Are you sure you want to delete this group? This will also delete all contacts in the group.',
+            'download-template' => 'Download CSV Template',
+            'csv-import-hint' => 'Upload a CSV file with contacts. The file must contain headers in the first row.',
+            'csv-delimiter-hint' => 'Field delimiter: comma (,).',
             'external-import' => [
                 'title' => 'External import',
                 'description' => 'Trigger the data exchange with the external server and automatically append the received users to this group.',
@@ -376,6 +379,8 @@ return [
             'clear-success' => 'Successfully cleared :count contacts from the group.',
             'clear-success-default' => 'Contacts cleared successfully.',
             'no-group-selected' => 'No contact group selected.',
+            'view-details' => 'View Contact Details',
+            'contact-details' => 'Contact Details',
         ],
 
         'contact-filters' => [

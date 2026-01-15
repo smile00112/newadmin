@@ -323,6 +323,7 @@ Route::group([
             Route::middleware('newsletters.permission:newsletters.contact-groups.create')->group(function () {
                 Route::get('create', 'create')->name('admin.newsletters.contact-groups.create');
                 Route::post('create', 'store')->name('admin.newsletters.contact-groups.store');
+                Route::get('import-template/download', 'downloadImportTemplate')->name('admin.newsletters.contact-groups.import-template.download');
             });
             Route::post('csv/preview', 'previewCsv')->name('admin.newsletters.contact-groups.csv.preview');
             Route::middleware('newsletters.permission:newsletters.contact-groups.edit')->group(function () {

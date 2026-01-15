@@ -252,9 +252,17 @@
                 <!-- Step 1: Upload File -->
                 <div id="uploadStep" class="space-y-4 columns-2 sm:columns-1">
                     <div class="">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {{ __('newsletters::app.common.fields.csv_file') }} <span class="text-red-500">*</span>
-                        </label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ __('newsletters::app.common.fields.csv_file') }} <span class="text-red-500">*</span>
+                            </label>
+                            <a href="{{ route('admin.newsletters.contact-groups.import-template.download') }}" 
+                               class="inline-flex items-center gap-1.5 px-2 py-1 text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded"
+                               title="{{ __('newsletters::app.admin.contact-groups.download-template') }}">
+                                <span class="icon-download text-lg"></span>
+                                <span>{{ __('newsletters::app.admin.contact-groups.download-template') }}</span>
+                            </a>
+                        </div>
                         <input type="file" id="csvFile" accept=".csv,.txt" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
                     </div>
 {{--                    <div>--}}

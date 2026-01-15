@@ -61,6 +61,110 @@ class ContactGroupController extends Controller
     }
 
     /**
+     * Download CSV import template with sample data.
+     */
+    public function downloadImportTemplate()
+    {
+        $headers = [
+            'full_name',
+            'phone',
+            'email',
+            'telegram_user_id',
+            'gender',
+            'last_order_date',
+            'registration_date',
+            'birth_date',
+            'orders_count',
+            'average_check',
+            'total_check',
+            'average_order_rating',
+            'favorite_category',
+            'favorite_dish',
+            'store',
+        ];
+
+        // Sample data rows
+        $sampleData = [
+            [
+                'Иван Иванов',
+                '79001234567',
+                'ivan@example.com',
+                '123456789',
+                'male',
+                '2024-01-15',
+                '2023-06-01',
+                '1990-05-20',
+                '5',
+                '1500.00',
+                '7500.00',
+                '4.5',
+                'Пицца',
+                'Маргарита',
+                'Магазин 1',
+            ],
+            [
+                'Мария Петрова',
+                '79009876543',
+                'maria@example.com',
+                '987654321',
+                'female',
+                '2024-01-20',
+                '2023-08-15',
+                '1992-11-10',
+                '3',
+                '2000.00',
+                '6000.00',
+                '4.8',
+                'Суши',
+                'Филадельфия',
+                'Магазин 2',
+            ],
+            [
+                'Петр Сидоров',
+                '79005555555',
+                'petr@example.com',
+                '',
+                'male',
+                '2024-01-10',
+                '2023-12-01',
+                '1988-03-25',
+                '2',
+                '1200.00',
+                '2400.00',
+                '4.2',
+                'Бургеры',
+                'Чизбургер',
+                'Магазин 1',
+            ],
+        ];
+
+        // Create CSV content
+        $csvContent = '';
+        
+        // Add BOM for UTF-8 encoding (for Excel compatibility)
+        $csvContent .= "\xEF\xBB\xBF";
+        
+        // Add headers
+        $csvContent .= implode(',', array_map(function($header) {
+            return '"' . str_replace('"', '""', $header) . '"';
+        }, $headers)) . "\n";
+        
+        // Add sample data rows
+        foreach ($sampleData as $row) {
+            $csvContent .= implode(',', array_map(function($cell) {
+                return '"' . str_replace('"', '""', $cell) . '"';
+            }, $row)) . "\n";
+        }
+
+        $filename = 'contact_import_template_' . date('Y-m-d') . '.csv';
+
+        return response($csvContent, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -72,6 +176,7 @@ class ContactGroupController extends Controller
             'request_url' => 'nullable|string|url|max:500|required_if:has_external_integration,1',
             'request_token' => 'nullable|string|max:255|required_if:has_external_integration,1',
             'auto_request_frequency' => 'nullable|integer|in:86400,172800,259200,604800',
+            'csv_file' => 'nullable|file|mimes:csv,txt',
         ]);
 
         // Convert checkbox value to boolean
@@ -84,9 +189,149 @@ class ContactGroupController extends Controller
             $validated['auto_request_frequency'] = null;
         }
 
-        $this->contactGroupRepository->create($validated);
+        // Create the contact group
+        $group = $this->contactGroupRepository->create($validated);
 
-        session()->flash('success', trans('newsletters::app.admin.contact-groups.create-success'));
+        $importedCount = 0;
+        $skippedCount = 0;
+
+        // Import CSV if file is provided
+        if ($request->hasFile('csv_file')) {
+            try {
+                $file = $request->file('csv_file');
+                $delimiter = ',';
+                $hasHeader = true; // Assume CSV has headers
+
+                // Read CSV file line by line
+                $csvData = [];
+                $handle = fopen($file->getPathname(), 'r');
+                
+                if ($handle !== false) {
+                    while (($line = fgets($handle)) !== false) {
+                        $line = trim($line);
+                        
+                        // Skip completely empty lines
+                        if (empty($line)) {
+                            continue;
+                        }
+                        
+                        $row = str_getcsv($line, $delimiter);
+                        
+                        // Skip rows that are completely empty after parsing
+                        if (empty(array_filter($row, function($cell) { return trim($cell) !== ''; }))) {
+                            continue;
+                        }
+                        
+                        $csvData[] = $row;
+                    }
+                    fclose($handle);
+                }
+
+                if (count($csvData) > 0) {
+                    // Get headers from first row
+                    $headers = array_map('trim', $csvData[0]);
+                    
+                    // Remove header row from data
+                    array_shift($csvData);
+
+                    // Map headers to field names (normalize header names)
+                    $fieldMap = [];
+                    $fillableFields = (new NewslettersContact())->getFillable();
+                    
+                    foreach ($headers as $index => $header) {
+                        $normalizedHeader = strtolower(trim($header));
+                        // Try to match header with fillable fields
+                        foreach ($fillableFields as $field) {
+                            if ($normalizedHeader === strtolower($field)) {
+                                $fieldMap[$field] = $index;
+                                break;
+                            }
+                        }
+                    }
+
+                    DB::beginTransaction();
+
+                    foreach ($csvData as $index => $row) {
+                        try {
+                            $contactData = [
+                                'contact_group_id' => $group->id,
+                            ];
+
+                            // Map CSV columns to model fields
+                            foreach ($fieldMap as $field => $columnIndex) {
+                                if (isset($row[$columnIndex])) {
+                                    $value = trim($row[$columnIndex]);
+                                    
+                                    // Sanitize phone number
+                                    if ($field === 'phone') {
+                                        $value = preg_replace('/[^0-9]/', '', $value);
+                                    }
+
+                                    // Handle date fields
+                                    if (in_array($field, ['last_order_date', 'registration_date', 'birth_date']) && !empty($value)) {
+                                        $timestamp = strtotime($value);
+                                        $contactData[$field] = $timestamp ? date('Y-m-d', $timestamp) : null;
+                                    } else {
+                                        $contactData[$field] = $value ?: null;
+                                    }
+                                }
+                            }
+
+                            // Check and skip if required fields are empty
+                            if (empty($contactData['full_name']) || empty($contactData['phone'])) {
+                                $skippedCount++;
+                                continue;
+                            }
+
+                            // Check for duplicates
+                            $exists = $this->contactRepository->findWhere([
+                                'phone' => $contactData['phone'],
+                                'contact_group_id' => $group->id,
+                            ])->first();
+
+                            if ($exists) {
+                                $skippedCount++;
+                                continue;
+                            }
+
+                            $this->contactRepository->create($contactData);
+                            $importedCount++;
+
+                        } catch (\Exception $e) {
+                            $skippedCount++;
+                            \Log::error('CSV Import error during group creation', [
+                                'row' => $index + 1,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    DB::commit();
+
+                    // Invalidate cache for contact filters after import
+                    if ($importedCount > 0) {
+                        Event::dispatch(new ContactCacheInvalidated($group->id));
+                    }
+                }
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('CSV Import failed during group creation', [
+                    'group_id' => $group->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Prepare success message
+        $message = trans('newsletters::app.admin.contact-groups.create-success');
+        if ($importedCount > 0) {
+            $message .= ' ' . trans('newsletters::app.admin.contacts.import-success', ['count' => $importedCount]);
+            if ($skippedCount > 0) {
+                $message .= ' ' . trans('newsletters::app.admin.contacts.import-skipped', ['count' => $skippedCount]);
+            }
+        }
+
+        session()->flash('success', $message);
 
         return redirect()->route('admin.newsletters.contact-groups.index');
     }

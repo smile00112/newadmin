@@ -196,7 +196,7 @@ class MailingListController extends Controller
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance') ?: 500,
                 'channel_type' => $request->input('channel_type', 'whatsapp'),
-                'filter_id' => ($request->input('filter_id') == '0' || $request->input('filter_id') === 0) ? 0 : $request->input('filter_id'),
+                'filter_id' => ($request->input('filter_id') == '0' || $request->input('filter_id') === 0 || empty($request->input('filter_id'))) ? null : $request->input('filter_id'),
                 'auto_reply_enabled' => (bool) $request->input('auto_reply_enabled', false),
                 'auto_replies' => $autoReplies,
             ];
@@ -839,7 +839,7 @@ class MailingListController extends Controller
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance') ?: 500,
                 'channel_type' => $request->input('channel_type', $existingMailingList->channel_type ?? 'whatsapp'),
-                'filter_id' => ($request->input('filter_id') == '0' || $request->input('filter_id') === 0) ? 0 : $request->input('filter_id'),
+                'filter_id' => ($request->input('filter_id') == '0' || $request->input('filter_id') === 0 || empty($request->input('filter_id'))) ? null : $request->input('filter_id'),
                 'auto_reply_enabled' => (bool) $request->input('auto_reply_enabled', false),
                 'auto_replies' => $autoReplies,
             ];
