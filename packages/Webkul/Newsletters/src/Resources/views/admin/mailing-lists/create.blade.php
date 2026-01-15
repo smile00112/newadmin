@@ -1531,6 +1531,11 @@
                 })
                 .then(data => {
                     filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
+                    // Add "Select All" option with value "0"
+                    const selectAllOption = document.createElement('option');
+                    selectAllOption.value = '0';
+                    selectAllOption.textContent = 'Выбрать всех';
+                    filterSelect.appendChild(selectAllOption);
                     if (data.filters && data.filters.length > 0) {
                         data.filters.forEach(filter => {
                             const option = document.createElement('option');

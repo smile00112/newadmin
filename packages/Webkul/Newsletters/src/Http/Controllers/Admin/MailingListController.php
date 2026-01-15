@@ -121,7 +121,16 @@ class MailingListController extends Controller
 
             // Contact Group and Filter validation
             'contact_group_id' => 'nullable|integer|exists:newsletters_contact_groups,id',
-            'filter_id' => 'nullable|integer|exists:newsletters_contact_filters,id|required_with:contact_group_id',
+            'filter_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value !== null && $value !== '' && $value !== '0' && $value !== 0) {
+                        if (!is_numeric($value) || !\Webkul\Newsletters\Models\NewslettersContactFilter::where('id', $value)->exists()) {
+                            $fail('The selected filter is invalid.');
+                        }
+                    }
+                },
+            ],
 
             // Customer Numbers validation - optional if filter is used
             'customer_numbers.*.phone_number' => 'nullable|string|max:20',
@@ -187,7 +196,7 @@ class MailingListController extends Controller
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance') ?: 500,
                 'channel_type' => $request->input('channel_type', 'whatsapp'),
-                'filter_id' => $request->input('filter_id'),
+                'filter_id' => ($request->input('filter_id') == '0' || $request->input('filter_id') === 0) ? 0 : $request->input('filter_id'),
                 'auto_reply_enabled' => (bool) $request->input('auto_reply_enabled', false),
                 'auto_replies' => $autoReplies,
             ];
@@ -363,26 +372,61 @@ class MailingListController extends Controller
 
             // Get contacts from filter if filter_id is provided
             $contactsFromFilter = [];
-            if ($request->has('filter_id') && $request->filter_id) {
-                try {
-                    $filter = $this->contactFilterRepository->findOrFail($request->filter_id);
-                    $response = $this->contactFilterController->applyFilter($filter->id);
-                    $responseData = json_decode($response->getContent(), true);
-                    
-                    if (isset($responseData['contacts']) && is_array($responseData['contacts'])) {
-                        $contactsFromFilter = $responseData['contacts'];
+            if ($request->has('filter_id') && $request->filter_id !== null && $request->filter_id !== '') {
+                $filterId = $request->filter_id;
+                
+                // Check if "Select All" option is chosen (filter_id = 0)
+                if ($filterId == '0' || $filterId === 0) {
+                    // Get all contacts from the contact group
+                    if ($request->has('contact_group_id') && $request->contact_group_id) {
+                        $groupId = $request->contact_group_id;
+                        $admin = auth()->guard('admin')->user();
+                        $companyId = $admin && $admin->company_id ? $admin->company_id : null;
                         
-                        Log::info('Got contacts from filter', [
-                            'filter_id' => $filter->id,
+                        $query = NewslettersContact::where('contact_group_id', $groupId);
+                        if ($companyId !== null) {
+                            $query->where('company_id', $companyId);
+                        }
+                        
+                        $contacts = $query->get();
+                        $contactsFromFilter = $contacts->map(function ($contact) {
+                            return (object) [
+                                'id' => $contact->id,
+                                'phone' => $contact->phone,
+                                'full_name' => $contact->full_name,
+                                'email' => $contact->email,
+                                'telegram_user_id' => $contact->telegram_user_id,
+                            ];
+                        })->toArray();
+                        
+                        Log::info('Got all contacts from contact group (Select All)', [
+                            'contact_group_id' => $groupId,
                             'contacts_count' => count($contactsFromFilter),
                             'mailing_list_id' => $mailingList->id,
                         ]);
                     }
-                } catch (\Exception $e) {
-                    Log::error('Failed to get contacts from filter', [
-                        'filter_id' => $request->filter_id,
-                        'error' => $e->getMessage(),
-                    ]);
+                } else {
+                    // Apply specific filter
+                    try {
+                        $filter = $this->contactFilterRepository->findOrFail($filterId);
+                        $response = $this->contactFilterController->applyFilter($filter->id);
+                        $responseData = json_decode($response->getContent(), true);
+                        
+                        if (isset($responseData['contacts']) && is_array($responseData['contacts'])) {
+                            $contactsFromFilter = $responseData['contacts'];
+                            
+                            Log::info('Got contacts from filter', [
+                                'filter_id' => $filter->id,
+                                'contacts_count' => count($contactsFromFilter),
+                                'mailing_list_id' => $mailingList->id,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to get contacts from filter', [
+                            'filter_id' => $filterId,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
 
@@ -614,8 +658,8 @@ class MailingListController extends Controller
         $savedFilterId = $mailingList->filter_id;
         $savedContactGroupId = null;
         
-        // If filter_id exists, get contact_group_id from the filter
-        if ($savedFilterId) {
+        // If filter_id exists and is not 0, get contact_group_id from the filter
+        if ($savedFilterId && $savedFilterId != 0 && $savedFilterId != '0') {
             try {
                 $filter = $this->contactFilterRepository->findOrFail($savedFilterId);
                 $savedContactGroupId = $filter->contact_group_id;
@@ -634,6 +678,12 @@ class MailingListController extends Controller
                 // If filter was deleted, reset filter_id
                 $savedFilterId = null;
             }
+        } elseif ($savedFilterId == 0 || $savedFilterId == '0') {
+            // If filter_id is 0 (Select All), we need to get contact_group_id from customer numbers
+            // This will be handled in the fallback below
+            Log::info('Filter ID is 0 (Select All)', [
+                'mailing_list_id' => $id,
+            ]);
         }
         
         // Fallback: Try to determine contact_group_id from customer numbers if filter_id is not set
@@ -706,7 +756,16 @@ class MailingListController extends Controller
 
             // Contact Group and Filter validation
             'contact_group_id' => 'nullable|integer|exists:newsletters_contact_groups,id',
-            'filter_id' => 'nullable|integer|exists:newsletters_contact_filters,id|required_with:contact_group_id',
+            'filter_id' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    if ($value !== null && $value !== '' && $value !== '0' && $value !== 0) {
+                        if (!is_numeric($value) || !\Webkul\Newsletters\Models\NewslettersContactFilter::where('id', $value)->exists()) {
+                            $fail('The selected filter is invalid.');
+                        }
+                    }
+                },
+            ],
 
             // Customer Numbers validation - nullable because we filter them later
             'customer_numbers.*.phone_number' => 'nullable|string|max:20',
@@ -780,7 +839,7 @@ class MailingListController extends Controller
                 'message_delay_to' => $request->input('message_delay_to', 5),
                 'max_messages_per_instance' => $request->input('max_messages_per_instance') ?: 500,
                 'channel_type' => $request->input('channel_type', $existingMailingList->channel_type ?? 'whatsapp'),
-                'filter_id' => $request->input('filter_id'),
+                'filter_id' => ($request->input('filter_id') == '0' || $request->input('filter_id') === 0) ? 0 : $request->input('filter_id'),
                 'auto_reply_enabled' => (bool) $request->input('auto_reply_enabled', false),
                 'auto_replies' => $autoReplies,
             ];
@@ -1007,26 +1066,61 @@ class MailingListController extends Controller
 
             // Get contacts from filter if filter_id is provided
             $contactsFromFilter = [];
-            if ($request->has('filter_id') && $request->filter_id) {
-                try {
-                    $filter = $this->contactFilterRepository->findOrFail($request->filter_id);
-                    $response = $this->contactFilterController->applyFilter($filter->id);
-                    $responseData = json_decode($response->getContent(), true);
-                    
-                    if (isset($responseData['contacts']) && is_array($responseData['contacts'])) {
-                        $contactsFromFilter = $responseData['contacts'];
+            if ($request->has('filter_id') && $request->filter_id !== null && $request->filter_id !== '') {
+                $filterId = $request->filter_id;
+                
+                // Check if "Select All" option is chosen (filter_id = 0)
+                if ($filterId == '0' || $filterId === 0) {
+                    // Get all contacts from the contact group
+                    if ($request->has('contact_group_id') && $request->contact_group_id) {
+                        $groupId = $request->contact_group_id;
+                        $admin = auth()->guard('admin')->user();
+                        $companyId = $admin && $admin->company_id ? $admin->company_id : null;
                         
-                        Log::info('Got contacts from filter for update', [
-                            'filter_id' => $filter->id,
+                        $query = NewslettersContact::where('contact_group_id', $groupId);
+                        if ($companyId !== null) {
+                            $query->where('company_id', $companyId);
+                        }
+                        
+                        $contacts = $query->get();
+                        $contactsFromFilter = $contacts->map(function ($contact) {
+                            return (object) [
+                                'id' => $contact->id,
+                                'phone' => $contact->phone,
+                                'full_name' => $contact->full_name,
+                                'email' => $contact->email,
+                                'telegram_user_id' => $contact->telegram_user_id,
+                            ];
+                        })->toArray();
+                        
+                        Log::info('Got all contacts from contact group (Select All) for update', [
+                            'contact_group_id' => $groupId,
                             'contacts_count' => count($contactsFromFilter),
                             'mailing_list_id' => $id,
                         ]);
                     }
-                } catch (\Exception $e) {
-                    Log::error('Failed to get contacts from filter for update', [
-                        'filter_id' => $request->filter_id,
-                        'error' => $e->getMessage(),
-                    ]);
+                } else {
+                    // Apply specific filter
+                    try {
+                        $filter = $this->contactFilterRepository->findOrFail($filterId);
+                        $response = $this->contactFilterController->applyFilter($filter->id);
+                        $responseData = json_decode($response->getContent(), true);
+                        
+                        if (isset($responseData['contacts']) && is_array($responseData['contacts'])) {
+                            $contactsFromFilter = $responseData['contacts'];
+                            
+                            Log::info('Got contacts from filter for update', [
+                                'filter_id' => $filter->id,
+                                'contacts_count' => count($contactsFromFilter),
+                                'mailing_list_id' => $id,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Failed to get contacts from filter for update', [
+                            'filter_id' => $filterId,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
 

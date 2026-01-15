@@ -300,6 +300,59 @@
             </div>
         </div>
 
+        <!-- Contact Group and Filter Selection -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 my-5 p5">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ __('newsletters::app.admin.contact-groups.title') }} и {{ __('newsletters::app.admin.contact-filters.title') }}
+                </h2>
+            </div>
+            <div class="p-6">
+                <!-- Contact Group and Filter Selection -->
+                <div class="mb-6 space-y-4">
+                    <div>
+                        <label for="contact_group_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contact-groups.title') }}
+                        </label>
+                        <select
+                            name="contact_group_id"
+                            id="contact_group_id"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                            onchange="loadFiltersForGroup(this.value)"
+                        >
+                            <option value="">{{ __('newsletters::app.common.actions.select') }} {{ __('newsletters::app.admin.contact-groups.title') }}</option>
+                            @if(isset($contactGroups) && $contactGroups->count() > 0)
+                                @foreach($contactGroups as $group)
+                                    <option value="{{ $group->id }}" {{ old('contact_group_id', $savedContactGroupId) == $group->id ? 'selected' : '' }}>
+                                        {{ $group->name }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                        @error('contact_group_id')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="filter_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contact-filters.title') }}
+                        </label>
+                        <select
+                            name="filter_id"
+                            id="filter_id"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        >
+                            <option value="">{{ __('newsletters::app.common.actions.select') }} {{ __('newsletters::app.admin.contact-filters.title') }}</option>
+                        </select>
+                        @error('filter_id')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- WhatsApp Instances, Customer Numbers, and User Numbers Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -2229,6 +2282,70 @@
                         hiddenMessageText.value = content;
                     }
                 }
+            }
+        });
+
+        // Load filters for selected contact group
+        function loadFiltersForGroup(groupId) {
+            const filterSelect = document.getElementById('filter_id');
+            if (!filterSelect) return;
+
+            if (!groupId) {
+                filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
+                return;
+            }
+
+            filterSelect.disabled = true;
+            filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.loading") }}...</option>';
+
+            fetch(`/admin/newsletters/contact-groups/${groupId}/filters`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                }
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.actions.select") }} {{ __("newsletters::app.admin.contact-filters.title") }}</option>';
+                    // Add "Select All" option with value "0"
+                    const selectAllOption = document.createElement('option');
+                    selectAllOption.value = '0';
+                    selectAllOption.textContent = 'Выбрать всех';
+                    filterSelect.appendChild(selectAllOption);
+                    if (data.filters && data.filters.length > 0) {
+                        data.filters.forEach(filter => {
+                            const option = document.createElement('option');
+                            option.value = filter.id;
+                            option.textContent = filter.name;
+                            filterSelect.appendChild(option);
+                        });
+                    }
+                    // Set saved filter_id if exists
+                    @if(isset($savedFilterId))
+                        const savedFilterId = {{ $savedFilterId !== null ? $savedFilterId : 'null' }};
+                        if (savedFilterId !== null && savedFilterId !== undefined) {
+                            filterSelect.value = savedFilterId.toString();
+                        }
+                    @endif
+                    filterSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error loading filters:', error);
+                    filterSelect.innerHTML = '<option value="">{{ __("newsletters::app.common.messages.error-loading") }}</option>';
+                    filterSelect.disabled = false;
+                });
+        }
+
+        // Initialize filter loading on page load if contact_group_id is preselected
+        document.addEventListener('DOMContentLoaded', function() {
+            const contactGroupSelect = document.getElementById('contact_group_id');
+            if (contactGroupSelect && contactGroupSelect.value) {
+                loadFiltersForGroup(contactGroupSelect.value);
             }
         });
 
