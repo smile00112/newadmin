@@ -381,6 +381,9 @@ return [
             'no-group-selected' => 'No contact group selected.',
             'view-details' => 'View Contact Details',
             'contact-details' => 'Contact Details',
+            'add-contact' => 'Add Contact',
+            'create-success' => 'Contact created successfully.',
+            'duplicate-phone' => 'A contact with this phone number already exists in this group.',
         ],
 
         'contact-filters' => [

@@ -362,6 +362,7 @@ Route::group([
         Route::controller(ContactController::class)->prefix('contacts')->group(function () {
             Route::get('', 'index')->name('admin.newsletters.contacts.index');
             Route::get('get', 'getContacts')->name('admin.newsletters.contacts.get');
+            Route::post('', 'store')->name('admin.newsletters.contacts.store');
             Route::middleware('newsletters.permission:newsletters.contacts.delete')->group(function () {
                 Route::delete('clear-group', 'clearGroupContacts')->name('admin.newsletters.contacts.clear-group');
             });

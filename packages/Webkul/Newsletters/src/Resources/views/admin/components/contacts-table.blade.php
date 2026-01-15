@@ -22,6 +22,12 @@
                     class="px-4 py-2 text-sm font-medium text-red-500 bg-red-600 border border-red-200 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-800">
                 {{ __('newsletters::app.admin.contacts.clear-group') }}
             </button>
+            <button type="button"
+                    id="add_contact_button"
+                    onclick="openAddContactModal()"
+                    class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-800">
+                {{ __('newsletters::app.admin.contacts.add-contact') }}
+            </button>
             @else
             <!-- Debug: contactGroupId is empty. Value: {{ var_export($contactGroupId, true) }} -->
             @endif
@@ -123,6 +129,217 @@
                     {{ __('newsletters::app.common.actions.close') }}
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Contact Modal -->
+<div id="addContactModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[10002]">
+    <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                    {{ __('newsletters::app.admin.contacts.add-contact') }}
+                </h3>
+                <button onclick="closeAddContactModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <span class="icon-cross text-2xl"></span>
+                </button>
+            </div>
+
+            <form id="addContactForm" onsubmit="submitAddContactForm(event)" class="space-y-4">
+                <input type="hidden" name="contact_group_id" id="add_contact_group_id" value="{{ $contactGroupId ?? '' }}">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Full Name (Required) -->
+                    <div>
+                        <label for="add_contact_full_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-full-name') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text"
+                               id="add_contact_full_name"
+                               name="full_name"
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Phone (Required) -->
+                    <div>
+                        <label for="add_contact_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-phone') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text"
+                               id="add_contact_phone"
+                               name="phone"
+                               required
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="add_contact_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-email') }}
+                        </label>
+                        <input type="email"
+                               id="add_contact_email"
+                               name="email"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Telegram User ID -->
+                    <div>
+                        <label for="add_contact_telegram_user_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.table.telegram-user-id') }}
+                        </label>
+                        <input type="text"
+                               id="add_contact_telegram_user_id"
+                               name="telegram_user_id"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Gender -->
+                    <div>
+                        <label for="add_contact_gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-gender') }}
+                        </label>
+                        <select id="add_contact_gender"
+                                name="gender"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                            <option value="">{{ __('newsletters::app.common.actions.select') }}</option>
+                            <option value="male">{{ __('newsletters::app.admin.contacts.gender-male') }}</option>
+                            <option value="female">{{ __('newsletters::app.admin.contacts.gender-female') }}</option>
+                            <option value="other">{{ __('newsletters::app.admin.contacts.gender-other') }}</option>
+                        </select>
+                    </div>
+
+                    <!-- Last Order Date -->
+                    <div>
+                        <label for="add_contact_last_order_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-last-order-date') }}
+                        </label>
+                        <input type="date"
+                               id="add_contact_last_order_date"
+                               name="last_order_date"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Registration Date -->
+                    <div>
+                        <label for="add_contact_registration_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-registration-date') }}
+                        </label>
+                        <input type="date"
+                               id="add_contact_registration_date"
+                               name="registration_date"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Birth Date -->
+                    <div>
+                        <label for="add_contact_birth_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-birth-date') }}
+                        </label>
+                        <input type="date"
+                               id="add_contact_birth_date"
+                               name="birth_date"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Orders Count -->
+                    <div>
+                        <label for="add_contact_orders_count" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-orders-count') }}
+                        </label>
+                        <input type="number"
+                               id="add_contact_orders_count"
+                               name="orders_count"
+                               min="0"
+                               step="1"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Average Check -->
+                    <div>
+                        <label for="add_contact_average_check" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-average-check') }}
+                        </label>
+                        <input type="number"
+                               id="add_contact_average_check"
+                               name="average_check"
+                               min="0"
+                               step="0.01"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Total Check -->
+                    <div>
+                        <label for="add_contact_total_check" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-total-check') }}
+                        </label>
+                        <input type="number"
+                               id="add_contact_total_check"
+                               name="total_check"
+                               min="0"
+                               step="0.01"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Average Order Rating -->
+                    <div>
+                        <label for="add_contact_average_order_rating" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-average-rating') }}
+                        </label>
+                        <input type="number"
+                               id="add_contact_average_order_rating"
+                               name="average_order_rating"
+                               min="0"
+                               max="5"
+                               step="0.01"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Favorite Category -->
+                    <div>
+                        <label for="add_contact_favorite_category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-favorite-category') }}
+                        </label>
+                        <input type="text"
+                               id="add_contact_favorite_category"
+                               name="favorite_category"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Favorite Dish -->
+                    <div>
+                        <label for="add_contact_favorite_dish" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-favorite-dish') }}
+                        </label>
+                        <input type="text"
+                               id="add_contact_favorite_dish"
+                               name="favorite_dish"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+
+                    <!-- Store -->
+                    <div>
+                        <label for="add_contact_store" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            {{ __('newsletters::app.admin.contacts.field-store') }}
+                        </label>
+                        <input type="text"
+                               id="add_contact_store"
+                               name="store"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-x-2 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeAddContactModal()" class="secondary-button">
+                        {{ __('newsletters::app.common.actions.cancel') }}
+                    </button>
+                    <button type="submit" class="primary-button">
+                        {{ __('newsletters::app.common.actions.save') }}
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -546,10 +763,138 @@
     // Close modal on Escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
-            const modal = document.getElementById('contactDetailsModal');
-            if (!modal.classList.contains('hidden')) {
+            const contactDetailsModal = document.getElementById('contactDetailsModal');
+            const addContactModal = document.getElementById('addContactModal');
+            if (contactDetailsModal && !contactDetailsModal.classList.contains('hidden')) {
                 closeContactDetailsModal();
             }
+            if (addContactModal && !addContactModal.classList.contains('hidden')) {
+                closeAddContactModal();
+            }
+        }
+    });
+
+    // Add Contact Modal Functions
+    function openAddContactModal() {
+        if (!contactGroupId) {
+            alert('{{ __('newsletters::app.admin.contacts.no-group-selected') }}');
+            return;
+        }
+
+        const modal = document.getElementById('addContactModal');
+        const form = document.getElementById('addContactForm');
+        const groupIdInput = document.getElementById('add_contact_group_id');
+
+        if (modal && form && groupIdInput) {
+            groupIdInput.value = contactGroupId;
+            form.reset();
+            modal.classList.remove('hidden');
+        }
+    }
+
+    function closeAddContactModal() {
+        const modal = document.getElementById('addContactModal');
+        const form = document.getElementById('addContactForm');
+
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+
+        if (form) {
+            form.reset();
+        }
+    }
+
+    function submitAddContactForm(event) {
+        event.preventDefault();
+
+        const form = document.getElementById('addContactForm');
+        if (!form) {
+            return;
+        }
+
+        // Basic client-side validation
+        const fullName = document.getElementById('add_contact_full_name').value.trim();
+        const phone = document.getElementById('add_contact_phone').value.trim();
+
+        if (!fullName) {
+            alert('{{ __('newsletters::app.admin.contacts.field-required', ['field' => __('newsletters::app.admin.contacts.field-full-name')]) }}');
+            return;
+        }
+
+        if (!phone) {
+            alert('{{ __('newsletters::app.admin.contacts.field-required', ['field' => __('newsletters::app.admin.contacts.field-phone')]) }}');
+            return;
+        }
+
+        // Get form data
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => {
+            // Skip empty values except required fields
+            if (value || key === 'contact_group_id') {
+                data[key] = value;
+            }
+        });
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            alert('CSRF token not found. Please refresh the page.');
+            return;
+        }
+
+        // Disable submit button
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton ? submitButton.textContent : '';
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = '{{ __('newsletters::app.common.messages.loading') }}...';
+        }
+
+        // Send AJAX request
+        fetch('{{ route('admin.newsletters.contacts.store') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '{{ __('newsletters::app.admin.contacts.create-success') }}');
+                closeAddContactModal();
+                loadContacts(1); // Reload contacts table
+            } else {
+                let errorMessage = data.message || '{{ __('newsletters::app.common.messages.error') }}';
+                if (data.errors) {
+                    const errorList = Object.values(data.errors).flat().join('\n');
+                    errorMessage += '\n' + errorList;
+                }
+                alert(errorMessage);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('{{ __('newsletters::app.common.messages.error') }}: ' + error.message);
+        })
+        .finally(() => {
+            // Re-enable submit button
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+            }
+        });
+    }
+
+    // Close add contact modal on outside click
+    document.addEventListener('click', function(event) {
+        const addContactModal = document.getElementById('addContactModal');
+        if (addContactModal && event.target === addContactModal) {
+            closeAddContactModal();
         }
     });
 </script>
