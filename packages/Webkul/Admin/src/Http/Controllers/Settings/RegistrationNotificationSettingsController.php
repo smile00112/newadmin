@@ -6,16 +6,15 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
-use Webkul\Core\Repositories\CoreConfigRepository;
+use Webkul\Core\Models\CoreConfig;
 
 class RegistrationNotificationSettingsController extends Controller
 {
     /**
      * Create a new controller instance.
      */
-    public function __construct(
-        protected CoreConfigRepository $coreConfigRepository
-    ) {
+    public function __construct()
+    {
         $this->middleware(function ($request, $next) {
             $admin = auth()->guard('admin')->user();
             
@@ -64,19 +63,22 @@ class RegistrationNotificationSettingsController extends Controller
             $emails = implode(',', $emailArray);
         }
 
-        // Save to core_config
-        $existingConfig = $this->coreConfigRepository->findOneWhere([
-            'code' => 'registration.notifications.emails',
-        ]);
+        // Save to core_config using model directly
+        $existingConfig = CoreConfig::where('code', 'registration.notifications.emails')
+            ->whereNull('channel_code')
+            ->whereNull('locale_code')
+            ->first();
 
         if ($existingConfig) {
-            $this->coreConfigRepository->update([
+            $existingConfig->update([
                 'value' => $emails,
-            ], $existingConfig->id);
+            ]);
         } else {
-            $this->coreConfigRepository->create([
+            CoreConfig::create([
                 'code' => 'registration.notifications.emails',
                 'value' => $emails,
+                'channel_code' => null,
+                'locale_code' => null,
             ]);
         }
 
