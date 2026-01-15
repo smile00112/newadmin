@@ -31,6 +31,61 @@ class WhatsAppChannel implements MailingChannelInterface
         }
 
         try {
+            Log::info('WhatsAppChannel: sending message', [
+                'instance_id'  => $instance->id,
+                'customer_id'  => $customer->id,
+                'phone'        => $phoneNumber,
+                'mailing_list_id' => $customer->mailing_list_id ?? null,
+                'message_preview' => mb_substr($message, 0, 200),
+            ]);
+
+            // Проверяем наличие медиа файлов в message_links
+            $mailingList = $customer->mailingList;
+            if ($mailingList && $mailingList->message_links && !empty($mailingList->message_links)) {
+                $media = $mailingList->message_links[0];
+                $fileUrl = $media['url'] ?? null;
+                
+                if ($fileUrl) {
+                    // Если URL относительный, делаем его абсолютным
+                    if (!preg_match('/^https?:\/\//', $fileUrl)) {
+                        $fileUrl = url($fileUrl);
+                    }
+                    
+                    // Получаем имя файла из original_name или извлекаем из path
+                    $fileName = $media['original_name'] ?? basename($media['path'] ?? 'file');
+                    
+                    // Отправляем медиа файл с текстом сообщения как подписью
+                    $mediaMessageId = $this->sendFileByUrl(
+                        $instance,
+                        $phoneNumber,
+                        $fileUrl,
+                        $fileName,
+                        $message // Используем текст сообщения как подпись к медиа
+                    );
+                    
+                    if ($mediaMessageId) {
+                        Log::info('WhatsApp media sent successfully', [
+                            'instance_id' => $instance->id,
+                            'customer_id' => $customer->id,
+                            'phone' => $phoneNumber,
+                            'message_id' => $mediaMessageId,
+                            'media_url' => $fileUrl,
+                        ]);
+                        
+                        return $mediaMessageId;
+                    } else {
+                        Log::warning('WhatsApp media sending failed, falling back to text message', [
+                            'instance_id' => $instance->id,
+                            'customer_id' => $customer->id,
+                            'phone' => $phoneNumber,
+                            'media_url' => $fileUrl,
+                        ]);
+                        // Продолжаем отправку текстового сообщения как fallback
+                    }
+                }
+            }
+
+            // Отправляем обычное текстовое сообщение
             $greenApiService = new GreenAPIService($instance->link_name, $instance->login, $instance->password);
             $response = $greenApiService->sendMessage($phoneNumber . '@c.us', $message);
 
