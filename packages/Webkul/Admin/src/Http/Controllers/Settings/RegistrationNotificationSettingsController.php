@@ -31,7 +31,13 @@ class RegistrationNotificationSettingsController extends Controller
      */
     public function index(): View
     {
-        $emails = core()->getConfigData('registration.notifications.emails') ?? '';
+        // Get emails directly from database to ensure we get the correct record
+        $config = CoreConfig::where('code', 'registration.notifications.emails')
+            ->whereNull('channel_code')
+            ->whereNull('locale_code')
+            ->first();
+
+        $emails = $config ? $config->value : '';
 
         return view('admin::settings.registration-notifications.index', compact('emails'));
     }
@@ -73,8 +79,9 @@ class RegistrationNotificationSettingsController extends Controller
             $existingConfig->update([
                 'value' => $emails,
             ]);
+            $config = $existingConfig->fresh();
         } else {
-            CoreConfig::create([
+            $config = CoreConfig::create([
                 'code' => 'registration.notifications.emails',
                 'value' => $emails,
                 'channel_code' => null,
@@ -84,6 +91,7 @@ class RegistrationNotificationSettingsController extends Controller
 
         return new JsonResponse([
             'message' => trans('admin::app.settings.registration-notifications.update-success'),
+            'emails' => $config->value,
         ]);
     }
 }

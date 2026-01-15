@@ -153,6 +153,11 @@
                             .then((response) => {
                                 this.isLoading = false;
 
+                                // Update emails value from server response if provided
+                                if (response.data.emails !== undefined) {
+                                    this.emails = response.data.emails;
+                                }
+
                                 this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
                             })
                             .catch(error => {
