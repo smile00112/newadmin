@@ -11,6 +11,7 @@ use Webkul\RestApi\Http\Controllers\V1\Admin\Settings\Tax\TaxCategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Admin\Settings\Tax\TaxRateController;
 use Webkul\RestApi\Http\Controllers\V1\Admin\Settings\ThemeController;
 use Webkul\RestApi\Http\Controllers\V1\Admin\Settings\UserController;
+use Webkul\RestApi\Http\Controllers\Admin\AuthChannelSettingsController;
 
 /**
  * Settings routes.
@@ -173,5 +174,14 @@ Route::group([
         Route::put('{id}', 'update');
 
         Route::delete('{id}', 'destroy');
+    });
+
+    /**
+     * Auth Channels routes.
+     */
+    Route::controller(AuthChannelSettingsController::class)->prefix('auth-channels')->group(function () {
+        Route::get('', 'index');
+        Route::post('', 'store');
+        Route::get('{channel}', 'getSettings');
     });
 });

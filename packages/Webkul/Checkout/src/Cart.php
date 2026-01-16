@@ -476,6 +476,14 @@ class Cart
             return null;
         }
 
+        /**
+         * For pickup orders, shipping address is not required.
+         */
+        $isPickup = $this->cart->shipping_method === 'pickup_pickup';
+        if ($isPickup && empty($params)) {
+            return null;
+        }
+
         if (! $this->cart->billing_address) {
             throw new BillingAddressNotFoundException;
         }

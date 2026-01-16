@@ -2,10 +2,19 @@
 
 namespace Webkul\RestApi\Services\Auth;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
 
 class SmsService
 {
+    /**
+     * Create a new service instance.
+     */
+    public function __construct(
+        protected AuthChannelSettingRepository $settingRepository
+    ) {}
+
     /**
      * Send SMS verification code.
      *
@@ -16,18 +25,61 @@ class SmsService
     public function sendVerificationCode(string $phoneNumber, string $code): bool
     {
         try {
-            // TODO: Integrate with actual SMS provider (Twilio, AWS SNS, etc.)
-            // For now, we'll just log the code for development purposes
-            Log::info("SMS Verification Code for {$phoneNumber}: {$code}");
+            $channelCode = core()->getCurrentChannelCode();
             
-            // Example integration with Twilio:
-            // $twilio = new Client(config('services.twilio.sid'), config('services.twilio.token'));
-            // $twilio->messages->create($phoneNumber, [
-            //     'from' => config('services.twilio.from'),
-            //     'body' => "Your verification code is: {$code}"
-            // ]);
-            
-            return true;
+            // Check if SMS channel is enabled
+            if (!$this->settingRepository->isChannelEnabled('sms', $channelCode)) {
+                Log::warning("SMS channel is disabled for channel: {$channelCode}");
+                return false;
+            }
+
+            // Get settings from database with fallback to config
+            $login = $this->settingRepository->getSetting('sms', 'login', $channelCode)
+                ?? config('services.redsms.login');
+            $apiKey = $this->settingRepository->getSetting('sms', 'api_key', $channelCode)
+                ?? config('services.redsms.api_key');
+            $from = $this->settingRepository->getSetting('sms', 'from', $channelCode)
+                ?? config('services.redsms.from');
+
+            if (!$login || !$apiKey || !$from) {
+                Log::error("SMS settings are incomplete. Login, API key, and sender name are required.");
+                return false;
+            }
+
+            // Generate authentication
+            $ts = 'ts-value-' . time();
+            $secret = md5($ts . $apiKey);
+
+            // Prepare message
+            $message = "Ваш код подтверждения: {$code}";
+
+            // Send SMS via REDSMS API
+            $response = Http::withHeaders([
+                'login' => $login,
+                'ts' => $ts,
+                'secret' => $secret,
+                'Content-type' => 'application/json',
+            ])->post('https://cp.redsms.ru/api/message', [
+                'route' => 'sms',
+                'from' => $from,
+                'to' => $phoneNumber,
+                'text' => $message,
+            ]);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                
+                if (isset($responseData['success']) && $responseData['success']) {
+                    Log::info("SMS sent successfully to {$phoneNumber}");
+                    return true;
+                } else {
+                    Log::error("SMS API returned error: " . json_encode($responseData));
+                    return false;
+                }
+            } else {
+                Log::error("SMS API request failed with status: " . $response->status());
+                return false;
+            }
         } catch (\Exception $e) {
             Log::error("SMS sending failed: " . $e->getMessage());
             return false;

@@ -12,6 +12,7 @@ use Webkul\Admin\Http\Controllers\Settings\Tax\TaxCategoryController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxRateController;
 use Webkul\Admin\Http\Controllers\Settings\ThemeController;
 use Webkul\Admin\Http\Controllers\Settings\UserController;
+use Webkul\RestApi\Http\Controllers\Admin\AuthChannelSettingsController;
 
 /**
  * Settings routes.
@@ -222,5 +223,13 @@ Route::prefix('settings')->group(function () {
 
             Route::get('download-error-report/{id}', 'downloadErrorReport')->name('admin.settings.data_transfer.imports.download_error_report');
         });
+    });
+
+    /**
+     * Auth Channels routes.
+     */
+    Route::controller(AuthChannelSettingsController::class)->prefix('auth-channels')->group(function () {
+        Route::get('', 'index')->name('admin.settings.auth_channels.index');
+        Route::post('', 'store')->name('admin.settings.auth_channels.store');
     });
 });

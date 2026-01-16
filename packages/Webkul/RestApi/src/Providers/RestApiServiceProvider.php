@@ -33,8 +33,11 @@ class RestApiServiceProvider extends ServiceProvider
 
         $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'rest-api');
 
-        $this->app->bind(BaseHandler::class, Handler::class);
+        $this->loadViewsFrom(__DIR__.'/../Resources/views', 'rest-api');
 
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+
+        $this->app->bind(BaseHandler::class, Handler::class);
     }
 
     /**

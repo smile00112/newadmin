@@ -3,7 +3,7 @@
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Event;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\CustomerAddressRepository;
@@ -25,7 +25,7 @@ class CheckoutController extends CustomerController
     /**
      * Save customer address.
      */
-    public function saveAddress(CartAddressRequest $cartAddressRequest): Response
+    public function saveAddress(CartAddressRequest $cartAddressRequest): JsonResponse
     {
         try {
             $data = $cartAddressRequest->all();
@@ -77,7 +77,7 @@ class CheckoutController extends CustomerController
     /**
      * Save shipping method.
      */
-    public function saveShipping(Request $request): Response
+    public function saveShipping(Request $request): JsonResponse
     {
         try {
             $validatedData = $this->validate($request, [
@@ -112,7 +112,7 @@ class CheckoutController extends CustomerController
     /**
      * Save payment method.
      */
-    public function savePayment(Request $request): Response
+    public function savePayment(Request $request): JsonResponse
     {
         try {
             $validatedData = $this->validate($request, [
@@ -147,7 +147,7 @@ class CheckoutController extends CustomerController
     /**
      * Check for minimum order.
      */
-    public function checkMinimumOrder(): Response
+    public function checkMinimumOrder(): JsonResponse
     {
         try {
             $minimumOrderAmount = (float) core()->getConfigData('sales.orderSettings.minimum-order.minimum_order_amount') ?? 0;
@@ -171,7 +171,7 @@ class CheckoutController extends CustomerController
     /**
      * Save order.
      */
-    public function saveOrder(OrderRepository $orderRepository): Response
+    public function saveOrder(OrderRepository $orderRepository): JsonResponse
     {
         try {
             if (Cart::hasError()) {
@@ -224,7 +224,14 @@ class CheckoutController extends CustomerController
             throw new \Exception(trans('rest-api::app.shop.checkout.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]));
         }
 
-        if ($cart->haveStockableItems() && ! $cart->shipping_address) {
+        // Проверяем, выбран ли самовывоз
+        $isPickup = $cart->shipping_method === 'pickup_pickup';
+
+        if (
+            $cart->haveStockableItems()
+            && ! $isPickup
+            && ! $cart->shipping_address
+        ) {
             throw new \Exception(trans('rest-api::app.shop.checkout.check-shipping-address'));
         }
 

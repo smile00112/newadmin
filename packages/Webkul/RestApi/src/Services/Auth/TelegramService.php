@@ -2,10 +2,19 @@
 
 namespace Webkul\RestApi\Services\Auth;
 
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
 
 class TelegramService
 {
+    /**
+     * Create a new service instance.
+     */
+    public function __construct(
+        protected AuthChannelSettingRepository $settingRepository
+    ) {}
+
     /**
      * Send Telegram verification code.
      *
@@ -16,15 +25,46 @@ class TelegramService
     public function sendVerificationCode(string $telegramId, string $code): bool
     {
         try {
-            // TODO: Integrate with actual Telegram Bot API
-            // For now, we'll just log the code for development purposes
-            Log::info("Telegram Verification Code for {$telegramId}: {$code}");
+            $channelCode = core()->getCurrentChannelCode();
             
-            // Example integration with Telegram Bot API:
-            // $telegramBot = new TelegramBot(config('services.telegram.bot_token'));
-            // $telegramBot->sendMessage($telegramId, "Your verification code is: {$code}");
-            
-            return true;
+            // Check if Telegram channel is enabled
+            if (!$this->settingRepository->isChannelEnabled('telegram', $channelCode)) {
+                Log::warning("Telegram channel is disabled for channel: {$channelCode}");
+                return false;
+            }
+
+            // Get settings from database with fallback to config
+            $botToken = $this->settingRepository->getSetting('telegram', 'bot_token', $channelCode)
+                ?? config('services.telegram.bot_token');
+
+            if (!$botToken) {
+                Log::error("Telegram bot token is not configured.");
+                return false;
+            }
+
+            // Prepare message
+            $message = "Ваш код подтверждения: {$code}";
+
+            // Send message via Telegram Bot API
+            $response = Http::post("https://api.telegram.org/bot{$botToken}/sendMessage", [
+                'chat_id' => $telegramId,
+                'text' => $message,
+            ]);
+
+            if ($response->successful()) {
+                $responseData = $response->json();
+                
+                if (isset($responseData['ok']) && $responseData['ok']) {
+                    Log::info("Telegram message sent successfully to {$telegramId}");
+                    return true;
+                } else {
+                    Log::error("Telegram API returned error: " . json_encode($responseData));
+                    return false;
+                }
+            } else {
+                Log::error("Telegram API request failed with status: " . $response->status());
+                return false;
+            }
         } catch (\Exception $e) {
             Log::error("Telegram sending failed: " . $e->getMessage());
             return false;

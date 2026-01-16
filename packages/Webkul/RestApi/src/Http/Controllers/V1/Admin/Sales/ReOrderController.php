@@ -224,7 +224,14 @@ class ReOrderController extends SalesController
             throw new \Exception(trans('shop::app.checkout.cart.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]));
         }
 
-        if ($cart->haveStockableItems() && ! $cart->shipping_address) {
+        // Проверяем, выбран ли самовывоз
+        $isPickup = $cart->shipping_method === 'pickup_pickup';
+
+        if (
+            $cart->haveStockableItems()
+            && ! $isPickup
+            && ! $cart->shipping_address
+        ) {
             throw new \Exception(trans('shop::app.checkout.onepage.address.check-shipping-address'));
         }
 

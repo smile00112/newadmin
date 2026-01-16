@@ -560,4 +560,47 @@ return [
             ],
         ],
     ],
+
+    'auth_channels' => [
+        'settings' => [
+            'title'      => 'Настройки каналов авторизации',
+            'save-success' => 'Настройки успешно сохранены.',
+
+            'sms' => [
+                'title'      => 'SMS (REDSMS)',
+                'enabled'    => 'Включено',
+                'enabled-info' => 'Включить отправку SMS через REDSMS',
+                'login'      => 'Логин',
+                'login-info' => 'Логин пользователя REDSMS',
+                'api_key'    => 'API ключ',
+                'api_key-info' => 'API ключ для доступа к REDSMS',
+                'from'       => 'Имя отправителя',
+                'from-info'  => 'Имя отправителя SMS (должно быть зарегистрировано в REDSMS)',
+            ],
+
+            'telegram' => [
+                'title'      => 'Telegram',
+                'enabled'    => 'Включено',
+                'enabled-info' => 'Включить отправку сообщений через Telegram бота',
+                'bot_token'  => 'Токен бота',
+                'bot_token-info' => 'Токен Telegram бота (получить у @BotFather)',
+                'bot_link'   => 'Ссылка на бота',
+                'bot_link-info' => 'Ссылка на Telegram бота (например, https://t.me/your_bot)',
+                'app_link'   => 'Ссылка приложение в телеграме',
+                'app_link-info' => 'Ссылка на приложение в Telegram (например, https://t.me/your_app)',
+            ],
+
+            'whatsapp' => [
+                'title'      => 'WhatsApp (Green API)',
+                'enabled'    => 'Включено',
+                'enabled-info' => 'Включить отправку сообщений через Green API',
+                'id_instance' => 'ID инстанса',
+                'id_instance-info' => 'ID инстанса Green API',
+                'api_token_instance' => 'Токен API',
+                'api_token_instance-info' => 'Токен API для доступа к Green API',
+                'url'        => 'URL API',
+                'url-info'   => 'URL API Green API (по умолчанию: https://api.green-api.com)',
+            ],
+        ],
+    ],
 ];

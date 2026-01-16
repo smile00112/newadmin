@@ -237,8 +237,12 @@ class OrderController extends Controller
             ]));
         }
 
+        // Проверяем, выбран ли самовывоз
+        $isPickup = $cart->shipping_method === 'pickup_pickup';
+
         if (
             $cart->haveStockableItems()
+            && ! $isPickup
             && ! $cart->shipping_address
         ) {
             throw new \Exception(trans('admin::app.sales.orders.create.check-shipping-address'));

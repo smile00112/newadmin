@@ -380,6 +380,12 @@ return [
         'route'      => 'admin.settings.data_transfer.imports.index',
         'sort'       => 1,
         'icon'       => '',
+    ], [
+        'key'        => 'settings.auth_channels',
+        'name'       => 'rest-api::app.auth_channels.settings.title',
+        'route'      => 'admin.settings.auth_channels.index',
+        'sort'       => 11,
+        'icon'       => '',
     ],
 
     /**

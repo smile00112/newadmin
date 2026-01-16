@@ -561,4 +561,47 @@ return [
             ],
         ],
     ],
+
+    'auth_channels' => [
+        'settings' => [
+            'title'      => 'Auth Channels Settings',
+            'save-success' => 'Settings saved successfully.',
+
+            'sms' => [
+                'title'      => 'SMS (REDSMS)',
+                'enabled'    => 'Enabled',
+                'enabled-info' => 'Enable SMS sending via REDSMS',
+                'login'      => 'Login',
+                'login-info' => 'REDSMS user login',
+                'api_key'    => 'API Key',
+                'api_key-info' => 'API key for REDSMS access',
+                'from'       => 'Sender Name',
+                'from-info'  => 'SMS sender name (must be registered in REDSMS)',
+            ],
+
+            'telegram' => [
+                'title'      => 'Telegram',
+                'enabled'    => 'Enabled',
+                'enabled-info' => 'Enable message sending via Telegram bot',
+                'bot_token'  => 'Bot Token',
+                'bot_token-info' => 'Telegram bot token (get from @BotFather)',
+                'bot_link'   => 'Bot Link',
+                'bot_link-info' => 'Link to Telegram bot (e.g., https://t.me/your_bot)',
+                'app_link'   => 'Telegram App Link',
+                'app_link-info' => 'Link to application in Telegram (e.g., https://t.me/your_app)',
+            ],
+
+            'whatsapp' => [
+                'title'      => 'WhatsApp (Green API)',
+                'enabled'    => 'Enabled',
+                'enabled-info' => 'Enable message sending via Green API',
+                'id_instance' => 'Instance ID',
+                'id_instance-info' => 'Green API instance ID',
+                'api_token_instance' => 'API Token',
+                'api_token_instance-info' => 'API token for Green API access',
+                'url'        => 'API URL',
+                'url-info'   => 'Green API URL (default: https://api.green-api.com)',
+            ],
+        ],
+    ],
 ];
