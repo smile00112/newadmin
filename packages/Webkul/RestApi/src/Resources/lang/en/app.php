@@ -461,6 +461,7 @@ return [
             'billing-address-saved'   => 'Address saved successfully.',
             'check-billing-address'   => 'Please check billing address.',
             'check-shipping-address'  => 'Please check shipping address.',
+            'error'                  => 'An error occurred while processing the request.',
             'minimum-order-message'   => 'Minimum order amount is :amount.',
             'order-saved'             => 'Order saved successfully',
             'payment-method-saved'    => 'Payment method saved successfully.',

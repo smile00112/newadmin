@@ -1,0 +1,51 @@
+---
+alwaysApply: true
+
+# PHP Standards and Best Practices
+
+## PHP Version Requirements
+- PHP 8.3+ required
+- Use strict typing: `declare(strict_types=1);` at the top of every PHP file
+
+## Code Style Standards
+- Adhere to PSR-12 coding standards for consistent code style
+- Use consistent naming conventions:
+  - PascalCase for class names
+  - camelCase for method names
+  - snake_case for database columns and variables where appropriate
+- Always use explicit return type declarations for methods and functions
+- Use appropriate PHP type hints for method parameters
+- Leverage PHP 8.3+ features when appropriate:
+  - Typed properties
+  - Match expressions
+  - Union types
+  - Nullable types
+  - Readonly properties
+
+## Type Declarations
+- Always use explicit return type declarations
+- Use appropriate PHP type hints for method parameters
+- Leverage PHP 8.3+ features like union types and nullable types when necessary
+- Be consistent and explicit with data type declarations throughout the codebase
+- Use type hints for properties, method parameters, and return types
+- Leverage PHP's strict typing to catch type-related errors early
+
+## Error Handling
+- Use try-catch blocks for expected exceptions
+- Create custom exceptions when necessary
+- Handle exceptions gracefully and return appropriate responses
+- Use proper error logging mechanisms
+
+## Code Organization
+- Use consistent naming conventions for folders, classes, and files
+- Follow established directory structure
+- Organize code into logical modules and namespaces
+- Keep functions and classes focused on a single responsibility
+
+## Performance Considerations
+- Avoid unnecessary object instantiation
+- Use appropriate data structures for the task
+- Consider memory usage for large datasets
+- Optimize database queries and use caching where appropriate
+
+---

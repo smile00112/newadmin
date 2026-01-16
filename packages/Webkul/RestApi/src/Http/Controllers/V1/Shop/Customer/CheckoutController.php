@@ -27,43 +27,51 @@ class CheckoutController extends CustomerController
      */
     public function saveAddress(CartAddressRequest $cartAddressRequest): Response
     {
-        $data = $cartAddressRequest->all();
+        try {
+            $data = $cartAddressRequest->all();
 
-        if (
-            Cart::hasError()
-            || ! Shipping::collectRates()
-        ) {
-            abort(400);
-        }
-
-        Cart::saveAddresses($data);
-
-        $rates = [];
-
-        foreach ($data as $key => $address) {
-            if (isset($address['save_as_address']) && $address['save_as_address']) {
-                $this->storeAddress($cartAddressRequest, $address);
+            if (
+                Cart::hasError()
+                || ! Shipping::collectRates()
+            ) {
+                return response()->json([
+                    'message' => trans('rest-api::app.shop.checkout.error'),
+                ], 400);
             }
+
+            Cart::saveAddresses($data);
+
+            $rates = [];
+
+            foreach ($data as $key => $address) {
+                if (isset($address['save_as_address']) && $address['save_as_address']) {
+                    $this->storeAddress($cartAddressRequest, $address);
+                }
+            }
+
+            $shippingMethods = Shipping::collectRates()['shippingMethods'] ?? [];
+
+            foreach ($shippingMethods as $code => $shippingMethod) {
+                $rates[] = [
+                    'carrier_title' => $shippingMethod['carrier_title'],
+                    'rates'         => CartShippingRateResource::collection(collect($shippingMethod['rates'])),
+                ];
+            }
+
+            Cart::collectTotals();
+
+            return response()->json([
+                'data'    => [
+                    'rates' => $rates,
+                    'cart'  => new CartResource(Cart::getCart()),
+                ],
+                'message' => trans('rest-api::app.shop.checkout.billing-address-saved'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
         }
-
-        $shippingMethods = Shipping::collectRates()['shippingMethods'] ?? [];
-
-        foreach ($shippingMethods as $code => $shippingMethod) {
-            $rates[] = [
-                'carrier_title' => $shippingMethod['carrier_title'],
-                'rates'         => CartShippingRateResource::collection(collect($shippingMethod['rates'])),
-            ];
-        }
-
-        Cart::collectTotals();
-
-        return response([
-            'data'    => [
-                'rates' => $rates,
-                'cart'  => new CartResource(Cart::getCart()),
-            ],
-            'message' => trans('rest-api::app.shop.checkout.billing-address-saved'),
-        ]);
     }
 
     /**
@@ -71,26 +79,34 @@ class CheckoutController extends CustomerController
      */
     public function saveShipping(Request $request): Response
     {
-        $validatedData = $this->validate($request, [
-            'shipping_method' => 'required',
-        ]);
+        try {
+            $validatedData = $this->validate($request, [
+                'shipping_method' => 'required',
+            ]);
 
-        if (Cart::hasError()
-            || ! $validatedData['shipping_method']
-            || ! Cart::saveShippingMethod($validatedData['shipping_method'])
-        ) {
-            abort(400);
+            if (Cart::hasError()
+                || ! $validatedData['shipping_method']
+                || ! Cart::saveShippingMethod($validatedData['shipping_method'])
+            ) {
+                return response()->json([
+                    'message' => trans('rest-api::app.shop.checkout.error'),
+                ], 400);
+            }
+
+            Cart::collectTotals();
+
+            return response()->json([
+                'data'    => [
+                    'methods' => Payment::getPaymentMethods(),
+                    'cart'    => new CartResource(Cart::getCart()),
+                ],
+                'message' => trans('rest-api::app.shop.checkout.shipping-method-saved'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
         }
-
-        Cart::collectTotals();
-
-        return response([
-            'data'    => [
-                'methods' => Payment::getPaymentMethods(),
-                'cart'    => new CartResource(Cart::getCart()),
-            ],
-            'message' => trans('rest-api::app.shop.checkout.shipping-method-saved'),
-        ]);
     }
 
     /**
@@ -98,26 +114,34 @@ class CheckoutController extends CustomerController
      */
     public function savePayment(Request $request): Response
     {
-        $validatedData = $this->validate($request, [
-            'payment' => 'required',
-        ]);
+        try {
+            $validatedData = $this->validate($request, [
+                'payment' => 'required',
+            ]);
 
-        if (
-            Cart::hasError()
-            || ! $validatedData['payment']
-            || ! Cart::savePaymentMethod($validatedData['payment'])
-        ) {
-            abort(400);
+            if (
+                Cart::hasError()
+                || ! $validatedData['payment']
+                || ! Cart::savePaymentMethod($validatedData['payment'])
+            ) {
+                return response()->json([
+                    'message' => trans('rest-api::app.shop.checkout.error'),
+                ], 400);
+            }
+
+            Cart::collectTotals();
+
+            return response()->json([
+                'data'    => [
+                    'cart' => new CartResource(Cart::getCart()),
+                ],
+                'message' => trans('rest-api::app.shop.checkout.payment-method-saved'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
         }
-
-        Cart::collectTotals();
-
-        return response([
-            'data'    => [
-                'cart' => new CartResource(Cart::getCart()),
-            ],
-            'message' => trans('rest-api::app.shop.checkout.payment-method-saved'),
-        ]);
     }
 
     /**
@@ -125,17 +149,23 @@ class CheckoutController extends CustomerController
      */
     public function checkMinimumOrder(): Response
     {
-        $minimumOrderAmount = (float) core()->getConfigData('sales.orderSettings.minimum-order.minimum_order_amount') ?? 0;
+        try {
+            $minimumOrderAmount = (float) core()->getConfigData('sales.orderSettings.minimum-order.minimum_order_amount') ?? 0;
 
-        $status = Cart::haveMinimumOrderAmount();
+            $status = Cart::haveMinimumOrderAmount();
 
-        return response([
-            'data'    => [
-                'cart'   => new CartResource(Cart::getCart()),
-                'status' => ! $status ? false : true,
-            ],
-            'message' => ! $status ? trans('rest-api::app.shop.checkout.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]) : 'Success',
-        ]);
+            return response()->json([
+                'data'    => [
+                    'cart'   => new CartResource(Cart::getCart()),
+                    'status' => ! $status ? false : true,
+                ],
+                'message' => ! $status ? trans('rest-api::app.shop.checkout.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]) : 'Success',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
 
     /**
@@ -143,32 +173,40 @@ class CheckoutController extends CustomerController
      */
     public function saveOrder(OrderRepository $orderRepository): Response
     {
-        if (Cart::hasError()) {
-            abort(400);
-        }
+        try {
+            if (Cart::hasError()) {
+                return response()->json([
+                    'message' => trans('rest-api::app.shop.checkout.error'),
+                ], 400);
+            }
 
-        Cart::collectTotals();
+            Cart::collectTotals();
 
-        $this->validateOrder();
+            $this->validateOrder();
 
-        $cart = Cart::getCart();
+            $cart = Cart::getCart();
 
-        if ($redirectUrl = Payment::getRedirectUrl($cart)) {
-            return response([
-                'redirect_url' => $redirectUrl,
+            if ($redirectUrl = Payment::getRedirectUrl($cart)) {
+                return response()->json([
+                    'redirect_url' => $redirectUrl,
+                ]);
+            }
+
+            $order = $orderRepository->create((new OrderTransformer($cart))->jsonSerialize());
+
+            Cart::deActivateCart();
+
+            return response()->json([
+                'data'    => [
+                    'order' => new OrderResource($order),
+                ],
+                'message' => trans('rest-api::app.shop.checkout.order-saved'),
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
         }
-
-        $order = $orderRepository->create((new OrderTransformer($cart))->jsonSerialize());
-
-        Cart::deActivateCart();
-
-        return response([
-            'data'    => [
-                'order' => new OrderResource($order),
-            ],
-            'message' => trans('rest-api::app.shop.checkout.order-saved'),
-        ]);
     }
 
     /**
