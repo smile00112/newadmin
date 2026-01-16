@@ -506,7 +506,7 @@
                 <li><a href="#benefits">Преимущества</a></li>
                 <li><a href="#pricing">Тарифы</a></li>
             </ul>
-            <button class="btn-primary" onclick="openModal()">Начать</button>
+            <button class="btn-primary" onclick="openModal()">Начать.</button>
         </nav>
     </header>
 
@@ -806,7 +806,9 @@
                     setTimeout(() => {
                         form.reset();
                         closeModal();
-                    }, 3000);
+                        // Редирект на страницу авторизации админ-панели
+                        window.location.href = '{{ route("admin.session.create") }}';
+                    }, 4000);
                 } else {
                     enableSubmitButton();
                     if (result.errors) {
