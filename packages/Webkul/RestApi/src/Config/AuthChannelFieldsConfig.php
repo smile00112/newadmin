@@ -60,6 +60,13 @@ class AuthChannelFieldsConfig
                 'type'        => 'text',
                 'description' => 'rest-api::app.auth_channels.settings.sms.from-info',
             ],
+            [
+                'key'         => 'auth_message_text',
+                'title'       => 'rest-api::app.auth_channels.settings.sms.auth_message_text',
+                'type'        => 'text',
+                'default'     => 'Ваш код подтверждения',
+                'description' => 'rest-api::app.auth_channels.settings.sms.auth_message_text-info',
+            ],
         ];
     }
 

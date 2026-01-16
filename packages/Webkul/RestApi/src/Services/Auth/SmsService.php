@@ -40,6 +40,8 @@ class SmsService
                 ?? config('services.redsms.api_key');
             $from = $this->settingRepository->getSetting('sms', 'from', $channelCode)
                 ?? config('services.redsms.from');
+            $authMessageText = $this->settingRepository->getSetting('sms', 'auth_message_text', $channelCode)
+                ?? 'Ваш код подтверждения';
 
             if (!$login || !$apiKey || !$from) {
                 Log::error("SMS settings are incomplete. Login, API key, and sender name are required.");
@@ -50,8 +52,8 @@ class SmsService
             $ts = 'ts-value-' . time();
             $secret = md5($ts . $apiKey);
 
-            // Prepare message
-            $message = "Ваш код подтверждения: {$code}";
+            // Prepare message with custom text before code
+            $message = trim($authMessageText) . ': ' . $code;
 
             // Send SMS via REDSMS API
             $response = Http::withHeaders([

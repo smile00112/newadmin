@@ -577,6 +577,8 @@ return [
                 'api_key-info' => 'API key for REDSMS access',
                 'from'       => 'Sender Name',
                 'from-info'  => 'SMS sender name (must be registered in REDSMS)',
+                'auth_message_text' => 'Authorization Message Text',
+                'auth_message_text-info' => 'Text that will be added before the authorization code in SMS message',
             ],
 
             'telegram' => [
