@@ -3,10 +3,10 @@
         {{ __('newsletters::app.admin.account-warmings.title') }}
     </x-slot:title>
 
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+    <div class="flex items-center justify-between gap-4 max-sm:flex-wrap mb-6">
+        <p class="text-xl font-bold text-gray-800 dark:text-white">
             {{ __('newsletters::app.admin.account-warmings.title') }}
-        </h1>
+        </p>
 
         <div class="flex items-center gap-x-2.5">
             <a href="{{ route('admin.newsletters.account-warmings.create') }}" class="primary-button">
@@ -21,9 +21,8 @@
         </div>
     @endif
 
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -64,7 +63,7 @@
                                 {{ $warming->whatsapp_instances_count ?? count($warming->selected_account_ids ?? []) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $warming->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $warming->active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
                                     {{ $warming->active ? __('newsletters::app.admin.account-warmings.is-active') : __('newsletters::app.admin.account-warmings.not-active') }}
                                 </span>
                             </td>
@@ -108,10 +107,10 @@
                         <tr>
                             <td colspan="7" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">{{ __('newsletters::app.admin.account-warmings.no-warmings') }}</h3>
+                                    <span class="mx-auto h-12 w-12 text-gray-400 icon-inbox"></span>
+                                    <p class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ __('newsletters::app.admin.account-warmings.no-warmings') }}
+                                    </p>
                                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                         {{ __('newsletters::app.common.messages.get_started') }}
                                     </p>
@@ -127,7 +126,6 @@
                     @endforelse
                 </tbody>
             </table>
-        </div>
     </div>
 
     <script>

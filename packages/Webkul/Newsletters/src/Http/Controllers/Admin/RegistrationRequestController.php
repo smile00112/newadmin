@@ -21,11 +21,12 @@ class RegistrationRequestController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->requireNewsletterPermission('newsletters.registration-requests.view');
         
-        $requests = $this->registrationRequestRepository->all();
+        $perPage = $request->get('per_page', 15);
+        $requests = $this->registrationRequestRepository->paginate($perPage)->appends($request->query());
 
         return view('newsletters::admin.registration-requests.index', compact('requests'));
     }

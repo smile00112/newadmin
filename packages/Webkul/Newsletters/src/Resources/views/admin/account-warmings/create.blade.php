@@ -3,30 +3,27 @@
         {{ __('newsletters::app.admin.account-warmings.title') }} - {{ __('newsletters::app.common.actions.create') }}
     </x-slot:title>
 
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-4">
+    <div class="flex items-center justify-between gap-4 max-sm:flex-wrap mb-6">
+        <p class="text-xl font-bold text-gray-800 dark:text-white">
+            {{ __('newsletters::app.admin.account-warmings.title') }} - {{ __('newsletters::app.common.actions.create') }}
+        </p>
+
+        <div class="flex items-center gap-x-2.5">
             <a href="{{ route('admin.newsletters.account-warmings.index') }}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
                 {{ __('newsletters::app.common.actions.back') }}
             </a>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ __('newsletters::app.admin.account-warmings.title') }} - {{ __('newsletters::app.common.actions.create') }}
-            </h1>
         </div>
     </div>
 
-    <form action="{{ route('admin.newsletters.account-warmings.store') }}" method="POST" class="space-y-6">
-        @csrf
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ __('newsletters::app.common.actions.create') }} {{ __('newsletters::app.admin.account-warmings.title') }}
+            </h2>
+        </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 my-5 p5">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    {{ __('newsletters::app.common.actions.create') }} {{ __('newsletters::app.admin.account-warmings.title') }}
-                </h2>
-            </div>
-            <div class="p-6 space-y-6">
+        <form action="{{ route('admin.newsletters.account-warmings.store') }}" method="POST" class="p-6 space-y-6">
+            @csrf
                 <!-- Name -->
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -111,7 +108,7 @@
                             </button>
                         </div>
                     </div>
-                    <button type="button" onclick="addPhrasePair()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    <button type="button" onclick="addPhrasePair()" class="mt-4 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         {{ __('newsletters::app.admin.account-warmings.add-phrase-pair') }}
                     </button>
                     @error('phrases')
@@ -177,18 +174,20 @@
                     @enderror
                 </div>
             </div>
-        </div>
 
-        <!-- Submit Button -->
-        <div class="flex justify-end gap-4">
-            <a href="{{ route('admin.newsletters.account-warmings.index') }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                {{ __('newsletters::app.common.actions.cancel') }}
-            </a>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                {{ __('newsletters::app.common.actions.create') }}
-            </button>
-        </div>
-    </form>
+            <!-- Submit Button -->
+            <div class="flex justify-end gap-x-2">
+                <a href="{{ route('admin.newsletters.account-warmings.index') }}" 
+                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                    {{ __('newsletters::app.common.actions.cancel') }}
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {{ __('newsletters::app.common.actions.create') }}
+                </button>
+            </div>
+        </form>
+    </div>
 
     <script>
         let phraseIndex = 1;

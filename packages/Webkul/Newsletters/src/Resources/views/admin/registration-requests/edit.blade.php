@@ -3,20 +3,28 @@
         {{ __('newsletters::app.admin.registration-requests.edit-title') }}
     </x-slot:title>
 
-    <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center justify-between gap-4 max-sm:flex-wrap mb-6">
         <p class="text-xl font-bold text-gray-800 dark:text-white">
             {{ __('newsletters::app.admin.registration-requests.edit-title') }}
         </p>
-        <a href="{{ route('admin.newsletters.registration-requests.index') }}" class="secondary-button">
-            {{ __('newsletters::app.common.actions.back') }}
-        </a>
+
+        <div class="flex items-center gap-x-2.5">
+            <a href="{{ route('admin.newsletters.registration-requests.index') }}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                {{ __('newsletters::app.common.actions.back') }}
+            </a>
+        </div>
     </div>
 
-    <form method="POST" action="{{ route('admin.newsletters.registration-requests.update', $request->id) }}" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        @csrf
-        @method('PUT')
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ __('newsletters::app.admin.registration-requests.edit-title') }}
+            </h2>
+        </div>
 
-        <div class="grid grid-cols-1 gap-6">
+        <form method="POST" action="{{ route('admin.newsletters.registration-requests.update', $request->id) }}" class="p-6 space-y-6">
+            @csrf
+            @method('PUT')
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {{ __('newsletters::app.admin.registration-requests.name') }}
@@ -24,7 +32,7 @@
                 <input type="text"
                        value="{{ $request->name }}"
                        disabled
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed">
             </div>
 
             <div>
@@ -34,7 +42,7 @@
                 <input type="email"
                        value="{{ $request->email }}"
                        disabled
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed">
             </div>
 
             <div>
@@ -44,7 +52,7 @@
                 <input type="text"
                        value="{{ $request->phone }}"
                        disabled
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed">
             </div>
 {{--
             <div>
@@ -82,19 +90,21 @@
                 <input type="text"
                        value="{{ $request->created_at->format('Y-m-d H:i:s') }}"
                        disabled
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed">
             </div>
-        </div>
 
-        <div class="mt-6 flex items-center gap-x-2.5">
-            <button type="submit" class="primary-button">
-                {{ __('newsletters::app.common.actions.save') }}
-            </button>
-            <a href="{{ route('admin.newsletters.registration-requests.index') }}" class="secondary-button">
-                {{ __('newsletters::app.common.actions.cancel') }}
-            </a>
-        </div>
-    </form>
+            <div class="flex justify-end gap-x-2">
+                <a href="{{ route('admin.newsletters.registration-requests.index') }}" 
+                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+                    {{ __('newsletters::app.common.actions.cancel') }}
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    {{ __('newsletters::app.common.actions.save') }}
+                </button>
+            </div>
+        </form>
+    </div>
 </x-admin::layouts>
 
 

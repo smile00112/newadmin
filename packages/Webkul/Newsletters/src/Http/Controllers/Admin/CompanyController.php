@@ -29,21 +29,47 @@ class CompanyController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->requireNewsletterPermission('newsletters.companies');
         
         $admin = auth()->guard('admin')->user();
         
+        $perPage = $request->get('per_page', 15);
+        
         // Админ с permission_type = all видит все компании
         if ($admin->role && $admin->role->permission_type === 'all' && !$admin->company_id) {
-            $companies = $this->companyRepository->all();
+            $companies = $this->companyRepository->paginate($perPage);
         } 
         // Владелец видит только свою компанию
         elseif ($admin->company_id) {
-            $companies = collect([$this->companyRepository->find($admin->company_id)])->filter();
+            $company = $this->companyRepository->find($admin->company_id);
+            if ($company) {
+                // Создаем пагинацию вручную для одной компании
+                $companies = new \Illuminate\Pagination\LengthAwarePaginator(
+                    collect([$company]),
+                    1,
+                    $perPage,
+                    1,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                $companies = new \Illuminate\Pagination\LengthAwarePaginator(
+                    collect(),
+                    0,
+                    $perPage,
+                    1,
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            }
         } else {
-            $companies = collect();
+            $companies = new \Illuminate\Pagination\LengthAwarePaginator(
+                collect(),
+                0,
+                $perPage,
+                1,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
 
         // Load accounts for each company

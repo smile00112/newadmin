@@ -127,7 +127,7 @@ return [
         ],
 
         'account-warmings' => [
-            'title' => 'Прогрев аккаунтов whatsapp',
+            'title' => 'Прогрев whatsapp',
             'name' => 'Название',
             'select-accounts' => 'Выбрать аккаунты',
             'select-accounts-hint' => 'Выберите минимум 2 аккаунта (удерживайте Ctrl/Cmd для множественного выбора)',
@@ -646,7 +646,7 @@ return [
         'registration-requests' => 'Заявки',
         'whatsapp-instances' => 'WhatsApp экземпляры',
         'mailing-lists' => 'Списки рассылки',
-        'account-warmings' => 'Прогрев аккаунтов whatsapp',
+        'account-warmings' => 'Прогрев whatsapp',
         'customer-numbers' => 'Номера клиентов',
         'stop-list' => 'Стоп-лист whatsapp',
         'unified' => 'Унифицированное управление',

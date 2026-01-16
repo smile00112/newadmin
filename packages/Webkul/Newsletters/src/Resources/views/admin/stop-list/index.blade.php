@@ -3,7 +3,7 @@
         {{ __('newsletters::app.admin.stop-list.title') }}
     </x-slot:title>
 
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-4 max-sm:flex-wrap mb-6">
         <p class="text-xl font-bold text-gray-800 dark:text-white">
             {{ __('newsletters::app.admin.stop-list.title') }}
         </p>
@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
                 <tr>
@@ -35,51 +35,52 @@
                         <label class="flex items-center cursor-pointer">
                             <input type="checkbox"
                                    id="select-all-checkbox"
-                                   class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                                   class="peer hidden"
                                    onchange="toggleSelectAll(this)">
-                            <span class="ml-2">{{ __('newsletters::app.admin.stop-list.select_all') }}</span>
+                            <span class="icon-uncheckbox cursor-pointer rounded-md text-2xl peer-checked:icon-checked peer-checked:text-blue-600 peer-indeterminate:icon-checkbox-partial peer-indeterminate:text-blue-600"></span>
+                            <span class="ml-2 block text-sm text-gray-900 dark:text-gray-300">{{ __('newsletters::app.admin.stop-list.select_all') }}</span>
                         </label>
                     </th>
                     @php
                         $currentSortBy = $sortBy ?? 'id';
                         $currentSortDir = $sortDir ?? 'desc';
                     @endphp
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         @php
                             $isActive = $currentSortBy === 'id';
                             $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
                         @endphp
                         <a href="{{ route('admin.newsletters.stop-list.index', ['sort_by' => 'id', 'sort_dir' => $nextDir]) }}" 
-                           class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                           class="flex items-center cursor-pointer text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white {{ $isActive ? 'font-medium text-gray-800 dark:text-white' : '' }}">
                             {{ __('newsletters::app.admin.stop-list.table.id') }}
                             @if($isActive)
-                                <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                <span class="align-text-bottom text-base text-gray-800 dark:text-white ltr:ml-1.5 rtl:mr-1.5 {{ $currentSortDir === 'asc' ? 'icon-down-stat' : 'icon-up-stat' }}"></span>
                             @endif
                         </a>
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         @php
                             $isActive = $currentSortBy === 'phone_number';
                             $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
                         @endphp
                         <a href="{{ route('admin.newsletters.stop-list.index', ['sort_by' => 'phone_number', 'sort_dir' => $nextDir]) }}" 
-                           class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                           class="flex items-center cursor-pointer text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white {{ $isActive ? 'font-medium text-gray-800 dark:text-white' : '' }}">
                             {{ __('newsletters::app.admin.stop-list.table.phone-number') }}
                             @if($isActive)
-                                <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                <span class="align-text-bottom text-base text-gray-800 dark:text-white ltr:ml-1.5 rtl:mr-1.5 {{ $currentSortDir === 'asc' ? 'icon-down-stat' : 'icon-up-stat' }}"></span>
                             @endif
                         </a>
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sortable-column">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         @php
                             $isActive = $currentSortBy === 'created_at';
                             $nextDir = $isActive && $currentSortDir === 'desc' ? 'asc' : 'desc';
                         @endphp
                         <a href="{{ route('admin.newsletters.stop-list.index', ['sort_by' => 'created_at', 'sort_dir' => $nextDir]) }}" 
-                           class="flex items-center hover:text-gray-700 dark:hover:text-gray-200">
+                           class="flex items-center cursor-pointer text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white {{ $isActive ? 'font-medium text-gray-800 dark:text-white' : '' }}">
                             {{ __('newsletters::app.admin.stop-list.table.created-at') }}
                             @if($isActive)
-                                <span class="ml-1">{{ $currentSortDir === 'asc' ? '↑' : '↓' }}</span>
+                                <span class="align-text-bottom text-base text-gray-800 dark:text-white ltr:ml-1.5 rtl:mr-1.5 {{ $currentSortDir === 'asc' ? 'icon-down-stat' : 'icon-up-stat' }}"></span>
                             @endif
                         </a>
                     </th>
@@ -89,72 +90,54 @@
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($stopList as $item)
                     <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <input type="checkbox"
-                                   class="item-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                   value="{{ $item->id }}"
-                                   onchange="updateDeleteButton()">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox"
+                                       class="item-checkbox peer hidden"
+                                       value="{{ $item->id }}"
+                                       onchange="updateDeleteButton()">
+                                <span class="icon-uncheckbox cursor-pointer rounded-md text-2xl peer-checked:icon-checked peer-checked:text-blue-600"></span>
+                            </label>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $item->id }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $item->phone_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{{ $item->created_at ? $item->created_at->format('Y-m-d H:i:s') : '-' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <div class="flex gap-2">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $item->id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $item->phone_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $item->created_at ? $item->created_at->format('Y-m-d H:i:s') : '-' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            <div class="flex space-x-2">
                                 <a href="{{ route('admin.newsletters.stop-list.edit', $item->id) }}"
                                    class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                                    title="{{ __('admin::app.datagrid.edit') }}">
-                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-edit"></span>
+                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-edit"></span>
                                 </a>
                                 <button type="button"
                                         onclick="deleteStopList({{ $item->id }})"
                                         class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                         title="{{ __('admin::app.datagrid.delete') }}">
-                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-delete"></span>
+                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center icon-delete"></span>
                                 </button>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="text-center">
-                            <p>{{ __('newsletters::app.admin.stop-list.no-numbers-found') }} <a href="{{ route('admin.newsletters.stop-list.create') }}">{{ __('newsletters::app.admin.stop-list.add-first-number') }}</a></p>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <span class="mx-auto h-12 w-12 text-gray-400 icon-inbox"></span>
+                                <p class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ __('newsletters::app.admin.stop-list.no-numbers-found') }}
+                                </p>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <a href="{{ route('admin.newsletters.stop-list.create') }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                        {{ __('newsletters::app.admin.stop-list.add-first-number') }}
+                                    </a>
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-
-    <style>
-        /* Подсвечивание столбцов при наведении */
-        .sortable-column {
-            position: relative;
-        }
-        
-        .sortable-column:hover {
-            background-color: rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        .dark .sortable-column:hover {
-            background-color: rgba(0, 0, 0, 0.3) !important;
-        }
-        
-        table tbody tr:hover td {
-            background-color: rgba(249, 250, 251, 0.5);
-        }
-        
-        table tbody tr:hover td:hover {
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-        
-        .dark table tbody tr:hover td {
-            background-color: rgba(31, 41, 55, 0.5);
-        }
-        
-        .dark table tbody tr:hover td:hover {
-            background-color: rgba(59, 130, 246, 0.2);
-        }
-    </style>
 
     <script>
         function deleteStopList(id) {

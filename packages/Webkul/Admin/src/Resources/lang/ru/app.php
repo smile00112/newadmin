@@ -4,7 +4,9 @@ return [
     'datagrid' => [
         'back' => 'Назад',
         'add' => 'Добавить',
+        'cancel' => 'Отмена',
     ],
+
     'users' => [
         'sessions' => [
             'email'                  => 'Адрес электронной почты',
