@@ -11,6 +11,13 @@ use Webkul\User\Contracts\Admin;
 class NewUserNotification extends Mailable
 {
     /**
+     * The name of the queue the job should be sent to.
+     *
+     * @var string
+     */
+    public $queue = 'mailing-send';
+
+    /**
      * Create a new mailable instance.
      *
      * @return void

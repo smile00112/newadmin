@@ -3,6 +3,7 @@
 namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Traits\HasNewsletterRole;
 use Webkul\Newsletters\Mail\WelcomeAdminNotification;
-use Webkul\Newsletters\Mail\NewUserNotification;
+use Webkul\Newsletters\Events\AdminCreated;
 use Webkul\User\Repositories\AdminRepository;
 use Webkul\User\Repositories\RoleRepository;
 use Webkul\Newsletters\Repositories\CompanyRepository;
@@ -232,6 +233,11 @@ class OwnersController extends Controller
             'api_token' => Str::random(80),
         ]);
 
+        // Диспатчим событие о создании администратора
+        $company = $this->companyRepository->find($companyId);
+        $companyName = $company ? $company->name : 'Не указана';
+        Event::dispatch(new AdminCreated($newAdmin, $companyName, '', $data['password']));
+
         // Отправляем приветственное письмо только для владельцев
         if ($sendEmail) {
             try {
@@ -240,43 +246,6 @@ class OwnersController extends Controller
             } catch (\Exception $mailException) {
                 Log::error('Failed to send welcome email: ' . $mailException->getMessage());
             }
-        }
-
-        // Отправляем уведомление администраторам о новом пользователе
-        try {
-            // Получаем название компании
-            $company = $this->companyRepository->find($companyId);
-            $companyName = $company ? $company->name : 'Не указана';
-
-            // Получаем всех супер-администраторов (с permission_type 'all' и без company_id)
-            $superAdmins = $this->adminRepository
-                ->getModel()
-                ->leftJoin('roles', 'admins.role_id', '=', 'roles.id')
-                ->where('roles.permission_type', 'all')
-                ->whereNull('admins.company_id')
-                ->where('admins.status', 1)
-                ->select('admins.*')
-                ->get();
-
-            foreach ($superAdmins as $superAdmin) {
-                try {
-                    Mail::to($superAdmin->email)->sendNow(new NewUserNotification($newAdmin, $companyName, '', $data['password']));
-                    Log::info('New user notification sent to admin: ' . $superAdmin->email);
-                } catch (\Exception $notificationException) {
-                    Log::error('Failed to send new user notification to admin: ' . $superAdmin->email, [
-                        'trace' => $notificationException->getTraceAsString(),
-                        'admin_id' => $superAdmin->id,
-                        'new_user_id' => $newAdmin->id
-                    ]);
-                    // Продолжаем отправку остальным администраторам
-                }
-            }
-        } catch (\Exception $notificationException) {
-            Log::error('Failed to send new user notifications: ' . $notificationException->getMessage(), [
-                'trace' => $notificationException->getTraceAsString(),
-                'new_user_id' => $newAdmin->id
-            ]);
-            // Продолжаем выполнение, даже если уведомления не отправились
         }
 
         $message = $context['type'] === 'super_admin'

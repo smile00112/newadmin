@@ -648,7 +648,7 @@ return [
         'mailing-lists' => 'Списки рассылки',
         'account-warmings' => 'Прогрев аккаунтов whatsapp',
         'customer-numbers' => 'Номера клиентов',
-        'stop-list' => 'Стоп-лист контактов whatsapp',
+        'stop-list' => 'Стоп-лист whatsapp',
         'unified' => 'Унифицированное управление',
         'messages' => 'Входящие whatsapp ',
         'reports' => 'Отчеты',

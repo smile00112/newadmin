@@ -10,8 +10,10 @@ use Webkul\Newsletters\Models\NewslettersContact;
 use Webkul\Newsletters\Observers\CustomerNumberObserver;
 use Webkul\Newsletters\Observers\CompanyObserver;
 use Webkul\Newsletters\Observers\ContactObserver;
+use Webkul\Newsletters\Events\AdminCreated;
 use Webkul\Newsletters\Events\ContactCacheInvalidated;
 use Webkul\Newsletters\Listeners\ClearContactFilterCache;
+use Webkul\Newsletters\Listeners\NotifySuperAdmins;
 use Webkul\Newsletters\Console\Commands\TestWebSocketBroadcast;
 use Webkul\Newsletters\Console\Commands\ResetBlockedInstances;
 use Illuminate\Support\Facades\Event;
@@ -48,6 +50,11 @@ class ModuleServiceProvider extends ServiceProvider
         Event::listen(
             ContactCacheInvalidated::class,
             ClearContactFilterCache::class
+        );
+
+        Event::listen(
+            AdminCreated::class,
+            NotifySuperAdmins::class
         );
 
         // Register scheduled tasks

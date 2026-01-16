@@ -34,3 +34,4 @@ yarn-error.log
 /.ssh
 /packages/Webkul/Admin/node_modules
 /storage/app/firebase
+/.cursor

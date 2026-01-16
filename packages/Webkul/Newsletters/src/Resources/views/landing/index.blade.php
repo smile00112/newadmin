@@ -506,7 +506,7 @@
                 <li><a href="#benefits">Преимущества</a></li>
                 <li><a href="#pricing">Тарифы</a></li>
             </ul>
-            <button class="btn-primary" onclick="openModal()">Начать.</button>
+            <button class="btn-primary" onclick="openModal()">Начать</button>
         </nav>
     </header>
 
