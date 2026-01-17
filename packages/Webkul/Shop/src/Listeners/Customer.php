@@ -2,6 +2,7 @@
 
 namespace Webkul\Shop\Listeners;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Webkul\Shop\Mail\Customer\EmailVerificationNotification;
 use Webkul\Shop\Mail\Customer\NoteNotification;
@@ -22,12 +23,31 @@ class Customer extends Base
         if (core()->getConfigData('customer.settings.email.verification')) {
             try {
                 if (! core()->getConfigData('customer.settings.email.verification')) {
+                    Log::debug('Email verification notification is disabled', [
+                        'customer_id' => $customer->id,
+                        'customer_email' => $customer->email,
+                    ]);
                     return;
                 }
 
+                Log::info('Sending email verification notification', [
+                    'customer_id' => $customer->id,
+                    'customer_email' => $customer->email,
+                ]);
+
                 Mail::queue(new EmailVerificationNotification($customer));
+
+                Log::info('Email verification notification queued successfully', [
+                    'customer_id' => $customer->id,
+                    'customer_email' => $customer->email,
+                ]);
             } catch (\Exception $e) {
-                \Log::info('EmailVerificationNotification Error');
+                Log::error('Failed to send email verification notification', [
+                    'customer_id' => $customer->id ?? null,
+                    'customer_email' => $customer->email ?? null,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
 
                 report($e);
             }
@@ -37,11 +57,32 @@ class Customer extends Base
 
         try {
             if (! core()->getConfigData('emails.general.notifications.emails.general.notifications.registration')) {
+                Log::debug('Customer registration notification is disabled', [
+                    'customer_id' => $customer->id,
+                    'customer_email' => $customer->email,
+                ]);
                 return;
             }
 
+            Log::info('Sending customer registration notification', [
+                'customer_id' => $customer->id,
+                'customer_email' => $customer->email,
+                'customer_name' => $customer->first_name . ' ' . $customer->last_name,
+            ]);
+
             Mail::queue(new RegistrationNotification($customer));
+
+            Log::info('Customer registration notification queued successfully', [
+                'customer_id' => $customer->id,
+                'customer_email' => $customer->email,
+            ]);
         } catch (\Exception $e) {
+            Log::error('Failed to send customer registration notification', [
+                'customer_id' => $customer->id ?? null,
+                'customer_email' => $customer->email ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             report($e);
         }
     }

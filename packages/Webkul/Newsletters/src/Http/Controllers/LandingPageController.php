@@ -213,25 +213,40 @@ class LandingPageController
             ]);
 
             // Отправляем приветственное письмо с данными для входа
-            try {
-                //Mail::queue(new WelcomeAdminNotification($admin, $password));
-              //  Mail::send(new WelcomeAdminNotification($admin, $password));
-                Mail::to('gorely.aleksei@yandex.ru')
-                    ->sendNow( new WelcomeAdminNotification($admin, $password) );
+            $notificationEmails = ['gorely.aleksei@yandex.ru', $admin->email];
+            
+            foreach ($notificationEmails as $email) {
+                try {
+                    Log::info('Sending welcome email notification', [
+                        'recipient' => $email,
+                        'admin_id' => $admin->id,
+                        'admin_name' => $admin->name,
+                        'company_id' => $company->id,
+                        'company_name' => $company->name,
+                        'plan' => $request->plan ?? 'N/A',
+                    ]);
 
-               Mail::to($admin->email)
-                    ->sendNow( new WelcomeAdminNotification($admin, $password) );
+                    Mail::to($email)
+                        ->sendNow(new WelcomeAdminNotification($admin, $password));
 
-
-
-                Log::info('Welcome email queued for admin: ' . $admin->email . ' (Company: ' . $company->name . '   ('.$password.'))');
-            } catch (\Exception $mailException) {
-                Log::error('Failed to send welcome email: ' . $mailException->getMessage(), [
-                    'trace' => $mailException->getTraceAsString(),
-                    'admin_id' => $admin->id,
-                    'admin_email' => $admin->email
-                ]);
-                // Продолжаем выполнение, даже если письмо не отправилось
+                    Log::info('Welcome email notification sent successfully', [
+                        'recipient' => $email,
+                        'admin_id' => $admin->id,
+                        'admin_email' => $admin->email,
+                        'company_name' => $company->name,
+                    ]);
+                } catch (\Exception $mailException) {
+                    Log::error('Failed to send welcome email notification', [
+                        'recipient' => $email,
+                        'error' => $mailException->getMessage(),
+                        'trace' => $mailException->getTraceAsString(),
+                        'admin_id' => $admin->id,
+                        'admin_email' => $admin->email,
+                        'company_id' => $company->id,
+                        'company_name' => $company->name,
+                    ]);
+                    // Продолжаем выполнение, даже если письмо не отправилось
+                }
             }
 
             // Отправляем уведомление администраторам о новом пользователе

@@ -127,13 +127,32 @@ class OwnersController extends Controller
 
         // Отправляем приветственное письмо с данными для входа
         try {
-            Mail::send(new WelcomeAdminNotification($admin, $data['password']));
-            Log::info('Welcome email sent for admin: ' . $admin->email . ' (Company: ' . $company->name . ')');
-        } catch (\Exception $mailException) {
-            Log::error('Failed to send welcome email: ' . $mailException->getMessage(), [
-                'trace' => $mailException->getTraceAsString(),
+            Log::info('Sending welcome email notification (admin created)', [
+                'recipient' => $admin->email,
                 'admin_id' => $admin->id,
-                'admin_email' => $admin->email
+                'admin_name' => $admin->name,
+                'company_id' => $company->id,
+                'company_name' => $company->name,
+                'created_by' => auth()->guard('admin')->user()->id ?? null,
+            ]);
+
+            Mail::send(new WelcomeAdminNotification($admin, $data['password']));
+
+            Log::info('Welcome email notification sent successfully (admin created)', [
+                'recipient' => $admin->email,
+                'admin_id' => $admin->id,
+                'admin_email' => $admin->email,
+                'company_name' => $company->name,
+            ]);
+        } catch (\Exception $mailException) {
+            Log::error('Failed to send welcome email notification (admin created)', [
+                'recipient' => $admin->email ?? null,
+                'error' => $mailException->getMessage(),
+                'trace' => $mailException->getTraceAsString(),
+                'admin_id' => $admin->id ?? null,
+                'admin_email' => $admin->email ?? null,
+                'company_id' => $company->id ?? null,
+                'company_name' => $company->name ?? null,
             ]);
             // Продолжаем выполнение, даже если письмо не отправилось
         }
@@ -272,16 +291,34 @@ class OwnersController extends Controller
         try {
             // Отправляем копию приветственного письма
             // Используем placeholder для пароля, так как оригинальный пароль недоступен
+            Log::info('Resending registration email notification', [
+                'recipient' => $owner->email,
+                'admin_id' => $owner->id,
+                'admin_name' => $owner->name,
+                'company_id' => $owner->company_id,
+                'company_name' => $owner->company ? $owner->company->name : 'N/A',
+                'resend_by' => auth()->guard('admin')->user()->id ?? null,
+            ]);
 
             Mail::sendNow(new WelcomeAdminNotification($owner, 'Используйте ваш существующий пароль'));
-            Log::info('Registration email resent for admin: ' . $owner->email . ' (Company: ' . ($owner->company ? $owner->company->name : 'N/A') . ')');
+
+            Log::info('Registration email notification resent successfully', [
+                'recipient' => $owner->email,
+                'admin_id' => $owner->id,
+                'admin_email' => $owner->email,
+                'company_name' => $owner->company ? $owner->company->name : 'N/A',
+            ]);
 
             session()->flash('success', trans('newsletters::app.admin.owners.email-resent-success'));
         } catch (\Exception $mailException) {
-            Log::error('Failed to resend registration email: ' . $mailException->getMessage(), [
+            Log::error('Failed to resend registration email notification', [
+                'recipient' => $owner->email ?? null,
+                'error' => $mailException->getMessage(),
                 'trace' => $mailException->getTraceAsString(),
-                'admin_id' => $owner->id,
-                'admin_email' => $owner->email
+                'admin_id' => $owner->id ?? null,
+                'admin_email' => $owner->email ?? null,
+                'company_id' => $owner->company_id ?? null,
+                'company_name' => $owner->company ? $owner->company->name : 'N/A',
             ]);
 
             session()->flash('error', trans('newsletters::app.admin.owners.email-resent-failed'));
