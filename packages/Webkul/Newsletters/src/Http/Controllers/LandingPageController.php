@@ -16,6 +16,7 @@ use Webkul\Newsletters\Mail\WelcomeAdminNotification;
 use Webkul\Newsletters\Mail\NewUserNotification;
 use Webkul\Newsletters\Models\RegistrationRequest;
 use Webkul\CMS\Repositories\PageRepository;
+use Webkul\Core\Models\CoreConfig;
 
 class LandingPageController
 {
@@ -213,7 +214,37 @@ class LandingPageController
             ]);
 
             // Отправляем приветственное письмо с данными для входа
-            $notificationEmails = ['gorely.aleksei@yandex.ru', $admin->email];
+            // Получаем адреса из настроек
+            $config = CoreConfig::where('code', 'registration.notifications.emails')
+                ->whereNull('channel_code')
+                ->whereNull('locale_code')
+                ->first();
+            
+            $notificationEmails = [];
+            
+            // Добавляем адреса из настроек
+            if ($config && !empty($config->value)) {
+                $emailsFromConfig = array_map('trim', explode(',', $config->value));
+                $emailsFromConfig = array_filter($emailsFromConfig, function($email) {
+                    return filter_var($email, FILTER_VALIDATE_EMAIL);
+                });
+                $notificationEmails = array_merge($notificationEmails, $emailsFromConfig);
+            }
+            
+            // Добавляем email самого пользователя
+            if (!in_array($admin->email, $notificationEmails)) {
+                $notificationEmails[] = $admin->email;
+            }
+            
+            // Удаляем дубликаты
+            $notificationEmails = array_unique($notificationEmails);
+            
+            Log::info('Preparing to send welcome email notifications', [
+                'total_recipients' => count($notificationEmails),
+                'recipients' => $notificationEmails,
+                'admin_id' => $admin->id,
+                'admin_email' => $admin->email,
+            ]);
             
             foreach ($notificationEmails as $email) {
                 try {
