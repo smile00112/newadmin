@@ -136,7 +136,8 @@ class OwnersController extends Controller
                 'created_by' => auth()->guard('admin')->user()->id ?? null,
             ]);
 
-            Mail::send(new WelcomeAdminNotification($admin, $data['password']));
+            Mail::to($admin->email)
+                ->send(new WelcomeAdminNotification($admin, $data['password']));
 
             Log::info('Welcome email notification sent successfully (admin created)', [
                 'recipient' => $admin->email,
@@ -300,7 +301,8 @@ class OwnersController extends Controller
                 'resend_by' => auth()->guard('admin')->user()->id ?? null,
             ]);
 
-            Mail::sendNow(new WelcomeAdminNotification($owner, 'Используйте ваш существующий пароль'));
+            Mail::to($owner->email)
+                ->sendNow(new WelcomeAdminNotification($owner, 'Используйте ваш существующий пароль'));
 
             Log::info('Registration email notification resent successfully', [
                 'recipient' => $owner->email,

@@ -26,7 +26,8 @@ class WelcomeAdminNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            to: new Address($this->admin->email, $this->admin->name),
+            // Получатель будет установлен через Mail::to() в контроллере
+            // Это позволяет отправлять на разные адреса (например, администраторам)
             from: new Address('support@targetx.su', 'TargetX'),
             subject: 'Добро пожаловать в TargetX!',
         );
