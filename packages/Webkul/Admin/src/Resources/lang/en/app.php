@@ -4244,6 +4244,10 @@ return [
                         'allow-no-of-cross-sells-products' => 'Allowed number of Cross-Sell Products',
                         'title'                            => 'Cart view page configuration',
                         'title-info'                       => 'Cart view page configuration involves arranging items, details, and options on the shopping cart page, improving user interaction and purchase flow.',
+                        'separate-cross-sell-list'         => 'Separate cross-sell list for cart',
+                        'separate-cross-sell-list-info'    => 'When enabled, a separate list of products will be used for cross-sell in the cart, regardless of product settings',
+                        'cart-cross-sell-products'         => 'Products for cross-sell in cart',
+                        'cart-cross-sell-products-info'    => 'Select products that will be displayed as cross-sell on the cart page',
                     ],
 
                     'storefront' => [

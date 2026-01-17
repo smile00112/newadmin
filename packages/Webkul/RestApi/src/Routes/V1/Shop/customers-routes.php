@@ -148,6 +148,8 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('coupon', 'applyCoupon');
 
         Route::delete('coupon', 'removeCoupon');
+
+        Route::get('cross-sell', 'crossSellProducts');
     });
 
     /**

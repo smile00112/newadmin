@@ -9,6 +9,7 @@ use Webkul\CartRule\Repositories\CartRuleCouponRepository;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\WishlistRepository;
 use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 
 class CartController extends CustomerController
@@ -275,6 +276,58 @@ class CartController extends CustomerController
 
         return response([
             'message' => trans('rest-api::app.shop.checkout.cart.move-wishlist.success'),
+        ]);
+    }
+
+    /**
+     * Cross-sell product listings.
+     */
+    public function crossSellProducts(): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart) {
+            return response([
+                'data' => [],
+            ]);
+        }
+
+        // Проверяем, включен ли отдельный список
+        $useSeparateList = core()->getConfigData('catalog.products.cart_view_page.separate_cross_sell_list');
+
+        if ($useSeparateList) {
+            // Используем отдельный список из конфигурации
+            $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
+            
+            if (empty($productIds) || !is_array($productIds)) {
+                return response([
+                    'data' => [],
+                ]);
+            }
+
+            $products = $this->productRepository
+                ->whereIn('id', $productIds)
+                ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
+                ->get();
+
+            return response([
+                'data' => ProductResource::collection($products),
+            ]);
+        }
+
+        // Старая логика - cross-sell из товаров в корзине
+        $productIds = $cart->items->pluck('product_id')->toArray();
+
+        $products = $this->productRepository
+            ->select('products.*', 'product_cross_sells.child_id')
+            ->join('product_cross_sells', 'products.id', '=', 'product_cross_sells.child_id')
+            ->whereIn('product_cross_sells.parent_id', $productIds)
+            ->groupBy('product_cross_sells.child_id')
+            ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
+            ->get();
+
+        return response([
+            'data' => ProductResource::collection($products),
         ]);
     }
 }

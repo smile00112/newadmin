@@ -834,6 +834,19 @@ return [
                 'title'      => 'admin::app.configuration.index.catalog.products.cart-view-page.allow-no-of-cross-sells-products',
                 'type'       => 'number',
                 'validation' => 'integer|min:0',
+            ], [
+                'name'    => 'separate_cross_sell_list',
+                'title'   => 'admin::app.configuration.index.catalog.products.cart-view-page.separate-cross-sell-list',
+                'info'    => 'admin::app.configuration.index.catalog.products.cart-view-page.separate-cross-sell-list-info',
+                'type'    => 'boolean',
+                'default' => 0,
+            ], [
+                'name'    => 'cart_cross_sell_products',
+                'title'   => 'admin::app.configuration.index.catalog.products.cart-view-page.cart-cross-sell-products',
+                'info'    => 'admin::app.configuration.index.catalog.products.cart-view-page.cart-cross-sell-products-info',
+                'type'    => 'blade',
+                'path'    => 'admin::configuration.custom-views.cart-cross-sell-products',
+                'depend'  => 'catalog[products][cart_view_page][separate_cross_sell_list]',
             ],
         ],
     ], [

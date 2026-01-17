@@ -3611,6 +3611,45 @@
                 ]
             }
         },
+        "/api/v1/customer/cart/cross-sell": {
+            "get": {
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Get cross-sell products for cart",
+                "description": "Returns cross-sell products for the customer's cart. If a separate cross-sell list is configured, it returns products from that list. Otherwise, it returns cross-sell products related to items in the cart.",
+                "operationId": "getCartCrossSellProducts",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "description": "Array of cross-sell products",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Product"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/checkout/save-address": {
             "post": {
                 "tags": [

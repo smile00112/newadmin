@@ -274,6 +274,28 @@ class CartController extends APIController
             ]);
         }
 
+        // Проверяем, включен ли отдельный список
+        $useSeparateList = core()->getConfigData('catalog.products.cart_view_page.separate_cross_sell_list');
+
+        if ($useSeparateList) {
+            // Используем отдельный список из конфигурации
+            $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
+            
+            if (empty($productIds) || !is_array($productIds)) {
+                return new JsonResource([
+                    'data' => [],
+                ]);
+            }
+
+            $products = $this->productRepository
+                ->whereIn('id', $productIds)
+                ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
+                ->get();
+
+            return ProductResource::collection($products);
+        }
+
+        // Старая логика - cross-sell из товаров в корзине
         $productIds = $cart->items->pluck('product_id')->toArray();
 
         $products = $this->productRepository

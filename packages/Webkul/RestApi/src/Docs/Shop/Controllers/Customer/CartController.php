@@ -764,4 +764,39 @@ class CartController
      * )
      */
     public function removeCoupon() {}
+
+    /**
+     * @OA\Get(
+     *      path="/api/v1/customer/cart/cross-sell",
+     *      operationId="getCartCrossSellProducts",
+     *      tags={"Cart"},
+     *      summary="Get cross-sell products for cart",
+     *      description="Returns cross-sell products for the customer's cart. If a separate cross-sell list is configured, it returns products from that list. Otherwise, it returns cross-sell products related to items in the cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="array",
+     *                  description="Array of cross-sell products",
+     *
+     *                  @OA\Items(
+     *                      ref="#/components/schemas/Product"
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      )
+     * )
+     */
+    public function crossSellProducts() {}
 }
