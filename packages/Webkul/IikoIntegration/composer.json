@@ -1,0 +1,27 @@
+{
+    "name": "webkul/iiko-integration",
+    "description": "iiko Delivery Integration Package - Integration with iikoCloud API",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Webkul",
+            "email": "support@webkul.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Webkul\\IikoIntegration\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\IikoIntegration\\Providers\\IikoIntegrationServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev"
+}
