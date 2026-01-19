@@ -86,7 +86,23 @@
                             </div>
                         @endforeach
 
-                        <div class="flex justify-end">
+                        <div class="flex items-center justify-between gap-4">
+                            @if ($selectedChannel === 'telegram')
+                                <div id="telegram-webhook-section" class="flex items-center gap-4">
+                                    <button
+                                        type="button"
+                                        id="register-webhook-btn"
+                                        class="secondary-button"
+                                        onclick="registerTelegramWebhook()"
+                                    >
+                                        @lang('rest-api::app.auth_channels.telegram.webhook.register-btn')
+                                    </button>
+                                    <span id="webhook-status" class="text-sm text-gray-500"></span>
+                                </div>
+                            @else
+                                <div></div>
+                            @endif
+
                             <button
                                 type="submit"
                                 class="primary-button"
@@ -123,4 +139,89 @@
             </x-admin::accordion>
         </div>
     </div>
+@if ($selectedChannel === 'telegram')
+    @pushOnce('scripts')
+        <script>
+            function registerTelegramWebhook() {
+                const btn = document.getElementById('register-webhook-btn');
+                const status = document.getElementById('webhook-status');
+                const channelCode = '{{ $channelCode }}';
+
+                btn.disabled = true;
+                btn.textContent = '@lang('rest-api::app.auth_channels.telegram.webhook.registering')';
+                status.textContent = '';
+                status.className = 'text-sm text-gray-500';
+
+                fetch('{{ route('admin.settings.auth_channels.register_webhook') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        channel_code: channelCode
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    btn.disabled = false;
+                    btn.textContent = '@lang('rest-api::app.auth_channels.telegram.webhook.register-btn')';
+
+                    if (data.success) {
+                        status.textContent = data.message;
+                        status.className = 'text-sm text-green-600';
+
+                        // Show webhook URL
+                        if (data.webhook_url) {
+                            status.textContent += ' URL: ' + data.webhook_url;
+                        }
+                    } else {
+                        status.textContent = data.message;
+                        status.className = 'text-sm text-red-600';
+                    }
+                })
+                .catch(error => {
+                    btn.disabled = false;
+                    btn.textContent = '@lang('rest-api::app.auth_channels.telegram.webhook.register-btn')';
+                    status.textContent = '@lang('rest-api::app.auth_channels.telegram.webhook.error')';
+                    status.className = 'text-sm text-red-600';
+                    console.error('Error:', error);
+                });
+            }
+
+            // Load webhook info on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                loadWebhookInfo();
+            });
+
+            function loadWebhookInfo() {
+                const status = document.getElementById('webhook-status');
+                const channelCode = '{{ $channelCode }}';
+
+                fetch('{{ route('admin.settings.auth_channels.webhook_info') }}?channel_code=' + channelCode, {
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const webhookUrl = data.data.url;
+                        if (webhookUrl) {
+                            status.textContent = '@lang('rest-api::app.auth_channels.telegram.webhook.current'): ' + webhookUrl;
+                            status.className = 'text-sm text-green-600';
+                        } else {
+                            status.textContent = '@lang('rest-api::app.auth_channels.telegram.webhook.not-registered')';
+                            status.className = 'text-sm text-yellow-600';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading webhook info:', error);
+                });
+            }
+        </script>
+    @endPushOnce
+@endif
 </x-admin::layouts>

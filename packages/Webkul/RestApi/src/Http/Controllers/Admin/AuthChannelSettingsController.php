@@ -2,12 +2,14 @@
 
 namespace Webkul\RestApi\Http\Controllers\Admin;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\RestApi\Config\AuthChannelFieldsConfig;
 use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
+use Webkul\RestApi\Services\Auth\TelegramService;
 
 class AuthChannelSettingsController extends Controller
 {
@@ -16,7 +18,8 @@ class AuthChannelSettingsController extends Controller
      */
     public function __construct(
         protected AuthChannelSettingRepository $settingRepository,
-        protected AuthChannelFieldsConfig $fieldsConfig
+        protected AuthChannelFieldsConfig $fieldsConfig,
+        protected TelegramService $telegramService
     ) {}
 
     /**
@@ -90,5 +93,66 @@ class AuthChannelSettingsController extends Controller
         return response()->json([
             'data' => $settings,
         ]);
+    }
+
+    /**
+     * Register Telegram webhook.
+     */
+    public function registerTelegramWebhook(): JsonResponse
+    {
+        $channelCode = request('channel_code', core()->getDefaultChannelCode());
+
+        // Check if bot token is configured
+        $botToken = $this->telegramService->getBotToken($channelCode);
+
+        if (!$botToken) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('rest-api::app.auth_channels.telegram.webhook.token-not-configured'),
+            ], 400);
+        }
+
+        // Generate webhook URL
+        $webhookUrl = route('api.v1.telegram.webhook');
+
+        // Register webhook in Telegram
+        $result = $this->telegramService->registerWebhook($webhookUrl, $channelCode);
+
+        if ($result['success']) {
+            return response()->json([
+                'success'     => true,
+                'message'     => trans('rest-api::app.auth_channels.telegram.webhook.registered-success'),
+                'webhook_url' => $webhookUrl,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => trans('rest-api::app.auth_channels.telegram.webhook.registered-error', [
+                'error' => $result['error'],
+            ]),
+        ], 400);
+    }
+
+    /**
+     * Get Telegram webhook info.
+     */
+    public function getTelegramWebhookInfo(): JsonResponse
+    {
+        $channelCode = request('channel_code', core()->getDefaultChannelCode());
+
+        $result = $this->telegramService->getWebhookInfo($channelCode);
+
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'data'    => $result['result'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => $result['error'],
+        ], 400);
     }
 }

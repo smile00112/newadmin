@@ -567,6 +567,21 @@ return [
             'channel-disabled' => 'The :channel authentication channel is currently disabled.',
         ],
 
+        'telegram' => [
+            'need-registration'  => 'To authenticate via Telegram, you need to link your account. Open the bot and share your contact.',
+            'code-sent'          => 'Verification code sent to Telegram.',
+            'webhook' => [
+                'register-btn'        => 'Register Webhook',
+                'registering'         => 'Registering...',
+                'registered-success'  => 'Webhook registered successfully.',
+                'registered-error'    => 'Webhook registration error: :error',
+                'token-not-configured' => 'Bot token is not configured. Save the token first.',
+                'current'             => 'Current webhook',
+                'not-registered'      => 'Webhook not registered',
+                'error'               => 'An error occurred during registration',
+            ],
+        ],
+
         'settings' => [
             'title'      => 'Auth Channels Settings',
             'save-success' => 'Settings saved successfully.',
@@ -597,6 +612,8 @@ return [
                 'bot_link-info' => 'Link to Telegram bot (e.g., https://t.me/your_bot)',
                 'app_link'   => 'Telegram App Link',
                 'app_link-info' => 'Link to application in Telegram (e.g., https://t.me/your_app)',
+                'start_message' => 'Welcome Message',
+                'start_message-info' => 'Message shown when bot is first started with "Share Contact" button',
                 'test_phone_numbers' => 'Test Phone Numbers',
                 'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers message is not sent, and authorization code is always 123456',
             ],

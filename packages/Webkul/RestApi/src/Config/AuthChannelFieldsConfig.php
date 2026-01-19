@@ -109,6 +109,13 @@ class AuthChannelFieldsConfig
                 'description' => 'rest-api::app.auth_channels.settings.telegram.app_link-info',
             ],
             [
+                'key'         => 'start_message',
+                'title'       => 'rest-api::app.auth_channels.settings.telegram.start_message',
+                'type'        => 'textarea',
+                'default'     => 'Добро пожаловать! Для авторизации, пожалуйста, поделитесь своим контактом, нажав на кнопку ниже.',
+                'description' => 'rest-api::app.auth_channels.settings.telegram.start_message-info',
+            ],
+            [
                 'key'         => 'test_phone_numbers',
                 'title'       => 'rest-api::app.auth_channels.settings.telegram.test_phone_numbers',
                 'type'        => 'textarea',

@@ -13,6 +13,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\OrderController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\ShipmentController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\TransactionController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\WishlistController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\TelegramWebhookController;
 
 /**
  * Customer unauthorized routes.
@@ -39,10 +40,17 @@ Route::controller(MultiChannelAuthController::class)->prefix('customer/auth')->g
     Route::post('sms/initiate', 'initiateSmsAuth');
     Route::post('whatsapp/initiate', 'initiateWhatsAppAuth');
     Route::post('telegram/initiate', 'initiateTelegramAuth');
+    Route::post('telegram/initiate-legacy', 'initiateTelegramAuthLegacy');
     Route::post('verify', 'verifyAndAuthenticate');
     Route::post('reset-token', 'resetToken');
     Route::post('verify-reset', 'verifyResetAndGenerateToken');
 });
+
+/**
+ * Telegram webhook route (public, no CSRF).
+ */
+Route::post('telegram/webhook', [TelegramWebhookController::class, 'handleWebhook'])
+    ->name('api.v1.telegram.webhook');
 
 /**
  * Customer authorized routes.

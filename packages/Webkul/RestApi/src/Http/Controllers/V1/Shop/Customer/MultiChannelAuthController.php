@@ -13,6 +13,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\ShopController;
 use Webkul\RestApi\Http\Requests\Auth\SmsAuthRequest;
 use Webkul\RestApi\Http\Requests\Auth\WhatsAppAuthRequest;
 use Webkul\RestApi\Http\Requests\Auth\TelegramAuthRequest;
+use Webkul\RestApi\Http\Requests\Auth\TelegramInitiateRequest;
 use Webkul\RestApi\Http\Requests\Auth\VerificationRequest;
 use Webkul\RestApi\Http\Requests\Auth\TokenResetRequest;
 use Webkul\RestApi\Http\Resources\V1\Shop\Customer\CustomerResource;
@@ -171,9 +172,87 @@ class MultiChannelAuthController extends ShopController
     }
 
     /**
-     * Initiate Telegram authentication.
+     * Initiate Telegram authentication (new flow with phone number).
      */
-    public function initiateTelegramAuth(TelegramAuthRequest $request): Response
+    public function initiateTelegramAuth(TelegramInitiateRequest $request): Response
+    {
+        // Check if Telegram channel is enabled
+        if (!$this->authChannelSettingRepository->isChannelEnabled('telegram')) {
+            return response([
+                'message' => trans('rest-api::app.auth_channels.errors.channel-disabled', ['channel' => 'Telegram']),
+            ], 403);
+        }
+
+        $phoneNumber = $request->getFullPhoneNumber();
+
+        // Find customer by phone number
+        $customer = $this->customerRepository->where('phone', $phoneNumber)->first();
+
+        // If customer doesn't exist, create one
+        if (!$customer) {
+            $email = $phoneNumber . '@telegram.user';
+
+            Event::dispatch('customer.registration.before');
+
+            $customer = $this->customerRepository->create([
+                'first_name'        => 'Аноним',
+                'last_name'         => 'Аноним',
+                'email'             => $email,
+                'phone'             => $phoneNumber,
+                'password'          => bcrypt(Str::random(16)),
+                'is_verified'       => 1,
+                'channel_id'        => core()->getCurrentChannel()->id,
+                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+            ]);
+
+            Event::dispatch('customer.registration.after', $customer);
+        }
+
+        // Check if customer has telegram_id
+        if (!$customer->telegram_id) {
+            // User needs to register in Telegram bot first
+            $botUrl = $this->telegramService->getBotUrl();
+
+            if (!$botUrl) {
+                return response([
+                    'message' => 'Telegram bot is not configured.',
+                ], 500);
+            }
+
+            // Add start parameter with phone hash for tracking
+            $startParam = base64_encode($phoneNumber);
+            $botUrlWithParam = $botUrl . '?start=' . $startParam;
+
+            return response([
+                'need_telegram_registration' => true,
+                'bot_url'                    => $botUrlWithParam,
+                'message'                    => trans('rest-api::app.auth_channels.telegram.need-registration'),
+            ]);
+        }
+
+        // Customer has telegram_id - send verification code
+        $verificationData = $this->verificationService->generateVerificationCode($customer->telegram_id, 'telegram');
+
+        // Send Telegram message
+        if (!$this->telegramService->sendVerificationCode($customer->telegram_id, $verificationData['verification_code'])) {
+            return response([
+                'message' => 'Failed to send verification code.',
+            ], 500);
+        }
+
+        return response([
+            'need_telegram_registration' => false,
+            'bot_url'                    => '',
+            'message'                    => trans('rest-api::app.auth_channels.telegram.code-sent'),
+            'verification_token'         => $verificationData['verification_token'],
+            'expires_in'                 => $verificationData['expires_in'],
+        ]);
+    }
+
+    /**
+     * Initiate Telegram authentication (legacy - by telegram_id).
+     */
+    public function initiateTelegramAuthLegacy(TelegramAuthRequest $request): Response
     {
         // Check if Telegram channel is enabled
         if (!$this->authChannelSettingRepository->isChannelEnabled('telegram')) {
@@ -190,18 +269,18 @@ class MultiChannelAuthController extends ShopController
 
         // Use firstOrCreate to prevent duplicate entries
         $email = $request->telegram_id . '@test.com';
-        
+
         Event::dispatch('customer.registration.before');
-        
+
         $customer = $this->customerRepository->firstOrCreate(
             ['telegram_id' => $request->telegram_id],
             [
-                'first_name' => 'Аноним',
-                'last_name' => 'Аноним',
-                'email' => $email,
-                'password' => bcrypt(Str::random(16)),
-                'is_verified' => 1,
-                'channel_id' => core()->getCurrentChannel()->id,
+                'first_name'        => 'Аноним',
+                'last_name'         => 'Аноним',
+                'email'             => $email,
+                'password'          => bcrypt(Str::random(16)),
+                'is_verified'       => 1,
+                'channel_id'        => core()->getCurrentChannel()->id,
                 'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
             ]
         );
@@ -211,7 +290,7 @@ class MultiChannelAuthController extends ShopController
             $customer->email = $email;
             $customer->save();
         }
-        
+
         Event::dispatch('customer.registration.after', $customer);
 
         // Generate verification code
@@ -225,9 +304,9 @@ class MultiChannelAuthController extends ShopController
         }
 
         return response([
-            'message' => 'Verification code sent to your Telegram.',
+            'message'            => 'Verification code sent to your Telegram.',
             'verification_token' => $verificationData['verification_token'],
-            'expires_in' => $verificationData['expires_in'],
+            'expires_in'         => $verificationData['expires_in'],
         ]);
     }
 

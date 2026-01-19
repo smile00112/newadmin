@@ -231,5 +231,7 @@ Route::prefix('settings')->group(function () {
     Route::controller(AuthChannelSettingsController::class)->prefix('auth-channels')->group(function () {
         Route::get('', 'index')->name('admin.settings.auth_channels.index');
         Route::post('', 'store')->name('admin.settings.auth_channels.store');
+        Route::post('telegram/register-webhook', 'registerTelegramWebhook')->name('admin.settings.auth_channels.register_webhook');
+        Route::get('telegram/webhook-info', 'getTelegramWebhookInfo')->name('admin.settings.auth_channels.webhook_info');
     });
 });
