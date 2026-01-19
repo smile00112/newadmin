@@ -3933,6 +3933,7 @@ return [
 
     'configuration' => [
         'index' => [
+            'channel'                       => 'Канал',
             'back-btn'                     => 'Назад',
             'delete'                       => 'Удалить',
             'enable-at-least-one-payment'  => 'Включите хотя бы один способ оплаты.',

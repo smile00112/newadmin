@@ -164,7 +164,7 @@ class CartController extends CustomerController
 
         // Проверяем, что товар существует и принадлежит текущей корзине
         $cartItemIds = $cart->items()->pluck('id')->toArray();
-        
+
         if (! in_array($cartItemId, $cartItemIds)) {
             return response([
                 'message' => 'Cart Item not found',
@@ -298,7 +298,11 @@ class CartController extends CustomerController
         if ($useSeparateList) {
             // Используем отдельный список из конфигурации
             $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
-            
+
+            if(is_string($productIds)) {
+                $productIds = explode(',', $productIds);
+            }
+
             if (empty($productIds) || !is_array($productIds)) {
                 return response([
                     'data' => [],

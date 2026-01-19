@@ -47,11 +47,36 @@ class AuthChannelSettingsController extends Controller
         $authChannel = request('auth_channel');
         $settings = request('settings', []);
 
+        // Clean test phone numbers if present
+        if (isset($settings['test_phone_numbers'])) {
+            $settings['test_phone_numbers'] = $this->cleanPhoneNumbers($settings['test_phone_numbers']);
+        }
+
         $this->settingRepository->saveSettings($authChannel, $settings, $channelCode);
 
         session()->flash('success', trans('rest-api::app.auth_channels.settings.save-success'));
 
         return redirect()->back();
+    }
+
+    /**
+     * Clean phone numbers from extra characters.
+     * Keeps only digits and preserves line breaks as separators.
+     */
+    protected function cleanPhoneNumbers(string $phoneNumbers): string
+    {
+        $lines = preg_split('/\r\n|\r|\n/', $phoneNumbers);
+        $cleanedLines = [];
+
+        foreach ($lines as $line) {
+            $cleaned = preg_replace('/[^0-9]/', '', trim($line));
+
+            if (!empty($cleaned)) {
+                $cleanedLines[] = $cleaned;
+            }
+        }
+
+        return implode("\n", $cleanedLines);
     }
 
     /**

@@ -27,7 +27,7 @@ class VerificationService
     public function generateVerificationCode(string $identifier, string $channel): array
     {
         // Check if test user - use fixed code, otherwise generate random
-        $isTestUser = $this->testUserService->isTestUser($identifier);
+        $isTestUser = $this->testUserService->isTestUser($identifier, $channel);
         $verificationCode = $isTestUser
             ? $this->testUserService->getFixedCode()
             : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);

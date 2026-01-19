@@ -20,6 +20,7 @@ use Webkul\RestApi\Services\Auth\VerificationService;
 use Webkul\RestApi\Services\Auth\SmsService;
 use Webkul\RestApi\Services\Auth\WhatsAppService;
 use Webkul\RestApi\Services\Auth\TelegramService;
+use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
 use Webkul\Core\Repositories\SubscribersListRepository;
@@ -39,7 +40,8 @@ class MultiChannelAuthController extends ShopController
         protected VerificationService $verificationService,
         protected SmsService $smsService,
         protected WhatsAppService $whatsappService,
-        protected TelegramService $telegramService
+        protected TelegramService $telegramService,
+        protected AuthChannelSettingRepository $authChannelSettingRepository
     ) {}
 
     /**
@@ -47,6 +49,12 @@ class MultiChannelAuthController extends ShopController
      */
     public function initiateSmsAuth(SmsAuthRequest $request): Response
     {
+        // Check if SMS channel is enabled
+        if (!$this->authChannelSettingRepository->isChannelEnabled('sms')) {
+            return response([
+                'message' => trans('rest-api::app.auth_channels.errors.channel-disabled', ['channel' => 'SMS']),
+            ], 403);
+        }
 
         $phoneNumber = $request->country_code . $request->phone_number;
 
@@ -104,6 +112,13 @@ class MultiChannelAuthController extends ShopController
      */
     public function initiateWhatsAppAuth(WhatsAppAuthRequest $request): Response
     {
+        // Check if WhatsApp channel is enabled
+        if (!$this->authChannelSettingRepository->isChannelEnabled('whatsapp')) {
+            return response([
+                'message' => trans('rest-api::app.auth_channels.errors.channel-disabled', ['channel' => 'WhatsApp']),
+            ], 403);
+        }
+
         $phoneNumber = $request->country_code . $request->phone_number;
 
         if (!$this->whatsappService->validatePhoneNumber($phoneNumber)) {
@@ -160,6 +175,13 @@ class MultiChannelAuthController extends ShopController
      */
     public function initiateTelegramAuth(TelegramAuthRequest $request): Response
     {
+        // Check if Telegram channel is enabled
+        if (!$this->authChannelSettingRepository->isChannelEnabled('telegram')) {
+            return response([
+                'message' => trans('rest-api::app.auth_channels.errors.channel-disabled', ['channel' => 'Telegram']),
+            ], 403);
+        }
+
         if (!$this->telegramService->validateTelegramId($request->telegram_id)) {
             return response([
                 'message' => 'Invalid Telegram ID format.',
@@ -272,6 +294,14 @@ class MultiChannelAuthController extends ShopController
     {
         $customer = null;
         $channel = $request->reset_method;
+
+        // Check if channel is enabled (except email which doesn't have settings yet)
+        if (in_array($channel, ['sms', 'whatsapp', 'telegram']) && !$this->authChannelSettingRepository->isChannelEnabled($channel)) {
+            $channelNames = ['sms' => 'SMS', 'whatsapp' => 'WhatsApp', 'telegram' => 'Telegram'];
+            return response([
+                'message' => trans('rest-api::app.auth_channels.errors.channel-disabled', ['channel' => $channelNames[$channel]]),
+            ], 403);
+        }
 
         switch ($channel) {
             case 'sms':

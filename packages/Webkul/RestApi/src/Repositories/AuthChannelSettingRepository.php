@@ -3,12 +3,17 @@
 namespace Webkul\RestApi\Repositories;
 
 use Illuminate\Container\Container;
-use Webkul\Core\Eloquent\Repository;
+use Webkul\Core\Repositories\AbstractSettingRepository;
 use Webkul\RestApi\Config\AuthChannelFieldsConfig;
 use Webkul\RestApi\Models\AuthChannelSetting;
 
-class AuthChannelSettingRepository extends Repository
+class AuthChannelSettingRepository extends AbstractSettingRepository
 {
+    /**
+     * Available auth channels for cache clearing.
+     */
+    protected const AUTH_CHANNELS = ['sms', 'whatsapp', 'telegram'];
+
     /**
      * Create a new repository instance.
      */
@@ -28,70 +33,11 @@ class AuthChannelSettingRepository extends Repository
     }
 
     /**
-     * Get all settings for a channel as key-value pairs.
+     * Get cache key prefix for this repository.
      */
-    public function getAllSettings(string $channel, ?string $channelCode = null): array
+    protected function getCachePrefix(): string
     {
-        $query = $this->model->query()->where('channel', $channel);
-
-        if ($channelCode) {
-            $query->where('channel_code', $channelCode);
-        }
-
-        $settings = $query->get();
-
-        $result = [];
-
-        foreach ($settings as $setting) {
-            $result[$setting->key] = $setting->value;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get a specific setting value.
-     */
-    public function getSetting(string $channel, string $key, ?string $channelCode = null): mixed
-    {
-        $query = $this->model->query()
-            ->where('channel', $channel)
-            ->where('key', $key);
-
-        if ($channelCode) {
-            $query->where('channel_code', $channelCode);
-        }
-
-        $setting = $query->first();
-
-        return $setting?->value;
-    }
-
-    /**
-     * Set a setting value.
-     */
-    public function setSetting(string $channel, string $key, mixed $value, ?string $channelCode = null): void
-    {
-        $this->updateOrCreate(
-            [
-                'channel'      => $channel,
-                'key'          => $key,
-                'channel_code' => $channelCode,
-            ],
-            [
-                'value' => $value,
-            ]
-        );
-    }
-
-    /**
-     * Save multiple settings at once.
-     */
-    public function saveSettings(string $channel, array $settings, ?string $channelCode = null): void
-    {
-        foreach ($settings as $key => $value) {
-            $this->setSetting($channel, $key, $value, $channelCode);
-        }
+        return 'auth_channel_settings';
     }
 
     /**
@@ -114,8 +60,22 @@ class AuthChannelSettingRepository extends Repository
      */
     public function isChannelEnabled(string $channel, ?string $channelCode = null): bool
     {
-        $enabled = $this->getSetting($channel, 'enabled', $channelCode);
+        return $this->isEnabled($channel, 'enabled', $channelCode);
+    }
 
-        return (bool) $enabled;
+    /**
+     * Clear all auth channel caches.
+     */
+    public function clearAllAuthChannelCache(): void
+    {
+        $this->clearAllCache(self::AUTH_CHANNELS);
+    }
+
+    /**
+     * Preload all auth channel settings (useful at request start).
+     */
+    public function preloadAllAuthChannels(?string $channelCode = null): void
+    {
+        $this->preloadSettings(self::AUTH_CHANNELS, $channelCode);
     }
 }

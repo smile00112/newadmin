@@ -12,7 +12,8 @@ class WhatsAppService
      * Create a new service instance.
      */
     public function __construct(
-        protected AuthChannelSettingRepository $settingRepository
+        protected AuthChannelSettingRepository $settingRepository,
+        protected TestUserService $testUserService
     ) {}
 
     /**
@@ -26,6 +27,12 @@ class WhatsAppService
     {
         try {
             $channelCode = core()->getCurrentChannelCode();
+
+            // Check if this is a test phone number - skip sending WhatsApp message
+            if ($this->testUserService->isTestUser($phoneNumber, 'whatsapp')) {
+                Log::info("WhatsApp message sending skipped for test phone number: {$phoneNumber}");
+                return true;
+            }
             
             // Check if WhatsApp channel is enabled
             if (!$this->settingRepository->isChannelEnabled('whatsapp', $channelCode)) {

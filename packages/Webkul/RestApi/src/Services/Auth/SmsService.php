@@ -12,7 +12,8 @@ class SmsService
      * Create a new service instance.
      */
     public function __construct(
-        protected AuthChannelSettingRepository $settingRepository
+        protected AuthChannelSettingRepository $settingRepository,
+        protected TestUserService $testUserService
     ) {}
 
     /**
@@ -26,7 +27,13 @@ class SmsService
     {
         try {
             $channelCode = core()->getCurrentChannelCode();
-            
+
+            // Check if this is a test phone number - skip sending SMS
+            if ($this->testUserService->isTestUser($phoneNumber, 'sms')) {
+                Log::info("SMS sending skipped for test phone number: {$phoneNumber}");
+                return true;
+            }
+
             // Check if SMS channel is enabled
             if (!$this->settingRepository->isChannelEnabled('sms', $channelCode)) {
                 Log::warning("SMS channel is disabled for channel: {$channelCode}");
@@ -70,7 +77,7 @@ class SmsService
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                
+
                 if (isset($responseData['success']) && $responseData['success']) {
                     Log::info("SMS sent successfully to {$phoneNumber}");
                     return true;
@@ -80,6 +87,7 @@ class SmsService
                 }
             } else {
                 Log::error("SMS API request failed with status: " . $response->status());
+                Log::error( $response );
                 return false;
             }
         } catch (\Exception $e) {

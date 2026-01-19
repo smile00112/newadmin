@@ -563,6 +563,10 @@ return [
     ],
 
     'auth_channels' => [
+        'errors' => [
+            'channel-disabled' => 'The :channel authentication channel is currently disabled.',
+        ],
+
         'settings' => [
             'title'      => 'Auth Channels Settings',
             'save-success' => 'Settings saved successfully.',
@@ -579,6 +583,8 @@ return [
                 'from-info'  => 'SMS sender name (must be registered in REDSMS)',
                 'auth_message_text' => 'Authorization Message Text',
                 'auth_message_text-info' => 'Text that will be added before the authorization code in SMS message',
+                'test_phone_numbers' => 'Test Phone Numbers',
+                'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers SMS is not sent, and authorization code is always 123456',
             ],
 
             'telegram' => [
@@ -591,6 +597,8 @@ return [
                 'bot_link-info' => 'Link to Telegram bot (e.g., https://t.me/your_bot)',
                 'app_link'   => 'Telegram App Link',
                 'app_link-info' => 'Link to application in Telegram (e.g., https://t.me/your_app)',
+                'test_phone_numbers' => 'Test Phone Numbers',
+                'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers message is not sent, and authorization code is always 123456',
             ],
 
             'whatsapp' => [
@@ -603,6 +611,8 @@ return [
                 'api_token_instance-info' => 'API token for Green API access',
                 'url'        => 'API URL',
                 'url-info'   => 'Green API URL (default: https://api.green-api.com)',
+                'test_phone_numbers' => 'Test Phone Numbers',
+                'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers message is not sent, and authorization code is always 123456',
             ],
         ],
     ],

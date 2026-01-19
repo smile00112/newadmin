@@ -12,7 +12,8 @@ class TelegramService
      * Create a new service instance.
      */
     public function __construct(
-        protected AuthChannelSettingRepository $settingRepository
+        protected AuthChannelSettingRepository $settingRepository,
+        protected TestUserService $testUserService
     ) {}
 
     /**
@@ -26,6 +27,12 @@ class TelegramService
     {
         try {
             $channelCode = core()->getCurrentChannelCode();
+
+            // Check if this is a test Telegram ID - skip sending message
+            if ($this->testUserService->isTestUser($telegramId, 'telegram')) {
+                Log::info("Telegram message sending skipped for test Telegram ID: {$telegramId}");
+                return true;
+            }
             
             // Check if Telegram channel is enabled
             if (!$this->settingRepository->isChannelEnabled('telegram', $channelCode)) {

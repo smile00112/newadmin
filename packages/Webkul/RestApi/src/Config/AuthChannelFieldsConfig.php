@@ -67,6 +67,13 @@ class AuthChannelFieldsConfig
                 'default'     => 'Ваш код подтверждения',
                 'description' => 'rest-api::app.auth_channels.settings.sms.auth_message_text-info',
             ],
+            [
+                'key'         => 'test_phone_numbers',
+                'title'       => 'rest-api::app.auth_channels.settings.sms.test_phone_numbers',
+                'type'        => 'textarea',
+                'default'     => '',
+                'description' => 'rest-api::app.auth_channels.settings.sms.test_phone_numbers-info',
+            ],
         ];
     }
 
@@ -100,6 +107,13 @@ class AuthChannelFieldsConfig
                 'title'       => 'rest-api::app.auth_channels.settings.telegram.app_link',
                 'type'        => 'text',
                 'description' => 'rest-api::app.auth_channels.settings.telegram.app_link-info',
+            ],
+            [
+                'key'         => 'test_phone_numbers',
+                'title'       => 'rest-api::app.auth_channels.settings.telegram.test_phone_numbers',
+                'type'        => 'textarea',
+                'default'     => '',
+                'description' => 'rest-api::app.auth_channels.settings.telegram.test_phone_numbers-info',
             ],
         ];
     }
@@ -135,6 +149,13 @@ class AuthChannelFieldsConfig
                 'type'        => 'text',
                 'default'     => 'https://api.green-api.com',
                 'description' => 'rest-api::app.auth_channels.settings.whatsapp.url-info',
+            ],
+            [
+                'key'         => 'test_phone_numbers',
+                'title'       => 'rest-api::app.auth_channels.settings.whatsapp.test_phone_numbers',
+                'type'        => 'textarea',
+                'default'     => '',
+                'description' => 'rest-api::app.auth_channels.settings.whatsapp.test_phone_numbers-info',
             ],
         ];
     }

@@ -53,7 +53,7 @@ return [
          | Enable or disable cache
          |
          */
-        'enabled'    => false,
+        'enabled'    => true,
 
         /*
          |--------------------------------------------------------------------------

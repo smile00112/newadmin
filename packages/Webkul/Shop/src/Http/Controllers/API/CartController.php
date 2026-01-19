@@ -280,7 +280,7 @@ class CartController extends APIController
         if ($useSeparateList) {
             // Используем отдельный список из конфигурации
             $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
-            
+
             if (empty($productIds) || !is_array($productIds)) {
                 return new JsonResource([
                     'data' => [],

@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "http://dolinger_new_admin.test",
+            "url": "https://dolinger_new_admin.test",
             "description": "Rest API"
         }
     ],
@@ -7061,11 +7061,15 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
+                        "type": "string",
+                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
+                        "type": "string",
+                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {

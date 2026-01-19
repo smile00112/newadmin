@@ -2,46 +2,47 @@
 
 namespace Webkul\RestApi\Services\Auth;
 
+use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
+
 class TestUserService
 {
-    /**
-     * Test phone numbers with fixed verification code.
-     */
-    private const TEST_PHONE_NUMBERS = [
-        '+71234567890',
-        '+71231234567',
-    ];
-
     /**
      * Fixed verification code for test users.
      */
     private const FIXED_CODE = '123456';
 
     /**
-     * Check if identifier belongs to a test user.
+     * Create a new service instance.
+     */
+    public function __construct(
+        protected AuthChannelSettingRepository $settingRepository
+    ) {}
+
+    /**
+     * Check if identifier belongs to a test user for a specific channel.
      *
      * @param string $identifier Phone number or telegram_id
+     * @param string $authChannel Auth channel type (sms, whatsapp, telegram)
      * @return bool
      */
-    public function isTestUser(string $identifier): bool
+    public function isTestUser(string $identifier, string $authChannel = 'sms'): bool
     {
-        // Normalize identifier (remove + if present for comparison)
-        $normalized = $this->normalizeIdentifier($identifier);
-        
-        // Check against test phone numbers (with and without +)
-        foreach (self::TEST_PHONE_NUMBERS as $testNumber) {
-            // Check exact match with +
-            if ($identifier === $testNumber) {
-                return true;
-            }
-            
-            // Check normalized match (without +)
-            $normalizedTest = $this->normalizeIdentifier($testNumber);
-            if ($normalized === $normalizedTest) {
+        $testIdentifiers = $this->getTestIdentifiers($authChannel);
+
+        if (empty($testIdentifiers)) {
+            return false;
+        }
+
+        // Clean identifier - keep only digits
+        $cleanedIdentifier = preg_replace('/[^0-9]/', '', $identifier);
+
+        // Check against test identifiers (already cleaned in storage)
+        foreach ($testIdentifiers as $testIdentifier) {
+            if ($cleanedIdentifier === $testIdentifier) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -56,33 +57,28 @@ class TestUserService
     }
 
     /**
-     * Get list of test user identifiers.
+     * Get list of test identifiers for a specific channel.
      *
+     * @param string $authChannel Auth channel type (sms, whatsapp, telegram)
      * @return array
      */
-    public function getTestUsers(): array
+    public function getTestIdentifiers(string $authChannel): array
     {
-        $users = [];
-        
-        foreach (self::TEST_PHONE_NUMBERS as $phoneNumber) {
-            // Add with +
-            $users[] = $phoneNumber;
-            // Add without +
-            $users[] = $this->normalizeIdentifier($phoneNumber);
+        $channelCode = core()->getCurrentChannelCode();
+
+        $testIdentifiersRaw = $this->settingRepository->getSetting($authChannel, 'test_phone_numbers', $channelCode);
+
+        if (empty($testIdentifiersRaw)) {
+            return [];
         }
-        
-        return array_unique($users);
+
+        // Parse multiline string into array, trimming each line and removing empty lines
+        $identifiers = array_filter(
+            array_map('trim', preg_split('/\r\n|\r|\n/', $testIdentifiersRaw)),
+            fn($value) => !empty($value)
+        );
+
+        return $identifiers;
     }
 
-    /**
-     * Normalize identifier by removing + prefix.
-     *
-     * @param string $identifier
-     * @return string
-     */
-    private function normalizeIdentifier(string $identifier): string
-    {
-        return ltrim($identifier, '+');
-    }
 }
-
