@@ -281,6 +281,10 @@ class CartController extends APIController
             // Используем отдельный список из конфигурации
             $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
 
+            if(is_string($productIds)) {
+                $productIds = explode(',', $productIds);
+            }
+
             if (empty($productIds) || !is_array($productIds)) {
                 return new JsonResource([
                     'data' => [],

@@ -92,8 +92,9 @@ class CartController extends CustomerController
                 }
 
                 return response([
-                    'data'    => app()->make($this->resource(), ['resource' => Cart::getCart()]),
-                    'message' => trans('rest-api::app.shop.checkout.cart.item.success'),
+                    'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
+                    'cross_sell' => $this->getCrossSellProducts(),
+                    'message'    => trans('rest-api::app.shop.checkout.cart.item.success'),
                 ]);
             }
 
@@ -141,8 +142,9 @@ class CartController extends CustomerController
             Cart::updateItems(request()->input());
 
             return response([
-                'data'    => app()->make($this->resource(), ['resource' => Cart::getCart()]),
-                'message' => trans('rest-api::app.shop.checkout.cart.quantity.success'),
+                'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
+                'cross_sell' => $this->getCrossSellProducts(),
+                'message'    => trans('rest-api::app.shop.checkout.cart.quantity.success'),
             ]);
         } catch (\Exception $exception) {
             return response([
@@ -182,8 +184,9 @@ class CartController extends CustomerController
         $cart = Cart::getCart();
 
         return response([
-            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
-            'message' => trans('rest-api::app.shop.checkout.cart.item.success-remove'),
+            'data'       => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'cross_sell' => $this->getCrossSellProducts(),
+            'message'    => trans('rest-api::app.shop.checkout.cart.item.success-remove'),
         ]);
     }
 
@@ -280,16 +283,14 @@ class CartController extends CustomerController
     }
 
     /**
-     * Cross-sell product listings.
+     * Get cross-sell products for the current cart.
      */
-    public function crossSellProducts(): Response
+    private function getCrossSellProducts(): array
     {
         $cart = Cart::getCart();
 
         if (! $cart) {
-            return response([
-                'data' => [],
-            ]);
+            return [];
         }
 
         // Проверяем, включен ли отдельный список
@@ -299,14 +300,12 @@ class CartController extends CustomerController
             // Используем отдельный список из конфигурации
             $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
 
-            if(is_string($productIds)) {
+            if (is_string($productIds)) {
                 $productIds = explode(',', $productIds);
             }
 
-            if (empty($productIds) || !is_array($productIds)) {
-                return response([
-                    'data' => [],
-                ]);
+            if (empty($productIds) || ! is_array($productIds)) {
+                return [];
             }
 
             $products = $this->productRepository
@@ -314,9 +313,7 @@ class CartController extends CustomerController
                 ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
                 ->get();
 
-            return response([
-                'data' => ProductResource::collection($products),
-            ]);
+            return ProductResource::collection($products)->resolve();
         }
 
         // Старая логика - cross-sell из товаров в корзине
@@ -330,8 +327,16 @@ class CartController extends CustomerController
             ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
             ->get();
 
+        return ProductResource::collection($products)->resolve();
+    }
+
+    /**
+     * Cross-sell product listings.
+     */
+    public function crossSellProducts(): Response
+    {
         return response([
-            'data' => ProductResource::collection($products),
+            'data' => $this->getCrossSellProducts(),
         ]);
     }
 }
