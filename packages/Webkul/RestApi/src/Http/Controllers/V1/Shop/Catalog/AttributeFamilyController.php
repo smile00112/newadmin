@@ -2,11 +2,20 @@
 
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Catalog;
 
+use Illuminate\Http\Request;
 use Webkul\Attribute\Repositories\AttributeFamilyRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\AttributeFamilyResource;
+use Webkul\RestApi\Traits\ProvideApiCache;
 
 class AttributeFamilyController extends CatalogController
 {
+    use ProvideApiCache;
+
+    /**
+     * Cache TTL in seconds (1 hour - attribute families rarely change).
+     */
+    protected int $cacheTtl = 3600;
+
     /**
      * Is resource authorized.
      */
@@ -29,5 +38,21 @@ class AttributeFamilyController extends CatalogController
     public function resource(): string
     {
         return AttributeFamilyResource::class;
+    }
+
+    /**
+     * Returns a listing of all attribute families (cached).
+     */
+    public function allResources(Request $request): \Illuminate\Http\Response
+    {
+        $data = $this->cachedResponse('all', function () {
+            return $this->getRepositoryInstance()
+                ->with(['attributeGroups.customAttributes'])
+                ->orderBy('id', 'asc')
+                ->all()
+                ->toArray();
+        });
+
+        return response(['data' => $data]);
     }
 }
