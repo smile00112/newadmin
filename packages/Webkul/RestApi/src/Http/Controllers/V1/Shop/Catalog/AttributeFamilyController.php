@@ -49,7 +49,7 @@ class AttributeFamilyController extends CatalogController
             return $this->getRepositoryInstance()
                 ->with(['attributeGroups.customAttributes'])
                 ->orderBy('id', 'asc')
-                ->all()
+                ->get()
                 ->toArray();
         });
 

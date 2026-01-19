@@ -62,7 +62,7 @@ class CategoryController extends CatalogController
                 ->with(['translations'])
                 ->where('status', 1)
                 ->orderBy('position', 'asc')
-                ->all()
+                ->get()
                 ->toArray();
         });
 

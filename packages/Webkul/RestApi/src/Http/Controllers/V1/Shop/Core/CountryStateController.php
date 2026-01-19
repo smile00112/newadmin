@@ -56,7 +56,7 @@ class CountryStateController extends CoreController
                 $query = $query->where('country_code', $countryCode);
             }
 
-            return $query->all()->toArray();
+            return $query->get()->toArray();
         });
 
         return response(['data' => $data]);
