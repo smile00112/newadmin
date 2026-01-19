@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\MobileApp\Config\FieldsConfig;
 use Webkul\MobileApp\Contracts\MobileAppSetting;
+use Webkul\MobileApp\Http\Controllers\Api\MobileSettingsController;
 
 /**
  * Repository for mobile app settings with caching.
@@ -165,6 +166,9 @@ class MobileAppSettingRepository extends Repository
         $cacheKey = $this->buildCacheKey($channelCode);
         Cache::forget($cacheKey);
         unset($this->memoryCache[$cacheKey]);
+
+        // Also clear API response cache
+        MobileSettingsController::clearCache($channelCode);
     }
 
     /**
@@ -175,5 +179,8 @@ class MobileAppSettingRepository extends Repository
         $this->clearCache(null);
         $this->clearCache(core()->getCurrentChannelCode());
         $this->memoryCache = [];
+
+        // Also clear all API response caches
+        MobileSettingsController::clearCache();
     }
 }
