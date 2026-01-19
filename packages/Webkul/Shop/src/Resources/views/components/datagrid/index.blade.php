@@ -57,6 +57,27 @@
                     </template>
                 </x-shop::datagrid.table>
             </div>
+
+            <!-- Bottom Pagination -->
+            <div class="mt-4 flex justify-end">
+                <x-shop::datagrid.toolbar.pagination>
+                    <template #pagination="{
+                        available,
+                        applied,
+                        changePage,
+                        changePerPageOption
+                    }">
+                        <slot
+                            name="pagination"
+                            :available="available"
+                            :applied="applied"
+                            :change-page="changePage"
+                            :change-per-page-option="changePerPageOption"
+                        >
+                        </slot>
+                    </template>
+                </x-shop::datagrid.toolbar.pagination>
+            </div>
         </div>
     </script>
 
