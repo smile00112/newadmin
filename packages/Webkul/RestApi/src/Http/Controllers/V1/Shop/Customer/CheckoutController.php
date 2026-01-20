@@ -89,6 +89,7 @@ class CheckoutController extends CustomerController
                 || ! Cart::saveShippingMethod($validatedData['shipping_method'])
             ) {
                 return response()->json([
+                    'errors' => Cart::getErrors(),
                     'message' => trans('rest-api::app.shop.checkout.error'),
                 ], 400);
             }
@@ -129,6 +130,7 @@ class CheckoutController extends CustomerController
                 || ! Cart::savePaymentMethod($validatedData['payment'])
             ) {
                 return response()->json([
+                    'errors' => Cart::getErrors(),
                     'message' => trans('rest-api::app.shop.checkout.error'),
                 ], 400);
             }
@@ -217,6 +219,7 @@ class CheckoutController extends CustomerController
 
             return response()->json([
                 'data'    => $responseData,
+                'errors' => Cart::getErrors(),
                 'message' => trans('rest-api::app.shop.checkout.order-saved'),
             ]);
         } catch (\Exception $e) {
