@@ -190,20 +190,22 @@ class CheckoutController extends CustomerController
 
             $cart = Cart::getCart();
 
-            if ($redirectUrl = Payment::getRedirectUrl($cart)) {
-                return response()->json([
-                    'redirect_url' => $redirectUrl,
-                ]);
-            }
+            $redirectUrl = Payment::getRedirectUrl($cart);
 
             $order = $orderRepository->create((new OrderTransformer($cart))->jsonSerialize());
 
             Cart::deActivateCart();
 
+            $responseData = [
+                'order' => new OrderResource($order),
+            ];
+
+            if ($redirectUrl) {
+                $responseData['payment_url'] = $redirectUrl;
+            }
+
             return response()->json([
-                'data'    => [
-                    'order' => new OrderResource($order),
-                ],
+                'data'    => $responseData,
                 'message' => trans('rest-api::app.shop.checkout.order-saved'),
             ]);
         } catch (\Exception $e) {
