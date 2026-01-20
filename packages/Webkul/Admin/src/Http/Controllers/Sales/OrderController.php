@@ -237,18 +237,18 @@ class OrderController extends Controller
             ]));
         }
 
-        // Проверяем, выбран ли самовывоз
-        $isPickup = $cart->shipping_method === 'pickup_pickup';
+        // Проверяем, выбран ли самовывоз или еда в зале
+        $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
 
         if (
             $cart->haveStockableItems()
-            && ! $isPickup
+            && ! $skipAddressValidation
             && ! $cart->shipping_address
         ) {
             throw new \Exception(trans('admin::app.sales.orders.create.check-shipping-address'));
         }
 
-        if (! $cart->billing_address) {
+        if (! $skipAddressValidation && ! $cart->billing_address) {
             throw new \Exception(trans('admin::app.sales.orders.create.check-billing-address'));
         }
 

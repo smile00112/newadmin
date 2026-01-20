@@ -224,18 +224,18 @@ class ReOrderController extends SalesController
             throw new \Exception(trans('shop::app.checkout.cart.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]));
         }
 
-        // Проверяем, выбран ли самовывоз
-        $isPickup = $cart->shipping_method === 'pickup_pickup';
+        // Проверяем, выбран ли самовывоз или еда в зале
+        $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
 
         if (
             $cart->haveStockableItems()
-            && ! $isPickup
+            && ! $skipAddressValidation
             && ! $cart->shipping_address
         ) {
             throw new \Exception(trans('shop::app.checkout.onepage.address.check-shipping-address'));
         }
 
-        if (! $cart->billing_address) {
+        if (! $skipAddressValidation && ! $cart->billing_address) {
             throw new \Exception(trans('shop::app.checkout.onepage.address.check-billing-address'));
         }
 

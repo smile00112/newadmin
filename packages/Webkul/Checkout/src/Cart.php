@@ -477,14 +477,14 @@ class Cart
         }
 
         /**
-         * For pickup orders, shipping address is not required.
+         * For pickup/dinein orders, shipping address is not required.
          */
-        $isPickup = $this->cart->shipping_method === 'pickup_pickup';
-        if ($isPickup && empty($params)) {
+        $skipAddressValidation = in_array($this->cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+        if ($skipAddressValidation && empty($params)) {
             return null;
         }
 
-        if (! $this->cart->billing_address) {
+        if (! $skipAddressValidation && ! $this->cart->billing_address) {
             throw new BillingAddressNotFoundException;
         }
 

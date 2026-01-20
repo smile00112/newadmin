@@ -78,10 +78,10 @@ class Shipping
         }
 
         $shippingAddress = $cart->shipping_address;
-        $isPickup = $cart->shipping_method === 'pickup_pickup';
+        $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
 
-        // Для самовывоза адрес не обязателен
-        if (! $shippingAddress && ! $isPickup) {
+        // Для самовывоза/еды в зале адрес не обязателен
+        if (! $shippingAddress && ! $skipAddressValidation) {
             return;
         }
 
