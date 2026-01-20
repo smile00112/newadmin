@@ -143,7 +143,18 @@ class CheckoutController extends CustomerController
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => $e->getMessage(),
+                'message'   => $e->getMessage(),
+                'exception' => get_class($e),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => config('app.debug') ? $e->getTraceAsString() : null,
+                'cart'      => Cart::getCart() ? [
+                    'id'              => Cart::getCart()->id,
+                    'has_error'       => Cart::hasError(),
+                    'items_count'     => Cart::getCart()->items_count,
+                    'shipping_method' => Cart::getCart()->shipping_method,
+                    'payment'         => Cart::getCart()->payment ? true : false,
+                ] : null,
             ], 400);
         }
     }
