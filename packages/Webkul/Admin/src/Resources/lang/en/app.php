@@ -4661,6 +4661,14 @@ return [
                         'title-info'  => 'Store pickup allows customers to collect their orders from a designated location at no shipping cost.',
                     ],
 
+                    'dinein-shipping' => [
+                        'description' => 'Description',
+                        'page-title'  => 'Dine In',
+                        'status'      => 'Status',
+                        'title'       => 'Title',
+                        'title-info'  => 'Dine-in allows customers to place an order and receive it at their table.',
+                    ],
+
                     'flat-rate-shipping' => [
                         'description' => 'Description',
                         'page-title'  => 'Flat Rate Shipping',

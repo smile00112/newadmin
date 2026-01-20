@@ -1875,10 +1875,39 @@ return [
             ],
         ],
     ], [
+        'key'    => 'sales.carriers.dinein',
+        'name'   => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.page-title',
+        'info'   => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.title-info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name'          => 'active',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.status',
+                'type'          => 'boolean',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
+                'name'          => 'title',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.title',
+                'type'          => 'text',
+                'depends'       => 'active:1',
+                'validation'    => 'required_if:active,1',
+                'channel_based' => true,
+                'locale_based'  => true,
+            ], [
+                'name'          => 'description',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.description',
+                'type'          => 'textarea',
+                'depends'       => 'active:1',
+                'channel_based' => true,
+                'locale_based'  => true,
+            ],
+        ],
+    ], [
         'key'    => 'sales.carriers.zone',
         'name'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.page-title',
         'info'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.title-info',
-        'sort'   => 3,
+        'sort'   => 4,
         'fields' => [
             [
                 'name'          => 'active',
@@ -1931,7 +1960,7 @@ return [
         'key'    => 'sales.carriers.flatrate',
         'name'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.page-title',
         'info'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.title-info',
-        'sort'   => 4,
+        'sort'   => 5,
         'fields' => [
             [
                 'name'          => 'active',

@@ -38,4 +38,13 @@ return [
         'default_rate' => '0',
         'class'        => 'Webkul\Shipping\Carriers\Pickup',
     ],
+
+    'dinein' => [
+        'code'         => 'dinein',
+        'title'        => 'В зале',
+        'description'  => 'Получение в зале',
+        'active'       => true,
+        'default_rate' => '0',
+        'class'        => 'Webkul\Shipping\Carriers\DineIn',
+    ],
 ];
