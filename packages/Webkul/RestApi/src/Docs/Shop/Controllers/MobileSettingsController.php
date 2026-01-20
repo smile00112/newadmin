@@ -118,6 +118,31 @@ class MobileSettingsController
      *                      type="array",
      *                      description="Featured product IDs",
      *                      @OA\Items(type="integer", example=1)
+     *                  ),
+     *                  @OA\Property(
+     *                      property="shipping_methods",
+     *                      type="array",
+     *                      description="Available shipping methods",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="code", type="string", example="flatrate"),
+     *                          @OA\Property(property="method", type="string", example="flatrate_flatrate"),
+     *                          @OA\Property(property="method_title", type="string", example="Flat Rate"),
+     *                          @OA\Property(property="description", type="string", example="Flat rate shipping")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="payment_methods",
+     *                      type="array",
+     *                      description="Available payment methods",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="method", type="string", example="cashondelivery"),
+     *                          @OA\Property(property="method_title", type="string", example="Cash On Delivery"),
+     *                          @OA\Property(property="description", type="string", example="Pay when you receive your order"),
+     *                          @OA\Property(property="sort", type="integer", example=1),
+     *                          @OA\Property(property="image", type="string", nullable=true, example=null)
+     *                      )
      *                  )
      *              )
      *          )

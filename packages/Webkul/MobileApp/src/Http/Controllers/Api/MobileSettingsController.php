@@ -7,6 +7,8 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
+use Webkul\Payment\Payment;
+use Webkul\Shipping\Shipping;
 
 class MobileSettingsController extends Controller
 {
@@ -25,7 +27,9 @@ class MobileSettingsController extends Controller
      */
     public function __construct(
         protected MobileAppSettingRepository $settingRepository,
-        protected AttributeRepository $attributeRepository
+        protected AttributeRepository $attributeRepository,
+        protected Payment $payment,
+        protected Shipping $shipping
     ) {}
 
     /**
@@ -71,6 +75,12 @@ class MobileSettingsController extends Controller
         if (!empty($settings['home_filters'])) {
             $settings['home_filters'] = $this->expandHomeFilters($settings['home_filters']);
         }
+
+        // Add shipping methods
+        $settings['shipping_methods'] = $this->shipping->getShippingMethods();
+
+        // Add payment methods
+        $settings['payment_methods'] = $this->payment->getPaymentMethods();
 
         return $settings;
     }
