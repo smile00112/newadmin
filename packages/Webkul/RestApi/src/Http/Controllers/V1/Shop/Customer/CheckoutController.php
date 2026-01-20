@@ -93,6 +93,10 @@ class CheckoutController extends CustomerController
                 ], 400);
             }
 
+            // Collect shipping rates after saving shipping method
+            // This is necessary for pickup/dinein methods that don't require shipping address
+            Shipping::collectRates();
+
             Cart::collectTotals();
 
             return response()->json([
