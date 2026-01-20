@@ -54,11 +54,13 @@ class OrderRepository extends Repository
 
             $order->payment()->create($data['payment']);
 
-            if (isset($data['shipping_address'])) {
+            if (isset($data['shipping_address']) && $data['shipping_address']) {
                 $order->addresses()->create($data['shipping_address']);
             }
 
-            $order->addresses()->create($data['billing_address']);
+            if (isset($data['billing_address']) && $data['billing_address']) {
+                $order->addresses()->create($data['billing_address']);
+            }
 
             foreach ($data['items'] as $item) {
                 Event::dispatch('checkout.order.orderitem.save.before', $item);
