@@ -662,113 +662,119 @@
                     </x-slot>
 
                     <x-slot:content>
-                        <div class="flex w-full justify-start gap-5">
-                            <div class="flex flex-col gap-y-1.5">
+                        <div class="flex w-full flex-col gap-y-4">
+                            <!-- Order Date Row -->
+                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
                                 <p class="text-gray-600 dark:text-gray-300">
                                     @lang('admin::app.sales.orders.view.order-date')
                                 </p>
+                                <div class="flex items-center">
+                                    {!! view_render_event('bagisto.admin.sales.order.created_at.before', ['order' => $order]) !!}
+                                    <p class="text-gray-600 dark:text-gray-300">
+                                        {{core()->formatDate($order->created_at) }}
+                                    </p>
+                                    {!! view_render_event('bagisto.admin.sales.order.created_at.after', ['order' => $order]) !!}
+                                </div>
+                            </div>
 
-                                <p class="text-gray-600 dark:text-gray-300">
+                            <!-- Order Status Row -->
+                            <div class="flex flex-wrap justify-between items-center min-h-[40px]" >
+                                <p class="text-gray-600 dark:text-gray-300" style="margin-bottom: 6px;width: 100%;">
                                     @lang('admin::app.sales.orders.view.order-status')
                                 </p>
+                                <div class="flex items-center" style="width: 100%; justify-content: space-between;">
+                                    {!! view_render_event('bagisto.admin.sales.order.status_label.before', ['order' => $order]) !!}
+                                    <x-admin::form action="{{ route('admin.sales.orders.update_status', $order->id) }}" method="POST" style="width: 100%;">
+                                        @csrf
+                                        <div class="flex items-center gap-2" style="justify-content: space-between;    width: 100%;">
+                                            <x-admin::form.control-group.control
+                                                type="select"
+                                                name="status"
+                                                :value="$order->status"
+                                                rules="required"
+                                                class="min-w-[200px]"
+                                            >
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING ? 'selected' : '' }}>
+                                                    Оплата
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT ? 'selected' : '' }}>
+                                                    Ожидание оплаты
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PROCESSING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PROCESSING ? 'selected' : '' }}>
+                                                    Принят
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_COMPLETED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_COMPLETED ? 'selected' : '' }}>
+                                                    Завершен
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_CANCELED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CANCELED ? 'selected' : '' }}>
+                                                    Отмена
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CLOSED ? 'selected' : '' }}>
+                                                    Закрыт
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_FRAUD }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_FRAUD ? 'selected' : '' }}>
+                                                    Мошенничество
+                                                </option>
+                                            </x-admin::form.control-group.control>
 
+                                            <button
+                                                type="submit"
+                                                class="secondary-button whitespace-nowrap"
+                                            >
+                                                <svg version="1.1" id="Uploaded to svgrepo.com" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                     width="24px" height="24px" viewBox="0 0 32 32" xml:space="preserve">
+                                                    <style type="text/css">
+                                                        .blueprint_een{fill:#111918;}
+                                                        .st0{fill:#0B1719;}
+                                                    </style>
+                                                    <path class="blueprint_een" d="M27,1H2C1.448,1,1,1.448,1,2v28c0,0.552,0.448,1,1,1h28c0.552,0,1-0.448,1-1V5L27,1z M8,3h16
+                                                        v10H8V3z M29,29H3V3h4v10c0,0.552,0.448,1,1,1h16c0.552,0,1-0.448,1-1V3h1.172L29,5.829V29z M9,26h14c0.552,0,1-0.448,1-1v-7
+                                                        c0-0.552-0.448-1-1-1H9c-0.552,0-1,0.448-1,1v7C8,25.552,8.448,26,9,26z M9,18h14v7H9V18z M18,12h5V4h-5V12z M19,5h3v6h-3V5z M10,19
+                                                        h12v1H10V19z M10,21h12v1H10V21z M10,23h12v1H10V23z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </x-admin::form>
+                                    {!! view_render_event('bagisto.admin.sales.order.status_label.after', ['order' => $order]) !!}
+                                </div>
+                            </div>
+
+                            <!-- Order Channel Row -->
+                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
                                 <p class="text-gray-600 dark:text-gray-300">
                                     @lang('admin::app.sales.orders.view.channel')
                                 </p>
+                                <div class="flex items-center">
+                                    {!! view_render_event('bagisto.admin.sales.order.channel_name.before', ['order' => $order]) !!}
+                                    <p class="text-gray-600 dark:text-gray-300">
+                                        {{$order->channel_name}}
+                                    </p>
+                                    {!! view_render_event('bagisto.admin.sales.order.channel_name.after', ['order' => $order]) !!}
+                                </div>
+                            </div>
 
+                            <!-- Order Rating Row -->
+                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
                                 <p class="text-gray-600 dark:text-gray-300">
                                     @lang('admin::app.sales.orders.view.rating')
                                 </p>
-                            </div>
-
-                            <div class="flex flex-col gap-y-1.5">
-                                {!! view_render_event('bagisto.admin.sales.order.created_at.before', ['order' => $order]) !!}
-
-                                <!-- Order Date -->
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    {{core()->formatDate($order->created_at) }}
-                                </p>
-
-                                {!! view_render_event('bagisto.admin.sales.order.created_at.after', ['order' => $order]) !!}
-
-                                <!-- Order Status -->
-                                <x-admin::form action="{{ route('admin.sales.orders.update_status', $order->id) }}" method="POST">
-                                    @csrf
-                                    <div class="flex items-center gap-2">
-                                        <x-admin::form.control-group.control
-                                            type="select"
-                                            name="status"
-                                            :value="$order->status"
-                                            rules="required"
-                                            class="min-w-[200px]"
-                                        >
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING ? 'selected' : '' }}>
-                                                Оплата
-                                            </option>
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT ? 'selected' : '' }}>
-                                                Ожидание оплаты
-                                            </option>
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_PROCESSING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PROCESSING ? 'selected' : '' }}>
-                                                Принят
-                                            </option>
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_COMPLETED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_COMPLETED ? 'selected' : '' }}>
-                                                Завершен
-                                            </option>
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_CANCELED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CANCELED ? 'selected' : '' }}>
-                                                Отмена
-                                            </option>
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CLOSED ? 'selected' : '' }}>
-                                                Закрыт
-                                            </option>
-                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_FRAUD }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_FRAUD ? 'selected' : '' }}>
-                                                Мошенничество
-                                            </option>
-                                        </x-admin::form.control-group.control>
-
-                                        <button
-                                            type="submit"
-                                            class="secondary-button whitespace-nowrap"
-                                        >
-                                            <svg version="1.1" id="Uploaded to svgrepo.com" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                                 width="24px" height="24px" viewBox="0 0 32 32" xml:space="preserve">
-                                                <style type="text/css">
-                                                    .blueprint_een{fill:#111918;}
-                                                    .st0{fill:#0B1719;}
-                                                </style>
-                                                <path class="blueprint_een" d="M27,1H2C1.448,1,1,1.448,1,2v28c0,0.552,0.448,1,1,1h28c0.552,0,1-0.448,1-1V5L27,1z M8,3h16
-                                                    v10H8V3z M29,29H3V3h4v10c0,0.552,0.448,1,1,1h16c0.552,0,1-0.448,1-1V3h1.172L29,5.829V29z M9,26h14c0.552,0,1-0.448,1-1v-7
-                                                    c0-0.552-0.448-1-1-1H9c-0.552,0-1,0.448-1,1v7C8,25.552,8.448,26,9,26z M9,18h14v7H9V18z M18,12h5V4h-5V12z M19,5h3v6h-3V5z M10,19
-                                                    h12v1H10V19z M10,21h12v1H10V21z M10,23h12v1H10V23z"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </x-admin::form>
-
-                                {!! view_render_event('bagisto.admin.sales.order.status_label.after', ['order' => $order]) !!}
-
-                                <!-- Order Channel -->
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    {{$order->channel_name}}
-                                </p>
-
-                                {!! view_render_event('bagisto.admin.sales.order.channel_name.after', ['order' => $order]) !!}
-
-                                <!-- Order Rating -->
-                                @if($order->rating === true)
-                                    <p class="text-green-600 dark:text-green-400 font-semibold">
-                                        @lang('admin::app.sales.orders.view.rating-like')
-                                    </p>
-                                @elseif($order->rating === false)
-                                    <p class="text-red-600 dark:text-red-400 font-semibold">
-                                        @lang('admin::app.sales.orders.view.rating-dislike')
-                                    </p>
-                                @else
-                                    <p class="text-gray-500 dark:text-gray-400">
-                                        @lang('admin::app.sales.orders.view.rating-not-rated')
-                                    </p>
-                                @endif
-
-                                {!! view_render_event('bagisto.admin.sales.order.rating.after', ['order' => $order]) !!}
+                                <div class="flex items-center">
+                                    {!! view_render_event('bagisto.admin.sales.order.rating.before', ['order' => $order]) !!}
+                                    @if($order->rating === true)
+                                        <p class="text-green-600 dark:text-green-400 font-semibold">
+                                            @lang('admin::app.sales.orders.view.rating-like')
+                                        </p>
+                                    @elseif($order->rating === false)
+                                        <p class="text-red-600 dark:text-red-400 font-semibold">
+                                            @lang('admin::app.sales.orders.view.rating-dislike')
+                                        </p>
+                                    @else
+                                        <p class="text-gray-500 dark:text-gray-400">
+                                            @lang('admin::app.sales.orders.view.rating-not-rated')
+                                        </p>
+                                    @endif
+                                    {!! view_render_event('bagisto.admin.sales.order.rating.after', ['order' => $order]) !!}
+                                </div>
                             </div>
                         </div>
                     </x-slot>
