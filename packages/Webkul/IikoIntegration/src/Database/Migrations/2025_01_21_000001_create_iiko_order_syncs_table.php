@@ -24,7 +24,6 @@ return new class extends Migration
 
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
             $table->unique('order_id');
-            $table->index('sync_status');
         });
     }
 

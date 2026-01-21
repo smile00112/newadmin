@@ -50,7 +50,10 @@ class IikoSettingsController extends Controller
         );
 
         // Clear cache
-        $this->settingRepository->clearCache($channelCode);
+        $this->settingRepository->clearCache(
+            \Webkul\IikoIntegration\Models\IikoSetting::CHANNEL,
+            $channelCode
+        );
         $this->authService->clearTokenCache($channelCode);
 
         session()->flash('success', trans('iiko-integration::app.settings.save-success'));

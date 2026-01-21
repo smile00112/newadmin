@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Webkul\IikoIntegration\Http\Controllers\Admin\IikoManagementController;
 use Webkul\IikoIntegration\Http\Controllers\Admin\IikoSettingsController;
 use Webkul\IikoIntegration\Http\Controllers\Admin\IikoSyncController;
 
@@ -8,6 +9,10 @@ use Webkul\IikoIntegration\Http\Controllers\Admin\IikoSyncController;
  * iiko Integration Admin routes.
  */
 Route::prefix('iiko')->group(function () {
+    Route::controller(IikoManagementController::class)->group(function () {
+        Route::get('management', 'index')->name('admin.iiko.management.index');
+    });
+
     Route::controller(IikoSettingsController::class)->group(function () {
         Route::get('settings', 'index')->name('admin.iiko.settings');
         Route::post('settings', 'store')->name('admin.iiko.settings.store');

@@ -48,6 +48,16 @@ class IikoIntegrationServiceProvider extends ServiceProvider
             dirname(__DIR__).'/Config/services.php',
             'services.iiko'
         );
+
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/menu.php',
+            'menu.admin'
+        );
+
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/acl.php',
+            'acl'
+        );
     }
 
     /**

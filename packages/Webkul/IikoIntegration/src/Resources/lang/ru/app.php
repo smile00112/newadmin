@@ -1,0 +1,70 @@
+<?php
+
+return [
+    'menu' => [
+        'title'       => 'Интеграция iiko',
+        'management'  => 'Управление',
+        'settings'    => 'Настройки',
+    ],
+
+    'acl' => [
+        'title'      => 'Интеграция iiko',
+        'management' => 'Управление',
+        'settings'   => 'Настройки',
+    ],
+
+    'management' => [
+        'title'       => 'Управление интеграцией iiko',
+        'description' => 'Данный раздел находится в разработке. Функции управления будут доступны в ближайшее время.',
+    ],
+
+    'settings' => [
+        'title'                => 'Настройки интеграции iiko',
+        'configuration'       => 'Конфигурация',
+        'enabled'             => 'Включено',
+        'enabled-info'        => 'Включить или отключить интеграцию iiko',
+        'api_login'           => 'Логин API',
+        'api_login-info'      => 'Ваш логин для API iiko',
+        'api_password'        => 'Пароль API',
+        'api_password-info'   => 'Ваш пароль для API iiko',
+        'base_url'            => 'Базовый URL',
+        'base_url-info'       => 'Базовый URL API iiko (по умолчанию: https://api-ru.iiko.services)',
+        'organization_id'     => 'ID организации',
+        'organization_id-info' => 'UUID вашей организации iiko',
+        'terminal_group_id'   => 'ID группы терминалов',
+        'terminal_group_id-info' => 'UUID группы терминалов iiko',
+        'webhook_secret'      => 'Секретный ключ Webhook',
+        'webhook_secret-info' => 'Секретный ключ для проверки подписей webhook',
+        'save-success'        => 'Настройки успешно сохранены',
+        'test-connection'     => 'Проверить подключение',
+        'testing'             => 'Проверка...',
+        'connection-success'  => 'Подключение успешно',
+        'connection-failed'   => 'Подключение не удалось',
+        'connection-error'    => 'Ошибка подключения',
+    ],
+
+    'sync' => [
+        'title'                    => 'Синхронизация iiko',
+        'organizations'            => 'Организации',
+        'menu'                     => 'Меню',
+        'sync-organizations'       => 'Синхронизировать организации',
+        'sync-menu'                => 'Синхронизировать меню',
+        'select-organization'      => 'Выберите организацию',
+        'organizations-success'    => 'Организации успешно синхронизированы',
+        'organizations-failed'     => 'Не удалось синхронизировать организации',
+        'menu-success'             => 'Меню успешно синхронизировано',
+        'menu-failed'              => 'Не удалось синхронизировать меню',
+        'order-success'            => 'Заказ успешно синхронизирован',
+        'order-failed'             => 'Не удалось синхронизировать заказ',
+        'organization-id-required' => 'Требуется ID организации',
+        'error'                    => 'Произошла ошибка',
+        'recent-errors'            => 'Последние ошибки',
+        'logs'                     => 'Журнал синхронизации',
+        'all-types'                => 'Все типы',
+        'type-order'               => 'Заказы',
+        'type-menu'                 => 'Меню',
+        'type-organization'         => 'Организации',
+        'type-webhook'              => 'Webhooks',
+        'no-logs'                   => 'Записи не найдены',
+    ],
+];

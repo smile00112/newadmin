@@ -75,10 +75,8 @@ class IikoSettingRepository extends AbstractSettingRepository
     /**
      * Clear iiko settings cache.
      */
-    public function clearCache(?string $channelCode = null): void
+    public function clearCache(string $group, ?string $channelCode = null): void
     {
-        $cacheKey = $this->buildCacheKey(IikoSetting::CHANNEL, $channelCode);
-        \Illuminate\Support\Facades\Cache::forget($cacheKey);
-        unset($this->memoryCache[$cacheKey]);
+        parent::clearCache($group, $channelCode);
     }
 }

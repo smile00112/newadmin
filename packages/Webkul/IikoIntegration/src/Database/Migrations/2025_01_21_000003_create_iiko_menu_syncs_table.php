@@ -20,7 +20,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['organization_id', 'external_menu_id']);
-            $table->index('organization_id');
         });
     }
 

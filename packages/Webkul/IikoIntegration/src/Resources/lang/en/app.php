@@ -1,6 +1,23 @@
 <?php
 
 return [
+    'menu' => [
+        'title'       => 'iiko Integration',
+        'management'  => 'Management',
+        'settings'    => 'Settings',
+    ],
+
+    'acl' => [
+        'title'      => 'iiko Integration',
+        'management' => 'Management',
+        'settings'   => 'Settings',
+    ],
+
+    'management' => [
+        'title'       => 'iiko Integration Management',
+        'description' => 'This section is under development. Management features will be available soon.',
+    ],
+
     'settings' => [
         'title'                => 'iiko Integration Settings',
         'configuration'       => 'Configuration',
