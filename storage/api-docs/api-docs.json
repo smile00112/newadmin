@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://dolinger_new_admin.test",
+            "url": "http://dolinger_new_admin.test",
             "description": "Rest API"
         }
     ],
@@ -1922,31 +1922,86 @@
             }
         },
         "/api/v1/customer/profile": {
-            "post": {
+            "put": {
                 "tags": [
                     "Customers"
                 ],
                 "summary": "Update customer profile",
-                "description": "Update customer profile",
+                "description": "Update customer profile. All fields are optional, but at least one field must be provided. Only provided fields will be updated.",
                 "operationId": "updateCustomer",
                 "requestBody": {
                     "required": true,
                     "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "first_name": {
+                                        "description": "Customer's first name",
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "last_name": {
+                                        "description": "Customer's last name",
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "gender": {
+                                        "description": "Customer's gender",
+                                        "type": "string",
+                                        "enum": [
+                                            "Male",
+                                            "Female",
+                                            "Other"
+                                        ],
+                                        "example": "Male"
+                                    },
+                                    "date_of_birth": {
+                                        "description": "Customer's date of birth (must be before today)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2002-02-19"
+                                    },
+                                    "phone": {
+                                        "description": "Customer's phone number (must be unique)",
+                                        "type": "string",
+                                        "example": "1234567899"
+                                    },
+                                    "email": {
+                                        "description": "Customer's email address (must be unique)",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "example@example.com"
+                                    },
+                                    "current_password": {
+                                        "description": "Current password (required if changing password)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "admin123"
+                                    },
+                                    "new_password": {
+                                        "description": "New password (min 6 characters, required with current_password)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "admin123"
+                                    },
+                                    "new_password_confirmation": {
+                                        "description": "New password confirmation (required with new_password)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "admin123"
+                                    },
+                                    "subscribed_to_news_letter": {
+                                        "description": "Subscribe to newsletter",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
                         "multipart/form-data": {
                             "schema": {
-                                "required": [
-                                    "first_name",
-                                    "last_name",
-                                    "gender",
-                                    "date_of_birth",
-                                    "email",
-                                    "phone"
-                                ],
                                 "properties": {
-                                    "_method": {
-                                        "type": "string",
-                                        "example": "PUT"
-                                    },
                                     "first_name": {
                                         "type": "string",
                                         "example": "John"
@@ -1957,10 +2012,16 @@
                                     },
                                     "gender": {
                                         "type": "string",
+                                        "enum": [
+                                            "Male",
+                                            "Female",
+                                            "Other"
+                                        ],
                                         "example": "Male"
                                     },
                                     "date_of_birth": {
                                         "type": "string",
+                                        "format": "date",
                                         "example": "2002-02-19"
                                     },
                                     "phone": {
@@ -2027,13 +2088,24 @@
                             "application/json": {
                                 "schema": {},
                                 "examples": {
-                                    "result": {
-                                        "summary": "An result object.",
+                                    "validation_error": {
+                                        "summary": "Validation error",
                                         "value": {
-                                            "message": "The email has already been taken.",
+                                            "message": "The given data was invalid.",
                                             "errors": {
                                                 "email": [
                                                     "The email has already been taken."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "no_fields": {
+                                        "summary": "No fields provided",
+                                        "value": {
+                                            "message": "At least one field must be provided for update.",
+                                            "errors": {
+                                                "general": [
+                                                    "At least one field must be provided for update."
                                                 ]
                                             }
                                         }
@@ -5869,6 +5941,61 @@
                                                         "type": "integer",
                                                         "example": 1
                                                     }
+                                                },
+                                                "shipping_methods": {
+                                                    "description": "Available shipping methods",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "flatrate"
+                                                            },
+                                                            "method": {
+                                                                "type": "string",
+                                                                "example": "flatrate_flatrate"
+                                                            },
+                                                            "method_title": {
+                                                                "type": "string",
+                                                                "example": "Flat Rate"
+                                                            },
+                                                            "description": {
+                                                                "type": "string",
+                                                                "example": "Flat rate shipping"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "payment_methods": {
+                                                    "description": "Available payment methods",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "method": {
+                                                                "type": "string",
+                                                                "example": "cashondelivery"
+                                                            },
+                                                            "method_title": {
+                                                                "type": "string",
+                                                                "example": "Cash On Delivery"
+                                                            },
+                                                            "description": {
+                                                                "type": "string",
+                                                                "example": "Pay when you receive your order"
+                                                            },
+                                                            "sort": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "image": {
+                                                                "type": "string",
+                                                                "example": null,
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 }
                                             },
                                             "type": "object"
@@ -7061,15 +7188,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {

@@ -100,6 +100,14 @@ class Handler extends BaseHandler
     protected function handleValidationException(): void
     {
         $this->renderable(function (ValidationException $exception, Request $request) {
+            // Всегда возвращаем JSON для API маршрутов
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'The given data was invalid.',
+                    'errors' => $exception->errors(),
+                ], 422);
+            }
+            
             return parent::convertValidationExceptionToResponse($exception, $request);
         });
     }

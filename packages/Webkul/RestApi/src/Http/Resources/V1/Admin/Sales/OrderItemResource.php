@@ -14,6 +14,15 @@ class OrderItemResource extends JsonResource
      */
     public function toArray($request)
     {
+        $product = $this->product;
+        $baseImage = null;
+        $images = [];
+
+        if ($product) {
+            $baseImage = product_image()->getProductBaseImage($product);
+            $images = product_image()->getGalleryImages($product);
+        }
+
         return [
             'id'                                 => $this->id,
             'sku'                                => $this->sku,
@@ -74,6 +83,8 @@ class OrderItemResource extends JsonResource
             'formatted_grant_total'              => core()->formatPrice($this->total + $this->tax_amount, $this->order->order_currency_code),
             'base_grant_total'                   => $this->base_total + $this->base_tax_amount,
             'formatted_base_grant_total'         => core()->formatPrice($this->base_total + $this->base_tax_amount, $this->order->order_currency_code),
+            'base_image'                         => $baseImage,
+            'images'                             => $images,
             'downloadable_links'                 => $this->downloadable_link_purchased,
             'additional'                         => is_array($this->resource->additional)
                 ? $this->resource->additional

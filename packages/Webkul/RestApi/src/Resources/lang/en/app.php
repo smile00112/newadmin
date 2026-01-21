@@ -443,10 +443,11 @@ return [
                 'update-success'     => 'Your Account has been updated successfully.',
 
                 'error' => [
-                    'credential-error'  => 'The provided credentials are incorrect.',
-                    'invalid'           => 'Invalid Email or Password',
-                    'password-mismatch' => 'Current password does not match.',
-                    'update-failed'     => 'An error has occurred while updating your account',
+                    'credential-error'    => 'The provided credentials are incorrect.',
+                    'invalid'             => 'Invalid Email or Password',
+                    'password-mismatch'    => 'Current password does not match.',
+                    'update-failed'        => 'An error has occurred while updating your account',
+                    'no-fields-provided'  => 'At least one field must be provided for update.',
                 ],
             ],
 
