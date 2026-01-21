@@ -32,7 +32,7 @@
     </div>
 
     <div class="mt-5 flex-wrap items-center justify-between gap-x-1 gap-y-2">
-        <div class="flex gap-1.5">
+        <div class="flex gap-1.5" style="display: none;">
             {!! view_render_event('bagisto.admin.sales.order.page_action.before', ['order' => $order]) !!}
 
             @if (
@@ -692,9 +692,57 @@
                                 {!! view_render_event('bagisto.admin.sales.order.created_at.after', ['order' => $order]) !!}
 
                                 <!-- Order Status -->
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    {{$order->status_label}}
-                                </p>
+                                <x-admin::form action="{{ route('admin.sales.orders.update_status', $order->id) }}" method="POST">
+                                    @csrf
+                                    <div class="flex items-center gap-2">
+                                        <x-admin::form.control-group.control
+                                            type="select"
+                                            name="status"
+                                            :value="$order->status"
+                                            rules="required"
+                                            class="min-w-[200px]"
+                                        >
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING ? 'selected' : '' }}>
+                                                Оплата
+                                            </option>
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT ? 'selected' : '' }}>
+                                                Ожидание оплаты
+                                            </option>
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_PROCESSING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PROCESSING ? 'selected' : '' }}>
+                                                Принят
+                                            </option>
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_COMPLETED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_COMPLETED ? 'selected' : '' }}>
+                                                Завершен
+                                            </option>
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_CANCELED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CANCELED ? 'selected' : '' }}>
+                                                Отмена
+                                            </option>
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CLOSED ? 'selected' : '' }}>
+                                                Закрыт
+                                            </option>
+                                            <option value="{{ \Webkul\Sales\Models\Order::STATUS_FRAUD }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_FRAUD ? 'selected' : '' }}>
+                                                Мошенничество
+                                            </option>
+                                        </x-admin::form.control-group.control>
+
+                                        <button
+                                            type="submit"
+                                            class="secondary-button whitespace-nowrap"
+                                        >
+                                            <svg version="1.1" id="Uploaded to svgrepo.com" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                 width="24px" height="24px" viewBox="0 0 32 32" xml:space="preserve">
+                                                <style type="text/css">
+                                                    .blueprint_een{fill:#111918;}
+                                                    .st0{fill:#0B1719;}
+                                                </style>
+                                                <path class="blueprint_een" d="M27,1H2C1.448,1,1,1.448,1,2v28c0,0.552,0.448,1,1,1h28c0.552,0,1-0.448,1-1V5L27,1z M8,3h16
+                                                    v10H8V3z M29,29H3V3h4v10c0,0.552,0.448,1,1,1h16c0.552,0,1-0.448,1-1V3h1.172L29,5.829V29z M9,26h14c0.552,0,1-0.448,1-1v-7
+                                                    c0-0.552-0.448-1-1-1H9c-0.552,0-1,0.448-1,1v7C8,25.552,8.448,26,9,26z M9,18h14v7H9V18z M18,12h5V4h-5V12z M19,5h3v6h-3V5z M10,19
+                                                    h12v1H10V19z M10,21h12v1H10V21z M10,23h12v1H10V23z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </x-admin::form>
 
                                 {!! view_render_event('bagisto.admin.sales.order.status_label.after', ['order' => $order]) !!}
 

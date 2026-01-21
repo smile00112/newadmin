@@ -346,6 +346,8 @@ return [
             ],
 
             'view' => [
+                'status-not-changed'             => 'Статус заказа не изменён',
+                'status-updated-success'         => 'Статус заказа изменён',
                 'amount-per-unit'                => ':amount за единицу x :qty количество',
                 'billing-address'                => 'Платежный адрес',
                 'cancel'                         => 'Отменить',

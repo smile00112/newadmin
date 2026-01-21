@@ -13,6 +13,7 @@ use Webkul\Admin\Http\Resources\CartResource;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Checkout\Repositories\CartRepository;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
+use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\OrderCommentRepository;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Sales\Transformers\OrderResource;
@@ -192,6 +193,57 @@ class OrderController extends Controller
         Event::dispatch('sales.order.comment.create.after', $comment);
 
         session()->flash('success', trans('admin::app.sales.orders.view.comment-success'));
+
+        return redirect()->route('admin.sales.orders.view', $id);
+    }
+
+    /**
+     * Update order status
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function updateStatus(int $id)
+    {
+        $order = $this->orderRepository->findOrFail($id);
+
+        $validatedData = $this->validate(request(), [
+            'status' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $validStatuses = [
+                        Order::STATUS_PENDING,
+                        Order::STATUS_PENDING_PAYMENT,
+                        Order::STATUS_PROCESSING,
+                        Order::STATUS_COMPLETED,
+                        Order::STATUS_CANCELED,
+                        Order::STATUS_CLOSED,
+                        Order::STATUS_FRAUD,
+                    ];
+
+                    if (! in_array($value, $validStatuses)) {
+                        $fail('The selected status is invalid.');
+                    }
+                },
+            ],
+        ]);
+
+        $newStatus = $validatedData['status'];
+
+        // Проверяем, изменился ли статус
+        if ($order->status === $newStatus) {
+            session()->flash('info', trans('admin::app.sales.orders.view.status-not-changed'));
+
+            return redirect()->route('admin.sales.orders.view', $id);
+        }
+
+        try {
+            $this->orderRepository->updateOrderStatus($order, $newStatus);
+
+            session()->flash('success', trans('admin::app.sales.orders.view.status-updated-success'));
+        } catch (\Exception $e) {
+            session()->flash('error', trans('admin::app.sales.orders.view.status-update-error'));
+        }
 
         return redirect()->route('admin.sales.orders.view', $id);
     }
