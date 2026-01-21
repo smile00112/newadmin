@@ -4,6 +4,7 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\CustomerAddressRepository;
@@ -97,6 +98,28 @@ class CheckoutController extends CustomerController
             // Collect shipping rates after saving shipping method
             // This is necessary for pickup/dinein methods that don't require shipping address
             Shipping::collectRates();
+
+            // Убеждаемся, что rate для выбранного метода сохранен
+            $cart = Cart::getCart();
+            if (! $cart->selected_shipping_rate) {
+                // Если rate не найден, создаем его вручную для dinein/pickup
+                $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+                if ($skipAddressValidation && $cart->shipping_method) {
+                    foreach (Config::get('carriers') as $shippingMethod) {
+                        $object = new $shippingMethod['class'];
+                        if ($object->getMethod() === $cart->shipping_method) {
+                            if ($rate = $object->calculate()) {
+                                $rate->cart_id = $cart->id;
+                                $rate->cart_address_id = null;
+                                $rate->price_incl_tax = $rate->price;
+                                $rate->base_price_incl_tax = $rate->base_price;
+                                $rate->save();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
 
             Cart::collectTotals();
 

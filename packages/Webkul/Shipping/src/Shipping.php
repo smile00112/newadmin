@@ -41,7 +41,8 @@ class Shipping
             }
         }
 
-        $this->rates = array_merge(...$ratesList);
+        // Исправление: проверка на пустой массив перед array_merge
+        $this->rates = !empty($ratesList) ? array_merge(...$ratesList) : [];
 
         $this->saveAllShippingRates();
 
@@ -83,6 +84,26 @@ class Shipping
         // Для самовывоза/еды в зале адрес не обязателен
         if (! $shippingAddress && ! $skipAddressValidation) {
             return;
+        }
+
+        // Если rates пустой, но метод доставки установлен (для dinein/pickup),
+        // нужно пересобрать rates специально для этого метода
+        if (empty($this->rates) && $skipAddressValidation && $cart->shipping_method) {
+            // Пересобираем rates только для выбранного метода
+            $selectedMethod = $cart->shipping_method;
+            foreach (Config::get('carriers') as $shippingMethod) {
+                $object = new $shippingMethod['class'];
+                if ($object->getMethod() === $selectedMethod) {
+                    if ($rate = $object->calculate()) {
+                        if (!is_array($rate)) {
+                            $this->rates = [$rate];
+                        } else {
+                            $this->rates = $rate;
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         foreach ($this->rates as $rate) {
