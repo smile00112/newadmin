@@ -41,6 +41,8 @@ class OrderResource extends JsonResource
             'coupon_code'                             => $this->coupon_code,
             'is_gift'                                 => $this->is_gift,
             'order_labels'                            => $this->order_labels ?? [],
+            'rating'                                   => $this->rating,
+            'rating_label'                             => $this->rating === true ? 'Нравится' : ($this->rating === false ? 'Не нравится' : null),
             'total_item_count'                        => $this->total_item_count,
             'total_qty_ordered'                       => $this->total_qty_ordered,
             'base_currency_code'                      => $this->base_currency_code,

@@ -94,6 +94,8 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
 
         Route::post('{id}/cancel', 'cancel');
 
+        Route::post('{id}/rate', 'rate');
+
         Route::get('reorder/{id}', 'reorder');
     });
 

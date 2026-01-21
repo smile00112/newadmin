@@ -675,6 +675,10 @@
                                 <p class="text-gray-600 dark:text-gray-300">
                                     @lang('admin::app.sales.orders.view.channel')
                                 </p>
+
+                                <p class="text-gray-600 dark:text-gray-300">
+                                    @lang('admin::app.sales.orders.view.rating')
+                                </p>
                             </div>
 
                             <div class="flex flex-col gap-y-1.5">
@@ -700,6 +704,23 @@
                                 </p>
 
                                 {!! view_render_event('bagisto.admin.sales.order.channel_name.after', ['order' => $order]) !!}
+
+                                <!-- Order Rating -->
+                                @if($order->rating === true)
+                                    <p class="text-green-600 dark:text-green-400 font-semibold">
+                                        @lang('admin::app.sales.orders.view.rating-like')
+                                    </p>
+                                @elseif($order->rating === false)
+                                    <p class="text-red-600 dark:text-red-400 font-semibold">
+                                        @lang('admin::app.sales.orders.view.rating-dislike')
+                                    </p>
+                                @else
+                                    <p class="text-gray-500 dark:text-gray-400">
+                                        @lang('admin::app.sales.orders.view.rating-not-rated')
+                                    </p>
+                                @endif
+
+                                {!! view_render_event('bagisto.admin.sales.order.rating.after', ['order' => $order]) !!}
                             </div>
                         </div>
                     </x-slot>

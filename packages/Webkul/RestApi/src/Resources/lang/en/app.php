@@ -517,6 +517,7 @@ return [
         'sales' => [
             'orders' => [
                 'cancel' => 'Order canceled successfully.',
+                'rate-success' => 'Order rated successfully.',
 
                 'error' => [
                     'cancel-error'                    => 'Order can not be canceled.',

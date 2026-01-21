@@ -177,6 +177,103 @@ class OrderController
     public function cancel() {}
 
     /**
+     * @OA\Post(
+     *      path="/api/v1/customer/orders/{id}/rate",
+     *      operationId="rateCustomerOrder",
+     *      tags={"Orders"},
+     *      summary="Rate customer's order",
+     *      description="Rate customer's order (true = Нравится, false = Не нравится)",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Parameter(
+     *          name="id",
+     *          description="Order id",
+     *          required=true,
+     *          in="path",
+     *
+     *          @OA\Schema(
+     *              type="integer"
+     *          )
+     *      ),
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"rating"},
+     *              @OA\Property(
+     *                  property="rating",
+     *                  type="boolean",
+     *                  description="Order rating (true = Нравится, false = Не нравится)",
+     *                  example=true
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Order"
+     *              ),
+     *
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Order rated successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Order not found."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="The given data was invalid."
+     *              ),
+     *
+     *              @OA\Property(
+     *                  property="errors",
+     *                  type="object",
+     *                  @OA\Property(
+     *                      property="rating",
+     *                      type="array",
+     *                      @OA\Items(
+     *                          type="string",
+     *                          example="The rating field is required."
+     *                      )
+     *                  )
+     *              )
+     *          )
+     *      )
+     * )
+     */
+    public function rate() {}
+
+    /**
      * @OA\Get(
      *      path="/api/v1/customer/orders/reorder/{id}",
      *      operationId="ReOrder",

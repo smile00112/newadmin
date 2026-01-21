@@ -182,6 +182,30 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Rating",
+     *     description="Order rating (true = Нравится, false = Не нравится, null = не оценено)",
+     *     example=true,
+     *     nullable=true
+     * )
+     *
+     * @var bool|null
+     */
+    private $rating;
+
+    /**
+     * @OA\Property(
+     *     title="Rating Label",
+     *     description="Human-readable rating label",
+     *     example="Нравится",
+     *     nullable=true
+     * )
+     *
+     * @var string|null
+     */
+    private $rating_label;
+
+    /**
+     * @OA\Property(
      *     title="Order's Customer",
      *     description="Order's Customer"
      * )

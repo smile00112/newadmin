@@ -103,6 +103,36 @@ class OrderController extends CustomerController
     }
 
     /**
+     * Rate customer's order.
+     */
+    public function rate(Request $request, int $id): \Illuminate\Http\Response
+    {
+        $order = $this->resolveShopUser($request)->orders()->find($id);
+
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'rating' => 'required|boolean',
+        ]);
+
+        // Конвертируем boolean в правильный формат (true/false)
+        $rating = filter_var($validated['rating'], FILTER_VALIDATE_BOOLEAN);
+
+        $order->update([
+            'rating' => $rating,
+        ]);
+
+        return response([
+            'data' => new OrderResource($order),
+            'message' => trans('rest-api::app.shop.sales.orders.rate-success'),
+        ]);
+    }
+
+    /**
      * Reorder the specified resource.
      */
     public function reorder(Request $request, int $id): \Illuminate\Http\Response
