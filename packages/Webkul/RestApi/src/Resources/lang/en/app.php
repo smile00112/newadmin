@@ -519,8 +519,14 @@ return [
                 'cancel' => 'Order canceled successfully.',
 
                 'error' => [
-                    'cancel-error'  => 'Order can not be canceled.',
-                    'reorder-error' => 'Order can not be reordered.',
+                    'cancel-error'                    => 'Order can not be canceled.',
+                    'cancel-reason-closed'            => 'Order is already closed and cannot be canceled.',
+                    'cancel-reason-fraud'             => 'Order is marked as fraud and cannot be canceled.',
+                    'cancel-reason-invoiced'          => 'Order cannot be canceled because an invoice has already been issued. Please use the refund function to return funds.',
+                    'cancel-reason-already-canceled'  => 'All order items have already been canceled.',
+                    'cancel-reason-general'           => 'Order cannot be canceled in its current status.',
+                    'not-found'                       => 'Order not found.',
+                    'reorder-error'                   => 'Order can not be reordered.',
                 ],
             ],
         ],

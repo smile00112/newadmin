@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
+use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\OrderRepository;
 
 class OrderController extends CustomerController
@@ -33,15 +34,72 @@ class OrderController extends CustomerController
     {
         $order = $this->resolveShopUser($request)->orders()->find($id);
 
-        if ($order && $this->getRepositoryInstance()->cancel($order)) {
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        if ($this->getRepositoryInstance()->cancel($order)) {
             return response([
                 'message' => trans('rest-api::app.shop.sales.orders.cancel'),
             ]);
         }
 
+        // Определяем причину, почему заказ не может быть отменен
+        $reason = $this->getCancelErrorReason($order);
+
         return response([
             'message' => trans('rest-api::app.shop.sales.orders.error.cancel-error'),
-        ]);
+            'reason' => $reason,
+        ], 422);
+    }
+
+    /**
+     * Get detailed reason why order cannot be canceled.
+     *
+     * @param  \Webkul\Sales\Models\Order  $order
+     * @return string
+     */
+    protected function getCancelErrorReason(Order $order): string
+    {
+        // Проверяем статус заказа
+        if (in_array($order->status, [Order::STATUS_CLOSED, Order::STATUS_FRAUD])) {
+            if ($order->status === Order::STATUS_CLOSED) {
+                return trans('rest-api::app.shop.sales.orders.error.cancel-reason-closed');
+            }
+
+            return trans('rest-api::app.shop.sales.orders.error.cancel-reason-fraud');
+        }
+
+        // Проверяем, есть ли позиции, которые уже выставлены в счет
+        $hasInvoicedItems = false;
+        foreach ($order->items as $item) {
+            if ($item->qty_invoiced > 0) {
+                $hasInvoicedItems = true;
+                break;
+            }
+        }
+
+        if ($hasInvoicedItems) {
+            return trans('rest-api::app.shop.sales.orders.error.cancel-reason-invoiced');
+        }
+
+        // Проверяем, все ли позиции уже отменены
+        $allItemsCanceled = true;
+        foreach ($order->items as $item) {
+            if ($item->qty_canceled < $item->qty_ordered) {
+                $allItemsCanceled = false;
+                break;
+            }
+        }
+
+        if ($allItemsCanceled) {
+            return trans('rest-api::app.shop.sales.orders.error.cancel-reason-already-canceled');
+        }
+
+        // Общая причина
+        return trans('rest-api::app.shop.sales.orders.error.cancel-reason-general');
     }
 
     /**
