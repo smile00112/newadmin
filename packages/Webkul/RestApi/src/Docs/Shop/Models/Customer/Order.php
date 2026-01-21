@@ -166,6 +166,22 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Order Labels",
+     *     description="Custom labels attached to the order",
+     *     type="array",
+     *     @OA\Items(
+     *         type="string",
+     *         example="заказ с собой"
+     *     ),
+     *     example={"заказ с собой", "приготовить сдачу"}
+     * )
+     *
+     * @var array
+     */
+    private $order_labels;
+
+    /**
+     * @OA\Property(
      *     title="Order's Customer",
      *     description="Order's Customer"
      * )

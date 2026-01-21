@@ -350,6 +350,21 @@ class CheckoutController
      *      description="Create order at the checkout",
      *      security={ {"sanctum": {} }},
      *
+     *      @OA\RequestBody(
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="order_labels",
+     *                  type="array",
+     *                  description="Array of order labels to attach to the order. Labels must exist in the configured list.",
+     *                  @OA\Items(
+     *                      type="string",
+     *                      example="заказ с собой"
+     *                  ),
+     *                  example={"заказ с собой", "приготовить сдачу", "позвонить при прибытии заказа"}
+     *              )
+     *          )
+     *      ),
+     *
      *      @OA\Response(
      *          response=200,
      *          description="Successful operation",

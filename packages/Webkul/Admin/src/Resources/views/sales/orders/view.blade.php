@@ -630,6 +630,29 @@
                     </x-slot>
                 </x-admin::accordion>
 
+                <!-- Order Labels -->
+                @if ($order->order_labels && count($order->order_labels) > 0)
+                    <x-admin::accordion>
+                        <x-slot:header>
+                            <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
+                                @lang('admin::app.sales.orders.view.order-labels')
+                            </p>
+                        </x-slot>
+
+                        <x-slot:content>
+                            <div class="flex flex-col gap-2">
+                                @foreach ($order->order_labels as $label)
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/20">
+                                            {{ $label }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </x-slot>
+                    </x-admin::accordion>
+                @endif
+
                 <!-- Order Information -->
                 <x-admin::accordion>
                     <x-slot:header>

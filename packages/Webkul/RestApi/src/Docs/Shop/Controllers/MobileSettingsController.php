@@ -143,6 +143,22 @@ class MobileSettingsController
      *                          @OA\Property(property="sort", type="integer", example=1),
      *                          @OA\Property(property="image", type="string", nullable=true, example=null)
      *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="order_labels",
+     *                      type="array",
+     *                      description="Order labels list",
+     *                      @OA\Items(type="string", example="VIP")
+     *                  ),
+     *                  @OA\Property(
+     *                      property="order_statuses",
+     *                      type="array",
+     *                      description="Available order statuses",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="code", type="string", example="pending", description="Status code"),
+     *                          @OA\Property(property="label", type="string", example="Pending", description="Status label")
+     *                      )
      *                  )
      *              )
      *          )

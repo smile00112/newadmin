@@ -4145,6 +4145,30 @@
                 "summary": "Create order at the checkout",
                 "description": "Create order at the checkout",
                 "operationId": "saveCheckoutOrder",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "order_labels": {
+                                        "description": "Array of order labels to attach to the order. Labels must exist in the configured list.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "заказ с собой"
+                                        },
+                                        "example": [
+                                            "заказ с собой",
+                                            "приготовить сдачу",
+                                            "позвонить при прибытии заказа"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -5992,6 +6016,33 @@
                                                                 "type": "string",
                                                                 "example": null,
                                                                 "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "order_labels": {
+                                                    "description": "Order labels list",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "VIP"
+                                                    }
+                                                },
+                                                "order_statuses": {
+                                                    "description": "Available order statuses",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "code": {
+                                                                "description": "Status code",
+                                                                "type": "string",
+                                                                "example": "pending"
+                                                            },
+                                                            "label": {
+                                                                "description": "Status label",
+                                                                "type": "string",
+                                                                "example": "Pending"
                                                             }
                                                         },
                                                         "type": "object"
@@ -10924,6 +10975,19 @@
                     },
                     "items": {
                         "$ref": "#/components/schemas/OrderItem"
+                    },
+                    "order_labels": {
+                        "title": "Order Labels",
+                        "description": "Custom labels attached to the order",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "заказ с собой"
+                        },
+                        "example": [
+                            "заказ с собой",
+                            "приготовить сдачу"
+                        ]
                     },
                     "customer": {
                         "$ref": "#/components/schemas/Customer"

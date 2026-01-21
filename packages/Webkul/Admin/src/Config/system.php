@@ -2478,6 +2478,21 @@ return [
             ],
         ],
     ], [
+        'key'    => 'sales.order_settings.order_labels',
+        'name'   => 'admin::app.configuration.index.sales.order-settings.order-labels.title',
+        'info'   => 'admin::app.configuration.index.sales.order-settings.order-labels.info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name'          => 'labels_list',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-labels.labels-list',
+                'type'          => 'textarea',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-labels.labels-list-info',
+                'channel_based' => true,
+            ],
+        ],
+    ], [
         'key'  => 'sales.invoice_settings',
         'name' => 'admin::app.configuration.index.sales.invoice-settings.title',
         'info' => 'admin::app.configuration.index.sales.invoice-settings.info',

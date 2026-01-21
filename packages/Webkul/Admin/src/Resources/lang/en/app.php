@@ -382,6 +382,7 @@ return [
                 'notify-customer'                => 'Notify Customer',
                 'order-date'                     => 'Order Date',
                 'order-information'              => 'Order Information',
+                'order-labels'                    => 'Order Labels',
                 'order-status'                   => 'Order Status',
                 'payment-and-shipping'           => 'Payment and Shipping',
                 'payment-method'                 => 'Payment method',
@@ -4751,6 +4752,13 @@ return [
                         'shop-reorder'       => 'Shop Reorder',
                         'shop-reorder-info'  => 'Enable or disable the reordering feature for shop users.',
                         'title'              => 'Allow Reorder',
+                    ],
+
+                    'order-labels' => [
+                        'info'              => 'Configure custom labels that can be added to orders. One label per line.',
+                        'labels-list'       => 'Order Labels List',
+                        'labels-list-info'  => 'Enter one label per line. These labels will be available when creating orders.',
+                        'title'             => 'Order Labels',
                     ],
 
                     'stock-options' => [

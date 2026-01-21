@@ -228,7 +228,35 @@ class CheckoutController extends CustomerController
 
             $redirectUrl = Payment::getRedirectUrl($cart);
 
-            $order = $orderRepository->create((new OrderTransformer($cart))->jsonSerialize());
+            $orderData = (new OrderTransformer($cart))->jsonSerialize();
+
+            // Get and validate order labels from request
+            $orderLabels = request()->input('order_labels', []);
+            if (is_array($orderLabels) && !empty($orderLabels)) {
+                // Get available labels from config
+                $channelCode = $cart->channel->code ?? core()->getDefaultChannelCode();
+                $availableLabels = core()->getConfigData('sales.order_settings.order_labels.labels_list', $channelCode);
+                $availableLabelsArray = [];
+                if ($availableLabels) {
+                    $availableLabelsArray = array_filter(
+                        array_map('trim', explode("\n", $availableLabels)),
+                        fn($label) => !empty($label)
+                    );
+                }
+
+                // Validate and filter order labels
+                $validatedLabels = array_filter(
+                    array_map('trim', $orderLabels),
+                    fn($label) => !empty($label) && in_array($label, $availableLabelsArray)
+                );
+
+                // Remove duplicates
+                $orderData['order_labels'] = array_values(array_unique($validatedLabels));
+            } else {
+                $orderData['order_labels'] = [];
+            }
+
+            $order = $orderRepository->create($orderData);
 
             Cart::deActivateCart();
 

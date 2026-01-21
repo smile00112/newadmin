@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Payment;
+use Webkul\Sales\Models\Order;
 use Webkul\Shipping\Shipping;
 
 class MobileSettingsController extends Controller
@@ -82,6 +83,20 @@ class MobileSettingsController extends Controller
         // Add payment methods
         $settings['payment_methods'] = $this->payment->getPaymentMethods();
 
+        // Add order labels
+        $labelsList = core()->getConfigData('sales.order_settings.order_labels.labels_list', $channelCode);
+        if ($labelsList) {
+            $settings['order_labels'] = array_filter(
+                array_map('trim', explode("\n", $labelsList)),
+                fn($label) => !empty($label)
+            );
+        } else {
+            $settings['order_labels'] = [];
+        }
+
+        // Add order statuses
+        $settings['order_statuses'] = $this->getOrderStatuses();
+
         return $settings;
     }
 
@@ -148,6 +163,32 @@ class MobileSettingsController extends Controller
         }
 
         return $filters;
+    }
+
+    /**
+     * Get all available order statuses with translations.
+     */
+    protected function getOrderStatuses(): array
+    {
+        $statuses = [
+            Order::STATUS_PENDING,
+            Order::STATUS_PENDING_PAYMENT,
+            Order::STATUS_PROCESSING,
+            Order::STATUS_COMPLETED,
+            Order::STATUS_CANCELED,
+            Order::STATUS_CLOSED,
+            Order::STATUS_FRAUD,
+        ];
+
+        $result = [];
+        foreach ($statuses as $status) {
+            $result[] = [
+                'code'  => $status,
+                'label' => trans('shop::app.customers.account.orders.status.options.' . str_replace('_', '-', $status)),
+            ];
+        }
+
+        return $result;
     }
 }
 

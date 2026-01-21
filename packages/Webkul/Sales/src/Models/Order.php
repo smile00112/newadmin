@@ -32,6 +32,15 @@ class Order extends Model implements OrderContract
     protected $appends = ['datetime'];
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'order_labels' => 'array',
+    ];
+
+    /**
      * Pending state.
      */
     public const STATUS_PENDING = 'pending';

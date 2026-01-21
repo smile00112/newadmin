@@ -16,6 +16,14 @@ class OrderResource extends JsonResource
      */
     public function toArray($request)
     {
+        try {
+            //  $p =  !empty($this->payment->method) ? core()->getConfigData('sales.paymentmethods.'.$this->payment->method.'.title') : "";
+            $p = $this->payment->method_title;
+        } catch (\Throwable $th) {
+            //throw $th;
+            // $p = $th->getMessage();
+            $p = null;
+        }
         return [
             'id'                                      => $this->id,
             'increment_id'                            => $this->increment_id,
@@ -28,10 +36,11 @@ class OrderResource extends JsonResource
             'customer_last_name'                      => $this->customer_last_name,
             'shipping_method'                         => $this->shipping_method,
             'shipping_title'                          => $this->shipping_title,
-            'payment_title'                           => core()->getConfigData('sales.paymentmethods.'.$this->payment->method.'.title'),
+            'payment_title'                           => $p,
             'shipping_description'                    => $this->shipping_description,
             'coupon_code'                             => $this->coupon_code,
             'is_gift'                                 => $this->is_gift,
+            'order_labels'                            => $this->order_labels ?? [],
             'total_item_count'                        => $this->total_item_count,
             'total_qty_ordered'                       => $this->total_qty_ordered,
             'base_currency_code'                      => $this->base_currency_code,
