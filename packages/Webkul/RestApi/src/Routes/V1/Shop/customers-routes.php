@@ -100,6 +100,19 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
     });
 
     /**
+     * Customer sale orders filtered routes.
+     */
+    Route::controller(OrderController::class)->prefix('customer')->group(function () {
+        Route::get('active-orders', 'activeOrders');
+
+        Route::get('completed-orders', 'completedOrders');
+
+        Route::get('cancelled-orders', 'cancelledOrders');
+
+        Route::get('canselled-orders', 'cancelledOrders'); // Alias for typo compatibility
+    });
+
+    /**
      * Customer sale invoices routes.
      */
     Route::controller(InvoiceController::class)->prefix('customer/invoices')->group(function () {

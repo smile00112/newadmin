@@ -4769,6 +4769,23 @@ return [
                         'title'             => 'Order Labels',
                     ],
 
+                    'order-statuses' => [
+                        'info'                      => 'Configure order statuses for API filtering (active, completed, cancelled).',
+                        'title'                     => 'Order Statuses for API',
+                        'active-statuses'            => 'Active Order Statuses',
+                        'active-statuses-info'       => 'Select statuses that are considered active orders. These statuses will be used in API /api/v1/customer/active-orders',
+                        'completed-statuses'         => 'Completed Order Statuses',
+                        'completed-statuses-info'    => 'Select statuses that are considered completed orders. These statuses will be used in API /api/v1/customer/completed-orders',
+                        'cancelled-statuses'         => 'Cancelled Order Statuses',
+                        'cancelled-statuses-info'    => 'Select statuses that are considered cancelled orders. These statuses will be used in API /api/v1/customer/cancelled-orders',
+                        'preparing'                  => 'Preparing',
+                        'ready'                      => 'Ready',
+                        'completed'                  => 'Completed',
+                        'closed'                     => 'Closed',
+                        'canceled'                   => 'Canceled',
+                        'fraud'                      => 'Fraud',
+                    ],
+
                     'stock-options' => [
                         'allow-back-orders' => 'Allow Back orders',
                         'info'              => 'Stock options are investment contracts that grant the right to buy or sell company shares at a predetermined price, influencing potential profits.',

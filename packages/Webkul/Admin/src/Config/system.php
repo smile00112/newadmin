@@ -2493,6 +2493,71 @@ return [
             ],
         ],
     ], [
+        'key'    => 'sales.order_settings.order_statuses',
+        'name'   => 'admin::app.configuration.index.sales.order-settings.order-statuses.title',
+        'info'   => 'admin::app.configuration.index.sales.order-settings.order-statuses.info',
+        'sort'   => 4,
+        'fields' => [
+            [
+                'name'          => 'active_statuses',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-statuses.active-statuses',
+                'type'          => 'multiselect',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-statuses.active-statuses-info',
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.payment-methods.pending',
+                        'value' => Order::STATUS_PENDING,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.payment-methods.pending-payment',
+                        'value' => Order::STATUS_PENDING_PAYMENT,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.payment-methods.processing',
+                        'value' => Order::STATUS_PROCESSING,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.preparing',
+                        'value' => Order::STATUS_PREPARING,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.ready',
+                        'value' => Order::STATUS_READY,
+                    ],
+                ],
+                'channel_based' => true,
+            ], [
+                'name'          => 'completed_statuses',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-statuses.completed-statuses',
+                'type'          => 'multiselect',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-statuses.completed-statuses-info',
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.completed',
+                        'value' => Order::STATUS_COMPLETED,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.closed',
+                        'value' => Order::STATUS_CLOSED,
+                    ],
+                ],
+                'channel_based' => true,
+            ], [
+                'name'          => 'cancelled_statuses',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-statuses.cancelled-statuses',
+                'type'          => 'multiselect',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-statuses.cancelled-statuses-info',
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.canceled',
+                        'value' => Order::STATUS_CANCELED,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.fraud',
+                        'value' => Order::STATUS_FRAUD,
+                    ],
+                ],
+                'channel_based' => true,
+            ],
+        ],
+    ], [
         'key'  => 'sales.invoice_settings',
         'name' => 'admin::app.configuration.index.sales.invoice-settings.title',
         'info' => 'admin::app.configuration.index.sales.invoice-settings.info',

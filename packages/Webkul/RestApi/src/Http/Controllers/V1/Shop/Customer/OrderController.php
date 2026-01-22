@@ -162,4 +162,104 @@ class OrderController extends CustomerController
             'data' => new CartResource($cart),
         ]);
     }
+
+    /**
+     * Get active orders.
+     */
+    public function activeOrders(Request $request): \Illuminate\Http\Response
+    {
+        $channelCode = core()->getCurrentChannelCode();
+        $statuses = core()->getConfigData('sales.order_settings.order_statuses.active_statuses', $channelCode);
+
+        if (empty($statuses)) {
+            // Default active statuses if not configured
+            $statuses = [
+                Order::STATUS_PENDING,
+                Order::STATUS_PENDING_PAYMENT,
+                Order::STATUS_PROCESSING,
+                Order::STATUS_PREPARING,
+                Order::STATUS_READY,
+            ];
+        } else {
+            $statuses = is_array($statuses) ? $statuses : explode(',', $statuses);
+            $statuses = array_map('trim', $statuses);
+        }
+
+        return $this->getOrdersByStatuses($request, $statuses);
+    }
+
+    /**
+     * Get completed orders.
+     */
+    public function completedOrders(Request $request): \Illuminate\Http\Response
+    {
+        $channelCode = core()->getCurrentChannelCode();
+        $statuses = core()->getConfigData('sales.order_settings.order_statuses.completed_statuses', $channelCode);
+
+        if (empty($statuses)) {
+            // Default completed statuses if not configured
+            $statuses = [
+                Order::STATUS_COMPLETED,
+                Order::STATUS_CLOSED,
+            ];
+        } else {
+            $statuses = is_array($statuses) ? $statuses : explode(',', $statuses);
+            $statuses = array_map('trim', $statuses);
+        }
+
+        return $this->getOrdersByStatuses($request, $statuses);
+    }
+
+    /**
+     * Get cancelled orders.
+     */
+    public function cancelledOrders(Request $request): \Illuminate\Http\Response
+    {
+        $channelCode = core()->getCurrentChannelCode();
+        $statuses = core()->getConfigData('sales.order_settings.order_statuses.cancelled_statuses', $channelCode);
+
+        if (empty($statuses)) {
+            // Default cancelled statuses if not configured
+            $statuses = [
+                Order::STATUS_CANCELED,
+                Order::STATUS_FRAUD,
+            ];
+        } else {
+            $statuses = is_array($statuses) ? $statuses : explode(',', $statuses);
+            $statuses = array_map('trim', $statuses);
+        }
+
+        return $this->getOrdersByStatuses($request, $statuses);
+    }
+
+    /**
+     * Get orders by statuses.
+     */
+    protected function getOrdersByStatuses(Request $request, array $statuses): \Illuminate\Http\Response
+    {
+        $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request, $statuses) {
+            $query = $query->where('customer_id', $this->resolveShopUser($request)->id)
+                ->whereIn('status', $statuses);
+
+            foreach ($request->except(['page', 'limit', 'pagination', 'sort', 'order', 'token']) as $input => $value) {
+                $query = $query->whereIn($input, array_map('trim', explode(',', $value)));
+            }
+
+            if ($sort = $request->input('sort')) {
+                $query = $query->orderBy($sort, $request->input('order') ?? 'desc');
+            } else {
+                $query = $query->orderBy('id', 'desc');
+            }
+
+            return $query;
+        });
+
+        if (is_null($request->input('pagination')) || $request->input('pagination')) {
+            $results = $query->paginate($request->input('limit') ?? 10);
+        } else {
+            $results = $query->get();
+        }
+
+        return $this->getResourceCollection($results);
+    }
 }
