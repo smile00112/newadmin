@@ -185,11 +185,13 @@ return [
                     'options' => [
                         'canceled'        => 'Отменен',
                         'closed'          => 'Закрыт',
-                        'completed'       => 'Завершен',
+                        'completed'       => 'Выполнен',
                         'fraud'           => 'Мошенничество',
                         'pending'         => 'В ожидании',
                         'pending-payment' => 'Ожидание оплаты',
+                        'preparing'       => 'Готовим',
                         'processing'      => 'Обработка',
+                        'ready'           => 'Готов',
                     ],
                 ],
 

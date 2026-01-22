@@ -703,18 +703,24 @@
                                                 <option value="{{ \Webkul\Sales\Models\Order::STATUS_PROCESSING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PROCESSING ? 'selected' : '' }}>
                                                     Принят
                                                 </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PREPARING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PREPARING ? 'selected' : '' }}>
+                                                    Готовим
+                                                </option>
+                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_READY }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_READY ? 'selected' : '' }}>
+                                                    Готов
+                                                </option>
                                                 <option value="{{ \Webkul\Sales\Models\Order::STATUS_COMPLETED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_COMPLETED ? 'selected' : '' }}>
                                                     Завершен
                                                 </option>
                                                 <option value="{{ \Webkul\Sales\Models\Order::STATUS_CANCELED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CANCELED ? 'selected' : '' }}>
                                                     Отмена
                                                 </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CLOSED ? 'selected' : '' }}>
+                                                {{-- <option value="{{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CLOSED ? 'selected' : '' }}>
                                                     Закрыт
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_FRAUD }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_FRAUD ? 'selected' : '' }}>
+                                                </option> --}}
+                                                {{-- <option value="{{ \Webkul\Sales\Models\Order::STATUS_FRAUD }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_FRAUD ? 'selected' : '' }}>
                                                     Мошенничество
-                                                </option>
+                                                </option> --}}
                                             </x-admin::form.control-group.control>
 
                                             <button

@@ -74,6 +74,14 @@ class OrderDataGrid extends DataGrid
                     'value' => Order::STATUS_PROCESSING,
                 ],
                 [
+                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.preparing'),
+                    'value' => Order::STATUS_PREPARING,
+                ],
+                [
+                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.ready'),
+                    'value' => Order::STATUS_READY,
+                ],
+                [
                     'label' => trans('admin::app.customers.customers.view.datagrid.orders.completed'),
                     'value' => Order::STATUS_COMPLETED,
                 ],
@@ -81,10 +89,10 @@ class OrderDataGrid extends DataGrid
                     'label' => trans('admin::app.customers.customers.view.datagrid.orders.canceled'),
                     'value' => Order::STATUS_CANCELED,
                 ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.closed'),
-                    'value' => Order::STATUS_CLOSED,
-                ],
+                // [
+                //     'label' => trans('admin::app.customers.customers.view.datagrid.orders.closed'),
+                //     'value' => Order::STATUS_CLOSED,
+                // ],
                 [
                     'label' => trans('admin::app.customers.customers.view.datagrid.orders.pending'),
                     'value' => Order::STATUS_PENDING,
@@ -93,10 +101,10 @@ class OrderDataGrid extends DataGrid
                     'label' => trans('admin::app.customers.customers.view.datagrid.orders.pending-payment'),
                     'value' => Order::STATUS_PENDING_PAYMENT,
                 ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.fraud'),
-                    'value' => Order::STATUS_FRAUD,
-                ],
+                // [
+                //     'label' => trans('admin::app.customers.customers.view.datagrid.orders.fraud'),
+                //     'value' => Order::STATUS_FRAUD,
+                // ],
             ],
             'sortable'   => true,
             'closure'    => function ($row) {
@@ -104,14 +112,20 @@ class OrderDataGrid extends DataGrid
                     case Order::STATUS_PROCESSING:
                         return '<p class="label-processing">'.trans('admin::app.customers.customers.view.datagrid.orders.processing').'</p>';
 
+                    case Order::STATUS_PREPARING:
+                        return '<p class="label-processing">'.trans('admin::app.customers.customers.view.datagrid.orders.preparing').'</p>';
+
+                    case Order::STATUS_READY:
+                        return '<p class="label-active">'.trans('admin::app.customers.customers.view.datagrid.orders.ready').'</p>';
+
                     case Order::STATUS_COMPLETED:
                         return '<p class="label-active">'.trans('admin::app.customers.customers.view.datagrid.orders.completed').'</p>';
 
                     case Order::STATUS_CANCELED:
                         return '<p class="label-canceled">'.trans('admin::app.customers.customers.view.datagrid.orders.canceled').'</p>';
 
-                    case Order::STATUS_CLOSED:
-                        return '<p class="label-closed">'.trans('admin::app.customers.customers.view.datagrid.orders.closed').'</p>';
+                    // case Order::STATUS_CLOSED:
+                    //     return '<p class="label-closed">'.trans('admin::app.customers.customers.view.datagrid.orders.closed').'</p>';
 
                     case Order::STATUS_PENDING:
                         return '<p class="label-pending">'.trans('admin::app.customers.customers.view.datagrid.orders.pending').'</p>';
@@ -119,8 +133,8 @@ class OrderDataGrid extends DataGrid
                     case Order::STATUS_PENDING_PAYMENT:
                         return '<p class="label-pending">'.trans('admin::app.customers.customers.view.datagrid.orders.pending-payment').'</p>';
 
-                    case Order::STATUS_FRAUD:
-                        return '<p class="label-canceled">'.trans('admin::app.customers.customers.view.datagrid.orders.fraud').'</p>';
+                    // case Order::STATUS_FRAUD:
+                    //     return '<p class="label-canceled">'.trans('admin::app.customers.customers.view.datagrid.orders.fraud').'</p>';
                 }
             },
         ]);

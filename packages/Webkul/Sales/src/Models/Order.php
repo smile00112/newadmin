@@ -77,6 +77,16 @@ class Order extends Model implements OrderContract
     public const STATUS_FRAUD = 'fraud';
 
     /**
+     * Preparing state.
+     */
+    public const STATUS_PREPARING = 'preparing';
+
+    /**
+     * Ready state.
+     */
+    public const STATUS_READY = 'ready';
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array
@@ -101,8 +111,10 @@ class Order extends Model implements OrderContract
     protected $statusLabel = [
         self::STATUS_PENDING         => 'Оплата',
         self::STATUS_PENDING_PAYMENT => 'Ожидание оплаты',
-        self::STATUS_PROCESSING      => 'Принят',
-        self::STATUS_COMPLETED       => 'Завершен',
+        self::STATUS_PROCESSING      => 'Обработка',
+        self::STATUS_PREPARING       => 'Готовим',
+        self::STATUS_READY           => 'Готов',
+        self::STATUS_COMPLETED       => 'Выполнен',
         self::STATUS_CANCELED        => 'Отмена',
         self::STATUS_CLOSED          => 'Закрыт',
         self::STATUS_FRAUD           => 'Мошенничество',

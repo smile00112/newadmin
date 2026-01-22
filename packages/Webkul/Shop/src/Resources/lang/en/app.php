@@ -189,7 +189,9 @@ return [
                         'fraud'           => 'Fraud',
                         'pending'         => 'Pending',
                         'pending-payment' => 'Pending Payment',
+                        'preparing'       => 'Preparing',
                         'processing'      => 'Processing',
+                        'ready'           => 'Ready',
                     ],
                 ],
 

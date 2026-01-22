@@ -78,6 +78,14 @@ class OrderDataGrid extends DataGrid
                     'value' => Order::STATUS_PROCESSING,
                 ],
                 [
+                    'label' => trans('admin::app.sales.orders.index.datagrid.preparing'),
+                    'value' => Order::STATUS_PREPARING,
+                ],
+                [
+                    'label' => trans('admin::app.sales.orders.index.datagrid.ready'),
+                    'value' => Order::STATUS_READY,
+                ],
+                [
                     'label' => trans('admin::app.sales.orders.index.datagrid.completed'),
                     'value' => Order::STATUS_COMPLETED,
                 ],
@@ -85,10 +93,10 @@ class OrderDataGrid extends DataGrid
                     'label' => trans('admin::app.sales.orders.index.datagrid.canceled'),
                     'value' => Order::STATUS_CANCELED,
                 ],
-                [
-                    'label' => trans('admin::app.sales.orders.index.datagrid.closed'),
-                    'value' => Order::STATUS_CLOSED,
-                ],
+                // [
+                //     'label' => trans('admin::app.sales.orders.index.datagrid.closed'),
+                //     'value' => Order::STATUS_CLOSED,
+                // ],
                 [
                     'label' => trans('admin::app.sales.orders.index.datagrid.pending'),
                     'value' => Order::STATUS_PENDING,
@@ -97,10 +105,10 @@ class OrderDataGrid extends DataGrid
                     'label' => trans('admin::app.sales.orders.index.datagrid.pending-payment'),
                     'value' => Order::STATUS_PENDING_PAYMENT,
                 ],
-                [
-                    'label' => trans('admin::app.sales.orders.index.datagrid.fraud'),
-                    'value' => Order::STATUS_FRAUD,
-                ],
+                // [
+                //     'label' => trans('admin::app.sales.orders.index.datagrid.fraud'),
+                //     'value' => Order::STATUS_FRAUD,
+                // ],
             ],
             'sortable'   => true,
             'closure'    => function ($row) {
@@ -108,14 +116,20 @@ class OrderDataGrid extends DataGrid
                     case Order::STATUS_PROCESSING:
                         return '<p class="label-processing">'.trans('admin::app.sales.orders.index.datagrid.processing').'</p>';
 
+                    case Order::STATUS_PREPARING:
+                        return '<p class="label-processing">'.trans('admin::app.sales.orders.index.datagrid.preparing').'</p>';
+
+                    case Order::STATUS_READY:
+                        return '<p class="label-active">'.trans('admin::app.sales.orders.index.datagrid.ready').'</p>';
+
                     case Order::STATUS_COMPLETED:
                         return '<p class="label-active">'.trans('admin::app.sales.orders.index.datagrid.completed').'</p>';
 
                     case Order::STATUS_CANCELED:
                         return '<p class="label-canceled">'.trans('admin::app.sales.orders.index.datagrid.canceled').'</p>';
 
-                    case Order::STATUS_CLOSED:
-                        return '<p class="label-closed">'.trans('admin::app.sales.orders.index.datagrid.closed').'</p>';
+                    // case Order::STATUS_CLOSED:
+                    //     return '<p class="label-closed">'.trans('admin::app.sales.orders.index.datagrid.closed').'</p>';
 
                     case Order::STATUS_PENDING:
                         return '<p class="label-pending">'.trans('admin::app.sales.orders.index.datagrid.pending').'</p>';
@@ -123,8 +137,8 @@ class OrderDataGrid extends DataGrid
                     case Order::STATUS_PENDING_PAYMENT:
                         return '<p class="label-pending">'.trans('admin::app.sales.orders.index.datagrid.pending-payment').'</p>';
 
-                    case Order::STATUS_FRAUD:
-                        return '<p class="label-canceled">'.trans('admin::app.sales.orders.index.datagrid.fraud').'</p>';
+                    // case Order::STATUS_FRAUD:
+                    //     return '<p class="label-canceled">'.trans('admin::app.sales.orders.index.datagrid.fraud').'</p>';
                 }
             },
         ]);

@@ -215,6 +215,8 @@ class OrderController extends Controller
                         Order::STATUS_PENDING,
                         Order::STATUS_PENDING_PAYMENT,
                         Order::STATUS_PROCESSING,
+                        Order::STATUS_PREPARING,
+                        Order::STATUS_READY,
                         Order::STATUS_COMPLETED,
                         Order::STATUS_CANCELED,
                         Order::STATUS_CLOSED,
