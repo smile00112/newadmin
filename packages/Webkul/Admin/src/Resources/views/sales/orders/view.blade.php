@@ -133,10 +133,23 @@
 
                             <div class="flex justify-between gap-2.5 border-b border-slate-300 px-4 py-6 dark:border-gray-800">
                                 <div class="flex gap-2.5">
-                                    @if($item?->product?->base_image_url)
+                                    @php
+                                        $imageUrl = null;
+                                        
+                                        // Сначала проверяем category_image
+                                        if ($item?->product?->category_image) {
+                                            $imageUrl = Storage::url($item->product->category_image);
+                                        } 
+                                        // Если нет category_image, используем base_image_url
+                                        elseif ($item?->product?->base_image_url) {
+                                            $imageUrl = $item->product->base_image_url;
+                                        }
+                                    @endphp
+
+                                    @if($imageUrl)
                                         <img
                                             class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded"
-                                            src="{{ $item?->product->base_image_url }}"
+                                            src="{{ $imageUrl }}"
                                         >
                                     @else
                                         <div class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert">
