@@ -11,6 +11,10 @@ use Webkul\IikoIntegration\Http\Controllers\Admin\IikoSyncController;
 Route::prefix('iiko')->group(function () {
     Route::controller(IikoManagementController::class)->group(function () {
         Route::get('management', 'index')->name('admin.iiko.management.index');
+        Route::post('management/organizations', 'getOrganizations')->name('admin.iiko.management.organizations');
+        Route::post('management/terminals', 'getTerminals')->name('admin.iiko.management.terminals');
+        Route::post('management/menu', 'getMenu')->name('admin.iiko.management.menu');
+        Route::post('management/nomenclature', 'getNomenclature')->name('admin.iiko.management.nomenclature');
     });
 
     Route::controller(IikoSettingsController::class)->group(function () {

@@ -307,4 +307,14 @@ class IikoApiService
             'terminalGroupId' => $terminalGroupId,
         ], $channelCode);
     }
+
+    /**
+     * Get nomenclature for organization.
+     */
+    public function getNomenclature(string $organizationId, ?string $channelCode = null): ?array
+    {
+        return $this->makeRequest('/api/1/nomenclature', 'POST', [
+            'organizationId' => $organizationId,
+        ], $channelCode);
+    }
 }

@@ -14,8 +14,19 @@ return [
     ],
 
     'management' => [
-        'title'       => 'iiko Integration Management',
-        'description' => 'This section is under development. Management features will be available soon.',
+        'title'                    => 'iiko Integration Management',
+        'description'              => 'This section is under development. Management features will be available soon.',
+        'get-organizations'        => 'Get Organizations',
+        'get-terminals'            => 'Get Terminal',
+        'get-menu'                 => 'Get Menu',
+        'get-nomenclature'         => 'Get Nomenclature',
+        'select-organization'      => 'Select Organization',
+        'select-terminal'          => 'Select Terminal',
+        'loading'                  => 'Loading...',
+        'success'                  => 'Data retrieved successfully',
+        'error'                    => 'Error retrieving data',
+        'no-data'                  => 'No data found',
+        'organization-id-required' => 'Organization ID is required',
     ],
 
     'settings' => [

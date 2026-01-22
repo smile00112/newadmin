@@ -57,11 +57,21 @@ class IikoAuthService
                 Log::error('iiko: API login is not configured');
                 return null;
             }
+//echo "{$baseUrl}/access_token   " . $apiLogin;
+echo '+++';
+            try {
+                $response = Http::timeout(30)
+                    ->post("{$baseUrl}/access_token", [
+                        'apiLogin' => $apiLogin,
+                    ]);
 
-            $response = Http::timeout(30)
-                ->post("{$baseUrl}/api/1/access_token", [
-                    'apiLogin' => $apiLogin,
-                ]);
+                print_R($response);
+            }
+            catch (\Exception $e) {
+                echo $e->getMessage();
+            }
+
+echo '-----';
 
             if (!$response->successful()) {
                 Log::error('iiko: Failed to get access token', [
