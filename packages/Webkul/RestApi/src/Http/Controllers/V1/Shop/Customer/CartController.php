@@ -44,6 +44,7 @@ class CartController extends CustomerController
 
         return response([
             'data' => ($cart = Cart::getCart()) ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'cross_sell' => $this->getCrossSellProducts(),
         ]);
     }
 

@@ -23,6 +23,15 @@ class CartController
      *                  property="data",
      *                  type="object",
      *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="cross_sell",
+     *                  type="array",
+     *                  description="Array of cross-sell products",
+     *
+     *                  @OA\Items(
+     *                      ref="#/components/schemas/Product"
+     *                  )
      *              )
      *          )
      *      ),
