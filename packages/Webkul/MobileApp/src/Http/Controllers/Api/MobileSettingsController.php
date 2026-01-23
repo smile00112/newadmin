@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Cache;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Payment;
+use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
 use Webkul\Sales\Models\Order;
 use Webkul\Shipping\Shipping;
 
@@ -30,7 +32,8 @@ class MobileSettingsController extends Controller
         protected MobileAppSettingRepository $settingRepository,
         protected AttributeRepository $attributeRepository,
         protected Payment $payment,
-        protected Shipping $shipping
+        protected Shipping $shipping,
+        protected ProductRepository $productRepository
     ) {}
 
     /**
@@ -96,6 +99,9 @@ class MobileSettingsController extends Controller
 
         // Add order statuses
         $settings['order_statuses'] = $this->getOrderStatuses();
+
+        // Add cart cross-sell products
+        $settings['cart_cross_sell_products'] = $this->getCartCrossSellProducts();
 
         return $settings;
     }
@@ -191,6 +197,39 @@ class MobileSettingsController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Get cart cross-sell products from configuration.
+     */
+    protected function getCartCrossSellProducts(): array
+    {
+        // Проверяем, включен ли отдельный список
+        $useSeparateList = core()->getConfigData('catalog.products.cart_view_page.separate_cross_sell_list');
+
+        if ($useSeparateList) {
+            // Используем отдельный список из конфигурации
+            $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
+
+            if (is_string($productIds)) {
+                $productIds = explode(',', $productIds);
+            }
+
+            if (empty($productIds) || ! is_array($productIds)) {
+                return [];
+            }
+
+            $products = $this->productRepository
+                ->whereIn('id', $productIds)
+                ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
+                ->get();
+
+            return ProductResource::collection($products)->resolve();
+        }
+
+        // Если отдельный список не включен, возвращаем пустой массив
+        // так как кросс-сейлы зависят от товаров в корзине пользователя
+        return [];
     }
 }
 

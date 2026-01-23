@@ -159,6 +159,24 @@ class MobileSettingsController
      *                          @OA\Property(property="code", type="string", example="pending", description="Status code"),
      *                          @OA\Property(property="label", type="string", example="Pending", description="Status label")
      *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="cart_cross_sell_products",
+     *                      type="array",
+     *                      description="Cart cross-sell products from configuration (only if separate cross-sell list is enabled)",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          description="Product resource with full product details",
+     *                          @OA\Property(property="id", type="integer", example=1, description="Product ID"),
+     *                          @OA\Property(property="sku", type="string", example="product-sku", description="Product SKU"),
+     *                          @OA\Property(property="name", type="string", example="Product Name", description="Product name"),
+     *                          @OA\Property(property="price", type="number", format="float", example=99.99, description="Product price"),
+     *                          @OA\Property(property="formatted_price", type="string", example="$99.99", description="Formatted price"),
+     *                          @OA\Property(property="images", type="array", description="Product images", @OA\Items(type="string")),
+     *                          @OA\Property(property="in_stock", type="boolean", example=true, description="Product availability"),
+     *                          @OA\Property(property="is_saleable", type="boolean", example=true, description="Whether product can be sold"),
+     *                          @OA\Property(property="url_key", type="string", example="product-url-key", description="Product URL key")
+     *                      )
      *                  )
      *              )
      *          )
