@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
@@ -166,7 +167,7 @@ class OrderController extends CustomerController
     /**
      * Get active orders.
      */
-    public function activeOrders(Request $request): \Illuminate\Http\Response
+    public function activeOrders(Request $request): AnonymousResourceCollection
     {
         $channelCode = core()->getCurrentChannelCode();
         $statuses = core()->getConfigData('sales.order_settings.order_statuses.active_statuses', $channelCode);
@@ -191,7 +192,7 @@ class OrderController extends CustomerController
     /**
      * Get completed orders.
      */
-    public function completedOrders(Request $request): \Illuminate\Http\Response
+    public function completedOrders(Request $request): AnonymousResourceCollection
     {
         $channelCode = core()->getCurrentChannelCode();
         $statuses = core()->getConfigData('sales.order_settings.order_statuses.completed_statuses', $channelCode);
@@ -213,7 +214,7 @@ class OrderController extends CustomerController
     /**
      * Get cancelled orders.
      */
-    public function cancelledOrders(Request $request): \Illuminate\Http\Response
+    public function cancelledOrders(Request $request): AnonymousResourceCollection
     {
         $channelCode = core()->getCurrentChannelCode();
         $statuses = core()->getConfigData('sales.order_settings.order_statuses.cancelled_statuses', $channelCode);
@@ -235,7 +236,7 @@ class OrderController extends CustomerController
     /**
      * Get orders by statuses.
      */
-    protected function getOrdersByStatuses(Request $request, array $statuses): \Illuminate\Http\Response
+    protected function getOrdersByStatuses(Request $request, array $statuses): AnonymousResourceCollection
     {
         $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request, $statuses) {
             $query = $query->where('customer_id', $this->resolveShopUser($request)->id)
