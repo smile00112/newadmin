@@ -110,15 +110,26 @@
             <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
                 @lang('iiko-integration::app.management.get-nomenclature')
             </h3>
-            <button
-                type="button"
-                id="btn-get-nomenclature"
-                class="primary-button"
-                onclick="getNomenclature()"
-                disabled
-            >
-                @lang('iiko-integration::app.management.get-nomenclature')
-            </button>
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    id="btn-get-nomenclature"
+                    class="primary-button"
+                    onclick="getNomenclature()"
+                    disabled
+                >
+                    @lang('iiko-integration::app.management.get-nomenclature')
+                </button>
+                <button
+                    type="button"
+                    id="btn-import-nomenclature"
+                    class="primary-button"
+                    onclick="importNomenclature()"
+                    disabled
+                >
+                    @lang('iiko-integration::app.management.import-nomenclature')
+                </button>
+            </div>
         </div>
 
         <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
@@ -599,14 +610,60 @@
 
                     if (data.success) {
                         showMessage(data.message, 'success');
+                        // Enable import button after successful nomenclature fetch
+                        document.getElementById('btn-import-nomenclature').disabled = false;
                     } else {
                         showMessage(data.message || "@lang('iiko-integration::app.management.error')", 'error');
+                        document.getElementById('btn-import-nomenclature').disabled = true;
                     }
                 } catch (error) {
                     logRequest('Get Nomenclature', requestData, null, error);
                     showMessage("@lang('iiko-integration::app.management.error')", 'error');
+                    document.getElementById('btn-import-nomenclature').disabled = true;
                 } finally {
                     restoreButtonText('btn-get-nomenclature', originalText);
+                }
+            }
+
+            async function importNomenclature() {
+                if (!selectedOrganizationId) {
+                    showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
+                    return;
+                }
+
+                const button = document.getElementById('btn-import-nomenclature');
+                const originalText = button.innerHTML;
+                setButtonLoading('btn-import-nomenclature', true);
+
+                const requestData = {
+                    endpoint: "{{ route('admin.iiko.management.import-nomenclature') }}",
+                    method: 'POST',
+                    body: { organization_id: selectedOrganizationId }
+                };
+
+                try {
+                    const response = await fetch(requestData.endpoint, {
+                        method: requestData.method,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData.body),
+                    });
+
+                    const data = await response.json();
+                    logRequest('Import Nomenclature', requestData, data, response.ok ? null : new Error(`HTTP ${response.status}`));
+
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                    } else {
+                        showMessage(data.message || "@lang('iiko-integration::app.management.import-error')", 'error');
+                    }
+                } catch (error) {
+                    logRequest('Import Nomenclature', requestData, null, error);
+                    showMessage("@lang('iiko-integration::app.management.import-error')", 'error');
+                } finally {
+                    restoreButtonText('btn-import-nomenclature', originalText);
                 }
             }
 

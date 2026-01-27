@@ -258,6 +258,55 @@ class IikoManagementController extends Controller
     }
 
     /**
+     * Import nomenclature data (categories and products) from iiko.
+     */
+    public function importNomenclature(Request $request): JsonResponse
+    {
+        try {
+            $organizationId = $request->input('organization_id');
+
+            if (!$organizationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.organization-id-required'),
+                ], 400);
+            }
+
+            // Check if nomenclature exists
+            $nomenclature = $this->nomenclatureService->getCachedNomenclature($organizationId);
+
+            if (!$nomenclature) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.no-nomenclature-data'),
+                ], 400);
+            }
+
+            // Import nomenclature using import service
+            $importService = app(\Webkul\IikoIntegration\Services\IikoNomenclatureImportService::class);
+            $result = $importService->importNomenclature($organizationId, $nomenclature);
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => trans('iiko-integration::app.management.import-nomenclature-success'),
+                    'data' => $result['data'] ?? [],
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'] ?? trans('iiko-integration::app.management.import-nomenclature-error'),
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('iiko-integration::app.management.import-error') . ': ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get customer by phone number.
      */
     public function getCustomerByPhone(Request $request): JsonResponse
