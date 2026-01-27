@@ -542,7 +542,13 @@ class Product
      *                 "formatted_price": "$5.50",
      *                 "in_stock": true,
      *                 "sort": 1,
-     *                 "default": true
+     *                 "default": true,
+     *                 "base_image": {
+     *                     "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+     *                     "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+     *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+     *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *                 }
      *             }, {
      *                 "id": 26,
      *                 "sku": "ingredient-2",
@@ -551,7 +557,13 @@ class Product
      *                 "formatted_price": "$3.00",
      *                 "in_stock": true,
      *                 "sort": 2,
-     *                 "default": false
+     *                 "default": false,
+     *                 "base_image": {
+     *                     "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+     *                     "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+     *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+     *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *                 }
      *             }}
      *         }}
      *     }},
@@ -641,7 +653,16 @@ class Product
      *                          @OA\Property(property="formatted_price", type="string", description="Formatted price"),
      *                          @OA\Property(property="in_stock", type="boolean", description="In stock"),
      *                          @OA\Property(property="sort", type="integer", description="Sort order"),
-     *                          @OA\Property(property="default", type="boolean", description="Is default product")
+     *                          @OA\Property(property="default", type="boolean", description="Is default product"),
+     *                          @OA\Property(
+     *                              property="base_image",
+     *                              type="object",
+     *                              description="Product base image with different sizes",
+     *                              @OA\Property(property="small_image_url", type="string"),
+     *                              @OA\Property(property="medium_image_url", type="string"),
+     *                              @OA\Property(property="large_image_url", type="string"),
+     *                              @OA\Property(property="original_image_url", type="string")
+     *                          )
      *                      )
      *                  )
      *              )

@@ -328,7 +328,7 @@ class ProductResource extends JsonResource
     private function getConstructorProductInfo($product)
     {
         // Load constructor data with relationships
-        $product->load('constructor.groups.products');
+        $product->load('constructor.groups.products.images');
 
         // Return empty array if no constructor exists
         if ($product->constructor->isEmpty()) {
@@ -377,6 +377,7 @@ class ProductResource extends JsonResource
                                 'in_stock'       => $groupProduct->haveSufficientQuantity(1),
                                 'sort'           => $groupProduct->pivot->sort ?? 0,
                                 'default'        => (bool) ($groupProduct->pivot->default ?? false),
+                                'base_image'     => ProductImage::getProductBaseImage($groupProduct),
                             ];
                         })->sortBy('sort')->values(),
                     ];
