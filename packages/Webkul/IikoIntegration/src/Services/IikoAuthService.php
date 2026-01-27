@@ -15,9 +15,9 @@ class IikoAuthService
     protected const CACHE_PREFIX = 'iiko_access_token';
 
     /**
-     * Token cache TTL in seconds (60 minutes).
+     * Token cache TTL in seconds (60 seconds).
      */
-    protected const TOKEN_TTL = 3600;
+    protected const TOKEN_TTL = 60;
 
     /**
      * Create a new service instance.
@@ -57,26 +57,19 @@ class IikoAuthService
                 Log::error('iiko: API login is not configured');
                 return null;
             }
-//echo "{$baseUrl}/access_token   " . $apiLogin;
-echo '+++';
-            try {
-                $response = Http::timeout(30)
-                    ->post("{$baseUrl}/access_token", [
-                        'apiLogin' => $apiLogin,
-                    ]);
 
-                print_R($response);
-            }
-            catch (\Exception $e) {
-                echo $e->getMessage();
-            }
-
-echo '-----';
+            $response = Http::timeout(30)
+                ->post("{$baseUrl}/api/1/access_token", [
+                    'apiLogin' => $apiLogin,
+                ]);
 
             if (!$response->successful()) {
                 Log::error('iiko: Failed to get access token', [
                     'status' => $response->status(),
                     'body'   => $response->body(),
+                    'request_body'   => [
+                        'apiLogin' => $apiLogin,
+                    ]
                 ]);
                 return null;
             }
@@ -112,7 +105,6 @@ echo '-----';
             return null;
         }
     }
-
     /**
      * Clear cached access token.
      */

@@ -50,17 +50,26 @@ class IikoApiService
 
         while ($attempt < self::MAX_RETRIES) {
             try {
-                $requestData = array_merge($data, ['token' => $token]);
-
                 if ($logRequest) {
-                    $this->logRequest($endpoint, $method, $requestData, $channelCode);
+                    $this->logRequest($endpoint, $method, $data, $channelCode);
                 }
 
-                $response = $this->sendRequest($url, $method, $requestData);
+    Log::info([
+        'type' => 'get request',
+        'url' => $url,
+        'method' => $method,
+        'data' => $data,
+        'token' => $token
+    ]);
+
+                $response = $this->sendRequest($url, $method, $data, $token);
 
                 if ($response->successful()) {
                     $responseData = $response->json();
-
+    Log::info([
+        'type' => 'get response',
+        'responseData' => $responseData
+    ]);
                     if ($logRequest) {
                         $this->logResponse($endpoint, $method, $responseData, $channelCode, true);
                     }
@@ -70,7 +79,7 @@ class IikoApiService
 
                 // Handle 401 Unauthorized - token might be expired
                 if ($response->status() === 401) {
-                    Log::warning('iiko: Token expired, clearing cache and retrying');
+                    Log::warning('iiko: Token ('.$token.') expired, clearing cache and retrying');
                     $this->authService->clearTokenCache($channelCode);
                     $token = $this->authService->getAccessToken($channelCode);
 
@@ -79,8 +88,7 @@ class IikoApiService
                         return null;
                     }
 
-                    $requestData['token'] = $token;
-                    $response = $this->sendRequest($url, $method, $requestData);
+                    $response = $this->sendRequest($url, $method, $data, $token);
 
                     if ($response->successful()) {
                         $responseData = $response->json();
@@ -159,9 +167,12 @@ class IikoApiService
     /**
      * Send HTTP request.
      */
-    protected function sendRequest(string $url, string $method, array $data): \Illuminate\Http\Client\Response
+    protected function sendRequest(string $url, string $method, array $data, string $token): \Illuminate\Http\Client\Response
     {
-        $http = Http::timeout(30);
+        $http = Http::timeout(30)
+            ->withHeaders([
+                'Authorization' => "Bearer {$token}",
+            ]);
 
         return match (strtoupper($method)) {
             'GET'    => $http->get($url, $data),
@@ -188,10 +199,6 @@ class IikoApiService
      */
     protected function logRequest(string $endpoint, string $method, array $data, ?string $channelCode = null): void
     {
-        // Remove token from logged data
-        $logData = $data;
-        unset($logData['token']);
-
         $this->syncLogRepository->create([
             'sync_type'    => 'api_request',
             'entity_id'    => null,
@@ -199,7 +206,7 @@ class IikoApiService
             'request_data' => json_encode([
                 'endpoint' => $endpoint,
                 'method'   => $method,
-                'data'     => $logData,
+                'data'     => $data,
             ]),
             'response_data' => null,
             'error_message' => null,
@@ -294,7 +301,7 @@ class IikoApiService
     public function getTerminalGroups(string $organizationId, ?string $channelCode = null): ?array
     {
         return $this->makeRequest('/api/1/terminal_groups', 'POST', [
-            'organizationId' => $organizationId,
+            'organizationIds' => [$organizationId],
         ], $channelCode);
     }
 
@@ -311,10 +318,16 @@ class IikoApiService
     /**
      * Get nomenclature for organization.
      */
-    public function getNomenclature(string $organizationId, ?string $channelCode = null): ?array
+    public function getNomenclature(string $organizationId, ?string $channelCode = null, ?string $externalMenuId = null): ?array
     {
-        return $this->makeRequest('/api/1/nomenclature', 'POST', [
+        $data = [
             'organizationId' => $organizationId,
-        ], $channelCode);
+        ];
+
+        if ($externalMenuId) {
+            $data['externalMenuId'] = $externalMenuId;
+        }
+
+        return $this->makeRequest('/api/1/nomenclature', 'POST', $data, $channelCode);
     }
 }

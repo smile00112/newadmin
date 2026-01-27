@@ -22,11 +22,15 @@ return [
         'get-nomenclature'         => 'Get Nomenclature',
         'select-organization'      => 'Select Organization',
         'select-terminal'          => 'Select Terminal',
+        'select-menu'              => 'Select Menu',
         'loading'                  => 'Loading...',
         'success'                  => 'Data retrieved successfully',
         'error'                    => 'Error retrieving data',
         'no-data'                  => 'No data found',
         'organization-id-required' => 'Organization ID is required',
+        'request-results'         => 'Request Results',
+        'clear-results'           => 'Clear',
+        'request-results-placeholder' => 'Request results, responses, and errors will be displayed here...',
     ],
 
     'settings' => [

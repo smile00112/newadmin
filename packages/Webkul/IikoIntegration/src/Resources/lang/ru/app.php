@@ -22,11 +22,15 @@ return [
         'get-nomenclature'         => 'Получить номенклатуру',
         'select-organization'      => 'Выберите организацию',
         'select-terminal'          => 'Выберите терминал',
+        'select-menu'              => 'Выберите меню',
         'loading'                  => 'Загрузка...',
         'success'                  => 'Данные успешно получены',
         'error'                    => 'Ошибка при получении данных',
         'no-data'                  => 'Данные не найдены',
         'organization-id-required' => 'Требуется ID организации',
+        'request-results'         => 'Результаты запросов',
+        'clear-results'           => 'Очистить',
+        'request-results-placeholder' => 'Здесь будут отображаться результаты всех запросов к API, включая запросы, ответы и ошибки...',
     ],
 
     'settings' => [

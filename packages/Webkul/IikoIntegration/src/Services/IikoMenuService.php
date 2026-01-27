@@ -25,11 +25,11 @@ class IikoMenuService
     public function getMenu(string $organizationId, ?string $externalMenuId = null, ?string $channelCode = null): ?array
     {
         try {
-            $endpoint = '/api/1/menu';
+            $endpoint = '/api/2/menu';
             $data = ['organizationId' => $organizationId];
 
             if ($externalMenuId) {
-                $endpoint = "/api/1/menu/{$externalMenuId}";
+                $endpoint = "/api/2/menu/{$externalMenuId}";
             }
 
             $response = $this->apiService->makeRequest(

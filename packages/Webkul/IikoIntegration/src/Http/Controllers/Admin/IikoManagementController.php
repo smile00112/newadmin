@@ -6,9 +6,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\IikoIntegration\Repositories\IikoOrganizationRepository;
 use Webkul\IikoIntegration\Services\IikoApiService;
 use Webkul\IikoIntegration\Services\IikoMenuService;
+use Webkul\IikoIntegration\Services\IikoNomenclatureService;
 use Webkul\IikoIntegration\Services\IikoOrganizationService;
+use Webkul\IikoIntegration\Services\IikoTerminalGroupService;
 
 class IikoManagementController extends Controller
 {
@@ -18,7 +21,10 @@ class IikoManagementController extends Controller
     public function __construct(
         protected IikoOrganizationService $organizationService,
         protected IikoApiService $apiService,
-        protected IikoMenuService $menuService
+        protected IikoMenuService $menuService,
+        protected IikoTerminalGroupService $terminalGroupService,
+        protected IikoNomenclatureService $nomenclatureService,
+        protected IikoOrganizationRepository $organizationRepository
     ) {}
 
     /**
@@ -26,7 +32,17 @@ class IikoManagementController extends Controller
      */
     public function index(): View
     {
-        return view('iiko-integration::admin.iiko.management');
+        // Load saved organizations from database
+        $savedOrganizations = $this->organizationRepository->all()->map(function ($org) {
+            return [
+                'id'   => $org->iiko_id,
+                'name' => $org->name,
+            ];
+        })->toArray();
+
+        return view('iiko-integration::admin.iiko.management', [
+            'savedOrganizations' => $savedOrganizations,
+        ]);
     }
 
     /**
@@ -71,6 +87,7 @@ class IikoManagementController extends Controller
     {
         try {
             $organizationId = $request->input('organization_id');
+            $forceRefresh = $request->input('force_refresh', false);
 
             if (!$organizationId) {
                 return response()->json([
@@ -79,26 +96,38 @@ class IikoManagementController extends Controller
                 ], 400);
             }
 
-            $response = $this->apiService->getTerminalGroups($organizationId);
+            // Check cached terminal groups first (unless force refresh)
+            if (!$forceRefresh) {
+                $cachedTerminals = $this->terminalGroupService->getCachedTerminalGroups($organizationId);
 
-            if ($response === null || !isset($response['terminalGroups'])) {
+                if ($cachedTerminals !== null && count($cachedTerminals) > 0) {
+                    return response()->json([
+                        'success' => true,
+                        'data'    => $cachedTerminals,
+                        'message' => trans('iiko-integration::app.management.success'),
+                        'cached'  => true,
+                    ]);
+                }
+            }
+
+            // Sync from API if no cached data or force refresh
+            $syncSuccess = $this->terminalGroupService->syncTerminalGroups($organizationId);
+
+            if (!$syncSuccess) {
                 return response()->json([
                     'success' => false,
                     'message' => trans('iiko-integration::app.management.no-data'),
                 ], 400);
             }
 
-            $formattedTerminals = array_map(function ($terminal) {
-                return [
-                    'id'   => $terminal['id'] ?? '',
-                    'name' => $terminal['name'] ?? '',
-                ];
-            }, $response['terminalGroups']);
+            // Get synced terminals
+            $syncedTerminals = $this->terminalGroupService->getCachedTerminalGroups($organizationId);
 
             return response()->json([
                 'success' => true,
-                'data'    => $formattedTerminals,
+                'data'    => $syncedTerminals ?? [],
                 'message' => trans('iiko-integration::app.management.success'),
+                'cached'  => false,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -132,9 +161,36 @@ class IikoManagementController extends Controller
                 ], 400);
             }
 
+            // Format menu data for select dropdown
+            $menus = [];
+            if (isset($menu['externalMenus']) && is_array($menu['externalMenus'])) {
+                // If response contains 'menus' array
+                foreach ($menu['externalMenus'] as $menuItem) {
+                    $menus[] = [
+                        'id'   => $menuItem['id'] ?? $menuItem['externalId'] ?? '',
+                        'name' => $menuItem['name'] ?? '',
+                    ];
+                }
+            } elseif (isset($menu['id']) || isset($menu['externalId'])) {
+                // If response is a single menu object
+                $menus[] = [
+                    'id'   => $menu['id'] ?? $menu['externalId'] ?? '',
+                    'name' => $menu['name'] ?? '',
+                ];
+            } elseif (is_array($menu) && isset($menu[0])) {
+                // If response is an array of menus
+                foreach ($menu as $menuItem) {
+                    $menus[] = [
+                        'id'   => $menuItem['id'] ?? $menuItem['externalId'] ?? '',
+                        'name' => $menuItem['name'] ?? '',
+                    ];
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'data'    => $menu,
+                'data'    => $menus,
+                'raw'     => $menu, // Keep raw data for debugging
                 'message' => trans('iiko-integration::app.management.success'),
             ]);
         } catch (\Exception $e) {
@@ -152,6 +208,7 @@ class IikoManagementController extends Controller
     {
         try {
             $organizationId = $request->input('organization_id');
+            $externalMenuId = $request->input('external_menu_id');
 
             if (!$organizationId) {
                 return response()->json([
@@ -160,14 +217,18 @@ class IikoManagementController extends Controller
                 ], 400);
             }
 
-            $nomenclature = $this->apiService->getNomenclature($organizationId);
+            // Sync nomenclature from API and save
+            $syncSuccess = $this->nomenclatureService->syncNomenclature($organizationId, null, $externalMenuId);
 
-            if ($nomenclature === null) {
+            if (!$syncSuccess) {
                 return response()->json([
                     'success' => false,
                     'message' => trans('iiko-integration::app.management.no-data'),
                 ], 400);
             }
+
+            // Get synced nomenclature
+            $nomenclature = $this->nomenclatureService->getCachedNomenclature($organizationId);
 
             return response()->json([
                 'success' => true,
