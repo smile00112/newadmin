@@ -45,15 +45,26 @@
             <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
                 @lang('iiko-integration::app.management.get-terminals')
             </h3>
-            <button
-                type="button"
-                id="btn-get-terminals"
-                class="primary-button"
-                onclick="getTerminals(true)"
-                {{ !empty($savedOrganizations) ? '' : 'disabled' }}
-            >
-                @lang('iiko-integration::app.management.get-terminals')
-            </button>
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    id="btn-get-terminals"
+                    class="primary-button"
+                    onclick="getTerminals(true)"
+                    {{ !empty($savedOrganizations) ? '' : 'disabled' }}
+                >
+                    @lang('iiko-integration::app.management.get-terminals')
+                </button>
+                <button
+                    type="button"
+                    id="btn-import-terminal"
+                    class="primary-button"
+                    onclick="importTerminal()"
+                    disabled
+                >
+                    @lang('iiko-integration::app.management.import-terminal')
+                </button>
+            </div>
             <div id="terminals-select-container" class="mt-4 hidden">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     @lang('iiko-integration::app.management.select-terminal')
@@ -61,6 +72,7 @@
                 <select
                     id="terminals-select"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white bg-white dark:bg-gray-700"
+                    onchange="onTerminalChange()"
                 >
                     <option value="">@lang('iiko-integration::app.management.select-terminal')</option>
                 </select>
@@ -331,11 +343,13 @@
                     document.getElementById('btn-get-customer-by-phone').disabled = true;
                     document.getElementById('btn-get-promotions').disabled = true;
                     document.getElementById('btn-get-payment-types').disabled = true;
+                    document.getElementById('btn-import-terminal').disabled = true;
                     document.getElementById('terminals-select-container').classList.add('hidden');
                     document.getElementById('btn-get-menu').disabled = true;
                     document.getElementById('btn-get-nomenclature').disabled = true;
                     // Clear menu selection
                     selectedMenuId = null;
+                    selectedTerminalId = null;
                     document.getElementById('menu-select-container').classList.add('hidden');
                     const menuSelect = document.getElementById('menu-select');
                     if (menuSelect) {
@@ -384,6 +398,8 @@
 
                         document.getElementById('terminals-select-container').classList.remove('hidden');
                         document.getElementById('btn-get-menu').disabled = false;
+                        document.getElementById('btn-import-terminal').disabled = true;
+                        selectedTerminalId = null;
                         
                         if (data.cached) {
                             // Silently load cached data, no message needed
@@ -445,6 +461,8 @@
 
                         document.getElementById('terminals-select-container').classList.remove('hidden');
                         document.getElementById('btn-get-menu').disabled = false;
+                        document.getElementById('btn-import-terminal').disabled = true;
+                        selectedTerminalId = null;
                         
                         const message = data.cached 
                             ? "@lang('iiko-integration::app.management.success') (cached)"
@@ -520,6 +538,17 @@
                     showMessage("@lang('iiko-integration::app.management.error')", 'error');
                 } finally {
                     restoreButtonText('btn-get-menu', originalText);
+                }
+            }
+
+            function onTerminalChange() {
+                const select = document.getElementById('terminals-select');
+                selectedTerminalId = select.value;
+                
+                if (selectedTerminalId) {
+                    document.getElementById('btn-import-terminal').disabled = false;
+                } else {
+                    document.getElementById('btn-import-terminal').disabled = true;
                 }
             }
 
@@ -727,6 +756,58 @@
                     showMessage("@lang('iiko-integration::app.management.error')", 'error');
                 } finally {
                     restoreButtonText('btn-get-payment-types', originalText);
+                }
+            }
+
+            async function importTerminal() {
+                if (!selectedOrganizationId) {
+                    showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
+                    return;
+                }
+
+                if (!selectedTerminalId) {
+                    showMessage("@lang('iiko-integration::app.management.terminal-id-required')", 'error');
+                    return;
+                }
+
+                const button = document.getElementById('btn-import-terminal');
+                const originalText = button.innerHTML;
+                setButtonLoading('btn-import-terminal', true);
+
+                const requestData = {
+                    endpoint: "{{ route('admin.iiko.management.import-terminal') }}",
+                    method: 'POST',
+                    body: {
+                        organization_id: selectedOrganizationId,
+                        terminal_id: selectedTerminalId
+                    }
+                };
+
+                try {
+                    const response = await fetch(requestData.endpoint, {
+                        method: requestData.method,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData.body),
+                    });
+
+                    const data = await response.json();
+                    logRequest('Import Terminal', requestData, data, response.ok ? null : new Error(`HTTP ${response.status}`));
+
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                    } else if (data.skipped) {
+                        showMessage(data.message, 'error');
+                    } else {
+                        showMessage(data.message || "@lang('iiko-integration::app.management.import-error')", 'error');
+                    }
+                } catch (error) {
+                    logRequest('Import Terminal', requestData, null, error);
+                    showMessage("@lang('iiko-integration::app.management.import-error')", 'error');
+                } finally {
+                    restoreButtonText('btn-import-terminal', originalText);
                 }
             }
         </script>

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\IikoIntegration\Repositories\IikoOrganizationRepository;
+use Webkul\IikoIntegration\Repositories\IikoTerminalGroupRepository;
 use Webkul\IikoIntegration\Services\IikoApiService;
 use Webkul\IikoIntegration\Services\IikoMenuService;
 use Webkul\IikoIntegration\Services\IikoNomenclatureService;
@@ -14,6 +15,10 @@ use Webkul\IikoIntegration\Services\IikoOrganizationService;
 use Webkul\IikoIntegration\Services\IikoTerminalGroupService;
 use Webkul\IikoIntegration\Services\IikoPromotionService;
 use Webkul\IikoIntegration\Services\IikoPaymentTypeService;
+use Webkul\Inventory\Repositories\InventorySourceRepository;
+use Webkul\Inventory\Repositories\PickupPointRepository;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 
 class IikoManagementController extends Controller
 {
@@ -28,7 +33,10 @@ class IikoManagementController extends Controller
         protected IikoNomenclatureService $nomenclatureService,
         protected IikoOrganizationRepository $organizationRepository,
         protected IikoPromotionService $promotionService,
-        protected IikoPaymentTypeService $paymentTypeService
+        protected IikoPaymentTypeService $paymentTypeService,
+        protected InventorySourceRepository $inventorySourceRepository,
+        protected PickupPointRepository $pickupPointRepository,
+        protected IikoTerminalGroupRepository $terminalGroupRepository
     ) {}
 
     /**
@@ -404,6 +412,143 @@ class IikoManagementController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => trans('iiko-integration::app.management.error') . ': ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Import terminal as inventory source and pickup point.
+     */
+    public function importTerminal(Request $request): JsonResponse
+    {
+        try {
+            $organizationId = $request->input('organization_id');
+            $terminalId = $request->input('terminal_id');
+
+            if (!$organizationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.organization-id-required'),
+                ], 400);
+            }
+
+            if (!$terminalId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.terminal-id-required'),
+                ], 400);
+            }
+
+            // Find terminal in database
+            $terminal = $this->terminalGroupRepository->findWhere([
+                'organization_id' => $organizationId,
+                'iiko_id' => $terminalId,
+            ])->first();
+
+            if (!$terminal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.no-data'),
+                ], 404);
+            }
+
+            // Check if inventory source already exists for this terminal
+            $existingInventorySource = $this->inventorySourceRepository->findWhere([
+                'iiko_terminal_id' => $terminalId,
+            ])->first();
+
+            if ($existingInventorySource) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.import-skipped'),
+                    'skipped' => true,
+                ], 200);
+            }
+
+            // Get terminal data
+            $terminalData = $terminal->terminal_group_data ?? [];
+            $terminalName = $terminal->name ?? 'Terminal ' . $terminalId;
+
+            // Generate unique code for inventory source
+            $code = 'iiko_terminal_' . Str::slug($terminalName, '_') . '_' . substr($terminalId, 0, 8);
+            $code = Str::limit($code, 50, '');
+
+            // Ensure code is unique
+            $counter = 1;
+            $originalCode = $code;
+            while ($this->inventorySourceRepository->findWhere(['code' => $code])->first()) {
+                $code = $originalCode . '_' . $counter;
+                $counter++;
+            }
+
+            // Extract address data from terminal_group_data
+            $address = $terminalData['address'] ?? [];
+            $coordinates = $terminalData['coordinates'] ?? [];
+
+            // Prepare inventory source data
+            // Ensure all required fields have non-empty values
+            $inventorySourceData = [
+                'code' => $code,
+                'name' => $terminalName,
+                'description' => $terminalData['description'] ?? null,
+                'iiko_organization_id' => $organizationId,
+                'iiko_terminal_id' => $terminalId,
+                'contact_name' => !empty($terminalData['contactName']) ? $terminalData['contactName'] : $terminalName,
+                'contact_email' => !empty($terminalData['contactEmail']) ? $terminalData['contactEmail'] : 'warehouse@example.com',
+                'contact_number' => !empty($terminalData['contactPhone']) ? $terminalData['contactPhone'] : '1234567890',
+                'contact_fax' => $terminalData['contactFax'] ?? null,
+                'country' => !empty($address['country']) ? $address['country'] : (!empty($terminalData['country']) ? $terminalData['country'] : 'RU'),
+                'state' => !empty($address['region']) ? $address['region'] : (!empty($address['state']) ? $address['state'] : (!empty($terminalData['state']) ? $terminalData['state'] : '')),
+                'city' => !empty($address['city']) ? $address['city'] : (!empty($terminalData['city']) ? $terminalData['city'] : ''),
+                'street' => !empty($address['street']) ? $address['street'] : (!empty($address['address']) ? $address['address'] : (!empty($terminalData['street']) ? $terminalData['street'] : '')),
+                'postcode' => !empty($address['postcode']) ? $address['postcode'] : (!empty($address['postalCode']) ? $address['postalCode'] : (!empty($terminalData['postcode']) ? $terminalData['postcode'] : '')),
+                'latitude' => $coordinates['latitude'] ?? $terminalData['latitude'] ?? null,
+                'longitude' => $coordinates['longitude'] ?? $terminalData['longitude'] ?? null,
+                'priority' => $terminalData['priority'] ?? 0,
+                'status' => 1,
+            ];
+
+            // Create inventory source
+            Event::dispatch('inventory.inventory_source.create.before');
+
+            $inventorySource = $this->inventorySourceRepository->create($inventorySourceData);
+
+            Event::dispatch('inventory.inventory_source.create.after', $inventorySource);
+
+            // Prepare pickup point data
+            $pickupPointData = [
+                'name' => $terminalName,
+                'inventory_source_id' => $inventorySource->id,
+                'latitude' => $inventorySourceData['latitude'],
+                'longitude' => $inventorySourceData['longitude'],
+                'address' => trim(implode(', ', array_filter([
+                    $inventorySourceData['street'],
+                    $inventorySourceData['city'],
+                    $inventorySourceData['state'],
+                    $inventorySourceData['postcode'],
+                ]))),
+                'working_hours' => $terminalData['workingHours'] ?? $terminalData['working_hours'] ?? null,
+            ];
+
+            // Create pickup point
+            Event::dispatch('inventory.pickup_point.create.before');
+
+            $pickupPoint = $this->pickupPointRepository->create($pickupPointData);
+
+            Event::dispatch('inventory.pickup_point.create.after', $pickupPoint);
+
+            return response()->json([
+                'success' => true,
+                'message' => trans('iiko-integration::app.management.import-success'),
+                'data' => [
+                    'inventory_source_id' => $inventorySource->id,
+                    'pickup_point_id' => $pickupPoint->id,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('iiko-integration::app.management.import-error') . ': ' . $e->getMessage(),
             ], 500);
         }
     }

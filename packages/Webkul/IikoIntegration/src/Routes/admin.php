@@ -18,6 +18,7 @@ Route::prefix('iiko')->group(function () {
         Route::post('management/customer-by-phone', 'getCustomerByPhone')->name('admin.iiko.management.customer-by-phone');
         Route::post('management/promotions', 'getPromotions')->name('admin.iiko.management.promotions');
         Route::post('management/payment-types', 'getPaymentTypes')->name('admin.iiko.management.payment-types');
+        Route::post('management/import-terminal', 'importTerminal')->name('admin.iiko.management.import-terminal');
     });
 
     Route::controller(IikoSettingsController::class)->group(function () {
