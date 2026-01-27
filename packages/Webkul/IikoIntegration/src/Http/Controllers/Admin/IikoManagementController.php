@@ -55,25 +55,27 @@ class IikoManagementController extends Controller
     public function getOrganizations(): JsonResponse
     {
         try {
-            $organizations = $this->organizationService->getOrganizations();
+            // Sync organizations to database
+            $syncSuccess = $this->organizationService->syncOrganizations();
 
-            if ($organizations === null) {
+            if (!$syncSuccess) {
                 return response()->json([
                     'success' => false,
                     'message' => trans('iiko-integration::app.management.error'),
                 ], 400);
             }
 
-            $formattedOrganizations = array_map(function ($org) {
+            // Get synced organizations from database
+            $savedOrganizations = $this->organizationRepository->all()->map(function ($org) {
                 return [
-                    'id'   => $org['id'] ?? '',
-                    'name' => $org['name'] ?? '',
+                    'id'   => $org->iiko_id,
+                    'name' => $org->name,
                 ];
-            }, $organizations);
+            })->toArray();
 
             return response()->json([
                 'success' => true,
-                'data'    => $formattedOrganizations,
+                'data'    => $savedOrganizations,
                 'message' => trans('iiko-integration::app.management.success'),
             ]);
         } catch (\Exception $e) {
