@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AddressController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AuthController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\BonusController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CartController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CheckoutController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\GDPRController;
@@ -201,6 +202,13 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('', 'store');
 
         Route::put('revoke/{id}', 'revoke');
+    });
+
+    /**
+     * Customer bonus routes.
+     */
+    Route::controller(BonusController::class)->prefix('customer/bonuces')->group(function () {
+        Route::get('', 'index');
     });
 
 });
