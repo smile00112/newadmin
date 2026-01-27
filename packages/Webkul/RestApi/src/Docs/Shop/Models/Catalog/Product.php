@@ -37,7 +37,7 @@ class Product
      * @OA\Property(
      *     title="Type",
      *     description="Product type",
-     *     enum={"simple", "configurable", "virtual", "grouped", "downloadable", "bundle", "booking"}
+     *     enum={"simple", "configurable", "virtual", "grouped", "downloadable", "bundle", "booking", "constructor"}
      * )
      *
      * @var string
@@ -503,6 +503,155 @@ class Product
      * @var array
      */
     public $bundle_options;
+
+    /**
+     * @OA\Property(
+     *     title="Constructor Options",
+     *     description="Info: this property will only use with constructor type product.",
+     *     type="array",
+     *     example={{
+     *         "id": 1,
+     *         "visible": true,
+     *         "required": false,
+     *         "combo": false,
+     *         "discount": false,
+     *         "design": "category",
+     *         "discount_type": null,
+     *         "discount_value": 0,
+     *         "min_selected_sum": 0,
+     *         "groups": {{
+     *             "id": 1,
+     *             "name": "Base Ingredients",
+     *             "field_type": "checkbox",
+     *             "checked_type": "multiple",
+     *             "quantity_min": 1,
+     *             "quantity_max": 5,
+     *             "show_title": true,
+     *             "opened_by_default": true,
+     *             "zero_price": false,
+     *             "required": true,
+     *             "hidden": false,
+     *             "sort": 1,
+     *             "double_portions": false,
+     *             "half_portions": false,
+     *             "products": {{
+     *                 "id": 25,
+     *                 "sku": "ingredient-1",
+     *                 "name": "Ingredient Name",
+     *                 "price": 5.50,
+     *                 "formatted_price": "$5.50",
+     *                 "in_stock": true,
+     *                 "sort": 1,
+     *                 "default": true
+     *             }, {
+     *                 "id": 26,
+     *                 "sku": "ingredient-2",
+     *                 "name": "Another Ingredient",
+     *                 "price": 3.00,
+     *                 "formatted_price": "$3.00",
+     *                 "in_stock": true,
+     *                 "sort": 2,
+     *                 "default": false
+     *             }}
+     *         }}
+     *     }},
+     *
+     *     @OA\Items(
+     *
+     *          @OA\Property(
+     *              property="id",
+     *              type="integer",
+     *              description="Constructor ID"
+     *          ),
+     *          @OA\Property(
+     *              property="visible",
+     *              type="boolean",
+     *              description="Is constructor visible"
+     *          ),
+     *          @OA\Property(
+     *              property="required",
+     *              type="boolean",
+     *              description="Is constructor required"
+     *          ),
+     *          @OA\Property(
+     *              property="combo",
+     *              type="boolean",
+     *              description="Is combo constructor"
+     *          ),
+     *          @OA\Property(
+     *              property="discount",
+     *              type="boolean",
+     *              description="Has discount"
+     *          ),
+     *          @OA\Property(
+     *              property="design",
+     *              type="string",
+     *              enum={"line", "category", "table"},
+     *              description="Display design type"
+     *          ),
+     *          @OA\Property(
+     *              property="discount_type",
+     *              type="string",
+     *              nullable=true,
+     *              enum={null, "percent", "fixed"},
+     *              description="Discount type"
+     *          ),
+     *          @OA\Property(
+     *              property="discount_value",
+     *              type="integer",
+     *              description="Discount value"
+     *          ),
+     *          @OA\Property(
+     *              property="min_selected_sum",
+     *              type="integer",
+     *              description="Minimum selected sum"
+     *          ),
+     *          @OA\Property(
+     *              property="groups",
+     *              type="array",
+     *              description="Constructor groups",
+     *
+     *              @OA\Items(
+     *
+     *                  @OA\Property(property="id", type="integer", description="Group ID"),
+     *                  @OA\Property(property="name", type="string", description="Group name"),
+     *                  @OA\Property(property="field_type", type="string", enum={"checkbox", "radio", "list"}, description="Field type"),
+     *                  @OA\Property(property="checked_type", type="string", enum={"once", "multiple"}, description="Checked type"),
+     *                  @OA\Property(property="quantity_min", type="integer", description="Minimum quantity"),
+     *                  @OA\Property(property="quantity_max", type="integer", description="Maximum quantity"),
+     *                  @OA\Property(property="show_title", type="boolean", description="Show title"),
+     *                  @OA\Property(property="opened_by_default", type="boolean", description="Opened by default"),
+     *                  @OA\Property(property="zero_price", type="boolean", description="Zero price"),
+     *                  @OA\Property(property="required", type="boolean", description="Is required"),
+     *                  @OA\Property(property="hidden", type="boolean", description="Is hidden"),
+     *                  @OA\Property(property="sort", type="integer", description="Sort order"),
+     *                  @OA\Property(property="double_portions", type="boolean", description="Double portions available"),
+     *                  @OA\Property(property="half_portions", type="boolean", description="Half portions available"),
+     *                  @OA\Property(
+     *                      property="products",
+     *                      type="array",
+     *                      description="Products in group",
+     *
+     *                      @OA\Items(
+     *
+     *                          @OA\Property(property="id", type="integer", description="Product ID"),
+     *                          @OA\Property(property="sku", type="string", description="Product SKU"),
+     *                          @OA\Property(property="name", type="string", description="Product name"),
+     *                          @OA\Property(property="price", type="float", description="Product price"),
+     *                          @OA\Property(property="formatted_price", type="string", description="Formatted price"),
+     *                          @OA\Property(property="in_stock", type="boolean", description="In stock"),
+     *                          @OA\Property(property="sort", type="integer", description="Sort order"),
+     *                          @OA\Property(property="default", type="boolean", description="Is default product")
+     *                      )
+     *                  )
+     *              )
+     *          )
+     *     )
+     * )
+     *
+     * @var array
+     */
+    public $constructor_options;
 
     /**
      * @OA\Property(
