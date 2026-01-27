@@ -348,7 +348,7 @@ class ProductResource extends JsonResource
                 'discount_type'    => $constructor->discount_type,
                 'discount_value'   => $constructor->discount_value,
                 'min_selected_sum' => $constructor->min_selected_sum,
-                'groups'           => $constructor->groups->map(function ($group) use ($product) {
+                'groups'           => $constructor->groups->map(function ($group) {
                     return [
                         'id'                          => $group->id,
                         'name'                        => $group->name,

@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://dolinger_new_admin.test",
+            "url": "http://dolinger_new_admin.test",
             "description": "Rest API"
         }
     ],
@@ -2905,6 +2905,13 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "cross_sell": {
+                                            "description": "Array of cross-sell products",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Product"
+                                            }
                                         }
                                     },
                                     "type": "object"
@@ -6437,6 +6444,64 @@
                                                         },
                                                         "type": "object"
                                                     }
+                                                },
+                                                "cart_cross_sell_products": {
+                                                    "description": "Cart cross-sell products from configuration (only if separate cross-sell list is enabled)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "description": "Product resource with full product details",
+                                                        "properties": {
+                                                            "id": {
+                                                                "description": "Product ID",
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "sku": {
+                                                                "description": "Product SKU",
+                                                                "type": "string",
+                                                                "example": "product-sku"
+                                                            },
+                                                            "name": {
+                                                                "description": "Product name",
+                                                                "type": "string",
+                                                                "example": "Product Name"
+                                                            },
+                                                            "price": {
+                                                                "description": "Product price",
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 99.99
+                                                            },
+                                                            "formatted_price": {
+                                                                "description": "Formatted price",
+                                                                "type": "string",
+                                                                "example": "$99.99"
+                                                            },
+                                                            "images": {
+                                                                "description": "Product images",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "in_stock": {
+                                                                "description": "Product availability",
+                                                                "type": "boolean",
+                                                                "example": true
+                                                            },
+                                                            "is_saleable": {
+                                                                "description": "Whether product can be sold",
+                                                                "type": "boolean",
+                                                                "example": true
+                                                            },
+                                                            "url_key": {
+                                                                "description": "Product URL key",
+                                                                "type": "string",
+                                                                "example": "product-url-key"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 }
                                             },
                                             "type": "object"
@@ -7035,7 +7100,8 @@
                             "grouped",
                             "downloadable",
                             "bundle",
-                            "booking"
+                            "booking",
+                            "constructor"
                         ]
                     },
                     "name": {
@@ -7456,6 +7522,232 @@
                             }
                         }
                     },
+                    "constructor_options": {
+                        "title": "Constructor Options",
+                        "description": "Info: this property will only use with constructor type product.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Constructor ID",
+                                    "type": "integer"
+                                },
+                                "visible": {
+                                    "description": "Is constructor visible",
+                                    "type": "boolean"
+                                },
+                                "required": {
+                                    "description": "Is constructor required",
+                                    "type": "boolean"
+                                },
+                                "combo": {
+                                    "description": "Is combo constructor",
+                                    "type": "boolean"
+                                },
+                                "discount": {
+                                    "description": "Has discount",
+                                    "type": "boolean"
+                                },
+                                "design": {
+                                    "description": "Display design type",
+                                    "type": "string",
+                                    "enum": [
+                                        "line",
+                                        "category",
+                                        "table"
+                                    ]
+                                },
+                                "discount_type": {
+                                    "description": "Discount type",
+                                    "type": "string",
+                                    "enum": [
+                                        null,
+                                        "percent",
+                                        "fixed"
+                                    ],
+                                    "nullable": true
+                                },
+                                "discount_value": {
+                                    "description": "Discount value",
+                                    "type": "integer"
+                                },
+                                "min_selected_sum": {
+                                    "description": "Minimum selected sum",
+                                    "type": "integer"
+                                },
+                                "groups": {
+                                    "description": "Constructor groups",
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "description": "Group ID",
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "description": "Group name",
+                                                "type": "string"
+                                            },
+                                            "field_type": {
+                                                "description": "Field type",
+                                                "type": "string",
+                                                "enum": [
+                                                    "checkbox",
+                                                    "radio",
+                                                    "list"
+                                                ]
+                                            },
+                                            "checked_type": {
+                                                "description": "Checked type",
+                                                "type": "string",
+                                                "enum": [
+                                                    "once",
+                                                    "multiple"
+                                                ]
+                                            },
+                                            "quantity_min": {
+                                                "description": "Minimum quantity",
+                                                "type": "integer"
+                                            },
+                                            "quantity_max": {
+                                                "description": "Maximum quantity",
+                                                "type": "integer"
+                                            },
+                                            "show_title": {
+                                                "description": "Show title",
+                                                "type": "boolean"
+                                            },
+                                            "opened_by_default": {
+                                                "description": "Opened by default",
+                                                "type": "boolean"
+                                            },
+                                            "zero_price": {
+                                                "description": "Zero price",
+                                                "type": "boolean"
+                                            },
+                                            "required": {
+                                                "description": "Is required",
+                                                "type": "boolean"
+                                            },
+                                            "hidden": {
+                                                "description": "Is hidden",
+                                                "type": "boolean"
+                                            },
+                                            "sort": {
+                                                "description": "Sort order",
+                                                "type": "integer"
+                                            },
+                                            "double_portions": {
+                                                "description": "Double portions available",
+                                                "type": "boolean"
+                                            },
+                                            "half_portions": {
+                                                "description": "Half portions available",
+                                                "type": "boolean"
+                                            },
+                                            "products": {
+                                                "description": "Products in group",
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "Product ID",
+                                                            "type": "integer"
+                                                        },
+                                                        "sku": {
+                                                            "description": "Product SKU",
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "description": "Product name",
+                                                            "type": "string"
+                                                        },
+                                                        "price": {
+                                                            "description": "Product price",
+                                                            "type": "number",
+                                                            "format": "float"
+                                                        },
+                                                        "formatted_price": {
+                                                            "description": "Formatted price",
+                                                            "type": "string"
+                                                        },
+                                                        "in_stock": {
+                                                            "description": "In stock",
+                                                            "type": "boolean"
+                                                        },
+                                                        "sort": {
+                                                            "description": "Sort order",
+                                                            "type": "integer"
+                                                        },
+                                                        "default": {
+                                                            "description": "Is default product",
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "example": [
+                            {
+                                "id": 1,
+                                "visible": true,
+                                "required": false,
+                                "combo": false,
+                                "discount": false,
+                                "design": "category",
+                                "discount_type": null,
+                                "discount_value": 0,
+                                "min_selected_sum": 0,
+                                "groups": [
+                                    {
+                                        "id": 1,
+                                        "name": "Base Ingredients",
+                                        "field_type": "checkbox",
+                                        "checked_type": "multiple",
+                                        "quantity_min": 1,
+                                        "quantity_max": 5,
+                                        "show_title": true,
+                                        "opened_by_default": true,
+                                        "zero_price": false,
+                                        "required": true,
+                                        "hidden": false,
+                                        "sort": 1,
+                                        "double_portions": false,
+                                        "half_portions": false,
+                                        "products": [
+                                            {
+                                                "id": 25,
+                                                "sku": "ingredient-1",
+                                                "name": "Ingredient Name",
+                                                "price": 5.5,
+                                                "formatted_price": "$5.50",
+                                                "in_stock": true,
+                                                "sort": 1,
+                                                "default": true
+                                            },
+                                            {
+                                                "id": 26,
+                                                "sku": "ingredient-2",
+                                                "name": "Another Ingredient",
+                                                "price": 3,
+                                                "formatted_price": "$3.00",
+                                                "in_stock": true,
+                                                "sort": 2,
+                                                "default": false
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
                     "booking": {
                         "$ref": "#/components/schemas/ProductBooking"
                     },
@@ -7629,15 +7921,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
