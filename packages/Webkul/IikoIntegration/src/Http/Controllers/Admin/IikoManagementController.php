@@ -12,6 +12,8 @@ use Webkul\IikoIntegration\Services\IikoMenuService;
 use Webkul\IikoIntegration\Services\IikoNomenclatureService;
 use Webkul\IikoIntegration\Services\IikoOrganizationService;
 use Webkul\IikoIntegration\Services\IikoTerminalGroupService;
+use Webkul\IikoIntegration\Services\IikoPromotionService;
+use Webkul\IikoIntegration\Services\IikoPaymentTypeService;
 
 class IikoManagementController extends Controller
 {
@@ -24,7 +26,9 @@ class IikoManagementController extends Controller
         protected IikoMenuService $menuService,
         protected IikoTerminalGroupService $terminalGroupService,
         protected IikoNomenclatureService $nomenclatureService,
-        protected IikoOrganizationRepository $organizationRepository
+        protected IikoOrganizationRepository $organizationRepository,
+        protected IikoPromotionService $promotionService,
+        protected IikoPaymentTypeService $paymentTypeService
     ) {}
 
     /**
@@ -234,6 +238,165 @@ class IikoManagementController extends Controller
                 'success' => true,
                 'data'    => $nomenclature,
                 'message' => trans('iiko-integration::app.management.success'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('iiko-integration::app.management.error') . ': ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get customer by phone number.
+     */
+    public function getCustomerByPhone(Request $request): JsonResponse
+    {
+        try {
+            $phone = $request->input('phone');
+            $organizationId = $request->input('organization_id');
+
+            if (!$phone) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.phone-required'),
+                ], 400);
+            }
+
+            if (!$organizationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.organization-id-required'),
+                ], 400);
+            }
+
+            $customer = $this->apiService->getCustomerByPhone($phone, $organizationId);
+
+            if ($customer === null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.no-data'),
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data'    => $customer,
+                'message' => trans('iiko-integration::app.management.success'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('iiko-integration::app.management.error') . ': ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get promotions for organization.
+     */
+    public function getPromotions(Request $request): JsonResponse
+    {
+        try {
+            $organizationId = $request->input('organization_id');
+            $forceRefresh = $request->input('force_refresh', false);
+
+            if (!$organizationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.organization-id-required'),
+                ], 400);
+            }
+
+            // Check cached promotions first (unless force refresh)
+            if (!$forceRefresh) {
+                $cachedPromotions = $this->promotionService->getCachedPromotions($organizationId);
+
+                if ($cachedPromotions !== null && count($cachedPromotions) > 0) {
+                    return response()->json([
+                        'success' => true,
+                        'data'    => $cachedPromotions,
+                        'message' => trans('iiko-integration::app.management.success'),
+                        'cached'  => true,
+                    ]);
+                }
+            }
+
+            // Sync from API if no cached data or force refresh
+            $syncSuccess = $this->promotionService->syncPromotions($organizationId);
+
+            if (!$syncSuccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.no-data'),
+                ], 400);
+            }
+
+            // Get synced promotions
+            $syncedPromotions = $this->promotionService->getCachedPromotions($organizationId);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $syncedPromotions ?? [],
+                'message' => trans('iiko-integration::app.management.success'),
+                'cached'  => false,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('iiko-integration::app.management.error') . ': ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get payment types for organization.
+     */
+    public function getPaymentTypes(Request $request): JsonResponse
+    {
+        try {
+            $organizationId = $request->input('organization_id');
+            $forceRefresh = $request->input('force_refresh', false);
+
+            if (!$organizationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.organization-id-required'),
+                ], 400);
+            }
+
+            // Check cached payment types first (unless force refresh)
+            if (!$forceRefresh) {
+                $cachedPaymentTypes = $this->paymentTypeService->getCachedPaymentTypes($organizationId);
+
+                if ($cachedPaymentTypes !== null && count($cachedPaymentTypes) > 0) {
+                    return response()->json([
+                        'success' => true,
+                        'data'    => $cachedPaymentTypes,
+                        'message' => trans('iiko-integration::app.management.success'),
+                        'cached'  => true,
+                    ]);
+                }
+            }
+
+            // Sync from API if no cached data or force refresh
+            $syncSuccess = $this->paymentTypeService->syncPaymentTypes($organizationId);
+
+            if (!$syncSuccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.no-data'),
+                ], 400);
+            }
+
+            // Get synced payment types
+            $syncedPaymentTypes = $this->paymentTypeService->getCachedPaymentTypes($organizationId);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $syncedPaymentTypes ?? [],
+                'message' => trans('iiko-integration::app.management.success'),
+                'cached'  => false,
             ]);
         } catch (\Exception $e) {
             return response()->json([

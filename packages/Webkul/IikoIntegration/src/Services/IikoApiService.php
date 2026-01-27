@@ -330,4 +330,25 @@ class IikoApiService
 
         return $this->makeRequest('/api/1/nomenclature', 'POST', $data, $channelCode);
     }
+
+    /**
+     * Get customer by phone number.
+     */
+    public function getCustomerByPhone(string $phone, string $organizationId, ?string $channelCode = null): ?array
+    {
+        return $this->makeRequest('/api/1/customers/by_phone', 'POST', [
+            'phone' => $phone,
+            'organizationId' => $organizationId,
+        ], $channelCode);
+    }
+
+    /**
+     * Get discounts/promotions for organization.
+     */
+    public function getDiscounts(string $organizationId, ?string $channelCode = null): ?array
+    {
+        return $this->makeRequest('/api/1/discounts', 'POST', [
+            'organizationId' => $organizationId,
+        ], $channelCode);
+    }
 }

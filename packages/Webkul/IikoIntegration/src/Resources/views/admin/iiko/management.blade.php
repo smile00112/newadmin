@@ -109,6 +109,59 @@
             </button>
         </div>
 
+        <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+                @lang('iiko-integration::app.management.get-customer-by-phone')
+            </h3>
+            <div class="flex gap-2 mb-4">
+                <input
+                    type="text"
+                    id="customer-phone-input"
+                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white bg-white"
+                    placeholder="@lang('iiko-integration::app.management.phone-placeholder')"
+                />
+                <button
+                    type="button"
+                    id="btn-get-customer-by-phone"
+                    class="primary-button"
+                    onclick="getCustomerByPhone()"
+                    {{ !empty($savedOrganizations) ? '' : 'disabled' }}
+                >
+                    @lang('iiko-integration::app.management.get-customer-by-phone')
+                </button>
+            </div>
+        </div>
+
+        <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+                @lang('iiko-integration::app.management.get-promotions')
+            </h3>
+            <button
+                type="button"
+                id="btn-get-promotions"
+                class="primary-button"
+                onclick="getPromotions(true)"
+                {{ !empty($savedOrganizations) ? '' : 'disabled' }}
+            >
+                @lang('iiko-integration::app.management.get-promotions')
+            </button>
+        </div>
+
+        <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+                @lang('iiko-integration::app.management.get-payment-types')
+            </h3>
+            <button
+                type="button"
+                id="btn-get-payment-types"
+                class="primary-button"
+                onclick="getPaymentTypes(true)"
+                {{ !empty($savedOrganizations) ? '' : 'disabled' }}
+            >
+                @lang('iiko-integration::app.management.get-payment-types')
+            </button>
+        </div>
+
         <div id="message-container" class="hidden"></div>
     </div>
 
@@ -148,6 +201,9 @@
                     if (select && select.options.length > 1) {
                         document.getElementById('organizations-select-container').classList.remove('hidden');
                         document.getElementById('btn-get-terminals').disabled = false;
+                        document.getElementById('btn-get-customer-by-phone').disabled = false;
+                        document.getElementById('btn-get-promotions').disabled = false;
+                        document.getElementById('btn-get-payment-types').disabled = false;
                     }
                 @endif
             });
@@ -265,10 +321,16 @@
                 
                 if (selectedOrganizationId) {
                     document.getElementById('btn-get-terminals').disabled = false;
+                    document.getElementById('btn-get-customer-by-phone').disabled = false;
+                    document.getElementById('btn-get-promotions').disabled = false;
+                    document.getElementById('btn-get-payment-types').disabled = false;
                     // Automatically load saved terminals for selected organization
                     loadTerminals(false);
                 } else {
                     document.getElementById('btn-get-terminals').disabled = true;
+                    document.getElementById('btn-get-customer-by-phone').disabled = true;
+                    document.getElementById('btn-get-promotions').disabled = true;
+                    document.getElementById('btn-get-payment-types').disabled = true;
                     document.getElementById('terminals-select-container').classList.add('hidden');
                     document.getElementById('btn-get-menu').disabled = true;
                     document.getElementById('btn-get-nomenclature').disabled = true;
@@ -516,6 +578,155 @@
                     showMessage("@lang('iiko-integration::app.management.error')", 'error');
                 } finally {
                     restoreButtonText('btn-get-nomenclature', originalText);
+                }
+            }
+
+            async function getCustomerByPhone() {
+                if (!selectedOrganizationId) {
+                    showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
+                    return;
+                }
+
+                const phoneInput = document.getElementById('customer-phone-input');
+                const phone = phoneInput.value.trim();
+
+                if (!phone) {
+                    showMessage("@lang('iiko-integration::app.management.phone-required')", 'error');
+                    return;
+                }
+
+                const button = document.getElementById('btn-get-customer-by-phone');
+                const originalText = button.innerHTML;
+                setButtonLoading('btn-get-customer-by-phone', true);
+
+                const requestData = {
+                    endpoint: "{{ route('admin.iiko.management.customer-by-phone') }}",
+                    method: 'POST',
+                    body: {
+                        phone: phone,
+                        organization_id: selectedOrganizationId
+                    }
+                };
+
+                try {
+                    const response = await fetch(requestData.endpoint, {
+                        method: requestData.method,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData.body),
+                    });
+
+                    const data = await response.json();
+                    logRequest('Get Customer By Phone', requestData, data, response.ok ? null : new Error(`HTTP ${response.status}`));
+
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                    } else {
+                        showMessage(data.message || "@lang('iiko-integration::app.management.error')", 'error');
+                    }
+                } catch (error) {
+                    logRequest('Get Customer By Phone', requestData, null, error);
+                    showMessage("@lang('iiko-integration::app.management.error')", 'error');
+                } finally {
+                    restoreButtonText('btn-get-customer-by-phone', originalText);
+                }
+            }
+
+            async function getPromotions(forceRefresh = false) {
+                if (!selectedOrganizationId) {
+                    showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
+                    return;
+                }
+
+                const button = document.getElementById('btn-get-promotions');
+                const originalText = button.innerHTML;
+                setButtonLoading('btn-get-promotions', true);
+
+                const requestData = {
+                    endpoint: "{{ route('admin.iiko.management.promotions') }}",
+                    method: 'POST',
+                    body: {
+                        organization_id: selectedOrganizationId,
+                        force_refresh: forceRefresh
+                    }
+                };
+
+                try {
+                    const response = await fetch(requestData.endpoint, {
+                        method: requestData.method,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData.body),
+                    });
+
+                    const data = await response.json();
+                    logRequest('Get Promotions', requestData, data, response.ok ? null : new Error(`HTTP ${response.status}`));
+
+                    if (data.success) {
+                        const message = data.cached 
+                            ? "@lang('iiko-integration::app.management.success') (cached)"
+                            : data.message || "@lang('iiko-integration::app.management.success')";
+                        showMessage(message, 'success');
+                    } else {
+                        showMessage(data.message || "@lang('iiko-integration::app.management.error')", 'error');
+                    }
+                } catch (error) {
+                    logRequest('Get Promotions', requestData, null, error);
+                    showMessage("@lang('iiko-integration::app.management.error')", 'error');
+                } finally {
+                    restoreButtonText('btn-get-promotions', originalText);
+                }
+            }
+
+            async function getPaymentTypes(forceRefresh = false) {
+                if (!selectedOrganizationId) {
+                    showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
+                    return;
+                }
+
+                const button = document.getElementById('btn-get-payment-types');
+                const originalText = button.innerHTML;
+                setButtonLoading('btn-get-payment-types', true);
+
+                const requestData = {
+                    endpoint: "{{ route('admin.iiko.management.payment-types') }}",
+                    method: 'POST',
+                    body: {
+                        organization_id: selectedOrganizationId,
+                        force_refresh: forceRefresh
+                    }
+                };
+
+                try {
+                    const response = await fetch(requestData.endpoint, {
+                        method: requestData.method,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData.body),
+                    });
+
+                    const data = await response.json();
+                    logRequest('Get Payment Types', requestData, data, response.ok ? null : new Error(`HTTP ${response.status}`));
+
+                    if (data.success) {
+                        const message = data.cached 
+                            ? "@lang('iiko-integration::app.management.success') (cached)"
+                            : data.message || "@lang('iiko-integration::app.management.success')";
+                        showMessage(message, 'success');
+                    } else {
+                        showMessage(data.message || "@lang('iiko-integration::app.management.error')", 'error');
+                    }
+                } catch (error) {
+                    logRequest('Get Payment Types', requestData, null, error);
+                    showMessage("@lang('iiko-integration::app.management.error')", 'error');
+                } finally {
+                    restoreButtonText('btn-get-payment-types', originalText);
                 }
             }
         </script>
