@@ -3361,6 +3361,38 @@ return [
             'update-success'    => 'Inventory Sources Updated Successfully',
         ],
 
+        'pickup-points' => [
+            'title' => 'Pickup Points',
+            'add-btn' => 'Add Pickup Point',
+            'edit-btn' => 'Edit',
+            'delete-btn' => 'Delete',
+            'cancel-btn' => 'Cancel',
+            'save-btn' => 'Save',
+            'update-btn' => 'Update',
+            'name' => 'Name',
+            'latitude' => 'Latitude',
+            'longitude' => 'Longitude',
+            'address' => 'Address',
+            'working-hours' => 'Working Hours',
+            'map-icon' => 'Map Icon',
+            'create' => [
+                'title' => 'Create Pickup Point',
+            ],
+            'edit' => [
+                'title' => 'Edit Pickup Point',
+            ],
+            'empty-state' => [
+                'title' => 'No Pickup Points',
+                'description' => 'Add pickup points for this inventory source',
+            ],
+            'create-success' => 'Pickup Point Created Successfully',
+            'update-success' => 'Pickup Point Updated Successfully',
+            'delete-success' => 'Pickup Point Deleted Successfully',
+            'delete-failed' => 'Failed to Delete Pickup Point',
+            'delete-confirm' => 'Are you sure you want to delete this pickup point?',
+            'save-failed' => 'Failed to Save Pickup Point',
+        ],
+
         'taxes' => [
             'categories' => [
                 'index' => [

@@ -7,6 +7,7 @@ use Webkul\Admin\Http\Controllers\Settings\DataTransfer\ImportController;
 use Webkul\Admin\Http\Controllers\Settings\ExchangeRateController;
 use Webkul\Admin\Http\Controllers\Settings\InventorySourceController;
 use Webkul\Admin\Http\Controllers\Settings\LocaleController;
+use Webkul\Admin\Http\Controllers\Settings\PickupPointController;
 use Webkul\Admin\Http\Controllers\Settings\RoleController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxCategoryController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxRateController;
@@ -99,6 +100,19 @@ Route::prefix('settings')->group(function () {
         Route::put('edit/{id}', 'update')->name('admin.settings.inventory_sources.update');
 
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.inventory_sources.delete');
+    });
+
+    /**
+     * Pickup points routes.
+     */
+    Route::controller(PickupPointController::class)->prefix('pickup-points')->group(function () {
+        Route::get('inventory-source/{id}', 'index')->name('admin.settings.pickup_points.index');
+
+        Route::post('', 'store')->name('admin.settings.pickup_points.store');
+
+        Route::put('{id}', 'update')->name('admin.settings.pickup_points.update');
+
+        Route::delete('{id}', 'destroy')->name('admin.settings.pickup_points.delete');
     });
 
     Route::prefix('taxes')->group(function () {

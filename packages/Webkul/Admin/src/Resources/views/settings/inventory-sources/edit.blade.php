@@ -5,7 +5,7 @@
 
     {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.before', ['inventorySource' => $inventorySource]) !!}
 
-    <x-admin::form 
+    <x-admin::form
         :action="route('admin.settings.inventory_sources.update', $inventorySource->id)"
         enctype="multipart/form-data"
         method="PUT"
@@ -26,10 +26,10 @@
                 >
                     @lang('admin::app.settings.inventory-sources.edit.back-btn')
                 </a>
-                    
+
                 <!-- Save Inventory -->
                 <div class="flex items-center gap-x-2.5">
-                    <button 
+                    <button
                         type="submit"
                         class="primary-button"
                     >
@@ -41,7 +41,7 @@
 
         <!-- Full Panel -->
         <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
-    
+
             <!-- Left Section -->
             <div class="flex flex-1 flex-col gap-2 max-xl:flex-auto">
 
@@ -222,7 +222,7 @@
                             </p>
                         </div>
                     </x-slot>
-                
+
                     <x-slot:content>
                         <!-- Latitude -->
                         <x-admin::form.control-group>
@@ -276,7 +276,7 @@
                             />
 
                             <x-admin::form.control-group.error control-name="priority" />
-                            
+
                         </x-admin::form.control-group>
 
                         <!-- Status -->
@@ -309,6 +309,13 @@
 
                 {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.card.accordion.settings.after', ['inventorySource' => $inventorySource]) !!}
 
+                {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.card.accordion.pickup_points.before', ['inventorySource' => $inventorySource]) !!}
+
+                <!-- Pickup Points -->
+               <v-pickup-points :inventory-source-id="{{ $inventorySource->id }}"></v-pickup-points>{{-- --}}
+
+                {!! view_render_event('bagisto.admin.settings.inventory_sources.edit.card.accordion.pickup_points.after', ['inventorySource' => $inventorySource]) !!}
+
             </div>
         </div>
 
@@ -334,7 +341,7 @@
                     <x-admin::form.control-group.label class="required">
                         @lang('admin::app.settings.inventory-sources.edit.country')
                     </x-admin::form.control-group.label>
-    
+
                     <x-admin::form.control-group.control
                         type="select"
                         id="country"
@@ -350,7 +357,7 @@
                             </option>
                         @endforeach
                     </x-admin::form.control-group.control>
-    
+
                     <x-admin::form.control-group.error control-name="country" />
                 </x-admin::form.control-group>
 
@@ -359,7 +366,7 @@
                     <x-admin::form.control-group.label class="required">
                         @lang('admin::app.settings.inventory-sources.edit.state')
                     </x-admin::form.control-group.label>
-    
+
                     <template v-if="haveStates()">
                         <x-admin::form.control-group.control
                             type="select"
@@ -370,7 +377,7 @@
                             :label="trans('admin::app.settings.inventory-sources.edit.state')"
                             :placeholder="trans('admin::app.settings.inventory-sources.edit.state')"
                         >
-                            <option 
+                            <option
                                 v-for='(state, index) in countryStates[country]'
                                 :value="state.code"
                             >
@@ -378,7 +385,7 @@
                             </option>
                         </x-admin::form.control-group.control>
                     </template>
-    
+
                     <template v-else>
                         <x-admin::form.control-group.control
                             type="text"
@@ -478,6 +485,498 @@
                     },
                 }
             })
+        </script>
+
+        <script
+            type="text/x-template"
+            id="v-pickup-points-template"
+        >
+            <div>
+                <!-- Pickup Points Accordion -->
+                <x-admin::accordion>
+                    <x-slot:header>
+                        <div class="flex items-center justify-between">
+                            <p class="p-2.5 text-base font-semibold text-gray-800 dark:text-white">
+                                @lang('admin::app.settings.pickup-points.title')
+                            </p>
+                        </div>
+                    </x-slot>
+
+                    <x-slot:content>
+                        <!-- Add Button -->
+                        <div class="mb-4">
+                            <button
+                                type="button"
+                                class="primary-button w-full"
+                                @click="openCreateModal"
+                            >
+                                @lang('admin::app.settings.pickup-points.add-btn')
+                            </button>
+                        </div>
+
+                        <!-- Pickup Points List -->
+                        <div class="space-y-3">
+                            <div
+                                v-if="pickupPoints.length === 0"
+                                class="px-6 py-12 text-center"
+                            >
+                                <div class="flex flex-col items-center">
+                                    <i class="icon-location mx-auto h-12 w-12 text-gray-400"></i>
+                                    <p class="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                                        @lang('admin::app.settings.pickup-points.empty-state.title')
+                                    </p>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                        @lang('admin::app.settings.pickup-points.empty-state.description')
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                v-for="point in pickupPoints"
+                                :key="point.id"
+                                class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
+                            >
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                                            @{{ point.name }}
+                                        </p>
+                                        <p
+                                            v-if="point.address"
+                                            class="text-xs text-gray-600 dark:text-gray-400 mb-1"
+                                        >
+                                            @{{ point.address }}
+                                        </p>
+                                        <p
+                                            v-if="point.working_hours"
+                                            class="text-xs text-gray-600 dark:text-gray-400"
+                                        >
+                                            @{{ point.working_hours }}
+                                        </p>
+                                        <div
+                                            v-if="point.latitude && point.longitude"
+                                            class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+                                        >
+                                            @{{ point.latitude }}, @{{ point.longitude }}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 ml-4">
+                                        <button
+                                            type="button"
+                                            class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800"
+                                            @click="editPoint(point)"
+                                            :title="translations.editBtn"
+                                        >
+                                            <i class="icon-edit"></i>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800"
+                                            @click="deletePoint(point.id)"
+                                            :title="translations.deleteBtn"
+                                        >
+                                            <i class="icon-delete"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </x-slot>
+                </x-admin::accordion>
+
+                <!-- Create/Edit Modal -->
+                <x-admin::form
+                    v-slot="{ meta, errors, handleSubmit }"
+                    as="div"
+                >
+                    <form @submit="handleSubmit($event, savePoint)">
+                        <x-admin::modal ref="pickupPointModal">
+                            <x-slot:header>
+                                <p class="text-lg font-medium text-gray-900 dark:text-white">
+                                    <span v-if="isEditing">
+                                        @lang('admin::app.settings.pickup-points.edit.title')
+                                    </span>
+                                    <span v-else>
+                                        @lang('admin::app.settings.pickup-points.create.title')
+                                    </span>
+                                </p>
+                            </x-slot>
+
+                            <x-slot:content>
+                                <div class="space-y-4">
+                                    <!-- Name -->
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label class="required">
+                                            @lang('admin::app.settings.pickup-points.name')
+                                        </x-admin::form.control-group.label>
+
+                                        <x-admin::form.control-group.control
+                                            type="text"
+                                            id="name"
+                                            name="name"
+                                            rules="required"
+                                            v-model="formData.name"
+                                            :label="trans('admin::app.settings.pickup-points.name')"
+                                            :placeholder="trans('admin::app.settings.pickup-points.name')"
+                                        />
+
+                                        <x-admin::form.control-group.error control-name="name" />
+                                    </x-admin::form.control-group>
+
+                                    <!-- Latitude -->
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            @lang('admin::app.settings.pickup-points.latitude')
+                                        </x-admin::form.control-group.label>
+
+                                        <x-admin::form.control-group.control
+                                            type="number"
+                                            id="latitude"
+                                            name="latitude"
+                                            step="any"
+                                            v-model="formData.latitude"
+                                            :label="trans('admin::app.settings.pickup-points.latitude')"
+                                            :placeholder="trans('admin::app.settings.pickup-points.latitude')"
+                                        />
+
+                                        <x-admin::form.control-group.error control-name="latitude" />
+                                    </x-admin::form.control-group>
+
+                                    <!-- Longitude -->
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            @lang('admin::app.settings.pickup-points.longitude')
+                                        </x-admin::form.control-group.label>
+
+                                        <x-admin::form.control-group.control
+                                            type="number"
+                                            id="longitude"
+                                            name="longitude"
+                                            step="any"
+                                            v-model="formData.longitude"
+                                            :label="trans('admin::app.settings.pickup-points.longitude')"
+                                            :placeholder="trans('admin::app.settings.pickup-points.longitude')"
+                                        />
+
+                                        <x-admin::form.control-group.error control-name="longitude" />
+                                    </x-admin::form.control-group>
+
+                                    <!-- Address -->
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            @lang('admin::app.settings.pickup-points.address')
+                                        </x-admin::form.control-group.label>
+
+                                        <x-admin::form.control-group.control
+                                            type="text"
+                                            id="address"
+                                            name="address"
+                                            rows="3"
+                                            v-model="formData.address"
+                                            :label="trans('admin::app.settings.pickup-points.address')"
+                                            :placeholder="trans('admin::app.settings.pickup-points.address')"
+                                        />
+
+                                        <x-admin::form.control-group.error control-name="address" />
+                                    </x-admin::form.control-group>
+
+                                    <!-- Working Hours -->
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            @lang('admin::app.settings.pickup-points.working-hours')
+                                        </x-admin::form.control-group.label>
+
+                                        <x-admin::form.control-group.control
+                                            type="textarea"
+                                            id="working_hours"
+                                            name="working_hours"
+                                            rows="3"
+                                            v-model="formData.working_hours"
+                                            :label="trans('admin::app.settings.pickup-points.working-hours')"
+                                            :placeholder="trans('admin::app.settings.pickup-points.working-hours')"
+                                        />
+
+                                        <x-admin::form.control-group.error control-name="working_hours" />
+                                    </x-admin::form.control-group>
+
+                                    <!-- Map Icon -->
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            @lang('admin::app.settings.pickup-points.map-icon')
+                                        </x-admin::form.control-group.label>
+
+                                        <div v-if="formData.map_icon_url" class="mb-2">
+                                            <img
+                                                :src="formData.map_icon_url"
+                                                class="h-[60px] w-[60px] overflow-hidden rounded border object-cover hover:border-gray-400 dark:border-gray-800"
+                                                alt="Map Icon"
+                                            />
+                                        </div>
+
+                                        <v-field
+                                            type="file"
+                                            id="map_icon"
+                                            name="map_icon"
+                                            accept="image/*"
+                                            label="{{ trans('admin::app.settings.pickup-points.map-icon') }}"
+                                            v-slot="{ handleChange, handleBlur }"
+                                        >
+                                            <input
+                                                type="file"
+                                                id="map_icon"
+                                                name="map_icon"
+                                                accept="image/*"
+                                                class="w-full rounded-md border px-3 py-2.5 text-sm text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:file:bg-gray-800 dark:file:dark:text-white dark:hover:border-gray-400 dark:focus:border-gray-400"
+                                                @change="handleFileChange($event); handleChange($event)"
+                                                @blur="handleBlur"
+                                            />
+                                        </v-field>
+
+                                        <x-admin::form.control-group.error control-name="map_icon" />
+                                    </x-admin::form.control-group>
+
+                                    <input
+                                        type="hidden"
+                                        name="inventory_source_id"
+                                        v-model="inventorySourceId"
+                                    />
+                                </div>
+                            </x-slot>
+
+                            <x-slot:footer>
+                                <div class="flex justify-end gap-x-2 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+                                    <button
+                                        type="button"
+                                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                                        @click="$refs.pickupPointModal.toggle()"
+                                    >
+                                        @lang('admin::app.settings.pickup-points.cancel-btn')
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        :disabled="isLoading"
+                                    >
+                                        <span v-if="!isLoading">@{{ submitButtonText }}</span>
+                                        <span v-else>
+                                            <svg
+                                                class="inline-block h-4 w-4 animate-spin"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    class="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    stroke-width="4"
+                                                ></circle>
+                                                <path
+                                                    class="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </div>
+                            </x-slot>
+                        </x-admin::modal>
+                    </form>
+                </x-admin::form>
+            </div>
+        </script>
+
+        <script type="module">
+            app.component('v-pickup-points', {
+                template: '#v-pickup-points-template',
+
+                props: {
+                    inventorySourceId: {
+                        type: Number,
+                        required: true,
+                    },
+                },
+
+                data() {
+                    return {
+                        pickupPoints: [],
+                        isLoading: false,
+                        isEditing: false,
+                        formData: {
+                            id: null,
+                            name: '',
+                            latitude: null,
+                            longitude: null,
+                            address: '',
+                            working_hours: '',
+                            map_icon: null,
+                            map_icon_url: null,
+                        },
+                        translations: {
+                            saveBtn: '{{ trans('admin::app.settings.pickup-points.save-btn') }}',
+                            updateBtn: '{{ trans('admin::app.settings.pickup-points.update-btn') }}',
+                            editBtn: '{{ trans('admin::app.settings.pickup-points.edit-btn') }}',
+                            deleteBtn: '{{ trans('admin::app.settings.pickup-points.delete-btn') }}',
+                            deleteConfirm: '{{ trans('admin::app.settings.pickup-points.delete-confirm') }}',
+                            deleteFailed: '{{ trans('admin::app.settings.pickup-points.delete-failed') }}',
+                            saveFailed: '{{ trans('admin::app.settings.pickup-points.save-failed') }}',
+                        },
+                    };
+                },
+
+                computed: {
+                    submitButtonText() {
+                        return this.isEditing ? this.translations.updateBtn : this.translations.saveBtn;
+                    },
+                },
+
+                mounted() {
+                    this.loadPickupPoints();
+                },
+
+                methods: {
+                    loadPickupPoints() {
+                        if (!this.inventorySourceId || !this.$axios) {
+                            return;
+                        }
+
+                        const url = `{{ route('admin.settings.pickup_points.index', ':id') }}`.replace(':id', this.inventorySourceId);
+
+                        this.$axios.get(url)
+                            .then((response) => {
+                                if (response && response.data && response.data.data) {
+                                    this.pickupPoints = response.data.data;
+                                } else {
+                                    this.pickupPoints = [];
+                                }
+                            })
+                            .catch(() => {
+                                this.pickupPoints = [];
+                            });
+                    },
+
+                    openCreateModal() {
+                        this.isEditing = false;
+                        this.resetForm();
+                        this.$refs.pickupPointModal.toggle();
+                    },
+
+                    editPoint(point) {
+                        this.isEditing = true;
+                        this.formData = {
+                            id: point.id,
+                            name: point.name || '',
+                            latitude: point.latitude || null,
+                            longitude: point.longitude || null,
+                            address: point.address || '',
+                            working_hours: point.working_hours || '',
+                            map_icon: null,
+                            map_icon_url: point.map_icon || null,
+                        };
+                        this.$refs.pickupPointModal.toggle();
+                    },
+
+                    deletePoint(id) {
+                        if (!confirm(this.translations.deleteConfirm)) {
+                            return;
+                        }
+
+                        this.isLoading = true;
+
+                        this.$axios.delete(`{{ route('admin.settings.pickup_points.delete', ':id') }}`.replace(':id', id))
+                            .then((response) => {
+                                this.isLoading = false;
+                                this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
+                                this.loadPickupPoints();
+                            })
+                            .catch((error) => {
+                                this.isLoading = false;
+                                const message = error.response?.data?.message || this.translations.deleteFailed;
+                                this.$emitter.emit('add-flash', { type: 'error', message: message });
+                            });
+                    },
+
+                    savePoint(params, { setErrors, resetForm }) {
+                        this.isLoading = true;
+
+                        const formData = new FormData();
+                        formData.append('name', params.name || '');
+                        formData.append('latitude', params.latitude || '');
+                        formData.append('longitude', params.longitude || '');
+                        formData.append('address', params.address || '');
+                        formData.append('working_hours', params.working_hours || '');
+                        formData.append('inventory_source_id', this.inventorySourceId);
+
+                        if (this.formData.map_icon) {
+                            formData.append('map_icon', this.formData.map_icon);
+                        }
+
+                        const url = this.isEditing
+                            ? `{{ route('admin.settings.pickup_points.update', ':id') }}`.replace(':id', this.formData.id)
+                            : `{{ route('admin.settings.pickup_points.store') }}`;
+
+                        const method = this.isEditing ? 'put' : 'post';
+
+                        this.$axios[method](url, formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data',
+                            },
+                        })
+                            .then((response) => {
+                                this.isLoading = false;
+                                this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
+                                this.$refs.pickupPointModal.toggle();
+                                this.resetForm();
+                                resetForm();
+                                this.loadPickupPoints();
+                            })
+                            .catch((error) => {
+                                this.isLoading = false;
+                                if (error.response && error.response.status == 422) {
+                                    setErrors(error.response.data.errors);
+                                } else {
+                                    const message = error.response?.data?.message || this.translations.saveFailed;
+                                    this.$emitter.emit('add-flash', { type: 'error', message: message });
+                                }
+                            });
+                    },
+
+                    handleFileChange(event) {
+                        const file = event.target.files[0];
+                        if (file) {
+                            this.formData.map_icon = file;
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                this.$nextTick(() => {
+                                    this.formData.map_icon_url = e.target.result;
+                                });
+                            };
+                            reader.readAsDataURL(file);
+                        } else {
+                            // Сброс при удалении файла
+                            this.formData.map_icon = null;
+                            this.formData.map_icon_url = null;
+                        }
+                    },
+
+                    resetForm() {
+                        this.formData = {
+                            id: null,
+                            name: '',
+                            latitude: null,
+                            longitude: null,
+                            address: '',
+                            working_hours: '',
+                            map_icon: null,
+                            map_icon_url: null,
+                        };
+                    },
+                },
+            });
         </script>
     @endpushOnce
 </x-admin::layouts>
