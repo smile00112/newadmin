@@ -548,6 +548,12 @@ class Product
      *                     "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
      *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *                 },
+     *                 "nutrition": {
+     *                     "calories": 250.5,
+     *                     "proteins": 15.2,
+     *                     "fats": 8.5,
+     *                     "carbs": 30.0
      *                 }
      *             }, {
      *                 "id": 26,
@@ -563,7 +569,8 @@ class Product
      *                     "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
      *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
-     *                 }
+     *                 },
+     *                 "nutrition": null
      *             }}
      *         }}
      *     }},
@@ -662,6 +669,16 @@ class Product
      *                              @OA\Property(property="medium_image_url", type="string"),
      *                              @OA\Property(property="large_image_url", type="string"),
      *                              @OA\Property(property="original_image_url", type="string")
+     *                          ),
+     *                          @OA\Property(
+     *                              property="nutrition",
+     *                              type="object",
+     *                              nullable=true,
+     *                              description="Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+     *                              @OA\Property(property="calories", type="float", nullable=true, description="Calories (ккал)"),
+     *                              @OA\Property(property="proteins", type="float", nullable=true, description="Proteins (г)"),
+     *                              @OA\Property(property="fats", type="float", nullable=true, description="Fats (г)"),
+     *                              @OA\Property(property="carbs", type="float", nullable=true, description="Carbohydrates (г)")
      *                          )
      *                      )
      *                  )

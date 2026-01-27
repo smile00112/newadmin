@@ -378,6 +378,7 @@ class ProductResource extends JsonResource
                                 'sort'           => $groupProduct->pivot->sort ?? 0,
                                 'default'        => (bool) ($groupProduct->pivot->default ?? false),
                                 'base_image'     => ProductImage::getProductBaseImage($groupProduct),
+                                'nutrition'      => $this->getNutritionData($groupProduct),
                             ];
                         })->sortBy('sort')->values(),
                     ];
