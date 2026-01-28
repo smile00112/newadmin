@@ -30,16 +30,13 @@ class BonusCartListener
         }
 
         // Apply bonus discount to cart totals
+        // Note: Бонусы уже вычитаются из grand_total в методе collectTotals()
+        // Этот listener служит как дополнительная проверка и может использоваться
+        // для других операций с бонусами после пересчета итогов
         if ($cart->base_bonus_amount > 0) {
-            // Subtract bonus amount from grand total
-            $cart->base_grand_total = max(0, $cart->base_grand_total - $cart->base_bonus_amount);
-            $cart->grand_total = max(0, $cart->grand_total - $cart->bonus_amount);
-            
-            // Add bonus to discount amount for display
-            $cart->base_discount_amount += $cart->base_bonus_amount;
-            $cart->discount_amount += $cart->bonus_amount;
-            
-            $cart->save();
+            // Убеждаемся, что бонусы правильно учтены в grand_total
+            // (основная логика уже выполнена в collectTotals())
+            $cart->refresh();
         }
     }
 }

@@ -81,7 +81,7 @@ Route::group(['prefix' => 'api'], function () {
         Route::get('cross-sell', 'crossSellProducts')->name('shop.api.checkout.cart.cross-sell.index');
     });
 
-    Route::controller(BonusController::class)->prefix('checkout/bonus')->group(function () {
+    Route::controller(BonusController::class)->middleware('auth:sanctum')->prefix('checkout/bonus')->group(function () {
         Route::post('apply', 'applyBonus')->name('shop.api.checkout.bonus.apply');
         Route::delete('remove', 'removeBonus')->name('shop.api.checkout.bonus.remove');
     });

@@ -73,6 +73,9 @@ class BonusServiceProvider extends ServiceProvider
         Event::listen('checkout.order.save.after', [BonusOrderListener::class, 'afterCreated']);
         Event::listen('sales.order.update-status.after', [BonusOrderListener::class, 'afterStatusUpdated']);
         Event::listen('sales.order.cancel.after', [BonusOrderListener::class, 'afterCanceled']);
+        
+        // Register listener for cart bonus calculation
+        Event::listen('checkout.cart.collect.totals.after', \App\Listeners\Cart\BonusCartListener::class);
     }
 
     /**

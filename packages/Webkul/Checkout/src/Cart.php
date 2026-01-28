@@ -916,6 +916,16 @@ class Cart
 
         $this->cart->base_grand_total = round($this->cart->base_grand_total, 2);
 
+        // Вычитаем бонусы из grand_total, если они применены
+        if ($this->cart->base_bonus_amount > 0) {
+            $this->cart->base_grand_total = max(0, $this->cart->base_grand_total - $this->cart->base_bonus_amount);
+            $this->cart->grand_total = max(0, $this->cart->grand_total - $this->cart->bonus_amount);
+            
+            // Округляем заново после вычитания бонусов
+            $this->cart->grand_total = round($this->cart->grand_total, 2);
+            $this->cart->base_grand_total = round($this->cart->base_grand_total, 2);
+        }
+
         $this->cart->cart_currency_code = core()->getCurrentCurrencyCode();
 
         $this->cart->save();

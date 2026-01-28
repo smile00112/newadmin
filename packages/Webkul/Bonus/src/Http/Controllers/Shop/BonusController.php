@@ -31,6 +31,14 @@ class BonusController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
+        // Получаем аутентифицированного пользователя из запроса (работает с Sanctum)
+        $customer = $request->user();
+        
+        // Если пользователь аутентифицирован через Sanctum, явно инициализируем корзину
+        if ($customer) {
+            Cart::initCart($customer);
+        }
+
         $cart = Cart::getCart();
 
         if (! $cart || ! $cart->customer_id) {
