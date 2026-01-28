@@ -2,10 +2,10 @@
 
 namespace App\Payment;
 
-use Illuminate\Support\Facades\Storage;
-use Webkul\Payment\Payment\Payment;
-use Webkul\Customer\Models\CustomerProxy;
 use App\Services\BonusPaymentService;
+use Illuminate\Support\Facades\Storage;
+use Webkul\Customer\Models\CustomerProxy;
+use Webkul\Payment\Payment\Payment;
 
 class BonusPayment extends Payment
 {

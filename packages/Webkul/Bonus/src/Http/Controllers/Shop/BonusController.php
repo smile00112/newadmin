@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Shop;
+namespace Webkul\Bonus\Http\Controllers\Shop;
 
 use App\Services\BonusPaymentService;
 use Illuminate\Http\JsonResponse;

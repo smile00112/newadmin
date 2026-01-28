@@ -78,21 +78,22 @@
         </v-notifications>
 
         <!-- Admin profile -->
-        <x-admin::dropdown position="bottom-{{ core()->getCurrentLocale()->direction === 'ltr' ? 'right' : 'left' }}">
-            <x-slot:toggle>
-                @if ($admin->image)
-                    <button class="flex h-8 w-8 cursor-pointer overflow-hidden rounded-full hover:opacity-80 focus:opacity-80 sm:h-9 sm:w-9">
-                        <img
-                            src="{{ $admin->image_url }}"
-                            class="h-full w-full object-cover"
-                        />
-                    </button>
-                @else
-                    <button class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-blue-400 text-xs font-semibold leading-6 text-white transition-all hover:bg-blue-500 focus:bg-blue-500 sm:h-9 sm:w-9 sm:text-sm">
-                        {{ substr($admin->name, 0, 1) }}
-                    </button>
-                @endif
-            </x-slot>
+        @if ($admin)
+            <x-admin::dropdown position="bottom-{{ core()->getCurrentLocale()->direction === 'ltr' ? 'right' : 'left' }}">
+                <x-slot:toggle>
+                    @if ($admin->image)
+                        <button class="flex h-8 w-8 cursor-pointer overflow-hidden rounded-full hover:opacity-80 focus:opacity-80 sm:h-9 sm:w-9">
+                            <img
+                                src="{{ $admin->image_url }}"
+                                class="h-full w-full object-cover"
+                            />
+                        </button>
+                    @else
+                        <button class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-blue-400 text-xs font-semibold leading-6 text-white transition-all hover:bg-blue-500 focus:bg-blue-500 sm:h-9 sm:w-9 sm:text-sm">
+                            {{ substr($admin->name, 0, 1) }}
+                        </button>
+                    @endif
+                </x-slot>
 
             <!-- Admin Dropdown -->
             <x-slot:content class="!p-0">
@@ -136,6 +137,7 @@
                 </div>
             </x-slot>
         </x-admin::dropdown>
+        @endif
     </div>
 </header>
 

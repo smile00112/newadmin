@@ -2,7 +2,6 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    App\Providers\BonusSystemServiceProvider::class,
     App\Providers\TelescopeServiceProvider::class,
     Webkul\Admin\Providers\AdminServiceProvider::class,
     Webkul\Attribute\Providers\AttributeServiceProvider::class,
@@ -40,4 +39,5 @@ return [
     Webkul\Tax\Providers\TaxServiceProvider::class,
     Webkul\Theme\Providers\ThemeServiceProvider::class,
     Webkul\User\Providers\UserServiceProvider::class,
+    Webkul\Bonus\Providers\BonusServiceProvider::class,
 ];

@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\DB;
 use Webkul\Bonus\Models\BonusLevel;
 use Webkul\Bonus\Models\BonusTransaction;
 use Webkul\Bonus\Repositories\BonusLevelRepository;
-use Webkul\Bonus\Repositories\BonusSettingRepository;
 use Webkul\Bonus\Repositories\BonusTransactionRepository;
 use Webkul\Bonus\Repositories\CustomerBonusRepository;
 use Webkul\Checkout\Models\Cart;
@@ -23,9 +22,51 @@ class BonusService
     public function __construct(
         protected BonusLevelRepository $bonusLevelRepository,
         protected CustomerBonusRepository $customerBonusRepository,
-        protected BonusTransactionRepository $bonusTransactionRepository,
-        protected BonusSettingRepository $bonusSettingRepository
+        protected BonusTransactionRepository $bonusTransactionRepository
     ) {}
+
+    /**
+     * Read bonus setting from core_config (SystemConfig).
+     */
+    protected function config(string $key, mixed $default = null, ?string $channelCode = null): mixed
+    {
+        // Settings are defined in packages/Webkul/Bonus/src/Config/system.php under bonus.general.*
+        $value = core()->getConfigData("bonus.general.{$key}", $channelCode);
+
+        return $value ?? $default;
+    }
+
+    /**
+     * Normalize multiselect/text settings value into array of integers.
+     */
+    protected function normalizeIdList(mixed $value): array
+    {
+        if (empty($value)) {
+            return [];
+        }
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map('intval', $value)));
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+
+            // JSON array stored by admin config sometimes
+            if (str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($trimmed, true);
+
+                if (is_array($decoded)) {
+                    return array_values(array_filter(array_map('intval', $decoded)));
+                }
+            }
+
+            // Comma-separated fallback
+            return array_values(array_filter(array_map('intval', array_map('trim', explode(',', $trimmed)))));
+        }
+
+        return [];
+    }
 
     /**
      * Check if bonus system is enabled.
@@ -35,7 +76,7 @@ class BonusService
      */
     public function isEnabled(?string $channelCode = null): bool
     {
-        return $this->bonusSettingRepository->isBonusEnabled($channelCode);
+        return (bool) $this->config('enabled', false, $channelCode);
     }
 
     /**
@@ -133,28 +174,20 @@ class BonusService
             return 0;
         }
 
-        // Try different calculation types and get the best level
-        $bestLevel = null;
-        $bestPercent = 0;
+        // Use a single calculation type chosen in settings
+        $calculationType = (string) $this->config('calculation_type', BonusLevel::CALCULATION_TYPE_TOTAL_SPENT);
 
-        $calculationTypes = [
-            BonusLevel::CALCULATION_TYPE_TOTAL_SPENT,
-            BonusLevel::CALCULATION_TYPE_ORDERS_COUNT,
-        ];
+        $level = $this->calculateCustomerLevel(
+            $customer,
+            $calculationType,
+            $calculationType === BonusLevel::CALCULATION_TYPE_CART_VALUE ? (float) $order->base_grand_total : null
+        );
 
-        foreach ($calculationTypes as $type) {
-            $level = $this->calculateCustomerLevel($customer, $type);
-            if ($level && $level->cashback_percent > $bestPercent) {
-                $bestLevel = $level;
-                $bestPercent = $level->cashback_percent;
-            }
-        }
-
-        if (! $bestLevel) {
+        if (! $level) {
             return 0;
         }
 
-        return round($orderTotal * ($bestPercent / 100), 4);
+        return round($orderTotal * (((float) $level->cashback_percent) / 100), 4);
     }
 
     /**
@@ -165,8 +198,8 @@ class BonusService
      */
     protected function getOrderTotalForCashback(Order $order): float
     {
-        $excludedProductIds = $this->bonusSettingRepository->getExcludedProductIds();
-        $participatingProductIds = $this->bonusSettingRepository->getParticipatingProductIds();
+        $excludedProductIds = $this->normalizeIdList($this->config('excluded_product_ids', []));
+        $participatingProductIds = $this->normalizeIdList($this->config('participating_product_ids', []));
 
         $total = 0;
 
@@ -218,7 +251,7 @@ class BonusService
 
         DB::transaction(function () use ($order, $amount) {
             $currencyCode = $order->order_currency_code ?? core()->getCurrentCurrencyCode();
-            $expiryDays = $this->bonusSettingRepository->getExpiryDays();
+            $expiryDays = (int) $this->config('expiry_days', 365);
             $expiresAt = $expiryDays > 0 ? now()->addDays($expiryDays) : null;
 
             // Create transaction
@@ -427,7 +460,7 @@ class BonusService
 
         $grandTotal = $orderOrCart->base_grand_total ?? $orderOrCart->grand_total ?? 0;
         $currencyCode = $orderOrCart->order_currency_code ?? $orderOrCart->cart_currency_code ?? core()->getCurrentCurrencyCode();
-        $maxPercent = $this->bonusSettingRepository->getMaxUsagePercent();
+        $maxPercent = (float) $this->config('max_usage_percent', 100);
         $availableBalance = $this->getAvailableBonuses($customerId, $currencyCode);
 
         $maxByPercent = $grandTotal * ($maxPercent / 100);

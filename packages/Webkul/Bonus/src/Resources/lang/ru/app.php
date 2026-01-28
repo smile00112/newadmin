@@ -20,6 +20,13 @@ return [
             ],
             'fields' => [
                 'enabled' => 'Включить бонусную систему',
+                'calculation-type' => 'Тип расчета уровня',
+                'calculation-type-total-spent' => 'От суммы потраченных средств',
+                'calculation-type-orders-count' => 'От количества заказов',
+                'calculation-type-cart-value' => 'От величины текущей корзины',
+                'accrual-status' => 'Статусы заказа для начисления бонусов',
+                'deduction-status' => 'Статусы заказа для списания бонусов',
+                'refund-status' => 'Статусы заказа для возврата бонусов',
                 'max-usage-percent' => 'Максимальный процент оплаты бонусами',
                 'max-usage-percent-info' => 'Максимальный процент от суммы заказа, который можно оплатить бонусами',
                 'expiry-days' => 'Срок действия бонусов (дней)',

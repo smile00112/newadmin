@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\BonusHistory;
 use Illuminate\Container\Container;
+use Webkul\Bonus\Models\BonusHistory;
 use Webkul\Core\Eloquent\Repository;
 
 class BonusHistoryRepository extends Repository

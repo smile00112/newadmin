@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models;
+namespace Webkul\Bonus\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 use Webkul\Customer\Models\CustomerProxy;
 use Webkul\Sales\Models\OrderProxy;
 

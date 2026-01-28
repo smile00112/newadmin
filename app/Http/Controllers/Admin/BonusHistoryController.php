@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\DataGrids\BonusHistoryDataGrid;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Bonus\DataGrids\BonusHistoryDataGrid;
 
 class BonusHistoryController extends Controller
 {

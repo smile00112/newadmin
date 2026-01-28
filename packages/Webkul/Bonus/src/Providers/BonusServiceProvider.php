@@ -62,5 +62,10 @@ class BonusServiceProvider extends ServiceProvider
             dirname(__DIR__) . '/Config/acl.php',
             'acl'
         );
+
+        $this->mergeConfigFrom(
+            dirname(__DIR__) . '/Config/menu.php',
+            'menu.admin'
+        );
     }
 }

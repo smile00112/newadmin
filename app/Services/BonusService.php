@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\BonusHistory;
 use App\Repositories\BonusHistoryRepository;
 use App\Repositories\BonusLevelRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Webkul\Bonus\Models\BonusHistory;
 use Webkul\Customer\Models\CustomerProxy;
-use Webkul\Sales\Models\OrderProxy;
 
 class BonusService
 {
@@ -69,14 +68,14 @@ class BonusService
         }
 
         $level = $customer->bonusLevel;
-        
+
         if (! $level || ! $level->cashback_percent) {
             return 0;
         }
 
         // Get order items that participate in bonus system
         $orderItems = $this->getBonusEligibleItems($order);
-        
+
         $totalAmount = 0;
         foreach ($orderItems as $item) {
             $totalAmount += $item->base_total;
@@ -152,8 +151,8 @@ class BonusService
                 'base_amount' => $amount,
                 'balance_after' => $currentBalance + $amount,
                 'expires_at' => $expiresAt,
-                'description' => $order 
-                    ? "Начисление бонусов за заказ #{$order->increment_id}" 
+                'description' => $order
+                    ? "Начисление бонусов за заказ #{$order->increment_id}"
                     : 'Начисление бонусов',
             ]);
 
@@ -202,7 +201,7 @@ class BonusService
 
                 // Create deduction history
                 $currentBalance = $this->getAvailableBonusBalance($customer);
-                
+
                 $history = $this->bonusHistoryRepository->create([
                     'customer_id' => $customer->id,
                     'order_id' => $order?->id,
@@ -211,8 +210,8 @@ class BonusService
                     'base_amount' => -$deductAmount,
                     'balance_after' => $currentBalance - $deductAmount,
                     'expires_at' => null,
-                    'description' => $order 
-                        ? "Списание бонусов за заказ #{$order->increment_id}" 
+                    'description' => $order
+                        ? "Списание бонусов за заказ #{$order->increment_id}"
                         : 'Списание бонусов',
                 ]);
 
@@ -258,8 +257,8 @@ class BonusService
                 'base_amount' => $amount,
                 'balance_after' => $currentBalance + $amount,
                 'expires_at' => $expiresAt,
-                'description' => $order 
-                    ? "Возврат бонусов за заказ #{$order->increment_id}" 
+                'description' => $order
+                    ? "Возврат бонусов за заказ #{$order->increment_id}"
                     : 'Возврат бонусов',
             ]);
 
@@ -283,7 +282,7 @@ class BonusService
 
         foreach ($expiredBonuses as $bonus) {
             $customer = CustomerProxy::find($bonus->customer_id);
-            
+
             if (! $customer) {
                 continue;
             }

@@ -12,12 +12,12 @@ return [
     [
         'key'   => 'bonus',
         'name'  => 'bonus::app.admin.acl.bonus',
-        'route' => 'admin.bonus.settings.index',
+        'route' => 'admin.configuration.index',
         'sort'  => 10,
     ], [
         'key'   => 'bonus.settings',
         'name'  => 'bonus::app.admin.acl.settings',
-        'route' => 'admin.bonus.settings.index',
+        'route' => 'admin.configuration.index',
         'sort'  => 1,
     ], [
         'key'   => 'bonus.levels',

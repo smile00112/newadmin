@@ -3,9 +3,9 @@
 namespace App\Traits;
 
 use App\Models\BonusLevel;
-use App\Models\BonusHistory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Webkul\Bonus\Models\BonusHistory;
 
 trait BonusTrait
 {

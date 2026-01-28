@@ -5,11 +5,8 @@ use Webkul\Bonus\Http\Controllers\Admin\BonusLevelController;
 use Webkul\Bonus\Http\Controllers\Admin\BonusSettingController;
 use Webkul\Bonus\Http\Controllers\Admin\BonusTransactionController;
 
-Route::group(['prefix' => config('app.admin_url')], function () {
+Route::group( ['prefix' => config('app.admin_url')], function () {
     Route::prefix('bonus')->group(function () {
-        Route::get('settings', [BonusSettingController::class, 'index'])->name('admin.bonus.settings.index');
-        Route::post('settings', [BonusSettingController::class, 'store'])->name('admin.bonus.settings.store');
-
         Route::get('levels', [BonusLevelController::class, 'index'])->name('admin.bonus.levels.index');
         Route::get('levels/create', [BonusLevelController::class, 'create'])->name('admin.bonus.levels.create');
         Route::post('levels', [BonusLevelController::class, 'store'])->name('admin.bonus.levels.store');
