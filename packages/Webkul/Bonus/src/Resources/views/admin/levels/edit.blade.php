@@ -35,17 +35,6 @@
 
             <x-admin::form.control-group>
                 <x-admin::form.control-group.label class="required">
-                    @lang('bonus::app.admin.levels.calculation-type')
-                </x-admin::form.control-group.label>
-                <x-admin::form.control-group.control type="select" name="calculation_type" rules="required">
-                    <option value="orders_count" {{ $level->calculation_type === 'orders_count' ? 'selected' : '' }}>@lang('bonus::app.admin.levels.orders-count')</option>
-                    <option value="total_spent" {{ $level->calculation_type === 'total_spent' ? 'selected' : '' }}>@lang('bonus::app.admin.levels.total-spent')</option>
-                    <option value="cart_value" {{ $level->calculation_type === 'cart_value' ? 'selected' : '' }}>@lang('bonus::app.admin.levels.cart-value')</option>
-                </x-admin::form.control-group.control>
-            </x-admin::form.control-group>
-
-            <x-admin::form.control-group>
-                <x-admin::form.control-group.label class="required">
                     @lang('bonus::app.admin.levels.threshold')
                 </x-admin::form.control-group.label>
                 <x-admin::form.control-group.control type="text" name="threshold_value" :value="old('threshold_value', $level->threshold_value)" rules="required|numeric" />

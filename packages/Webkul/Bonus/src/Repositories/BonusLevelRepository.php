@@ -13,7 +13,7 @@ class BonusLevelRepository extends Repository
      */
     public function model(): string
     {
-        return 'Webkul\Bonus\Contracts\BonusLevel';
+        return \Webkul\Bonus\Models\BonusLevel::class;
     }
 
     /**
@@ -24,21 +24,6 @@ class BonusLevelRepository extends Repository
     public function getActiveLevels()
     {
         return $this->model
-            ->active()
-            ->ordered()
-            ->get();
-    }
-
-    /**
-     * Get levels by calculation type.
-     *
-     * @param  string  $type
-     * @return \Illuminate\Support\Collection
-     */
-    public function getLevelsByCalculationType(string $type)
-    {
-        return $this->model
-            ->where('calculation_type', $type)
             ->active()
             ->ordered()
             ->get();

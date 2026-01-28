@@ -93,7 +93,8 @@ class BonusService
             return null;
         }
 
-        $levels = $this->bonusLevelRepository->getLevelsByCalculationType($calculationType);
+        // Get all active levels - calculation_type is now a system setting, not per level
+        $levels = $this->bonusLevelRepository->getActiveLevels();
 
         if ($levels->isEmpty()) {
             return null;

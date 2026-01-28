@@ -18,7 +18,6 @@ class BonusLevel extends Model implements BonusLevelContract
     protected $fillable = [
         'name',
         'cashback_percent',
-        'calculation_type',
         'threshold_value',
         'sort_order',
         'is_active',

@@ -149,4 +149,18 @@ return [
             ],
         ],
     ],
+    [
+        'key'    => 'bonus.general.levels',
+        'name'   => 'bonus::app.admin.settings.levels.title',
+        'info'   => 'bonus::app.admin.settings.levels.info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name' => 'manage_levels',
+                'title' => 'bonus::app.admin.settings.levels.title',
+                'type' => 'blade',
+                'path' => 'bonus::admin.settings.levels',
+            ],
+        ],
+    ],
 ];
