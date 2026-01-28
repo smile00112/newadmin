@@ -30,8 +30,8 @@ class BonusService
      */
     protected function config(string $key, mixed $default = null, ?string $channelCode = null): mixed
     {
-        // Settings are defined in packages/Webkul/Bonus/src/Config/system.php under bonus.general.*
-        $value = core()->getConfigData("bonus.general.{$key}", $channelCode);
+        // Settings are defined in packages/Webkul/Bonus/src/Config/system.php under bonus.general.settings.*
+        $value = core()->getConfigData("bonus.general.settings.{$key}", $channelCode);
 
         return $value ?? $default;
     }
@@ -447,6 +447,20 @@ class BonusService
     }
 
     /**
+     * Get total bonus balance for customer (including expired).
+     *
+     * @param  int  $customerId
+     * @param  string|null  $currencyCode
+     * @return float
+     */
+    public function getTotalBalance(int $customerId, ?string $currencyCode = null): float
+    {
+        $currencyCode = $currencyCode ?? core()->getCurrentCurrencyCode();
+
+        return $this->customerBonusRepository->getBalance($customerId, $currencyCode);
+    }
+
+    /**
      * Get maximum bonus amount that can be used for order.
      *
      * @param  \Webkul\Sales\Models\Order|\Webkul\Checkout\Models\Cart  $orderOrCart
@@ -468,5 +482,198 @@ class BonusService
         $maxByBalance = $availableBalance;
 
         return min($maxByPercent, $maxByBalance, $grandTotal);
+    }
+
+    /**
+     * Manually accrue bonuses to customer (for admin panel).
+     *
+     * @param  int  $customerId
+     * @param  float  $amount
+     * @param  string|null  $description
+     * @param  string|null  $currencyCode
+     * @return \Webkul\Bonus\Models\BonusTransaction
+     */
+    public function manuallyAccrueBonuses(int $customerId, float $amount, ?string $description = null, ?string $currencyCode = null)
+    {
+        if (! $this->isEnabled()) {
+            throw new \Exception('Bonus system is disabled');
+        }
+
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Bonus amount must be greater than 0');
+        }
+
+        $currencyCode = $currencyCode ?? core()->getCurrentCurrencyCode();
+        $expiryDays = (int) $this->config('expiry_days', 365);
+        $expiresAt = $expiryDays > 0 ? now()->addDays($expiryDays) : null;
+
+        return DB::transaction(function () use ($customerId, $amount, $description, $currencyCode, $expiresAt) {
+            // Create transaction
+            $transaction = $this->bonusTransactionRepository->create([
+                'customer_id' => $customerId,
+                'order_id' => null,
+                'type' => BonusTransaction::TYPE_ACCRUAL,
+                'amount' => $amount,
+                'currency_code' => $currencyCode,
+                'description' => $description ?? trans('bonus::app.transactions.manual_accrual_description', [], 'ru') ?? 'Ручное начисление бонусов администратором',
+                'expires_at' => $expiresAt,
+            ]);
+
+            // Update customer balance
+            $this->customerBonusRepository->updateBalance(
+                $customerId,
+                $amount,
+                $currencyCode
+            );
+
+            return $transaction;
+        });
+    }
+
+    /**
+     * Manually deduct bonuses from customer (for admin panel).
+     *
+     * @param  int  $customerId
+     * @param  float  $amount
+     * @param  string|null  $description
+     * @param  string|null  $currencyCode
+     * @return void
+     */
+    public function manuallyDeductBonuses(int $customerId, float $amount, ?string $description = null, ?string $currencyCode = null): void
+    {
+        if (! $this->isEnabled()) {
+            throw new \Exception('Bonus system is disabled');
+        }
+
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Deduction amount must be greater than 0');
+        }
+
+        $currencyCode = $currencyCode ?? core()->getCurrentCurrencyCode();
+        $availableBalance = $this->getAvailableBonuses($customerId, $currencyCode);
+
+        if ($availableBalance < $amount) {
+            throw new \Exception(trans('bonus::app.errors.insufficient_balance', [], 'ru') ?? 'Insufficient bonus balance');
+        }
+
+        DB::transaction(function () use ($customerId, $amount, $description, $currencyCode) {
+            // Get available bonuses (FIFO - oldest first)
+            $availableTransactions = $this->bonusTransactionRepository->model
+                ->where('customer_id', $customerId)
+                ->where('currency_code', $currencyCode)
+                ->where('type', BonusTransaction::TYPE_ACCRUAL)
+                ->notExpired()
+                ->where('amount', '>', 0)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $remainingAmount = $amount;
+
+            foreach ($availableTransactions as $transaction) {
+                if ($remainingAmount <= 0) {
+                    break;
+                }
+
+                $deductAmount = min($transaction->amount, $remainingAmount);
+
+                // Create deduction transaction
+                $this->bonusTransactionRepository->create([
+                    'customer_id' => $customerId,
+                    'order_id' => null,
+                    'type' => BonusTransaction::TYPE_DEDUCTION,
+                    'amount' => -$deductAmount,
+                    'currency_code' => $currencyCode,
+                    'description' => $description ?? trans('bonus::app.transactions.manual_deduction_description', [], 'ru') ?? 'Ручное списание бонусов администратором',
+                ]);
+
+                // Update transaction amount (reduce available balance)
+                $transaction->amount -= $deductAmount;
+                $transaction->save();
+
+                $remainingAmount -= $deductAmount;
+            }
+
+            // Update customer balance
+            $this->customerBonusRepository->updateBalance(
+                $customerId,
+                -$amount,
+                $currencyCode
+            );
+        });
+    }
+
+    /**
+     * Update customer bonus level based on current statistics.
+     *
+     * @param  \Webkul\Customer\Models\Customer  $customer
+     * @return void
+     */
+    public function updateCustomerLevel(Customer $customer): void
+    {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        $calculationType = (string) $this->config('calculation_type', BonusLevel::CALCULATION_TYPE_TOTAL_SPENT);
+        $level = $this->calculateCustomerLevel($customer, $calculationType);
+
+        $customer->update([
+            'bonus_level_id' => $level?->id,
+        ]);
+    }
+
+    /**
+     * Expire bonuses that have reached their expiration date.
+     *
+     * @return int Number of expired bonus transactions
+     */
+    public function expireBonuses(): int
+    {
+        if (! $this->isEnabled()) {
+            return 0;
+        }
+
+        $expiredTransactions = $this->bonusTransactionRepository->model
+            ->where('type', BonusTransaction::TYPE_ACCRUAL)
+            ->where('amount', '>', 0)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', now())
+            ->get();
+
+        $expiredCount = 0;
+
+        foreach ($expiredTransactions as $transaction) {
+            // Only expire if transaction hasn't been fully used
+            if ($transaction->amount > 0) {
+                $currencyCode = $transaction->currency_code ?? core()->getCurrentCurrencyCode();
+                
+                DB::transaction(function () use ($transaction, $currencyCode, &$expiredCount) {
+                    // Create expiration deduction transaction
+                    $this->bonusTransactionRepository->create([
+                        'customer_id' => $transaction->customer_id,
+                        'order_id' => $transaction->order_id,
+                        'type' => BonusTransaction::TYPE_DEDUCTION,
+                        'amount' => -$transaction->amount,
+                        'currency_code' => $currencyCode,
+                        'description' => trans('bonus::app.transactions.expiration_description', [], 'ru') ?? 'Истечение срока действия бонусов',
+                    ]);
+
+                    // Update customer balance
+                    $this->customerBonusRepository->updateBalance(
+                        $transaction->customer_id,
+                        -$transaction->amount,
+                        $currencyCode
+                    );
+
+                    // Mark transaction as expired by setting amount to 0
+                    $transaction->amount = 0;
+                    $transaction->save();
+
+                    $expiredCount++;
+                });
+            }
+        }
+
+        return $expiredCount;
     }
 }

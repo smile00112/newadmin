@@ -99,11 +99,13 @@ class BonusController extends CustomerController
     public function index(Request $request): JsonResponse
     {
         $customer = $this->resolveShopUser($request);
-        
+
         if (! $this->bonusService->isEnabled()) {
             return response()->json([
                 'points_balance' => 0,
+                'balance' => 0,
                 'spent_sum' => 0,
+                'orders_count' => 0,
                 'percent_max' => 0,
                 'show_levels_info' => false,
                 'level' => null,
@@ -115,75 +117,76 @@ class BonusController extends CustomerController
         }
 
         $currencyCode = core()->getCurrentCurrencyCode();
-        
+
         // Get bonus balance
         $pointsBalance = $this->bonusService->getAvailableBonuses($customer->id, $currencyCode);
         $totalBalance = $this->customerBonusRepository->getBalance($customer->id, $currencyCode);
-        
+
         // Get settings
-        $calculationType = (string) core()->getConfigData('bonus.general.calculation_type', BonusLevel::CALCULATION_TYPE_TOTAL_SPENT);
-        $maxUsagePercent = (float) core()->getConfigData('bonus.general.max_usage_percent', 100);
-        $showLevelsInfo = (bool) core()->getConfigData('bonus.general.show_levels_info', true);
-        
+        $calculationType = (string) core()->getConfigData('bonus.general.settings.calculation_type', BonusLevel::CALCULATION_TYPE_TOTAL_SPENT);
+        $maxUsagePercent = (float) core()->getConfigData('bonus.general.settings.max_usage_percent', 100);
+        $showLevelsInfo = (bool) core()->getConfigData('bonus.general.settings.show_levels_info', true);
+
         // Get customer statistics
         $ordersCount = $customer->orders()
             ->where('status', Order::STATUS_COMPLETED)
             ->count();
-        
+
         $spentSum = (float) $customer->orders()
             ->where('status', Order::STATUS_COMPLETED)
             ->sum('base_grand_total');
-        
+
         // Get current level
         $currentLevel = $this->bonusService->calculateCustomerLevel($customer, $calculationType);
-        
-        // Get all active levels for the calculation type
-        $allLevels = $this->bonusLevelRepository->getLevelsByCalculationType($calculationType);
-        
+
+        // Get all active levels
+        $allLevels = $this->bonusLevelRepository->getActiveLevels();
+
         // Format levels info
         $levelsInfo = [];
         $nextLevel = null;
         $foundCurrent = false;
-        
+
         foreach ($allLevels as $level) {
             $isCurrent = $currentLevel && $currentLevel->id === $level->id;
-            
+
             if ($isCurrent) {
                 $foundCurrent = true;
             }
-            
+
             // Format description based on calculation type
             $descriptionTop = 'Возвращаем ' . $level->cashback_percent . '% заказа.';
             $descriptionBottom = $this->formatLevelDescription($level, $calculationType, $allLevels);
-            
+
             $levelData = [
                 'id' => $level->id,
                 'name' => $level->name,
                 'cashback_percent' => (float) $level->cashback_percent,
                 'description_top' => $descriptionTop,
                 'description_bottom' => $descriptionBottom,
+                'is_current' => $isCurrent,
             ];
-            
+
             // Find next level (first level after current)
             if ($foundCurrent && ! $isCurrent && $nextLevel === null) {
                 $nextLevel = $level;
                 $levelData['level_up_name'] = $level->name;
-                
+
                 // Calculate remaining to next level
                 $currentValue = match ($calculationType) {
                     BonusLevel::CALCULATION_TYPE_ORDERS_COUNT => $ordersCount,
                     BonusLevel::CALCULATION_TYPE_TOTAL_SPENT => $spentSum,
                     default => 0,
                 };
-                
+
                 if ($level->threshold_value > $currentValue) {
                     $levelData['rule_to_level'] = (float) ($level->threshold_value - $currentValue);
                 }
             }
-            
+
             $levelsInfo[] = $levelData;
         }
-        
+
         // Format next level info
         $nextLevelInfo = null;
         if ($nextLevel) {
@@ -192,9 +195,9 @@ class BonusController extends CustomerController
                 BonusLevel::CALCULATION_TYPE_TOTAL_SPENT => $spentSum,
                 default => 0,
             };
-            
+
             $remaining = max(0, $nextLevel->threshold_value - $currentValue);
-            
+
             if ($calculationType === BonusLevel::CALCULATION_TYPE_ORDERS_COUNT) {
                 $nextLevelInfo = [
                     'text1' => 'Вы сделали ' . (int) $currentValue . ' заказов',
@@ -207,11 +210,11 @@ class BonusController extends CustomerController
                 ];
             }
         }
-        
+
         // Get bonus history (limit to 20 most recent)
         $transactions = $this->bonusTransactionRepository->getCustomerTransactions($customer->id)
             ->take(20);
-        
+
         $bonusHistory = $transactions->map(function ($transaction) {
             return [
                 'id' => $transaction->id,
@@ -223,23 +226,24 @@ class BonusController extends CustomerController
                 'created_at' => $transaction->created_at ? $transaction->created_at->format('Y-m-d H:i:s') : null,
             ];
         })->toArray();
-        
+
         $data = [
             'points_balance' => (float) $pointsBalance,
+            'balance' => (float) $totalBalance,
             'spent_sum' => (float) $spentSum,
+            'orders_count' => (int) $ordersCount,
             'percent_max' => (float) $maxUsagePercent,
             'show_levels_info' => $showLevelsInfo,
             'level' => $currentLevel ? $currentLevel->id : null,
-            'type' => $calculationType === BonusLevel::CALCULATION_TYPE_ORDERS_COUNT ? 'orderscount' : 
-                     ($calculationType === BonusLevel::CALCULATION_TYPE_TOTAL_SPENT ? 'totalspent' : 'cartvalue'),
+            'type' => $calculationType,
             'levels_info' => $levelsInfo,
             'next_level_info' => $nextLevelInfo,
             'bonus_history' => $bonusHistory,
         ];
-        
+
         return response()->json($data);
     }
-    
+
     /**
      * Format level description based on calculation type.
      *
@@ -251,7 +255,7 @@ class BonusController extends CustomerController
     protected function formatLevelDescription(BonusLevel $level, string $calculationType, $allLevels): string
     {
         $threshold = (float) $level->threshold_value;
-        
+
         if ($calculationType === BonusLevel::CALCULATION_TYPE_ORDERS_COUNT) {
             // Find next level threshold
             $nextThreshold = null;
@@ -261,7 +265,7 @@ class BonusController extends CustomerController
                     break;
                 }
             }
-            
+
             if ($nextThreshold !== null) {
                 return (int) $threshold . '-' . (int) $nextThreshold . ' заказов';
             } else {

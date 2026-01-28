@@ -5492,4 +5492,14 @@ return [
             'tracking-number'            => 'Номер отслеживания: :tracking_number',
         ],
     ],
+    'datagrid' => [
+        'active' => 'вкл',
+        'inactive' => 'выкл',
+        'cancel'  => 'Отмена',
+        'save'    => 'Сохранить',
+        'edit'  => 'Редактировать',
+        'delete'  => 'Удалить',
+        'actions'  => 'Действия',
+        'back'  => 'Назад'
+    ],
 ];

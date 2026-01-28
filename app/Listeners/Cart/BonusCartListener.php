@@ -24,7 +24,8 @@ class BonusCartListener
      */
     public function handle(Cart $cart): void
     {
-        if (! core()->getConfigData('bonus_system.general.enabled')) {
+        $bonusService = app(\Webkul\Bonus\Services\BonusService::class);
+        if (! $bonusService->isEnabled()) {
             return;
         }
 

@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\BonusService;
 use Illuminate\Console\Command;
+use Webkul\Bonus\Services\BonusService;
 
 class ExpireBonuses extends Command
 {

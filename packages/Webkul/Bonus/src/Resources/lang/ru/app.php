@@ -2,6 +2,7 @@
 
 return [
     'admin' => [
+
         'acl' => [
             'bonus' => 'Бонусы',
             'settings' => 'Настройки',
@@ -118,4 +119,6 @@ return [
         'orders_count' => 'заказов',
         'total_spent' => 'потрачено',
     ],
+
+
 ];

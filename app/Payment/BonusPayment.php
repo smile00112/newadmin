@@ -48,7 +48,8 @@ class BonusPayment extends Payment
             return false;
         }
 
-        if (! core()->getConfigData('bonus_system.general.enabled')) {
+        $bonusService = app(\Webkul\Bonus\Services\BonusService::class);
+        if (! $bonusService->isEnabled()) {
             return false;
         }
 
@@ -69,7 +70,7 @@ class BonusPayment extends Payment
         // Check if customer has available bonuses
         $availableBalance = app(BonusPaymentService::class)
             ->bonusService
-            ->getAvailableBonusBalance($customer);
+            ->getAvailableBonuses($customer->id);
 
         if ($availableBalance <= 0) {
             return false;

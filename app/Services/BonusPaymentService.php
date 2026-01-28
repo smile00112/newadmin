@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Services\BonusService;
 use Illuminate\Support\Facades\DB;
+use Webkul\Bonus\Services\BonusService;
 use Webkul\Checkout\Contracts\Cart;
 use Webkul\Customer\Models\CustomerProxy;
 use Webkul\Sales\Models\OrderProxy;
@@ -28,11 +28,11 @@ class BonusPaymentService
      */
     public function canUseBonus($customer, float $amount): bool
     {
-        if (! core()->getConfigData('bonus_system.general.enabled')) {
+        if (! $this->bonusService->isEnabled()) {
             return false;
         }
 
-        $availableBalance = $this->bonusService->getAvailableBonusBalance($customer);
+        $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
 
         return $availableBalance >= $amount;
     }
@@ -60,14 +60,14 @@ class BonusPaymentService
         $this->validateBonusProducts($cart);
 
         // Get max bonus percent
-        $maxPercent = (float) (core()->getConfigData('bonus_system.general.max_bonus_percent') ?? 100);
+        $maxPercent = (float) (core()->getConfigData('bonus.general.settings.max_usage_percent') ?? 100);
         $maxBonusAmount = ($cart->base_grand_total * $maxPercent) / 100;
 
         // Limit bonus amount
         $bonusAmount = min($bonusAmount, $maxBonusAmount, $cart->base_grand_total);
 
         // Check available balance
-        $availableBalance = $this->bonusService->getAvailableBonusBalance($customer);
+        $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
         $bonusAmount = min($bonusAmount, $availableBalance);
 
         // Update cart
@@ -114,9 +114,9 @@ class BonusPaymentService
             throw new \RuntimeException('Customer not found');
         }
 
-        DB::transaction(function () use ($order, $bonusAmount, $customer) {
+        DB::transaction(function () use ($order, $bonusAmount) {
             // Deduct bonuses
-            $this->bonusService->deductBonus($customer, $bonusAmount, $order);
+            $this->bonusService->deductBonuses($order, $bonusAmount);
 
             // Update order
             $order->update([
@@ -135,8 +135,8 @@ class BonusPaymentService
      */
     public function validateBonusProducts(Cart $cart): void
     {
-        $includedProducts = core()->getConfigData('bonus_system.general.included_products');
-        $excludedProducts = core()->getConfigData('bonus_system.general.excluded_products');
+        $includedProducts = core()->getConfigData('bonus.general.settings.participating_product_ids');
+        $excludedProducts = core()->getConfigData('bonus.general.settings.excluded_product_ids');
 
         $cartProductIds = $cart->items->pluck('product_id')->toArray();
 

@@ -205,9 +205,16 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
     });
 
     /**
-     * Customer bonus routes.
+     * Customer bonus routes (with typo - kept for backward compatibility).
      */
     Route::controller(BonusController::class)->prefix('customer/bonuces')->group(function () {
+        Route::get('', 'index');
+    });
+
+    /**
+     * Customer bonus routes (correct spelling).
+     */
+    Route::controller(BonusController::class)->prefix('customer/bonuses')->group(function () {
         Route::get('', 'index');
     });
 

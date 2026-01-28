@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\BonusService;
 use Illuminate\Console\Command;
+use Webkul\Bonus\Services\BonusService;
 use Webkul\Customer\Models\CustomerProxy;
 
 class RecalculateCustomerLevels extends Command
@@ -29,7 +29,7 @@ class RecalculateCustomerLevels extends Command
     {
         $this->info('Starting customer levels recalculation...');
 
-        if (! core()->getConfigData('bonus_system.general.enabled')) {
+        if (! $bonusService->isEnabled()) {
             $this->error('Bonus system is disabled. Please enable it in admin configuration.');
 
             return Command::FAILURE;

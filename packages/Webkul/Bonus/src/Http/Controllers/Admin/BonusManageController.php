@@ -2,13 +2,13 @@
 
 namespace Webkul\Bonus\Http\Controllers\Admin;
 
-use App\Services\BonusService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Webkul\Admin\Http\Controllers\Controller;
-use Webkul\Bonus\Models\BonusHistory;
+use Webkul\Bonus\Models\BonusTransaction;
+use Webkul\Bonus\Services\BonusService;
 use Webkul\Customer\Models\CustomerProxy;
 use Webkul\Customer\Repositories\CustomerRepository;
 
@@ -81,11 +81,11 @@ class BonusManageController extends Controller
             ], 404);
         }
 
-        $availableBalance = $this->bonusService->getAvailableBonusBalance($customer);
-        $totalBalance = $customer->bonus_balance ?? 0;
+        $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
+        $totalBalance = $this->bonusService->getTotalBalance($customer->id);
 
-        // Get recent bonus history
-        $recentHistory = BonusHistory::where('customer_id', $customer->id)
+        // Get recent bonus transactions
+        $recentHistory = BonusTransaction::where('customer_id', $customer->id)
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -106,7 +106,6 @@ class BonusManageController extends Controller
                     'id' => $item->id,
                     'type' => $item->type,
                     'amount' => round($item->amount, 2),
-                    'balance_after' => round($item->balance_after, 2),
                     'description' => $item->description,
                     'created_at' => $item->created_at->format('d.m.Y H:i'),
                     'expires_at' => $item->expires_at ? $item->expires_at->format('d.m.Y') : null,
@@ -150,14 +149,9 @@ class BonusManageController extends Controller
             $amount = (float) $request->input('amount');
             $description = $request->input('description', 'Ручное начисление бонусов администратором');
 
-            $history = $this->bonusService->accrueBonus($customer, $amount, null, null);
+            $this->bonusService->manuallyAccrueBonuses($customer->id, $amount, $description);
 
-            // Update description if provided
-            if ($request->has('description')) {
-                $history->update(['description' => $description]);
-            }
-
-            $availableBalance = $this->bonusService->getAvailableBonusBalance($customer);
+            $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
 
             return new JsonResponse([
                 'success' => true,
@@ -207,16 +201,9 @@ class BonusManageController extends Controller
             $amount = (float) $request->input('amount');
             $description = $request->input('description', 'Ручное списание бонусов администратором');
 
-            $historyRecords = $this->bonusService->deductBonus($customer, $amount, null);
+            $this->bonusService->manuallyDeductBonuses($customer->id, $amount, $description);
 
-            // Update description for all records if provided
-            if ($request->has('description')) {
-                foreach ($historyRecords as $record) {
-                    $record->update(['description' => $description]);
-                }
-            }
-
-            $availableBalance = $this->bonusService->getAvailableBonusBalance($customer);
+            $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
 
             return new JsonResponse([
                 'success' => true,

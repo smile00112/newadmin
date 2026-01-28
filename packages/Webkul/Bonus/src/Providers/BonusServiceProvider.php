@@ -32,6 +32,35 @@ class BonusServiceProvider extends ServiceProvider
     public function register()
     {
         $this->registerConfig();
+        $this->registerContracts();
+    }
+
+    /**
+     * Register contract bindings.
+     *
+     * @return void
+     */
+    protected function registerContracts()
+    {
+        $this->app->bind(
+            \Webkul\Bonus\Contracts\CustomerBonus::class,
+            \Webkul\Bonus\Models\CustomerBonus::class
+        );
+
+        $this->app->bind(
+            \Webkul\Bonus\Contracts\BonusLevel::class,
+            \Webkul\Bonus\Models\BonusLevel::class
+        );
+
+        $this->app->bind(
+            \Webkul\Bonus\Contracts\BonusTransaction::class,
+            \Webkul\Bonus\Models\BonusTransaction::class
+        );
+
+        $this->app->bind(
+            \Webkul\Bonus\Contracts\BonusSetting::class,
+            \Webkul\Bonus\Models\BonusSetting::class
+        );
     }
 
     /**

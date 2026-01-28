@@ -22,12 +22,155 @@
                 <p class="text-sm text-gray-600 dark:text-gray-300">
                     @lang('bonus::app.admin.settings.levels.info')
                 </p>
-                <a
-                    href="{{ route('admin.bonus.levels.create') }}"
+                <button
+                    type="button"
+                    @click="openCreateModal"
                     class="primary-button"
                 >
                     @lang('bonus::app.admin.levels.create')
-                </a>
+                </button>
+            </div>
+
+            <!-- Create/Edit Level Modal -->
+            <div
+                v-if="showCreateModal"
+                class="fixed inset-0 z-[10001] flex items-center justify-center bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
+                @click.self="closeCreateModal"
+            >
+                <div class="relative top-10 mx-auto p-5 border w-11/12 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto md:w-3/4 lg:w-2/3">
+                    <!-- Modal Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                            @{{ editingLevelId ? translations.editTitle : translations.createTitle }}
+                        </h3>
+                        <button
+                            type="button"
+                            @click="closeCreateModal"
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                            <span class="icon-cross text-2xl"></span>
+                        </button>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="mt-3">
+                        <form @submit.prevent="saveLevel">
+                            <div class="space-y-4">
+                                <!-- Name Field -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        @lang('bonus::app.admin.levels.name')
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        v-model="formData.name"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                        :class="{ 'border-red-500': errors.name }"
+                                    />
+                                    <p v-if="errors.name" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        @{{ errors.name[0] }}
+                                    </p>
+                                </div>
+
+                                <!-- Cashback Percent Field -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        @lang('bonus::app.admin.levels.cashback-percent')
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        v-model="formData.cashback_percent"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                        :class="{ 'border-red-500': errors.cashback_percent }"
+                                    />
+                                    <p v-if="errors.cashback_percent" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        @{{ errors.cashback_percent[0] }}
+                                    </p>
+                                </div>
+
+                                <!-- Threshold Value Field -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        @lang('bonus::app.admin.levels.threshold')
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        v-model="formData.threshold_value"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                        :class="{ 'border-red-500': errors.threshold_value }"
+                                    />
+                                    <p v-if="errors.threshold_value" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        @{{ errors.threshold_value[0] }}
+                                    </p>
+                                </div>
+
+                                <!-- Sort Order Field -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        @lang('bonus::app.admin.levels.sort-order')
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        v-model="formData.sort_order"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                        :class="{ 'border-red-500': errors.sort_order }"
+                                    />
+                                    <p v-if="errors.sort_order" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        @{{ errors.sort_order[0] }}
+                                    </p>
+                                </div>
+
+                                <!-- Is Active Field -->
+                                <div class="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        v-model="formData.is_active"
+                                        :checked="formData.is_active"
+                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                    <label class="ml-2 block text-sm text-gray-900 dark:text-gray-300 cursor-pointer">
+                                        @lang('bonus::app.admin.levels.is-active')
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Modal Footer -->
+                            <div class="flex justify-end gap-x-2 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+                                <button
+                                    type="button"
+                                    @click="closeCreateModal"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                                >
+                                    @lang('admin::app.datagrid.cancel')
+                                </button>
+                                <button
+                                    type="submit"
+                                    :disabled="isSubmitting"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <span v-if="isSubmitting">
+                                        <img
+                                            class="h-5 w-5 animate-spin inline-block"
+                                            src="{{ bagisto_asset('images/spinner.svg') }}"
+                                        />
+                                    </span>
+                                    <span v-else>
+                                        @lang('admin::app.datagrid.save')
+                                    </span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
             <!-- Loading State -->
@@ -91,12 +234,13 @@
                                 </td>
                                 <td class="px-4 py-3 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <a
-                                            :href="getEditUrl(level.id)"
+                                        <button
+                                            type="button"
+                                            @click="openEditModal(level)"
                                             class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                         >
                                             @lang('admin::app.datagrid.edit')
-                                        </a>
+                                        </button>
                                         <button
                                             type="button"
                                             @click="confirmDelete(level)"
@@ -148,23 +292,122 @@
                 return {
                     levels: [],
                     isLoading: false,
+                    showCreateModal: false,
+                    editingLevelId: null,
+                    isSubmitting: false,
+                    formData: {
+                        name: '',
+                        cashback_percent: '',
+                        threshold_value: '',
+                        sort_order: 0,
+                        is_active: true,
+                    },
+                    errors: {},
                     translations: {
                         active: '{{ trans("admin::app.datagrid.active") }}',
                         inactive: '{{ trans("admin::app.datagrid.inactive") }}',
                         deleteWarning: '{{ trans("admin::app.datagrid.delete-warning") }}',
                         deleteSuccess: '{{ trans("bonus::app.admin.levels.delete-success") }}',
+                        createSuccess: '{{ trans("bonus::app.admin.levels.create-success") }}',
+                        updateSuccess: '{{ trans("bonus::app.admin.levels.update-success") }}',
+                        createTitle: '{{ trans("bonus::app.admin.levels.create") }}',
+                        editTitle: '{{ trans("bonus::app.admin.levels.edit") }}',
                     },
                 }
             },
 
             mounted() {
                 this.levels = this.initialLevels || [];
+                
+                // Handle Escape key to close modal
+                const self = this;
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && self.showCreateModal) {
+                        self.closeCreateModal();
+                    }
+                });
             },
 
             methods: {
+                openCreateModal() {
+                    this.editingLevelId = null;
+                    this.showCreateModal = true;
+                    this.resetForm();
+                },
 
-                getEditUrl(id) {
-                    return "{{ route('admin.bonus.levels.edit', ['id' => ':id']) }}".replace(':id', id);
+                openEditModal(level) {
+                    this.editingLevelId = level.id;
+                    this.showCreateModal = true;
+                    this.formData = {
+                        name: level.name || '',
+                        cashback_percent: level.cashback_percent || '',
+                        threshold_value: level.threshold_value || '',
+                        sort_order: level.sort_order || 0,
+                        is_active: level.is_active !== undefined ? level.is_active : true,
+                    };
+                    this.errors = {};
+                },
+
+                closeCreateModal() {
+                    this.showCreateModal = false;
+                    this.editingLevelId = null;
+                    this.resetForm();
+                },
+
+                resetForm() {
+                    this.formData = {
+                        name: '',
+                        cashback_percent: '',
+                        threshold_value: '',
+                        sort_order: 0,
+                        is_active: true,
+                    };
+                    this.errors = {};
+                },
+
+                saveLevel() {
+                    this.isSubmitting = true;
+                    this.errors = {};
+
+                    let self = this;
+                    const isEditing = this.editingLevelId !== null;
+                    
+                    // Prepare form data
+                    const formData = { ...this.formData };
+                    if (isEditing) {
+                        formData._method = 'PUT';
+                    }
+                    
+                    const url = isEditing 
+                        ? "{{ route('admin.bonus.levels.update', ['id' => ':id']) }}".replace(':id', this.editingLevelId)
+                        : "{{ route('admin.bonus.levels.store') }}";
+
+                    this.$axios.post(url, formData)
+                        .then(function(response) {
+                            self.isSubmitting = false;
+                            
+                            self.$emitter.emit('add-flash', {
+                                type: 'success',
+                                message: isEditing ? self.translations.updateSuccess : self.translations.createSuccess
+                            });
+
+                            // Reload page to refresh levels list
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 500);
+                        })
+                        .catch(function(error) {
+                            self.isSubmitting = false;
+
+                            if (error.response?.data?.errors) {
+                                self.errors = error.response.data.errors;
+                            } else {
+                                self.$emitter.emit('add-flash', {
+                                    type: 'error',
+                                    message: error.response?.data?.message || (isEditing ? 'Ошибка обновления уровня' : 'Ошибка создания уровня')
+                                });
+                            }
+                        });
                 },
 
                 confirmDelete(level) {
