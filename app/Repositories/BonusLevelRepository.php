@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\BonusLevel;
 use Illuminate\Container\Container;
+use Webkul\Bonus\Models\BonusLevel;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\Customer\Models\CustomerProxy;
 

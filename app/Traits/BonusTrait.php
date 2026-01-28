@@ -2,10 +2,10 @@
 
 namespace App\Traits;
 
-use App\Models\BonusLevel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Webkul\Bonus\Models\BonusHistory;
+use Webkul\Bonus\Models\BonusLevel;
 
 trait BonusTrait
 {

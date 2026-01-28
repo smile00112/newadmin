@@ -135,4 +135,18 @@ return [
             ],
         ],
     ],
+    [
+        'key'    => 'bonus.general.manage',
+        'name'   => 'bonus::app.admin.settings.manage.title',
+        'info'   => 'bonus::app.admin.settings.manage.info',
+        'sort'   => 2,
+        'fields' => [
+            [
+                'name' => 'manage_bonuses',
+                'title' => 'bonus::app.admin.settings.manage.title',
+                'type' => 'blade',
+                'path' => 'bonus::admin.settings.manage',
+            ],
+        ],
+    ],
 ];

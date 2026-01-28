@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\BonusLevel;
 use App\Repositories\BonusLevelRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Bonus\Models\BonusLevel;
 
 class BonusLevelController extends Controller
 {

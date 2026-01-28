@@ -26,9 +26,9 @@ class BonusService
      *
      * @param  \Webkul\Customer\Contracts\Customer  $customer
      * @param  string  $calculationType
-     * @return \App\Models\BonusLevel|null
+     * @return \Webkul\Bonus\Models\BonusLevel|null
      */
-    public function calculateCustomerLevel($customer, string $calculationType): ?\App\Models\BonusLevel
+    public function calculateCustomerLevel($customer, string $calculationType): ?\Webkul\Bonus\Models\BonusLevel
     {
         return $this->bonusLevelRepository->getLevelForCustomer($customer, $calculationType);
     }
