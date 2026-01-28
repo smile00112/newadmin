@@ -42,8 +42,9 @@ return [
         \Webkul\Tax\Providers\ModuleServiceProvider::class,
         \Webkul\Theme\Providers\ModuleServiceProvider::class,
         \Webkul\User\Providers\ModuleServiceProvider::class,
-        // ВНИМАНИЕ: Раскомментируйте следующую строку после выполнения: composer dump-autoload
         \Webkul\MobileApp\Providers\ModuleServiceProvider::class,
+        \Webkul\Bonus\Providers\ModuleServiceProvider::class,
+
     ],
 
 ];

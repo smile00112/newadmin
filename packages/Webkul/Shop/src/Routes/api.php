@@ -11,6 +11,7 @@ use Webkul\Shop\Http\Controllers\API\OnepageController;
 use Webkul\Shop\Http\Controllers\API\ProductController;
 use Webkul\Shop\Http\Controllers\API\ReviewController;
 use Webkul\Shop\Http\Controllers\API\WishlistController;
+use App\Http\Controllers\Shop\BonusController;
 
 Route::group(['prefix' => 'api'], function () {
 
@@ -78,6 +79,11 @@ Route::group(['prefix' => 'api'], function () {
         Route::delete('coupon', 'destroyCoupon')->name('shop.api.checkout.cart.coupon.remove');
 
         Route::get('cross-sell', 'crossSellProducts')->name('shop.api.checkout.cart.cross-sell.index');
+    });
+
+    Route::controller(BonusController::class)->prefix('checkout/bonus')->group(function () {
+        Route::post('apply', 'applyBonus')->name('shop.api.checkout.bonus.apply');
+        Route::delete('remove', 'removeBonus')->name('shop.api.checkout.bonus.remove');
     });
 
     Route::controller(OnepageController::class)->prefix('checkout/onepage')->group(function () {

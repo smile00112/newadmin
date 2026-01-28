@@ -1,0 +1,438 @@
+<?php
+
+namespace Webkul\Bonus\Services;
+
+use Illuminate\Support\Facades\DB;
+use Webkul\Bonus\Models\BonusLevel;
+use Webkul\Bonus\Models\BonusTransaction;
+use Webkul\Bonus\Repositories\BonusLevelRepository;
+use Webkul\Bonus\Repositories\BonusSettingRepository;
+use Webkul\Bonus\Repositories\BonusTransactionRepository;
+use Webkul\Bonus\Repositories\CustomerBonusRepository;
+use Webkul\Checkout\Models\Cart;
+use Webkul\Customer\Models\Customer;
+use Webkul\Sales\Models\Order;
+
+class BonusService
+{
+    /**
+     * Create a new service instance.
+     *
+     * @return void
+     */
+    public function __construct(
+        protected BonusLevelRepository $bonusLevelRepository,
+        protected CustomerBonusRepository $customerBonusRepository,
+        protected BonusTransactionRepository $bonusTransactionRepository,
+        protected BonusSettingRepository $bonusSettingRepository
+    ) {}
+
+    /**
+     * Check if bonus system is enabled.
+     *
+     * @param  string|null  $channelCode
+     * @return bool
+     */
+    public function isEnabled(?string $channelCode = null): bool
+    {
+        return $this->bonusSettingRepository->isBonusEnabled($channelCode);
+    }
+
+    /**
+     * Calculate customer bonus level based on calculation type.
+     *
+     * @param  \Webkul\Customer\Models\Customer  $customer
+     * @param  string  $calculationType
+     * @param  float|null  $cartValue
+     * @return \Webkul\Bonus\Models\BonusLevel|null
+     */
+    public function calculateCustomerLevel(Customer $customer, string $calculationType, ?float $cartValue = null): ?BonusLevel
+    {
+        if (! $this->isEnabled()) {
+            return null;
+        }
+
+        $levels = $this->bonusLevelRepository->getLevelsByCalculationType($calculationType);
+
+        if ($levels->isEmpty()) {
+            return null;
+        }
+
+        $value = match ($calculationType) {
+            BonusLevel::CALCULATION_TYPE_ORDERS_COUNT => $this->getCustomerOrdersCount($customer),
+            BonusLevel::CALCULATION_TYPE_TOTAL_SPENT => $this->getCustomerTotalSpent($customer),
+            BonusLevel::CALCULATION_TYPE_CART_VALUE => $cartValue ?? 0,
+            default => 0,
+        };
+
+        $applicableLevel = null;
+
+        foreach ($levels as $level) {
+            if ($value >= $level->threshold_value) {
+                if (! $applicableLevel || $level->threshold_value > $applicableLevel->threshold_value) {
+                    $applicableLevel = $level;
+                }
+            }
+        }
+
+        return $applicableLevel;
+    }
+
+    /**
+     * Get customer completed orders count.
+     *
+     * @param  \Webkul\Customer\Models\Customer  $customer
+     * @return int
+     */
+    protected function getCustomerOrdersCount(Customer $customer): int
+    {
+        return $customer->orders()
+            ->where('status', Order::STATUS_COMPLETED)
+            ->count();
+    }
+
+    /**
+     * Get customer total spent amount.
+     *
+     * @param  \Webkul\Customer\Models\Customer  $customer
+     * @return float
+     */
+    protected function getCustomerTotalSpent(Customer $customer): float
+    {
+        return (float) $customer->orders()
+            ->where('status', Order::STATUS_COMPLETED)
+            ->sum('base_grand_total');
+    }
+
+    /**
+     * Calculate cashback amount for order.
+     *
+     * @param  \Webkul\Sales\Models\Order  $order
+     * @return float
+     */
+    public function calculateCashbackAmount(Order $order): float
+    {
+        if (! $this->isEnabled()) {
+            return 0;
+        }
+
+        if (! $order->customer_id || $order->is_guest) {
+            return 0;
+        }
+
+        $customer = $order->customer;
+
+        if (! $customer) {
+            return 0;
+        }
+
+        // Get order total excluding excluded products
+        $orderTotal = $this->getOrderTotalForCashback($order);
+
+        if ($orderTotal <= 0) {
+            return 0;
+        }
+
+        // Try different calculation types and get the best level
+        $bestLevel = null;
+        $bestPercent = 0;
+
+        $calculationTypes = [
+            BonusLevel::CALCULATION_TYPE_TOTAL_SPENT,
+            BonusLevel::CALCULATION_TYPE_ORDERS_COUNT,
+        ];
+
+        foreach ($calculationTypes as $type) {
+            $level = $this->calculateCustomerLevel($customer, $type);
+            if ($level && $level->cashback_percent > $bestPercent) {
+                $bestLevel = $level;
+                $bestPercent = $level->cashback_percent;
+            }
+        }
+
+        if (! $bestLevel) {
+            return 0;
+        }
+
+        return round($orderTotal * ($bestPercent / 100), 4);
+    }
+
+    /**
+     * Get order total for cashback calculation (excluding excluded products).
+     *
+     * @param  \Webkul\Sales\Models\Order  $order
+     * @return float
+     */
+    protected function getOrderTotalForCashback(Order $order): float
+    {
+        $excludedProductIds = $this->bonusSettingRepository->getExcludedProductIds();
+        $participatingProductIds = $this->bonusSettingRepository->getParticipatingProductIds();
+
+        $total = 0;
+
+        foreach ($order->items as $item) {
+            $productId = $item->product_id;
+
+            // Skip if product is excluded
+            if (! empty($excludedProductIds) && in_array($productId, $excludedProductIds)) {
+                continue;
+            }
+
+            // Skip if participating list exists and product is not in it
+            if (! empty($participatingProductIds) && ! in_array($productId, $participatingProductIds)) {
+                continue;
+            }
+
+            $total += $item->base_total;
+        }
+
+        return (float) $total;
+    }
+
+    /**
+     * Accrue bonuses for completed order.
+     *
+     * @param  \Webkul\Sales\Models\Order  $order
+     * @return void
+     */
+    public function accrueBonuses(Order $order): void
+    {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        if (! $order->customer_id || $order->is_guest) {
+            return;
+        }
+
+        // Check if bonuses already accrued
+        if ($order->base_bonus_amount_accrued > 0) {
+            return;
+        }
+
+        $amount = $this->calculateCashbackAmount($order);
+
+        if ($amount <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($order, $amount) {
+            $currencyCode = $order->order_currency_code ?? core()->getCurrentCurrencyCode();
+            $expiryDays = $this->bonusSettingRepository->getExpiryDays();
+            $expiresAt = $expiryDays > 0 ? now()->addDays($expiryDays) : null;
+
+            // Create transaction
+            $this->bonusTransactionRepository->create([
+                'customer_id' => $order->customer_id,
+                'order_id' => $order->id,
+                'type' => BonusTransaction::TYPE_ACCRUAL,
+                'amount' => $amount,
+                'currency_code' => $currencyCode,
+                'description' => trans('bonus::app.transactions.accrual_description', [
+                    'order_id' => $order->increment_id,
+                ]),
+                'expires_at' => $expiresAt,
+            ]);
+
+            // Update customer balance
+            $this->customerBonusRepository->updateBalance(
+                $order->customer_id,
+                $amount,
+                $currencyCode
+            );
+
+            // Update order
+            $order->base_bonus_amount_accrued = $amount;
+            $order->bonus_amount_accrued = core()->convertPrice($amount, $order->base_currency_code, $order->order_currency_code);
+            $order->save();
+        });
+    }
+
+    /**
+     * Deduct bonuses when order is created.
+     *
+     * @param  \Webkul\Sales\Models\Order  $order
+     * @param  float  $bonusAmount
+     * @return void
+     */
+    public function deductBonuses(Order $order, float $bonusAmount): void
+    {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        if (! $order->customer_id || $order->is_guest) {
+            return;
+        }
+
+        if ($bonusAmount <= 0) {
+            return;
+        }
+
+        $currencyCode = $order->order_currency_code ?? core()->getCurrentCurrencyCode();
+        $availableBalance = $this->getAvailableBonuses($order->customer_id, $currencyCode);
+
+        if ($availableBalance < $bonusAmount) {
+            throw new \Exception(trans('bonus::app.errors.insufficient_balance'));
+        }
+
+        DB::transaction(function () use ($order, $bonusAmount, $currencyCode) {
+            // Get available bonuses (FIFO - oldest first)
+            $availableTransactions = $this->bonusTransactionRepository->model
+                ->where('customer_id', $order->customer_id)
+                ->where('currency_code', $currencyCode)
+                ->where('type', BonusTransaction::TYPE_ACCRUAL)
+                ->notExpired()
+                ->where('amount', '>', 0)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $remainingAmount = $bonusAmount;
+
+            foreach ($availableTransactions as $transaction) {
+                if ($remainingAmount <= 0) {
+                    break;
+                }
+
+                $deductAmount = min($transaction->amount, $remainingAmount);
+
+                // Create deduction transaction
+                $this->bonusTransactionRepository->create([
+                    'customer_id' => $order->customer_id,
+                    'order_id' => $order->id,
+                    'type' => BonusTransaction::TYPE_DEDUCTION,
+                    'amount' => -$deductAmount,
+                    'currency_code' => $currencyCode,
+                    'description' => trans('bonus::app.transactions.deduction_description', [
+                        'order_id' => $order->increment_id,
+                    ]),
+                ]);
+
+                // Update transaction amount (reduce available balance)
+                $transaction->amount -= $deductAmount;
+                $transaction->save();
+
+                $remainingAmount -= $deductAmount;
+            }
+
+            // Update customer balance
+            $this->customerBonusRepository->updateBalance(
+                $order->customer_id,
+                -$bonusAmount,
+                $currencyCode
+            );
+
+            // Update order
+            $order->base_bonus_amount_used = $bonusAmount;
+            $order->bonus_amount_used = core()->convertPrice($bonusAmount, $order->base_currency_code, $order->order_currency_code);
+            $order->save();
+        });
+    }
+
+    /**
+     * Return bonuses when order is cancelled.
+     *
+     * @param  \Webkul\Sales\Models\Order  $order
+     * @return void
+     */
+    public function returnBonuses(Order $order): void
+    {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        if (! $order->customer_id || $order->is_guest) {
+            return;
+        }
+
+        $currencyCode = $order->order_currency_code ?? core()->getCurrentCurrencyCode();
+        $returnAmount = $order->base_bonus_amount_used ?? 0;
+
+        if ($returnAmount <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($order, $returnAmount, $currencyCode) {
+            // Create return transaction
+            $this->bonusTransactionRepository->create([
+                'customer_id' => $order->customer_id,
+                'order_id' => $order->id,
+                'type' => BonusTransaction::TYPE_RETURN,
+                'amount' => $returnAmount,
+                'currency_code' => $currencyCode,
+                'description' => trans('bonus::app.transactions.return_description', [
+                    'order_id' => $order->increment_id,
+                ]),
+            ]);
+
+            // Update customer balance
+            $this->customerBonusRepository->updateBalance(
+                $order->customer_id,
+                $returnAmount,
+                $currencyCode
+            );
+
+            // Cancel accrual if exists
+            if ($order->base_bonus_amount_accrued > 0) {
+                $this->bonusTransactionRepository->create([
+                    'customer_id' => $order->customer_id,
+                    'order_id' => $order->id,
+                    'type' => BonusTransaction::TYPE_DEDUCTION,
+                    'amount' => -$order->base_bonus_amount_accrued,
+                    'currency_code' => $currencyCode,
+                    'description' => trans('bonus::app.transactions.cancel_accrual_description', [
+                        'order_id' => $order->increment_id,
+                    ]),
+                ]);
+
+                $this->customerBonusRepository->updateBalance(
+                    $order->customer_id,
+                    -$order->base_bonus_amount_accrued,
+                    $currencyCode
+                );
+            }
+        });
+    }
+
+    /**
+     * Get available bonuses for customer.
+     *
+     * @param  int  $customerId
+     * @param  string|null  $currencyCode
+     * @return float
+     */
+    public function getAvailableBonuses(int $customerId, ?string $currencyCode = null): float
+    {
+        if (! $this->isEnabled()) {
+            return 0;
+        }
+
+        $currencyCode = $currencyCode ?? core()->getCurrentCurrencyCode();
+
+        return $this->bonusTransactionRepository->getAvailableBonuses($customerId, $currencyCode);
+    }
+
+    /**
+     * Get maximum bonus amount that can be used for order.
+     *
+     * @param  \Webkul\Sales\Models\Order|\Webkul\Checkout\Models\Cart  $orderOrCart
+     * @param  int  $customerId
+     * @return float
+     */
+    public function getMaxUsableBonuses($orderOrCart, int $customerId): float
+    {
+        if (! $this->isEnabled()) {
+            return 0;
+        }
+
+        $grandTotal = $orderOrCart->base_grand_total ?? $orderOrCart->grand_total ?? 0;
+        $currencyCode = $orderOrCart->order_currency_code ?? $orderOrCart->cart_currency_code ?? core()->getCurrentCurrencyCode();
+        $maxPercent = $this->bonusSettingRepository->getMaxUsagePercent();
+        $availableBalance = $this->getAvailableBonuses($customerId, $currencyCode);
+
+        $maxByPercent = $grandTotal * ($maxPercent / 100);
+        $maxByBalance = $availableBalance;
+
+        return min($maxByPercent, $maxByBalance, $grandTotal);
+    }
+}

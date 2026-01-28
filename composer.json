@@ -100,7 +100,9 @@
             "Webkul\\Theme\\": "packages/Webkul/Theme/src",
             "Webkul\\User\\": "packages/Webkul/User/src",
             "Webkul\\RestApi\\": "packages/Webkul/RestApi/src",
-            "Webkul\\MobileApp\\": "packages/Webkul/MobileApp/src"
+            "Webkul\\MobileApp\\": "packages/Webkul/MobileApp/src",
+            "Webkul\\Bonus\\": "packages/Webkul/Bonus/src"
+
         }
     },
     "autoload-dev": {
