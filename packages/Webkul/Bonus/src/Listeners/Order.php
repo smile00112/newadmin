@@ -44,8 +44,20 @@ class Order
     public function afterStatusUpdated(OrderContract $order)
     {
         try {
+            $status = $order->status;
+            
+            // Check deduction statuses - списание бонусов при смене статуса
+            $deductionStatuses = core()->getConfigData('bonus.general.settings.deduction_status');
+            if (is_array($deductionStatuses) && in_array($status, $deductionStatuses)) {
+                // Списать бонусы, если они были использованы, но еще не списаны
+                $bonusAmount = $order->base_bonus_amount ?? 0;
+                if ($bonusAmount > 0 && ($order->base_bonus_amount_used ?? 0) == 0) {
+                    $this->bonusService->deductBonuses($order, $bonusAmount);
+                }
+            }
+            
             // Accrue bonuses when order is completed
-            if ($order->status === \Webkul\Sales\Models\Order::STATUS_COMPLETED) {
+            if ($status === \Webkul\Sales\Models\Order::STATUS_COMPLETED) {
                 $this->bonusService->accrueBonuses($order);
             }
         } catch (\Exception $e) {
