@@ -212,6 +212,18 @@ class BonusController
      *              @OA\Property(
      *                  property="bonus_history",
      *                  type="array",
+     *                  description="Bonus transaction history",
+     *
+     *                  @OA\Items(
+     *                      type="object",
+     *                      @OA\Property(property="id", type="integer", example=1),
+     *                      @OA\Property(property="type", type="string", enum={"accrual", "deduction", "return"}, example="accrual"),
+     *                      @OA\Property(property="amount", type="number", format="float", example=50.00),
+     *                      @OA\Property(property="currency_code", type="string", example="USD"),
+     *                      @OA\Property(property="description", type="string", example="Начисление бонусов за заказ #00001"),
+     *                      @OA\Property(property="order_id", type="integer", nullable=true, example=1),
+     *                      @OA\Property(property="created_at", type="string", format="date-time", example="2026-01-22 10:00:00")
+     *                  ),
      *                  example={}
      *              )
      *          )
@@ -224,4 +236,79 @@ class BonusController
      * )
      */
     public function test() {}
+
+    /**
+     * @OA\Post(
+     *      path="/api/checkout/bonus/apply",
+     *      operationId="applyBonusToCart",
+     *      tags={"Checkout"},
+     *      summary="Apply bonus to cart",
+     *      description="Apply bonus amount to the current customer's cart. Requires authenticated customer with active cart.",
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *
+     *          @OA\MediaType(
+     *              mediaType="application/json",
+     *
+     *              @OA\Schema(
+     *
+     *                  @OA\Property(
+     *                      property="amount",
+     *                      type="number",
+     *                      format="float",
+     *                      description="Bonus amount to apply (must be >= 0)",
+     *                      example=100.50,
+     *                      minimum=0
+     *                  ),
+     *                  required={"amount"}
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Bonus applied successfully",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="success",
+     *                  type="boolean",
+     *                  example=true
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Бонусы успешно применены"
+     *              ),
+     *              @OA\Property(
+     *                  property="cart",
+     *                  type="object",
+     *                  description="Updated cart object with applied bonus"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad request - validation error or business logic error",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="success",
+     *                  type="boolean",
+     *                  example=false
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Корзина не найдена или пользователь не авторизован"
+     *              )
+     *          )
+     *      )
+     * )
+     */
+    public function applyBonus() {}
 }

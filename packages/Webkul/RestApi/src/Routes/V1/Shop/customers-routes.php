@@ -211,4 +211,11 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::get('', 'index');
     });
 
+    /**
+     * Customer bonus test route.
+     */
+    Route::controller(BonusController::class)->prefix('customer/bonuces-test')->group(function () {
+        Route::get('', 'indexTest');
+    });
+
 });

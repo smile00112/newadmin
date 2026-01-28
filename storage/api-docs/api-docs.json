@@ -2888,6 +2888,408 @@
                 }
             }
         },
+        "/api/v1/customer/bonuses": {
+            "get": {
+                "tags": [
+                    "Bonuses"
+                ],
+                "summary": "Get logged in customer's bonus information",
+                "description": "Returns customer's bonus balance, levels, history and settings",
+                "operationId": "getCustomerBonuses",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "points_balance": {
+                                            "description": "Available bonus balance (not expired)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 450.5
+                                        },
+                                        "balance": {
+                                            "description": "Total bonus balance",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 500
+                                        },
+                                        "spent_sum": {
+                                            "description": "Total amount spent by customer",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 15000
+                                        },
+                                        "orders_count": {
+                                            "description": "Number of completed orders",
+                                            "type": "integer",
+                                            "example": 25
+                                        },
+                                        "percent_max": {
+                                            "description": "Maximum percentage of order that can be paid with bonuses",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 100
+                                        },
+                                        "show_levels_info": {
+                                            "description": "Whether to show levels information",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "level": {
+                                            "description": "Current bonus level ID",
+                                            "type": "integer",
+                                            "example": 2,
+                                            "nullable": true
+                                        },
+                                        "type": {
+                                            "description": "Calculation type for current level",
+                                            "type": "string",
+                                            "enum": [
+                                                "orders_count",
+                                                "total_spent",
+                                                "cart_value"
+                                            ],
+                                            "example": "total_spent"
+                                        },
+                                        "levels_info": {
+                                            "description": "List of all bonus levels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Bronze"
+                                                    },
+                                                    "cashback_percent": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 2
+                                                    },
+                                                    "description_top": {
+                                                        "type": "string",
+                                                        "example": "Возвращаем 2% заказа."
+                                                    },
+                                                    "description_bottom": {
+                                                        "type": "string",
+                                                        "example": "0-1000 потрачено"
+                                                    },
+                                                    "is_current": {
+                                                        "type": "boolean",
+                                                        "example": false
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_level_info": {
+                                            "description": "Information about next level",
+                                            "properties": {
+                                                "text1": {
+                                                    "type": "string",
+                                                    "example": "Вы сделали 1000 потрачено"
+                                                },
+                                                "text2": {
+                                                    "type": "string",
+                                                    "example": "Осталось 500 потрачено до повышения"
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        },
+                                        "bonus_history": {
+                                            "description": "Recent bonus transactions",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "accrual",
+                                                            "deduction",
+                                                            "return"
+                                                        ],
+                                                        "example": "accrual"
+                                                    },
+                                                    "amount": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 50
+                                                    },
+                                                    "currency_code": {
+                                                        "type": "string",
+                                                        "example": "USD"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Начисление бонусов за заказ #00001"
+                                                    },
+                                                    "order_id": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2026-01-22 10:00:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/bonuces-test": {
+            "get": {
+                "tags": [
+                    "Bonuses"
+                ],
+                "summary": "Get test bonus information (for testing)",
+                "description": "Returns test bonus data for development/testing purposes",
+                "operationId": "getCustomerBonusesTest",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "points_balance": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 450
+                                        },
+                                        "spent_sum": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 0
+                                        },
+                                        "percent_max": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 10
+                                        },
+                                        "show_levels_info": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "level": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "example": "orderscount"
+                                        },
+                                        "levels_info": {
+                                            "description": "Test levels data",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "1 грейд"
+                                                    },
+                                                    "cashback_percent": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 2
+                                                    },
+                                                    "description_top": {
+                                                        "type": "string",
+                                                        "example": "Возвращаем 2% заказа."
+                                                    },
+                                                    "description_bottom": {
+                                                        "type": "string",
+                                                        "example": "0-10 заказов"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_level_info": {
+                                            "properties": {
+                                                "text1": {
+                                                    "type": "string",
+                                                    "example": "Вы сделалли 12 заказов"
+                                                },
+                                                "text2": {
+                                                    "type": "string",
+                                                    "example": "Осталось 2 закзаза до  до повышения"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "bonus_history": {
+                                            "description": "Bonus transaction history",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "accrual",
+                                                            "deduction",
+                                                            "return"
+                                                        ],
+                                                        "example": "accrual"
+                                                    },
+                                                    "amount": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 50
+                                                    },
+                                                    "currency_code": {
+                                                        "type": "string",
+                                                        "example": "USD"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Начисление бонусов за заказ #00001"
+                                                    },
+                                                    "order_id": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2026-01-22 10:00:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "example": []
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/checkout/bonus/apply": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Apply bonus to cart",
+                "description": "Apply bonus amount to the current customer's cart. Requires authenticated customer with active cart.",
+                "operationId": "applyBonusToCart",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "description": "Bonus amount to apply (must be >= 0)",
+                                        "type": "number",
+                                        "format": "float",
+                                        "minimum": 0,
+                                        "example": 100.5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Bonus applied successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Бонусы успешно применены"
+                                        },
+                                        "cart": {
+                                            "description": "Updated cart object with applied bonus",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - validation error or business logic error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Корзина не найдена или пользователь не авторизован"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/customer/cart": {
             "get": {
                 "tags": [
@@ -7682,6 +8084,55 @@
                                                         "default": {
                                                             "description": "Is default product",
                                                             "type": "boolean"
+                                                        },
+                                                        "base_image": {
+                                                            "description": "Product base image with different sizes",
+                                                            "properties": {
+                                                                "small_image_url": {
+                                                                    "type": "string"
+                                                                },
+                                                                "medium_image_url": {
+                                                                    "type": "string"
+                                                                },
+                                                                "large_image_url": {
+                                                                    "type": "string"
+                                                                },
+                                                                "original_image_url": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "nutrition": {
+                                                            "description": "Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+                                                            "properties": {
+                                                                "calories": {
+                                                                    "description": "Calories (ккал)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                },
+                                                                "proteins": {
+                                                                    "description": "Proteins (г)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                },
+                                                                "fats": {
+                                                                    "description": "Fats (г)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                },
+                                                                "carbs": {
+                                                                    "description": "Carbohydrates (г)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
                                                         }
                                                     },
                                                     "type": "object"
@@ -7730,7 +8181,19 @@
                                                 "formatted_price": "$5.50",
                                                 "in_stock": true,
                                                 "sort": 1,
-                                                "default": true
+                                                "default": true,
+                                                "base_image": {
+                                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                                },
+                                                "nutrition": {
+                                                    "calories": 250.5,
+                                                    "proteins": 15.2,
+                                                    "fats": 8.5,
+                                                    "carbs": 30
+                                                }
                                             },
                                             {
                                                 "id": 26,
@@ -7740,7 +8203,14 @@
                                                 "formatted_price": "$3.00",
                                                 "in_stock": true,
                                                 "sort": 2,
-                                                "default": false
+                                                "default": false,
+                                                "base_image": {
+                                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                                },
+                                                "nutrition": null
                                             }
                                         ]
                                     }
@@ -12379,6 +12849,10 @@
         {
             "name": "Catalog",
             "description": "Catalog"
+        },
+        {
+            "name": "Bonuses",
+            "description": "Bonuses"
         },
         {
             "name": "Mobile App",
