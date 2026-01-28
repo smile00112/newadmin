@@ -411,6 +411,23 @@
 
                             {!! view_render_event('bagisto.admin.sales.order.view.discount.after') !!}
 
+                            {!! view_render_event('bagisto.admin.sales.order.view.bonus.before') !!}
+
+                            <!-- Bonus Payment -->
+                            @if ($order->base_bonus_amount > 0)
+                                <div class="flex w-full justify-between gap-x-5">
+                                    <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                        @lang('admin::app.sales.orders.view.bonus-payment')
+                                    </p>
+
+                                    <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                        {{ core()->formatBasePrice($order->base_bonus_amount) }}
+                                    </p>
+                                </div>
+                            @endif
+
+                            {!! view_render_event('bagisto.admin.sales.order.view.bonus.after') !!}
+
                             {!! view_render_event('bagisto.admin.sales.order.view.grand-total.before') !!}
 
                             <!-- Grand Total -->

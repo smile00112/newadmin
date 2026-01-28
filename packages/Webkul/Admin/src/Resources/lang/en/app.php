@@ -424,6 +424,7 @@ return [
                 'summary-sub-total-excl-tax'     => 'Sub Total (Excl. Tax)',
                 'summary-sub-total'              => 'Sub Total',
                 'summary-discount'               => 'Discount',
+                'bonus-payment'                   => 'Bonus Payment',
                 'summary-tax'                    => 'Tax',
                 'tax'                            => 'Tax (:percent) - :tax',
                 'title'                          => 'Order #:order_id',

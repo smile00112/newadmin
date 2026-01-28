@@ -422,6 +422,7 @@ return [
                 'sub-total-incl-tax'             => 'Подитог (с учетом налогов) - :sub_total',
                 'submit-comment'                 => 'Отправить комментарий',
                 'summary-discount'               => 'Скидка',
+                'bonus-payment'                   => 'Оплата бонусами',
                 'summary-grand-total'            => 'Общая сумма',
                 'summary-sub-total'              => 'Подитог',
                 'summary-sub-total-excl-tax'     => 'Подитог (без учета налогов)',

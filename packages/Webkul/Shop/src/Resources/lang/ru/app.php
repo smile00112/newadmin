@@ -219,6 +219,7 @@ return [
 
                     'information' => [
                         'discount'                   => 'Скидка',
+                        'bonus-payment'               => 'Оплата бонусами',
                         'excl-tax'                   => 'Без налога:',
                         'grand-total'                => 'Общая сумма',
                         'info'                       => 'Информация',

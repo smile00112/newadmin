@@ -219,6 +219,7 @@ return [
 
                     'information' => [
                         'discount'                   => 'Discount',
+                        'bonus-payment'               => 'Bonus Payment',
                         'excl-tax'                   => 'Excl Tax:',
                         'grand-total'                => 'Grand Total',
                         'info'                       => 'Information',
