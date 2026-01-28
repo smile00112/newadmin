@@ -45,27 +45,29 @@ class BonusController extends CustomerController
                     'id' => 1,
                     'name' => '1 грейд',
                     'cashback_percent' => 2,
+                    'rule_to_level' => 0,
                     'description_top' => 'Возвращаем 2% заказа.',
                     'description_bottom' => '0-10 заказов',
                 ],
                 [
                     'id' => 2,
-                    'level_up_name' => '3 грейд',
+                    'name' => '3 грейд',
                     'cashback_percent' => 5,
+                    'rule_to_level' => 10,
                     'description_top' => 'Возвращаем 5% заказа.',
                     'description_bottom' => '10-15 заказов',
                 ],
                 [
                     'id' => 3,
-                    'level_up_name' => '3 грейд',
-                    'rule_to_level' => 8,
-                    'cashback_percent' => 2,
+                    'name' => '3 грейд',
+                    'rule_to_level' => 15,
+                    'cashback_percent' => 8,
                     'description_top' => 'Возвращаем 8% заказа.',
                     'description_bottom' => '15-20 заказов',
                 ],
                 [
                     'id' => 4,
-                    'level_up_name' => '4 грейд',
+                    'name' => '4 грейд',
                     'rule_to_level' => 10,
                     'cashback_percent' => 2,
                     'description_top' => 'Возвращаем 10% заказа.',
@@ -73,9 +75,9 @@ class BonusController extends CustomerController
                 ],
                 [
                     'id' => 5,
-                    'level_up_name' => '5 грейд',
-                    'rule_to_level' => 12,
-                    'cashback_percent' => 2,
+                    'name' => '5 грейд',
+                    'rule_to_level' => 25,
+                    'cashback_percent' => 12,
                     'description_top' => 'Возвращаем 12% заказа.',
                     'description_bottom' => '25+',
                 ],
@@ -123,9 +125,9 @@ class BonusController extends CustomerController
         $totalBalance = $this->customerBonusRepository->getBalance($customer->id, $currencyCode);
 
         // Get settings
-        $calculationType = (string) core()->getConfigData('bonus.general.settings.calculation_type', BonusLevel::CALCULATION_TYPE_TOTAL_SPENT);
-        $maxUsagePercent = (float) core()->getConfigData('bonus.general.settings.max_usage_percent', 100);
-        $showLevelsInfo = (bool) core()->getConfigData('bonus.general.settings.show_levels_info', true);
+        $calculationType = (string) core()->getConfigData('bonus.general.settings.calculation_type');
+        $maxUsagePercent = (float) core()->getConfigData('bonus.general.settings.max_usage_percent');
+        $showLevelsInfo = (bool) core()->getConfigData('bonus.general.settings.show_levels_info', false);
 
         // Get customer statistics
         $ordersCount = $customer->orders()
@@ -161,7 +163,8 @@ class BonusController extends CustomerController
             $levelData = [
                 'id' => $level->id,
                 'name' => $level->name,
-                'cashback_percent' => (float) $level->cashback_percent,
+                'rule_to_level' => (int) $level->threshold_value,
+                'cashback_percent' => (int) $level->cashback_percent,
                 'description_top' => $descriptionTop,
                 'description_bottom' => $descriptionBottom,
                 'is_current' => $isCurrent,
@@ -170,7 +173,7 @@ class BonusController extends CustomerController
             // Find next level (first level after current)
             if ($foundCurrent && ! $isCurrent && $nextLevel === null) {
                 $nextLevel = $level;
-                $levelData['level_up_name'] = $level->name;
+//                $levelData['name'] = $level->name;
 
                 // Calculate remaining to next level
                 $currentValue = match ($calculationType) {
@@ -179,9 +182,9 @@ class BonusController extends CustomerController
                     default => 0,
                 };
 
-                if ($level->threshold_value > $currentValue) {
-                    $levelData['rule_to_level'] = (float) ($level->threshold_value - $currentValue);
-                }
+//                if ($level->threshold_value > $currentValue) {
+//                    $levelData['rule_to_level'] = (float) ($level->threshold_value - $currentValue);
+//                }
             }
 
             $levelsInfo[] = $levelData;
@@ -201,7 +204,7 @@ class BonusController extends CustomerController
             if ($calculationType === BonusLevel::CALCULATION_TYPE_ORDERS_COUNT) {
                 $nextLevelInfo = [
                     'text1' => 'Вы сделали ' . (int) $currentValue . ' заказов',
-                    'text2' => 'Осталось ' . (int) $remaining . ' заказов до повышения',
+                    'text2' => '<b>' . (int) $remaining . ' '. $this->getOrderDeclension($remaining) .'</b> до повышения кэшбэка',
                 ];
             } else {
                 $nextLevelInfo = [
@@ -275,5 +278,35 @@ class BonusController extends CustomerController
             // For total_spent, show threshold
             return 'от ' . core()->formatPrice($threshold);
         }
+    }
+
+    /**
+     * Get correct declension of "заказ" word based on number.
+     *
+     * @param  int  $number
+     * @return string
+     */
+    protected function getOrderDeclension(int $number): string
+    {
+        $lastDigit = $number % 10;
+        $lastTwoDigits = $number % 100;
+
+        // Special case for 11-14
+        if ($lastTwoDigits >= 11 && $lastTwoDigits <= 14) {
+            return 'заказов';
+        }
+
+        // Cases for 1, 21, 31, etc.
+        if ($lastDigit === 1) {
+            return 'заказ';
+        }
+
+        // Cases for 2, 3, 4, 22, 23, 24, etc.
+        if ($lastDigit >= 2 && $lastDigit <= 4) {
+            return 'заказа';
+        }
+
+        // All other cases: 5, 6, 7, 8, 9, 0, 10, 11-14 (already handled), 15-20, etc.
+        return 'заказов';
     }
 }
