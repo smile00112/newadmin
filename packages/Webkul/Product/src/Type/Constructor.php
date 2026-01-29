@@ -4,7 +4,9 @@ namespace Webkul\Product\Type;
 
 use Illuminate\Support\Facades\DB;
 use Webkul\Attribute\Repositories\AttributeRepository;
+use Webkul\Checkout\Models\CartItem;
 use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Product\DataTypes\CartItemValidationResult;
 use Webkul\Product\Helpers\Indexers\Price\Grouped as GroupedIndexer;
 use Webkul\Product\Repositories\ProductAttributeValueRepository;
 use Webkul\Product\Repositories\ProductConstructorRepository;
@@ -13,6 +15,7 @@ use Webkul\Product\Repositories\ProductImageRepository;
 use Webkul\Product\Repositories\ProductInventoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Product\Repositories\ProductVideoRepository;
+use Webkul\Tax\Facades\Tax;
 
 class Constructor extends AbstractType
 {
@@ -334,6 +337,69 @@ class Constructor extends AbstractType
             'constructor_options.*' => 'array',
             'constructor_options.*.*' => 'integer|min:0',
         ];
+    }
+
+    /**
+     * Validate cart item product price and other things.
+     * Recalculate parent total from children (ingredients) instead of using constructor product base price.
+     */
+    public function validateCartItem(CartItem $item): CartItemValidationResult
+    {
+        $validation = new CartItemValidationResult;
+
+        if (parent::isCartItemInactive($item)) {
+            $validation->itemIsInactive();
+
+            return $validation;
+        }
+
+        if ($item->children->isEmpty()) {
+            return $validation;
+        }
+
+        $baseTotal = 0;
+
+        foreach ($item->children as $childItem) {
+            $childValidation = $childItem->getTypeInstance()->validateCartItem($childItem);
+
+            if ($childValidation->isItemInactive()) {
+                $validation->itemIsInactive();
+            }
+
+            if ($childValidation->isCartInvalid()) {
+                $validation->cartIsInvalid();
+            }
+
+            $baseTotal += $childItem->base_total;
+        }
+
+        $baseTotal = round($baseTotal, 4);
+
+        if (Tax::isInclusiveTaxProductPrices()) {
+            $itemBaseTotal = $item->base_total_incl_tax;
+        } else {
+            $itemBaseTotal = $item->base_total;
+        }
+
+        if ($baseTotal == $itemBaseTotal) {
+            return $validation;
+        }
+
+        $basePrice = $item->quantity > 0 ? $baseTotal / $item->quantity : 0;
+
+        $item->base_total = $baseTotal;
+        $item->base_total_incl_tax = $baseTotal;
+        $item->base_price = $basePrice;
+        $item->base_price_incl_tax = $basePrice;
+
+        $item->price = core()->convertPrice($basePrice);
+        $item->price_incl_tax = $item->price;
+        $item->total = core()->convertPrice($baseTotal);
+        $item->total_incl_tax = $item->total;
+
+        $item->save();
+
+        return $validation;
     }
 
     /**
