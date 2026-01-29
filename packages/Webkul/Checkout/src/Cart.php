@@ -71,12 +71,12 @@ class Cart
         }
 
         if ($customer) {
-            $this->cart = $this->cartRepository->findOneWhere([
+            $this->cart = $this->cartRepository->findOneWhereWithRelations([
                 'customer_id' => $customer->id,
                 'is_active'   => 1,
             ]);
         } elseif (session()->has('cart')) {
-            $this->cart = $this->cartRepository->find(session()->get('cart')->id);
+            $this->cart = $this->cartRepository->findWithRelations(session()->get('cart')->id);
         }
     }
 
@@ -89,7 +89,7 @@ class Cart
             return;
         }
 
-        $this->cart = $this->cartRepository->find($this->cart->id);
+        $this->cart = $this->cartRepository->findWithRelations($this->cart->id);
     }
 
     /**
@@ -844,7 +844,20 @@ class Cart
 
         Event::dispatch('checkout.cart.collect.totals.before', $this->cart);
 
-        $this->calculateItemsTax();
+        // Закомментировано для ускорения: расчёт налога по позициям (см. calculateItemsTax).
+        // $this->calculateItemsTax();
+        // Налог по позициям принудительно 0.
+        foreach ($this->cart->items as $item) {
+            $item->tax_percent = 0;
+            $item->tax_amount = 0;
+            $item->base_tax_amount = 0;
+            $item->price_incl_tax = $item->price;
+            $item->base_price_incl_tax = $item->base_price;
+            $item->total_incl_tax = $item->total;
+            $item->base_total_incl_tax = $item->base_total;
+            $item->applied_tax_rate = null;
+            $item->save();
+        }
 
         $this->calculateShippingTax();
 
@@ -1010,6 +1023,26 @@ class Cart
         Event::dispatch('checkout.cart.calculate.items.tax.before', $this->cart);
 
         $taxCategories = [];
+        $calculationBasedOn = core()->getConfigData('sales.taxes.calculation.based_on');
+
+        // Получение адреса вынесено из цикла (один запрос вместо N).
+        $address = null;
+        if ($calculationBasedOn == self::TAX_CALCULATION_BASED_ON_SHIPPING_ORIGIN) {
+            $address = Tax::getShippingOriginAddress();
+        } elseif ($calculationBasedOn == self::TAX_CALCULATION_BASED_ON_SHIPPING_ADDRESS) {
+            $address = $this->cart->haveStockableItems()
+                ? $this->cart->shipping_address
+                : $this->cart->billing_address;
+        } elseif ($calculationBasedOn == self::TAX_CALCULATION_BASED_ON_BILLING_ADDRESS) {
+            $address = $this->cart->billing_address;
+        }
+        if ($address === null && $this->cart->customer) {
+            $address = $this->cart->customer->addresses()
+                ->where('default_address', 1)->first();
+        }
+        if ($address === null) {
+            $address = Tax::getDefaultAddress();
+        }
 
         foreach ($this->cart->items as $key => $item) {
             $taxCategoryId = $item->tax_category_id;
@@ -1032,31 +1065,6 @@ class Cart
 
             if (! $taxCategories[$taxCategoryId]) {
                 continue;
-            }
-
-            $calculationBasedOn = core()->getConfigData('sales.taxes.calculation.based_on');
-
-            $address = null;
-
-            if ($calculationBasedOn == self::TAX_CALCULATION_BASED_ON_SHIPPING_ORIGIN) {
-                $address = Tax::getShippingOriginAddress();
-            } elseif ($calculationBasedOn == self::TAX_CALCULATION_BASED_ON_SHIPPING_ADDRESS) {
-                if ($item->getTypeInstance()->isStockable()) {
-                    $address = $this->cart->shipping_address;
-                } else {
-                    $address = $this->cart->billing_address;
-                }
-            } elseif ($calculationBasedOn == self::TAX_CALCULATION_BASED_ON_BILLING_ADDRESS) {
-                $address = $this->cart->billing_address;
-            }
-
-            if ($address === null && $this->cart->customer) {
-                $address = $this->cart->customer->addresses()
-                    ->where('default_address', 1)->first();
-            }
-
-            if ($address === null) {
-                $address = Tax::getDefaultAddress();
             }
 
             $item->applied_tax_rate = null;

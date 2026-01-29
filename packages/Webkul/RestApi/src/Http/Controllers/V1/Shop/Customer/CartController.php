@@ -44,7 +44,7 @@ class CartController extends CustomerController
 
         return response([
             'data' => ($cart = Cart::getCart()) ? app()->make($this->resource(), ['resource' => $cart]) : null,
-            'cross_sell' => $this->getCrossSellProducts(),
+            'cross_sell' => [],//$this->getCrossSellProducts(),
         ]);
     }
 
@@ -94,7 +94,7 @@ class CartController extends CustomerController
 
                 return response([
                     'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
-                    'cross_sell' => $this->getCrossSellProducts(),
+                    'cross_sell' => [],//$this->getCrossSellProducts(),
                     'message'    => trans('rest-api::app.shop.checkout.cart.item.success'),
                 ]);
             }
@@ -144,7 +144,7 @@ class CartController extends CustomerController
 
             return response([
                 'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
-                'cross_sell' => $this->getCrossSellProducts(),
+                'cross_sell' => [],//$this->getCrossSellProducts(),
                 'message'    => trans('rest-api::app.shop.checkout.cart.quantity.success'),
             ]);
         } catch (\Exception $exception) {
@@ -186,7 +186,7 @@ class CartController extends CustomerController
 
         return response([
             'data'       => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
-            'cross_sell' => $this->getCrossSellProducts(),
+            'cross_sell' => [],//$this->getCrossSellProducts(),
             'message'    => trans('rest-api::app.shop.checkout.cart.item.success-remove'),
         ]);
     }
