@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "http://dolinger_new_admin.test",
+            "url": "https://dolinger_new_admin.test",
             "description": "Rest API"
         }
     ],
@@ -4083,6 +4083,48 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/checkout/bonus/auto-apply": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Auto-apply maximum bonus to cart",
+                "description": "Applies the maximum possible bonus amount to the current customer's cart based on order total and max_usage_percent (no amount in request body). Requires authenticated customer with active cart.",
+                "operationId": "autoApplyBonus",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Coupon code applied successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart, bonus system disabled, or validation error)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
@@ -8391,11 +8433,15 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
+                        "type": "string",
+                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
+                        "type": "string",
+                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {

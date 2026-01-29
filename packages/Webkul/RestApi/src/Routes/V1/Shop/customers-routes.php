@@ -192,6 +192,13 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
     });
 
     /**
+     * Checkout bonus routes.
+     */
+    Route::controller(CartController::class)->prefix('checkout/bonus')->group(function () {
+        Route::post('auto-apply', 'autoApplyBonus');
+    });
+
+    /**
      * GDPR.
      */
     Route::controller(GDPRController::class)->prefix('customer/gdpr')->group(function () {

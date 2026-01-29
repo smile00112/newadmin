@@ -744,6 +744,47 @@ class CartController
     public function applyCoupon() {}
 
     /**
+     * @OA\Post(
+     *      path="/api/v1/checkout/bonus/auto-apply",
+     *      operationId="autoApplyBonus",
+     *      tags={"Checkout"},
+     *      summary="Auto-apply maximum bonus to cart",
+     *      description="Applies the maximum possible bonus amount to the current customer's cart based on order total and max_usage_percent (no amount in request body). Requires authenticated customer with active cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Coupon code applied successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad request (empty cart, bonus system disabled, or validation error)"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated"
+     *      )
+     * )
+     */
+    public function autoApplyBonus() {}
+
+    /**
      * @OA\Delete(
      *      path="/api/v1/customer/cart/coupon",
      *      operationId="removeCartCoupon",

@@ -2,9 +2,11 @@
 
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
+use App\Services\BonusPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
+use Webkul\Bonus\Services\BonusService;
 use Webkul\CartRule\Repositories\CartRuleCouponRepository;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\WishlistRepository;
@@ -22,7 +24,9 @@ class CartController extends CustomerController
     public function __construct(
         protected WishlistRepository $wishlistRepository,
         protected ProductRepository $productRepository,
-        protected CartRuleCouponRepository $cartRuleCouponRepository
+        protected CartRuleCouponRepository $cartRuleCouponRepository,
+        protected BonusPaymentService $bonusPaymentService,
+        protected BonusService $bonusService
     ) {}
 
     /**
@@ -250,6 +254,47 @@ class CartController extends CustomerController
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'message' => trans('rest-api::app.shop.checkout.cart.coupon.success-remove'),
+        ]);
+    }
+
+    /**
+     * Auto-apply maximum possible bonus amount to cart.
+     * Uses order total and max_usage_percent to compute amount; no body required.
+     */
+    public function autoApplyBonus(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        if (! $this->bonusService->isEnabled()) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.coupon.invalid'),
+            ], 400);
+        }
+
+        $maxAmount = $this->bonusService->getMaxUsableBonuses($cart, (int) $cart->customer_id);
+
+        try {
+            $this->bonusPaymentService->applyBonusToCart($cart, $maxAmount);
+        } catch (\Exception $e) {
+            report($e);
+
+            return response([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
         ]);
     }
 
