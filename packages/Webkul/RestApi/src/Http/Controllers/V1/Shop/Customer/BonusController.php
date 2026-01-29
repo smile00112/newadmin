@@ -191,6 +191,7 @@ class BonusController extends CustomerController
         }
 
         // Format next level info
+        $remaining = 0;
         $nextLevelInfo = null;
         if ($nextLevel) {
             $currentValue = match ($calculationType) {
@@ -235,6 +236,7 @@ class BonusController extends CustomerController
             'balance' => (float) $totalBalance,
             'spent_sum' => (float) $spentSum,
             'orders_count' => (int) $ordersCount,
+            'remaining' => (int) $remaining,
             'percent_max' => (float) $maxUsagePercent,
             'show_levels_info' => $showLevelsInfo,
             'level' => $currentLevel ? $currentLevel->id : null,
