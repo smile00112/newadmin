@@ -349,6 +349,23 @@
 
                                         {!! view_render_event('bagisto.shop.customers.account.orders.view.information.discount.after') !!}
 
+                                        {!! view_render_event('bagisto.shop.customers.account.orders.view.information.bonus.before') !!}
+
+                                        <!-- Bonus Payment -->
+                                        @if ($order->base_bonus_amount > 0)
+                                            <div class="flex w-full justify-between gap-x-5">
+                                                <p>
+                                                    @lang('shop::app.customers.account.orders.view.information.bonus-payment')
+                                                </p>
+
+                                                <p>
+                                                    {{ core()->formatPrice($order->bonus_amount, $order->order_currency_code) }}
+                                                </p>
+                                            </div>
+                                        @endif
+
+                                        {!! view_render_event('bagisto.shop.customers.account.orders.view.information.bonus.after') !!}
+
                                         {!! view_render_event('bagisto.shop.customers.account.orders.view.information.grand-total.before') !!}
 
                                         <!-- Grand Total -->

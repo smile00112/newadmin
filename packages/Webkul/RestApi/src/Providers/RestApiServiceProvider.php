@@ -20,6 +20,7 @@ class RestApiServiceProvider extends ServiceProvider
         'sanctum.customer' => \Webkul\RestApi\Http\Middleware\CustomerMiddleware::class,
         'sanctum.locale'   => \Webkul\RestApi\Http\Middleware\LocaleMiddleware::class,
         'sanctum.currency' => \Webkul\RestApi\Http\Middleware\CurrencyMiddleware::class,
+        'api.response-time' => \Webkul\RestApi\Http\Middleware\ResponseTimeMiddleware::class,
     ];
 
     /**
@@ -72,7 +73,7 @@ class RestApiServiceProvider extends ServiceProvider
     protected function mapApiRoutes()
     {
         Route::prefix('api')
-            ->middleware(['api', 'etag'])
+            ->middleware(['api', 'etag', 'api.response-time'])
             ->group(__DIR__.'/../Routes/api.php');
     }
 

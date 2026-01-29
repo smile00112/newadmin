@@ -6,10 +6,23 @@
     @foreach ($order->items->take(3) as $item)
         <div class="relative">
             <div class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded">
-                @if ($item->product?->images->count() > 0)
+                @php
+                    $imageUrl = null;
+                    
+                    // Сначала проверяем category_image
+                    if ($item->product?->category_image) {
+                        $imageUrl = Storage::url($item->product->category_image);
+                    } 
+                    // Если нет category_image, используем base_image_url
+                    elseif ($item->product?->images->count() > 0) {
+                        $imageUrl = $item->product->base_image_url;
+                    }
+                @endphp
+
+                @if ($imageUrl)
                     <img 
                         class="h-full w-full rounded" 
-                        src="{{ $item->product->base_image_url }}"
+                        src="{{ $imageUrl }}"
                     >
 
                     <span class="absolute bottom-px rounded-full bg-darkPink px-1.5 text-xs font-bold leading-normal text-white ltr:left-px rtl:right-px">

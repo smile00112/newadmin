@@ -189,7 +189,9 @@ return [
                         'fraud'           => 'Fraud',
                         'pending'         => 'Pending',
                         'pending-payment' => 'Pending Payment',
+                        'preparing'       => 'Preparing',
                         'processing'      => 'Processing',
+                        'ready'           => 'Ready',
                     ],
                 ],
 
@@ -217,6 +219,7 @@ return [
 
                     'information' => [
                         'discount'                   => 'Discount',
+                        'bonus-payment'               => 'Bonus Payment',
                         'excl-tax'                   => 'Excl Tax:',
                         'grand-total'                => 'Grand Total',
                         'info'                       => 'Information',

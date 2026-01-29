@@ -49,7 +49,7 @@ class ChannelController extends CoreController
             return $this->getRepositoryInstance()
                 ->with(['locales', 'currencies', 'inventory_sources'])
                 ->orderBy('id', 'asc')
-                ->all()
+                ->get()
                 ->toArray();
         });
 

@@ -48,6 +48,8 @@ Route::prefix('sales')->group(function () {
 
         Route::post('comment/{order_id}', 'comment')->name('admin.sales.orders.comment');
 
+        Route::post('update-status/{id}', 'updateStatus')->name('admin.sales.orders.update_status');
+
         Route::get('search', 'search')->name('admin.sales.orders.search');
     });
 

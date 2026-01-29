@@ -21,9 +21,18 @@ class OrderItemResource extends JsonResource
      */
     public function toArray($request)
     {
+        $product = $this->product;
+        $baseImage = null;
+        $images = [];
+
+        if ($product) {
+            $baseImage = product_image()->getProductBaseImage($product);
+            $images = product_image()->getGalleryImages($product);
+        }
+
         return [
             'product_id'            => $this->product_id,
-            'product_type'          => get_class($this->product),
+            'product_type'          => $product ? get_class($product) : null,
             'sku'                   => $this->sku,
             'type'                  => $this->type,
             'name'                  => $this->name,
@@ -45,6 +54,8 @@ class OrderItemResource extends JsonResource
             'discount_percent'      => $this->discount_percent,
             'discount_amount'       => $this->discount_amount,
             'base_discount_amount'  => $this->base_discount_amount,
+            'base_image'            => $baseImage,
+            'images'                => $images,
             'additional'            => array_merge($this->resource->additional ?? [], ['locale' => core()->getCurrentLocale()->code]),
             'children'              => self::collection($this->children)->jsonSerialize(),
         ];

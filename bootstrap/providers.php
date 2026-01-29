@@ -45,5 +45,4 @@ return [
     Webkul\Theme\Providers\ThemeServiceProvider::class,
     Webkul\User\Providers\UserServiceProvider::class,
     Webkul\MobileApp\Providers\MobileAppServiceProvider::class,
-    Webkul\IikoIntegration\Providers\IikoIntegrationServiceProvider::class,
 ];

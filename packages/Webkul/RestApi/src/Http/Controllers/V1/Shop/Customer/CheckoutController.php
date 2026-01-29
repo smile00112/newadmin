@@ -4,6 +4,7 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\CustomerAddressRepository;
@@ -89,8 +90,35 @@ class CheckoutController extends CustomerController
                 || ! Cart::saveShippingMethod($validatedData['shipping_method'])
             ) {
                 return response()->json([
+                    'errors' => Cart::getErrors(),
                     'message' => trans('rest-api::app.shop.checkout.error'),
                 ], 400);
+            }
+
+            // Collect shipping rates after saving shipping method
+            // This is necessary for pickup/dinein methods that don't require shipping address
+            Shipping::collectRates();
+
+            // Убеждаемся, что rate для выбранного метода сохранен
+            $cart = Cart::getCart();
+            if (! $cart->selected_shipping_rate) {
+                // Если rate не найден, создаем его вручную для dinein/pickup
+                $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+                if ($skipAddressValidation && $cart->shipping_method) {
+                    foreach (Config::get('carriers') as $shippingMethod) {
+                        $object = new $shippingMethod['class'];
+                        if ($object->getMethod() === $cart->shipping_method) {
+                            if ($rate = $object->calculate()) {
+                                $rate->cart_id = $cart->id;
+                                $rate->cart_address_id = null;
+                                $rate->price_incl_tax = $rate->price;
+                                $rate->base_price_incl_tax = $rate->base_price;
+                                $rate->save();
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             Cart::collectTotals();
@@ -125,6 +153,7 @@ class CheckoutController extends CustomerController
                 || ! Cart::savePaymentMethod($validatedData['payment'])
             ) {
                 return response()->json([
+                    'errors' => Cart::getErrors(),
                     'message' => trans('rest-api::app.shop.checkout.error'),
                 ], 400);
             }
@@ -139,7 +168,18 @@ class CheckoutController extends CustomerController
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => $e->getMessage(),
+                'message'   => $e->getMessage(),
+                'exception' => get_class($e),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => config('app.debug') ? $e->getTraceAsString() : null,
+                'cart'      => Cart::getCart() ? [
+                    'id'              => Cart::getCart()->id,
+                    'has_error'       => Cart::hasError(),
+                    'items_count'     => Cart::getCart()->items_count,
+                    'shipping_method' => Cart::getCart()->shipping_method,
+                    'payment'         => Cart::getCart()->payment ? true : false,
+                ] : null,
             ], 400);
         }
     }
@@ -186,25 +226,70 @@ class CheckoutController extends CustomerController
 
             $cart = Cart::getCart();
 
-            if ($redirectUrl = Payment::getRedirectUrl($cart)) {
-                return response()->json([
-                    'redirect_url' => $redirectUrl,
-                ]);
+            $redirectUrl = Payment::getRedirectUrl($cart);
+
+            $orderData = (new OrderTransformer($cart))->jsonSerialize();
+
+            // Get and validate order labels from request
+            $orderLabels = request()->input('order_labels', []);
+            if (is_array($orderLabels) && !empty($orderLabels)) {
+                // Get available labels from config
+                $channelCode = $cart->channel->code ?? core()->getDefaultChannelCode();
+                $availableLabels = core()->getConfigData('sales.order_settings.order_labels.labels_list', $channelCode);
+                $availableLabelsArray = [];
+                if ($availableLabels) {
+                    $availableLabelsArray = array_filter(
+                        array_map('trim', explode("\n", $availableLabels)),
+                        fn($label) => !empty($label)
+                    );
+                }
+
+                // Validate and filter order labels
+                $validatedLabels = array_filter(
+                    array_map('trim', $orderLabels),
+                    fn($label) => !empty($label) && in_array($label, $availableLabelsArray)
+                );
+
+                // Remove duplicates
+                $orderData['order_labels'] = array_values(array_unique($validatedLabels));
+            } else {
+                $orderData['order_labels'] = [];
             }
 
-            $order = $orderRepository->create((new OrderTransformer($cart))->jsonSerialize());
+            $order = $orderRepository->create($orderData);
 
             Cart::deActivateCart();
 
+            $responseData = [
+                'order' => new OrderResource($order),
+            ];
+
+            if ($redirectUrl) {
+                $responseData['payment_url'] = $redirectUrl;
+            }
+
             return response()->json([
-                'data'    => [
-                    'order' => new OrderResource($order),
-                ],
+                'data'    => $responseData,
+                'errors' => Cart::getErrors(),
                 'message' => trans('rest-api::app.shop.checkout.order-saved'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => $e->getMessage(),
+                'message'   => $e->getMessage(),
+                'exception' => get_class($e),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => config('app.debug') ? $e->getTraceAsString() : null,
+                'cart'      => Cart::getCart() ? [
+                    'id'                     => Cart::getCart()->id,
+                    'has_error'              => Cart::hasError(),
+                    'items_count'            => Cart::getCart()->items_count,
+                    'shipping_method'        => Cart::getCart()->shipping_method,
+                    'shipping_address'       => Cart::getCart()->shipping_address ? true : false,
+                    'billing_address'        => Cart::getCart()->billing_address ? true : false,
+                    'selected_shipping_rate' => Cart::getCart()->selected_shipping_rate ? true : false,
+                    'payment'                => Cart::getCart()->payment ? true : false,
+                ] : null,
             ], 400);
         }
     }
@@ -224,18 +309,18 @@ class CheckoutController extends CustomerController
             throw new \Exception(trans('rest-api::app.shop.checkout.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]));
         }
 
-        // Проверяем, выбран ли самовывоз
-        $isPickup = $cart->shipping_method === 'pickup_pickup';
+        // Проверяем, выбран ли самовывоз или еда в зале
+        $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
 
         if (
             $cart->haveStockableItems()
-            && ! $isPickup
+            && ! $skipAddressValidation
             && ! $cart->shipping_address
         ) {
             throw new \Exception(trans('rest-api::app.shop.checkout.check-shipping-address'));
         }
 
-        if (! $cart->billing_address) {
+        if (! $skipAddressValidation && ! $cart->billing_address) {
             throw new \Exception(trans('rest-api::app.shop.checkout.check-billing-address'));
         }
 

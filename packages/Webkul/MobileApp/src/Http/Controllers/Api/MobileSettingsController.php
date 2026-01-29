@@ -7,6 +7,11 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
+use Webkul\Payment\Payment;
+use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
+use Webkul\Sales\Models\Order;
+use Webkul\Shipping\Shipping;
 
 class MobileSettingsController extends Controller
 {
@@ -25,7 +30,10 @@ class MobileSettingsController extends Controller
      */
     public function __construct(
         protected MobileAppSettingRepository $settingRepository,
-        protected AttributeRepository $attributeRepository
+        protected AttributeRepository $attributeRepository,
+        protected Payment $payment,
+        protected Shipping $shipping,
+        protected ProductRepository $productRepository
     ) {}
 
     /**
@@ -71,6 +79,29 @@ class MobileSettingsController extends Controller
         if (!empty($settings['home_filters'])) {
             $settings['home_filters'] = $this->expandHomeFilters($settings['home_filters']);
         }
+
+        // Add shipping methods
+        $settings['shipping_methods'] = $this->shipping->getShippingMethods();
+
+        // Add payment methods
+        $settings['payment_methods'] = $this->payment->getPaymentMethods();
+
+        // Add order labels
+        $labelsList = core()->getConfigData('sales.order_settings.order_labels.labels_list', $channelCode);
+        if ($labelsList) {
+            $settings['order_labels'] = array_filter(
+                array_map('trim', explode("\n", $labelsList)),
+                fn($label) => !empty($label)
+            );
+        } else {
+            $settings['order_labels'] = [];
+        }
+
+        // Add order statuses
+        $settings['order_statuses'] = $this->getOrderStatuses();
+
+        // Add cart cross-sell products
+        $settings['cart_cross_sell_products'] = $this->getCartCrossSellProducts();
 
         return $settings;
     }
@@ -138,6 +169,67 @@ class MobileSettingsController extends Controller
         }
 
         return $filters;
+    }
+
+    /**
+     * Get all available order statuses with translations.
+     */
+    protected function getOrderStatuses(): array
+    {
+        $statuses = [
+            Order::STATUS_PENDING,
+            Order::STATUS_PENDING_PAYMENT,
+            Order::STATUS_PROCESSING,
+            Order::STATUS_PREPARING,
+            Order::STATUS_READY,
+            Order::STATUS_COMPLETED,
+            Order::STATUS_CANCELED,
+            // Order::STATUS_CLOSED,
+            // Order::STATUS_FRAUD,
+        ];
+
+        $result = [];
+        foreach ($statuses as $status) {
+            $result[] = [
+                'code'  => $status,
+                'label' => trans('shop::app.customers.account.orders.status.options.' . str_replace('_', '-', $status)),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get cart cross-sell products from configuration.
+     */
+    protected function getCartCrossSellProducts(): array
+    {
+        // Проверяем, включен ли отдельный список
+        $useSeparateList = core()->getConfigData('catalog.products.cart_view_page.separate_cross_sell_list');
+
+        if ($useSeparateList) {
+            // Используем отдельный список из конфигурации
+            $productIds = core()->getConfigData('catalog.products.cart_view_page.cart_cross_sell_products');
+
+            if (is_string($productIds)) {
+                $productIds = explode(',', $productIds);
+            }
+
+            if (empty($productIds) || ! is_array($productIds)) {
+                return [];
+            }
+
+            $products = $this->productRepository
+                ->whereIn('id', $productIds)
+                ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
+                ->get();
+
+            return ProductResource::collection($products)->resolve();
+        }
+
+        // Если отдельный список не включен, возвращаем пустой массив
+        // так как кросс-сейлы зависят от товаров в корзине пользователя
+        return [];
     }
 }
 

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AddressController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AuthController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\BonusController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CartController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CheckoutController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\GDPRController;
@@ -94,7 +95,22 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
 
         Route::post('{id}/cancel', 'cancel');
 
+        Route::post('{id}/rate', 'rate');
+
         Route::get('reorder/{id}', 'reorder');
+    });
+
+    /**
+     * Customer sale orders filtered routes.
+     */
+    Route::controller(OrderController::class)->prefix('customer')->group(function () {
+        Route::get('active-orders', 'activeOrders');
+
+        Route::get('completed-orders', 'completedOrders');
+
+        Route::get('cancelled-orders', 'cancelledOrders');
+
+        Route::get('canselled-orders', 'cancelledOrders'); // Alias for typo compatibility
     });
 
     /**
@@ -186,6 +202,27 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('', 'store');
 
         Route::put('revoke/{id}', 'revoke');
+    });
+
+    /**
+     * Customer bonus routes (with typo - kept for backward compatibility).
+     */
+    Route::controller(BonusController::class)->prefix('customer/bonuces')->group(function () {
+        Route::get('', 'index');
+    });
+
+    /**
+     * Customer bonus routes (correct spelling).
+     */
+    Route::controller(BonusController::class)->prefix('customer/bonuses')->group(function () {
+        Route::get('', 'index');
+    });
+
+    /**
+     * Customer bonus test route.
+     */
+    Route::controller(BonusController::class)->prefix('customer/bonuces-test')->group(function () {
+        Route::get('', 'indexTest');
     });
 
 });

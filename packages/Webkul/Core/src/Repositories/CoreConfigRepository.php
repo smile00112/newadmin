@@ -38,6 +38,11 @@ class CoreConfigRepository extends Repository
         }
 
         foreach ($data as $method => $fieldData) {
+            // Skip if fieldData is not an array (e.g., string values)
+            if (! is_array($fieldData)) {
+                continue;
+            }
+
             $recursiveData = $this->recursiveArray($fieldData, $method);
 
             foreach ($recursiveData as $fieldName => $value) {

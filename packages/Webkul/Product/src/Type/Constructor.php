@@ -248,7 +248,7 @@ class Constructor extends AbstractType
 
                 $product = $this->productRepository->find($productId);
 
-                if ($product->type !== 'simple') {
+                if (! in_array($product->type, ['simple', 'ingredient'])) {
                     return trans('product::app.checkout.cart.selected-products-simple');
                 }
 

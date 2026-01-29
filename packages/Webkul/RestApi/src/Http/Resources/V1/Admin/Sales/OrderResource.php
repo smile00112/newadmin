@@ -16,6 +16,14 @@ class OrderResource extends JsonResource
      */
     public function toArray($request)
     {
+        try {
+            //  $p =  !empty($this->payment->method) ? core()->getConfigData('sales.paymentmethods.'.$this->payment->method.'.title') : "";
+            $p = $this->payment->method_title;
+        } catch (\Throwable $th) {
+            //throw $th;
+            // $p = $th->getMessage();
+            $p = null;
+        }
         return [
             'id'                                      => $this->id,
             'increment_id'                            => $this->increment_id,
@@ -28,10 +36,13 @@ class OrderResource extends JsonResource
             'customer_last_name'                      => $this->customer_last_name,
             'shipping_method'                         => $this->shipping_method,
             'shipping_title'                          => $this->shipping_title,
-            'payment_title'                           => core()->getConfigData('sales.paymentmethods.'.$this->payment->method.'.title'),
+            'payment_title'                           => $p,
             'shipping_description'                    => $this->shipping_description,
             'coupon_code'                             => $this->coupon_code,
             'is_gift'                                 => $this->is_gift,
+            'order_labels'                            => $this->order_labels ?? [],
+            'rating'                                   => $this->rating,
+            'rating_label'                             => $this->rating === true ? 'Нравится' : ($this->rating === false ? 'Не нравится' : null),
             'total_item_count'                        => $this->total_item_count,
             'total_qty_ordered'                       => $this->total_qty_ordered,
             'base_currency_code'                      => $this->base_currency_code,
@@ -76,6 +87,10 @@ class OrderResource extends JsonResource
             'formatted_discount_refunded'             => core()->formatPrice($this->discount_refunded, $this->order_currency_code),
             'base_discount_refunded'                  => $this->base_discount_refunded,
             'formatted_base_discount_refunded'        => core()->formatBasePrice($this->base_discount_refunded),
+            'bonus_amount'                            => $this->bonus_amount ?? 0,
+            'formatted_bonus_amount'                  => core()->formatPrice($this->bonus_amount ?? 0, $this->order_currency_code),
+            'base_bonus_amount'                       => $this->base_bonus_amount ?? 0,
+            'formatted_base_bonus_amount'             => core()->formatBasePrice($this->base_bonus_amount ?? 0),
             'tax_amount'                              => $this->tax_amount,
             'formatted_tax_amount'                    => core()->formatPrice($this->tax_amount, $this->order_currency_code),
             'base_tax_amount'                         => $this->base_tax_amount,
@@ -106,8 +121,8 @@ class OrderResource extends JsonResource
             'formatted_base_shipping_refunded'        => core()->formatBasePrice($this->base_shipping_refunded),
             'customer'                                => $this->when($this->customer_id, new CustomerResource($this->customer)),
             'channel'                                 => $this->when($this->channel_id, new ChannelResource($this->channel)),
-            'shipping_address'                        => new OrderAddressResource($this->shipping_address),
-            'billing_address'                         => new OrderAddressResource($this->billing_address),
+            'shipping_address'                        => $this->shipping_address ? new OrderAddressResource($this->shipping_address) : null,
+            'billing_address'                         => $this->billing_address ? new OrderAddressResource($this->billing_address) : null,
             'items'                                   => OrderItemResource::collection($this->items),
             'invoices'                                => InvoiceResource::collection($this->invoices),
             'shipments'                               => ShipmentResource::collection($this->shipments),

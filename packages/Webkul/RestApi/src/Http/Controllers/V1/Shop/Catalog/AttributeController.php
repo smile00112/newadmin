@@ -49,7 +49,7 @@ class AttributeController extends CatalogController
             return $this->getRepositoryInstance()
                 ->with(['options', 'translations'])
                 ->orderBy('position', 'asc')
-                ->all()
+                ->get()
                 ->toArray();
         });
 

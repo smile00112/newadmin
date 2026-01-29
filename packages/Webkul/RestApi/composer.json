@@ -20,6 +20,11 @@
             "Webkul\\RestApi\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Webkul\\RestApi\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "laravel": {
             "providers": [

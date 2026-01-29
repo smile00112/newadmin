@@ -48,7 +48,7 @@ class CurrencyController extends CoreController
         $data = $this->cachedResponse('all', function () {
             return $this->getRepositoryInstance()
                 ->orderBy('name', 'asc')
-                ->all()
+                ->get()
                 ->toArray();
         });
 

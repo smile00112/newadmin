@@ -118,6 +118,65 @@ class MobileSettingsController
      *                      type="array",
      *                      description="Featured product IDs",
      *                      @OA\Items(type="integer", example=1)
+     *                  ),
+     *                  @OA\Property(
+     *                      property="shipping_methods",
+     *                      type="array",
+     *                      description="Available shipping methods",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="code", type="string", example="flatrate"),
+     *                          @OA\Property(property="method", type="string", example="flatrate_flatrate"),
+     *                          @OA\Property(property="method_title", type="string", example="Flat Rate"),
+     *                          @OA\Property(property="description", type="string", example="Flat rate shipping")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="payment_methods",
+     *                      type="array",
+     *                      description="Available payment methods",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="method", type="string", example="cashondelivery"),
+     *                          @OA\Property(property="method_title", type="string", example="Cash On Delivery"),
+     *                          @OA\Property(property="description", type="string", example="Pay when you receive your order"),
+     *                          @OA\Property(property="sort", type="integer", example=1),
+     *                          @OA\Property(property="image", type="string", nullable=true, example=null)
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="order_labels",
+     *                      type="array",
+     *                      description="Order labels list",
+     *                      @OA\Items(type="string", example="VIP")
+     *                  ),
+     *                  @OA\Property(
+     *                      property="order_statuses",
+     *                      type="array",
+     *                      description="Available order statuses",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="code", type="string", example="pending", description="Status code"),
+     *                          @OA\Property(property="label", type="string", example="Pending", description="Status label")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="cart_cross_sell_products",
+     *                      type="array",
+     *                      description="Cart cross-sell products from configuration (only if separate cross-sell list is enabled)",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          description="Product resource with full product details",
+     *                          @OA\Property(property="id", type="integer", example=1, description="Product ID"),
+     *                          @OA\Property(property="sku", type="string", example="product-sku", description="Product SKU"),
+     *                          @OA\Property(property="name", type="string", example="Product Name", description="Product name"),
+     *                          @OA\Property(property="price", type="number", format="float", example=99.99, description="Product price"),
+     *                          @OA\Property(property="formatted_price", type="string", example="$99.99", description="Formatted price"),
+     *                          @OA\Property(property="images", type="array", description="Product images", @OA\Items(type="string")),
+     *                          @OA\Property(property="in_stock", type="boolean", example=true, description="Product availability"),
+     *                          @OA\Property(property="is_saleable", type="boolean", example=true, description="Whether product can be sold"),
+     *                          @OA\Property(property="url_key", type="string", example="product-url-key", description="Product URL key")
+     *                      )
      *                  )
      *              )
      *          )

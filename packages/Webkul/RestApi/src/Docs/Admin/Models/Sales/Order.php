@@ -536,6 +536,22 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Order Labels",
+     *     description="Custom labels attached to the order",
+     *     type="array",
+     *     @OA\Items(
+     *         type="string",
+     *         example="заказ с собой"
+     *     ),
+     *     example={"заказ с собой", "приготовить сдачу"}
+     * )
+     *
+     * @var array
+     */
+    private $order_labels;
+
+    /**
+     * @OA\Property(
      *     title="Created at",
      *     description="Created at",
      *     example="2020-01-27 17:50:45",

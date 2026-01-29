@@ -13,6 +13,7 @@ use Webkul\Admin\Http\Resources\CartResource;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Checkout\Repositories\CartRepository;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
+use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\OrderCommentRepository;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Sales\Transformers\OrderResource;
@@ -197,6 +198,59 @@ class OrderController extends Controller
     }
 
     /**
+     * Update order status
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function updateStatus(int $id)
+    {
+        $order = $this->orderRepository->findOrFail($id);
+
+        $validatedData = $this->validate(request(), [
+            'status' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $validStatuses = [
+                        Order::STATUS_PENDING,
+                        Order::STATUS_PENDING_PAYMENT,
+                        Order::STATUS_PROCESSING,
+                        Order::STATUS_PREPARING,
+                        Order::STATUS_READY,
+                        Order::STATUS_COMPLETED,
+                        Order::STATUS_CANCELED,
+                        Order::STATUS_CLOSED,
+                        Order::STATUS_FRAUD,
+                    ];
+
+                    if (! in_array($value, $validStatuses)) {
+                        $fail('The selected status is invalid.');
+                    }
+                },
+            ],
+        ]);
+
+        $newStatus = $validatedData['status'];
+
+        // Проверяем, изменился ли статус
+        if ($order->status === $newStatus) {
+            session()->flash('info', trans('admin::app.sales.orders.view.status-not-changed'));
+
+            return redirect()->route('admin.sales.orders.view', $id);
+        }
+
+        try {
+            $this->orderRepository->updateOrderStatus($order, $newStatus);
+
+            session()->flash('success', trans('admin::app.sales.orders.view.status-updated-success'));
+        } catch (\Exception $e) {
+            session()->flash('error', trans('admin::app.sales.orders.view.status-update-error'));
+        }
+
+        return redirect()->route('admin.sales.orders.view', $id);
+    }
+
+    /**
      * Result of search product.
      *
      * @return \Illuminate\Http\JsonResponse
@@ -237,18 +291,18 @@ class OrderController extends Controller
             ]));
         }
 
-        // Проверяем, выбран ли самовывоз
-        $isPickup = $cart->shipping_method === 'pickup_pickup';
+        // Проверяем, выбран ли самовывоз или еда в зале
+        $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
 
         if (
             $cart->haveStockableItems()
-            && ! $isPickup
+            && ! $skipAddressValidation
             && ! $cart->shipping_address
         ) {
             throw new \Exception(trans('admin::app.sales.orders.create.check-shipping-address'));
         }
 
-        if (! $cart->billing_address) {
+        if (! $skipAddressValidation && ! $cart->billing_address) {
             throw new \Exception(trans('admin::app.sales.orders.create.check-billing-address'));
         }
 

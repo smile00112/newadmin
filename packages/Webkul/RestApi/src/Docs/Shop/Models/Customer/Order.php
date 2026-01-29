@@ -166,6 +166,46 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Order Labels",
+     *     description="Custom labels attached to the order",
+     *     type="array",
+     *     @OA\Items(
+     *         type="string",
+     *         example="заказ с собой"
+     *     ),
+     *     example={"заказ с собой", "приготовить сдачу"}
+     * )
+     *
+     * @var array
+     */
+    private $order_labels;
+
+    /**
+     * @OA\Property(
+     *     title="Rating",
+     *     description="Order rating (true = Нравится, false = Не нравится, null = не оценено)",
+     *     example=true,
+     *     nullable=true
+     * )
+     *
+     * @var bool|null
+     */
+    private $rating;
+
+    /**
+     * @OA\Property(
+     *     title="Rating Label",
+     *     description="Human-readable rating label",
+     *     example="Нравится",
+     *     nullable=true
+     * )
+     *
+     * @var string|null
+     */
+    private $rating_label;
+
+    /**
+     * @OA\Property(
      *     title="Order's Customer",
      *     description="Order's Customer"
      * )

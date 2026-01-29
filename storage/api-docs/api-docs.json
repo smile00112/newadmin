@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://dolinger_new_admin.test",
+            "url": "http://dolinger_new_admin.test",
             "description": "Rest API"
         }
     ],
@@ -1922,31 +1922,86 @@
             }
         },
         "/api/v1/customer/profile": {
-            "post": {
+            "put": {
                 "tags": [
                     "Customers"
                 ],
                 "summary": "Update customer profile",
-                "description": "Update customer profile",
+                "description": "Update customer profile. All fields are optional, but at least one field must be provided. Only provided fields will be updated.",
                 "operationId": "updateCustomer",
                 "requestBody": {
                     "required": true,
                     "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "first_name": {
+                                        "description": "Customer's first name",
+                                        "type": "string",
+                                        "example": "John"
+                                    },
+                                    "last_name": {
+                                        "description": "Customer's last name",
+                                        "type": "string",
+                                        "example": "Doe"
+                                    },
+                                    "gender": {
+                                        "description": "Customer's gender",
+                                        "type": "string",
+                                        "enum": [
+                                            "Male",
+                                            "Female",
+                                            "Other"
+                                        ],
+                                        "example": "Male"
+                                    },
+                                    "date_of_birth": {
+                                        "description": "Customer's date of birth (must be before today)",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2002-02-19"
+                                    },
+                                    "phone": {
+                                        "description": "Customer's phone number (must be unique)",
+                                        "type": "string",
+                                        "example": "1234567899"
+                                    },
+                                    "email": {
+                                        "description": "Customer's email address (must be unique)",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "example@example.com"
+                                    },
+                                    "current_password": {
+                                        "description": "Current password (required if changing password)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "admin123"
+                                    },
+                                    "new_password": {
+                                        "description": "New password (min 6 characters, required with current_password)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "admin123"
+                                    },
+                                    "new_password_confirmation": {
+                                        "description": "New password confirmation (required with new_password)",
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "admin123"
+                                    },
+                                    "subscribed_to_news_letter": {
+                                        "description": "Subscribe to newsletter",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
                         "multipart/form-data": {
                             "schema": {
-                                "required": [
-                                    "first_name",
-                                    "last_name",
-                                    "gender",
-                                    "date_of_birth",
-                                    "email",
-                                    "phone"
-                                ],
                                 "properties": {
-                                    "_method": {
-                                        "type": "string",
-                                        "example": "PUT"
-                                    },
                                     "first_name": {
                                         "type": "string",
                                         "example": "John"
@@ -1957,10 +2012,16 @@
                                     },
                                     "gender": {
                                         "type": "string",
+                                        "enum": [
+                                            "Male",
+                                            "Female",
+                                            "Other"
+                                        ],
                                         "example": "Male"
                                     },
                                     "date_of_birth": {
                                         "type": "string",
+                                        "format": "date",
                                         "example": "2002-02-19"
                                     },
                                     "phone": {
@@ -2027,13 +2088,24 @@
                             "application/json": {
                                 "schema": {},
                                 "examples": {
-                                    "result": {
-                                        "summary": "An result object.",
+                                    "validation_error": {
+                                        "summary": "Validation error",
                                         "value": {
-                                            "message": "The email has already been taken.",
+                                            "message": "The given data was invalid.",
                                             "errors": {
                                                 "email": [
                                                     "The email has already been taken."
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "no_fields": {
+                                        "summary": "No fields provided",
+                                        "value": {
+                                            "message": "At least one field must be provided for update.",
+                                            "errors": {
+                                                "general": [
+                                                    "At least one field must be provided for update."
                                                 ]
                                             }
                                         }
@@ -2816,6 +2888,408 @@
                 }
             }
         },
+        "/api/v1/customer/bonuses": {
+            "get": {
+                "tags": [
+                    "Bonuses"
+                ],
+                "summary": "Get logged in customer's bonus information",
+                "description": "Returns customer's bonus balance, levels, history and settings",
+                "operationId": "getCustomerBonuses",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "points_balance": {
+                                            "description": "Available bonus balance (not expired)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 450.5
+                                        },
+                                        "balance": {
+                                            "description": "Total bonus balance",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 500
+                                        },
+                                        "spent_sum": {
+                                            "description": "Total amount spent by customer",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 15000
+                                        },
+                                        "orders_count": {
+                                            "description": "Number of completed orders",
+                                            "type": "integer",
+                                            "example": 25
+                                        },
+                                        "percent_max": {
+                                            "description": "Maximum percentage of order that can be paid with bonuses",
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 100
+                                        },
+                                        "show_levels_info": {
+                                            "description": "Whether to show levels information",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "level": {
+                                            "description": "Current bonus level ID",
+                                            "type": "integer",
+                                            "example": 2,
+                                            "nullable": true
+                                        },
+                                        "type": {
+                                            "description": "Calculation type for current level",
+                                            "type": "string",
+                                            "enum": [
+                                                "orders_count",
+                                                "total_spent",
+                                                "cart_value"
+                                            ],
+                                            "example": "total_spent"
+                                        },
+                                        "levels_info": {
+                                            "description": "List of all bonus levels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Bronze"
+                                                    },
+                                                    "cashback_percent": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 2
+                                                    },
+                                                    "description_top": {
+                                                        "type": "string",
+                                                        "example": "Возвращаем 2% заказа."
+                                                    },
+                                                    "description_bottom": {
+                                                        "type": "string",
+                                                        "example": "0-1000 потрачено"
+                                                    },
+                                                    "is_current": {
+                                                        "type": "boolean",
+                                                        "example": false
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_level_info": {
+                                            "description": "Information about next level",
+                                            "properties": {
+                                                "text1": {
+                                                    "type": "string",
+                                                    "example": "Вы сделали 1000 потрачено"
+                                                },
+                                                "text2": {
+                                                    "type": "string",
+                                                    "example": "Осталось 500 потрачено до повышения"
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        },
+                                        "bonus_history": {
+                                            "description": "Recent bonus transactions",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "accrual",
+                                                            "deduction",
+                                                            "return"
+                                                        ],
+                                                        "example": "accrual"
+                                                    },
+                                                    "amount": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 50
+                                                    },
+                                                    "currency_code": {
+                                                        "type": "string",
+                                                        "example": "USD"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Начисление бонусов за заказ #00001"
+                                                    },
+                                                    "order_id": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2026-01-22 10:00:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/bonuces-test": {
+            "get": {
+                "tags": [
+                    "Bonuses"
+                ],
+                "summary": "Get test bonus information (for testing)",
+                "description": "Returns test bonus data for development/testing purposes",
+                "operationId": "getCustomerBonusesTest",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "points_balance": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 450
+                                        },
+                                        "spent_sum": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 0
+                                        },
+                                        "percent_max": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 10
+                                        },
+                                        "show_levels_info": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "level": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "type": {
+                                            "type": "string",
+                                            "example": "orderscount"
+                                        },
+                                        "levels_info": {
+                                            "description": "Test levels data",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "1 грейд"
+                                                    },
+                                                    "cashback_percent": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 2
+                                                    },
+                                                    "description_top": {
+                                                        "type": "string",
+                                                        "example": "Возвращаем 2% заказа."
+                                                    },
+                                                    "description_bottom": {
+                                                        "type": "string",
+                                                        "example": "0-10 заказов"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "next_level_info": {
+                                            "properties": {
+                                                "text1": {
+                                                    "type": "string",
+                                                    "example": "Вы сделалли 12 заказов"
+                                                },
+                                                "text2": {
+                                                    "type": "string",
+                                                    "example": "Осталось 2 закзаза до  до повышения"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "bonus_history": {
+                                            "description": "Bonus transaction history",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "accrual",
+                                                            "deduction",
+                                                            "return"
+                                                        ],
+                                                        "example": "accrual"
+                                                    },
+                                                    "amount": {
+                                                        "type": "number",
+                                                        "format": "float",
+                                                        "example": 50
+                                                    },
+                                                    "currency_code": {
+                                                        "type": "string",
+                                                        "example": "USD"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Начисление бонусов за заказ #00001"
+                                                    },
+                                                    "order_id": {
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2026-01-22 10:00:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            },
+                                            "example": []
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/checkout/bonus/apply": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Apply bonus to cart",
+                "description": "Apply bonus amount to the current customer's cart. Requires authenticated customer with active cart.",
+                "operationId": "applyBonusToCart",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "amount"
+                                ],
+                                "properties": {
+                                    "amount": {
+                                        "description": "Bonus amount to apply (must be >= 0)",
+                                        "type": "number",
+                                        "format": "float",
+                                        "minimum": 0,
+                                        "example": 100.5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Bonus applied successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Бонусы успешно применены"
+                                        },
+                                        "cart": {
+                                            "description": "Updated cart object with applied bonus",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - validation error or business logic error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Корзина не найдена или пользователь не авторизован"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/customer/cart": {
             "get": {
                 "tags": [
@@ -2833,6 +3307,13 @@
                                     "properties": {
                                         "data": {
                                             "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "cross_sell": {
+                                            "description": "Array of cross-sell products",
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Product"
+                                            }
                                         }
                                     },
                                     "type": "object"
@@ -4073,6 +4554,30 @@
                 "summary": "Create order at the checkout",
                 "description": "Create order at the checkout",
                 "operationId": "saveCheckoutOrder",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "order_labels": {
+                                        "description": "Array of order labels to attach to the order. Labels must exist in the configured list.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "example": "заказ с собой"
+                                        },
+                                        "example": [
+                                            "заказ с собой",
+                                            "приготовить сдачу",
+                                            "позвонить при прибытии заказа"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Successful operation",
@@ -5234,6 +5739,117 @@
                 ]
             }
         },
+        "/api/v1/customer/orders/{id}/rate": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Rate customer's order",
+                "description": "Rate customer's order (true = Нравится, false = Не нравится)",
+                "operationId": "rateCustomerOrder",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Order id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "rating"
+                                ],
+                                "properties": {
+                                    "rating": {
+                                        "description": "Order rating (true = Нравится, false = Не нравится)",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Order"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order rated successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "rating": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The rating field is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/orders/reorder/{id}": {
             "get": {
                 "tags": [
@@ -5298,6 +5914,285 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Order can not be reordered"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/active-orders": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Get logged in customer's active orders",
+                "description": "Returns list of active orders filtered by statuses configured in order settings (/admin/configuration/sales/order_settings). If you want to retrieve all orders at once pass pagination=0 otherwise ignore this parameter",
+                "operationId": "getCustomerActiveOrders",
+                "parameters": [
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort column",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "id"
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "description": "Sort order",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "pagination",
+                        "in": "query",
+                        "description": "Enable pagination (0 to disable, 1 or omit to enable)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Order"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/completed-orders": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Get logged in customer's completed orders",
+                "description": "Returns list of completed orders filtered by statuses configured in order settings (/admin/configuration/sales/order_settings). If you want to retrieve all orders at once pass pagination=0 otherwise ignore this parameter",
+                "operationId": "getCustomerCompletedOrders",
+                "parameters": [
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort column",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "id"
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "description": "Sort order",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "pagination",
+                        "in": "query",
+                        "description": "Enable pagination (0 to disable, 1 or omit to enable)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Order"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/cancelled-orders": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Get logged in customer's cancelled orders",
+                "description": "Returns list of cancelled orders filtered by statuses configured in order settings (/admin/configuration/sales/order_settings). If you want to retrieve all orders at once pass pagination=0 otherwise ignore this parameter",
+                "operationId": "getCustomerCancelledOrders",
+                "parameters": [
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort column",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "id"
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "description": "Sort order",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "desc",
+                                "asc"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Limit",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "pagination",
+                        "in": "query",
+                        "description": "Enable pagination (0 to disable, 1 or omit to enable)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Order"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/components/schemas/Pagination"
                                         }
                                     },
                                     "type": "object"
@@ -5868,6 +6763,146 @@
                                                     "items": {
                                                         "type": "integer",
                                                         "example": 1
+                                                    }
+                                                },
+                                                "shipping_methods": {
+                                                    "description": "Available shipping methods",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "code": {
+                                                                "type": "string",
+                                                                "example": "flatrate"
+                                                            },
+                                                            "method": {
+                                                                "type": "string",
+                                                                "example": "flatrate_flatrate"
+                                                            },
+                                                            "method_title": {
+                                                                "type": "string",
+                                                                "example": "Flat Rate"
+                                                            },
+                                                            "description": {
+                                                                "type": "string",
+                                                                "example": "Flat rate shipping"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "payment_methods": {
+                                                    "description": "Available payment methods",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "method": {
+                                                                "type": "string",
+                                                                "example": "cashondelivery"
+                                                            },
+                                                            "method_title": {
+                                                                "type": "string",
+                                                                "example": "Cash On Delivery"
+                                                            },
+                                                            "description": {
+                                                                "type": "string",
+                                                                "example": "Pay when you receive your order"
+                                                            },
+                                                            "sort": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "image": {
+                                                                "type": "string",
+                                                                "example": null,
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "order_labels": {
+                                                    "description": "Order labels list",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "VIP"
+                                                    }
+                                                },
+                                                "order_statuses": {
+                                                    "description": "Available order statuses",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "code": {
+                                                                "description": "Status code",
+                                                                "type": "string",
+                                                                "example": "pending"
+                                                            },
+                                                            "label": {
+                                                                "description": "Status label",
+                                                                "type": "string",
+                                                                "example": "Pending"
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "cart_cross_sell_products": {
+                                                    "description": "Cart cross-sell products from configuration (only if separate cross-sell list is enabled)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "description": "Product resource with full product details",
+                                                        "properties": {
+                                                            "id": {
+                                                                "description": "Product ID",
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            },
+                                                            "sku": {
+                                                                "description": "Product SKU",
+                                                                "type": "string",
+                                                                "example": "product-sku"
+                                                            },
+                                                            "name": {
+                                                                "description": "Product name",
+                                                                "type": "string",
+                                                                "example": "Product Name"
+                                                            },
+                                                            "price": {
+                                                                "description": "Product price",
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 99.99
+                                                            },
+                                                            "formatted_price": {
+                                                                "description": "Formatted price",
+                                                                "type": "string",
+                                                                "example": "$99.99"
+                                                            },
+                                                            "images": {
+                                                                "description": "Product images",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "in_stock": {
+                                                                "description": "Product availability",
+                                                                "type": "boolean",
+                                                                "example": true
+                                                            },
+                                                            "is_saleable": {
+                                                                "description": "Whether product can be sold",
+                                                                "type": "boolean",
+                                                                "example": true
+                                                            },
+                                                            "url_key": {
+                                                                "description": "Product URL key",
+                                                                "type": "string",
+                                                                "example": "product-url-key"
+                                                            }
+                                                        },
+                                                        "type": "object"
                                                     }
                                                 }
                                             },
@@ -6467,7 +7502,8 @@
                             "grouped",
                             "downloadable",
                             "bundle",
-                            "booking"
+                            "booking",
+                            "constructor"
                         ]
                     },
                     "name": {
@@ -6888,6 +7924,300 @@
                             }
                         }
                     },
+                    "constructor_options": {
+                        "title": "Constructor Options",
+                        "description": "Info: this property will only use with constructor type product.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Constructor ID",
+                                    "type": "integer"
+                                },
+                                "visible": {
+                                    "description": "Is constructor visible",
+                                    "type": "boolean"
+                                },
+                                "required": {
+                                    "description": "Is constructor required",
+                                    "type": "boolean"
+                                },
+                                "combo": {
+                                    "description": "Is combo constructor",
+                                    "type": "boolean"
+                                },
+                                "discount": {
+                                    "description": "Has discount",
+                                    "type": "boolean"
+                                },
+                                "design": {
+                                    "description": "Display design type",
+                                    "type": "string",
+                                    "enum": [
+                                        "line",
+                                        "category",
+                                        "table"
+                                    ]
+                                },
+                                "discount_type": {
+                                    "description": "Discount type",
+                                    "type": "string",
+                                    "enum": [
+                                        null,
+                                        "percent",
+                                        "fixed"
+                                    ],
+                                    "nullable": true
+                                },
+                                "discount_value": {
+                                    "description": "Discount value",
+                                    "type": "integer"
+                                },
+                                "min_selected_sum": {
+                                    "description": "Minimum selected sum",
+                                    "type": "integer"
+                                },
+                                "groups": {
+                                    "description": "Constructor groups",
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "description": "Group ID",
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "description": "Group name",
+                                                "type": "string"
+                                            },
+                                            "field_type": {
+                                                "description": "Field type",
+                                                "type": "string",
+                                                "enum": [
+                                                    "checkbox",
+                                                    "radio",
+                                                    "list"
+                                                ]
+                                            },
+                                            "checked_type": {
+                                                "description": "Checked type",
+                                                "type": "string",
+                                                "enum": [
+                                                    "once",
+                                                    "multiple"
+                                                ]
+                                            },
+                                            "quantity_min": {
+                                                "description": "Minimum quantity",
+                                                "type": "integer"
+                                            },
+                                            "quantity_max": {
+                                                "description": "Maximum quantity",
+                                                "type": "integer"
+                                            },
+                                            "show_title": {
+                                                "description": "Show title",
+                                                "type": "boolean"
+                                            },
+                                            "opened_by_default": {
+                                                "description": "Opened by default",
+                                                "type": "boolean"
+                                            },
+                                            "zero_price": {
+                                                "description": "Zero price",
+                                                "type": "boolean"
+                                            },
+                                            "required": {
+                                                "description": "Is required",
+                                                "type": "boolean"
+                                            },
+                                            "hidden": {
+                                                "description": "Is hidden",
+                                                "type": "boolean"
+                                            },
+                                            "sort": {
+                                                "description": "Sort order",
+                                                "type": "integer"
+                                            },
+                                            "double_portions": {
+                                                "description": "Double portions available",
+                                                "type": "boolean"
+                                            },
+                                            "half_portions": {
+                                                "description": "Half portions available",
+                                                "type": "boolean"
+                                            },
+                                            "products": {
+                                                "description": "Products in group",
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "Product ID",
+                                                            "type": "integer"
+                                                        },
+                                                        "sku": {
+                                                            "description": "Product SKU",
+                                                            "type": "string"
+                                                        },
+                                                        "name": {
+                                                            "description": "Product name",
+                                                            "type": "string"
+                                                        },
+                                                        "price": {
+                                                            "description": "Product price",
+                                                            "type": "number",
+                                                            "format": "float"
+                                                        },
+                                                        "formatted_price": {
+                                                            "description": "Formatted price",
+                                                            "type": "string"
+                                                        },
+                                                        "in_stock": {
+                                                            "description": "In stock",
+                                                            "type": "boolean"
+                                                        },
+                                                        "sort": {
+                                                            "description": "Sort order",
+                                                            "type": "integer"
+                                                        },
+                                                        "default": {
+                                                            "description": "Is default product",
+                                                            "type": "boolean"
+                                                        },
+                                                        "base_image": {
+                                                            "description": "Product base image with different sizes",
+                                                            "properties": {
+                                                                "small_image_url": {
+                                                                    "type": "string"
+                                                                },
+                                                                "medium_image_url": {
+                                                                    "type": "string"
+                                                                },
+                                                                "large_image_url": {
+                                                                    "type": "string"
+                                                                },
+                                                                "original_image_url": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "nutrition": {
+                                                            "description": "Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+                                                            "properties": {
+                                                                "calories": {
+                                                                    "description": "Calories (ккал)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                },
+                                                                "proteins": {
+                                                                    "description": "Proteins (г)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                },
+                                                                "fats": {
+                                                                    "description": "Fats (г)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                },
+                                                                "carbs": {
+                                                                    "description": "Carbohydrates (г)",
+                                                                    "type": "number",
+                                                                    "format": "float",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "example": [
+                            {
+                                "id": 1,
+                                "visible": true,
+                                "required": false,
+                                "combo": false,
+                                "discount": false,
+                                "design": "category",
+                                "discount_type": null,
+                                "discount_value": 0,
+                                "min_selected_sum": 0,
+                                "groups": [
+                                    {
+                                        "id": 1,
+                                        "name": "Base Ingredients",
+                                        "field_type": "checkbox",
+                                        "checked_type": "multiple",
+                                        "quantity_min": 1,
+                                        "quantity_max": 5,
+                                        "show_title": true,
+                                        "opened_by_default": true,
+                                        "zero_price": false,
+                                        "required": true,
+                                        "hidden": false,
+                                        "sort": 1,
+                                        "double_portions": false,
+                                        "half_portions": false,
+                                        "products": [
+                                            {
+                                                "id": 25,
+                                                "sku": "ingredient-1",
+                                                "name": "Ingredient Name",
+                                                "price": 5.5,
+                                                "formatted_price": "$5.50",
+                                                "in_stock": true,
+                                                "sort": 1,
+                                                "default": true,
+                                                "base_image": {
+                                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                                },
+                                                "nutrition": {
+                                                    "calories": 250.5,
+                                                    "proteins": 15.2,
+                                                    "fats": 8.5,
+                                                    "carbs": 30
+                                                }
+                                            },
+                                            {
+                                                "id": 26,
+                                                "sku": "ingredient-2",
+                                                "name": "Another Ingredient",
+                                                "price": 3,
+                                                "formatted_price": "$3.00",
+                                                "in_stock": true,
+                                                "sort": 2,
+                                                "default": false,
+                                                "base_image": {
+                                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                                },
+                                                "nutrition": null
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
                     "booking": {
                         "$ref": "#/components/schemas/ProductBooking"
                     },
@@ -7061,15 +8391,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
@@ -10802,6 +12128,33 @@
                     "items": {
                         "$ref": "#/components/schemas/OrderItem"
                     },
+                    "order_labels": {
+                        "title": "Order Labels",
+                        "description": "Custom labels attached to the order",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "заказ с собой"
+                        },
+                        "example": [
+                            "заказ с собой",
+                            "приготовить сдачу"
+                        ]
+                    },
+                    "rating": {
+                        "title": "Rating",
+                        "description": "Order rating (true = Нравится, false = Не нравится, null = не оценено)",
+                        "type": "boolean",
+                        "example": true,
+                        "nullable": true
+                    },
+                    "rating_label": {
+                        "title": "Rating Label",
+                        "description": "Human-readable rating label",
+                        "type": "string",
+                        "example": "Нравится",
+                        "nullable": true
+                    },
                     "customer": {
                         "$ref": "#/components/schemas/Customer"
                     },
@@ -11496,6 +12849,10 @@
         {
             "name": "Catalog",
             "description": "Catalog"
+        },
+        {
+            "name": "Bonuses",
+            "description": "Bonuses"
         },
         {
             "name": "Mobile App",

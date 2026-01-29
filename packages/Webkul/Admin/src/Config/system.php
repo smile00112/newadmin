@@ -1875,10 +1875,39 @@ return [
             ],
         ],
     ], [
+        'key'    => 'sales.carriers.dinein',
+        'name'   => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.page-title',
+        'info'   => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.title-info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name'          => 'active',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.status',
+                'type'          => 'boolean',
+                'channel_based' => true,
+                'locale_based'  => false,
+            ], [
+                'name'          => 'title',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.title',
+                'type'          => 'text',
+                'depends'       => 'active:1',
+                'validation'    => 'required_if:active,1',
+                'channel_based' => true,
+                'locale_based'  => true,
+            ], [
+                'name'          => 'description',
+                'title'         => 'admin::app.configuration.index.sales.shipping-methods.dinein-shipping.description',
+                'type'          => 'textarea',
+                'depends'       => 'active:1',
+                'channel_based' => true,
+                'locale_based'  => true,
+            ],
+        ],
+    ], [
         'key'    => 'sales.carriers.zone',
         'name'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.page-title',
         'info'   => 'admin::app.configuration.index.sales.shipping-methods.zone-shipping.title-info',
-        'sort'   => 3,
+        'sort'   => 4,
         'fields' => [
             [
                 'name'          => 'active',
@@ -1931,7 +1960,7 @@ return [
         'key'    => 'sales.carriers.flatrate',
         'name'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.page-title',
         'info'   => 'admin::app.configuration.index.sales.shipping-methods.flat-rate-shipping.title-info',
-        'sort'   => 4,
+        'sort'   => 5,
         'fields' => [
             [
                 'name'          => 'active',
@@ -2446,6 +2475,86 @@ return [
                 'info'    => 'admin::app.configuration.index.sales.order-settings.reorder.shop-reorder-info',
                 'type'    => 'boolean',
                 'default' => true,
+            ],
+        ],
+    ], [
+        'key'    => 'sales.order_settings.order_labels',
+        'name'   => 'admin::app.configuration.index.sales.order-settings.order-labels.title',
+        'info'   => 'admin::app.configuration.index.sales.order-settings.order-labels.info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name'          => 'labels_list',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-labels.labels-list',
+                'type'          => 'textarea',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-labels.labels-list-info',
+                'channel_based' => true,
+            ],
+        ],
+    ], [
+        'key'    => 'sales.order_settings.order_statuses',
+        'name'   => 'admin::app.configuration.index.sales.order-settings.order-statuses.title',
+        'info'   => 'admin::app.configuration.index.sales.order-settings.order-statuses.info',
+        'sort'   => 4,
+        'fields' => [
+            [
+                'name'          => 'active_statuses',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-statuses.active-statuses',
+                'type'          => 'multiselect',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-statuses.active-statuses-info',
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.payment-methods.pending',
+                        'value' => Order::STATUS_PENDING,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.payment-methods.pending-payment',
+                        'value' => Order::STATUS_PENDING_PAYMENT,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.payment-methods.processing',
+                        'value' => Order::STATUS_PROCESSING,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.preparing',
+                        'value' => Order::STATUS_PREPARING,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.ready',
+                        'value' => Order::STATUS_READY,
+                    ],
+                ],
+                'channel_based' => true,
+            ], [
+                'name'          => 'completed_statuses',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-statuses.completed-statuses',
+                'type'          => 'multiselect',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-statuses.completed-statuses-info',
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.completed',
+                        'value' => Order::STATUS_COMPLETED,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.closed',
+                        'value' => Order::STATUS_CLOSED,
+                    ],
+                ],
+                'channel_based' => true,
+            ], [
+                'name'          => 'cancelled_statuses',
+                'title'         => 'admin::app.configuration.index.sales.order-settings.order-statuses.cancelled-statuses',
+                'type'          => 'multiselect',
+                'validation'    => false,
+                'info'          => 'admin::app.configuration.index.sales.order-settings.order-statuses.cancelled-statuses-info',
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.canceled',
+                        'value' => Order::STATUS_CANCELED,
+                    ], [
+                        'title' => 'admin::app.configuration.index.sales.order-settings.order-statuses.fraud',
+                        'value' => Order::STATUS_FRAUD,
+                    ],
+                ],
+                'channel_based' => true,
             ],
         ],
     ], [

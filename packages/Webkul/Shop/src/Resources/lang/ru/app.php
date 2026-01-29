@@ -185,11 +185,13 @@ return [
                     'options' => [
                         'canceled'        => 'Отменен',
                         'closed'          => 'Закрыт',
-                        'completed'       => 'Завершен',
+                        'completed'       => 'Выполнен',
                         'fraud'           => 'Мошенничество',
                         'pending'         => 'В ожидании',
                         'pending-payment' => 'Ожидание оплаты',
+                        'preparing'       => 'Готовим',
                         'processing'      => 'Обработка',
+                        'ready'           => 'Готов',
                     ],
                 ],
 
@@ -217,6 +219,7 @@ return [
 
                     'information' => [
                         'discount'                   => 'Скидка',
+                        'bonus-payment'               => 'Оплата бонусами',
                         'excl-tax'                   => 'Без налога:',
                         'grand-total'                => 'Общая сумма',
                         'info'                       => 'Информация',

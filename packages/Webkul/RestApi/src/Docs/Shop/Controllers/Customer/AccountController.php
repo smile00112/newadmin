@@ -40,27 +40,95 @@ class AccountController
     public function get() {}
 
     /**
-     * @OA\Post(
+     * @OA\Put(
      *      path="/api/v1/customer/profile",
      *      operationId="updateCustomer",
      *      tags={"Customers"},
      *      summary="Update customer profile",
-     *      description="Update customer profile",
+     *      description="Update customer profile. All fields are optional, but at least one field must be provided. Only provided fields will be updated.",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\RequestBody(
      *          required=true,
      *
      *          @OA\MediaType(
-     *              mediaType="multipart/form-data",
+     *              mediaType="application/json",
      *
      *              @OA\Schema(
      *
      *                  @OA\Property(
-     *                      property="_method",
+     *                      property="first_name",
      *                      type="string",
-     *                      example="PUT"
+     *                      example="John",
+     *                      description="Customer's first name"
      *                  ),
+     *                  @OA\Property(
+     *                      property="last_name",
+     *                      type="string",
+     *                      example="Doe",
+     *                      description="Customer's last name"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="gender",
+     *                      type="string",
+     *                      enum={"Male", "Female", "Other"},
+     *                      example="Male",
+     *                      description="Customer's gender"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="date_of_birth",
+     *                      type="string",
+     *                      format="date",
+     *                      example="2002-02-19",
+     *                      description="Customer's date of birth (must be before today)"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="phone",
+     *                      type="string",
+     *                      example="1234567899",
+     *                      description="Customer's phone number (must be unique)"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="email",
+     *                      type="string",
+     *                      format="email",
+     *                      example="example@example.com",
+     *                      description="Customer's email address (must be unique)"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="current_password",
+     *                      type="string",
+     *                      format="password",
+     *                      example="admin123",
+     *                      description="Current password (required if changing password)"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="new_password",
+     *                      type="string",
+     *                      format="password",
+     *                      example="admin123",
+     *                      description="New password (min 6 characters, required with current_password)"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="new_password_confirmation",
+     *                      type="string",
+     *                      format="password",
+     *                      example="admin123",
+     *                      description="New password confirmation (required with new_password)"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="subscribed_to_news_letter",
+     *                      type="boolean",
+     *                      example=true,
+     *                      description="Subscribe to newsletter"
+     *                  )
+     *              )
+     *          ),
+     *          @OA\MediaType(
+     *              mediaType="multipart/form-data",
+     *
+     *              @OA\Schema(
+     *
      *                  @OA\Property(
      *                      property="first_name",
      *                      type="string",
@@ -74,11 +142,13 @@ class AccountController
      *                  @OA\Property(
      *                      property="gender",
      *                      type="string",
+     *                      enum={"Male", "Female", "Other"},
      *                      example="Male"
      *                  ),
      *                  @OA\Property(
      *                      property="date_of_birth",
      *                      type="string",
+     *                      format="date",
      *                      example="2002-02-19"
      *                  ),
      *                  @OA\Property(
@@ -119,8 +189,7 @@ class AccountController
      *                  @OA\Property(
      *                      property="subscribed_to_news_letter",
      *                      type="boolean"
-     *                  ),
-     *                  required={"first_name", "last_name", "gender", "date_of_birth", "email", "phone"}
+     *                  )
      *              )
      *          )
      *      ),
@@ -142,7 +211,26 @@ class AccountController
      *
      *          @OA\JsonContent(
      *
-     *              @OA\Examples(example="result", value={"message":"The email has already been taken.","errors": {"email":{"The email has already been taken."}}}, summary="An result object.")
+     *              @OA\Examples(
+     *                  example="validation_error",
+     *                  value={
+     *                      "message": "The given data was invalid.",
+     *                      "errors": {
+     *                          "email": {"The email has already been taken."}
+     *                      }
+     *                  },
+     *                  summary="Validation error"
+     *              ),
+     *              @OA\Examples(
+     *                  example="no_fields",
+     *                  value={
+     *                      "message": "At least one field must be provided for update.",
+     *                      "errors": {
+     *                          "general": {"At least one field must be provided for update."}
+     *                      }
+     *                  },
+     *                  summary="No fields provided"
+     *              )
      *          )
      *      )
      * )

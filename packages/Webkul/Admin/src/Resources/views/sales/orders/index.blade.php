@@ -47,7 +47,7 @@
                 <div class="row grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-center border-b px-2 sm:px-4 py-2.5 dark:border-gray-800">
                     <div
                         class="flex select-none items-center gap-2.5"
-                        v-for="(columnGroup, index) in [['increment_id', 'created_at', 'status'], ['base_grand_total', 'method', 'channel_id'], ['full_name', 'customer_email', 'location'], ['items']]"
+                        v-for="(columnGroup, index) in [['increment_id'/*, 'created_at', 'status'*/], ['base_grand_total', 'method'], ['full_name', 'customer_email'], ['items']]"
                     >
                         <p class="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
                             <span class="[&>*]:after:content-['_/_']">
@@ -93,8 +93,9 @@
 
             <template v-else>
                 <!-- Order Rows -->
-                <div
-                    class="row grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-y-4 border-b px-2 sm:px-4 py-2.5 transition-all hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950"
+                <a
+                    :href="`{{ route('admin.sales.orders.view', '') }}/${record.id}`"
+                    class="row grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-y-4 border-b px-2 sm:px-4 py-2.5 transition-all hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950 cursor-pointer no-underline block"
                     v-for="record in available.records"
                 >
                     <!-- Order Id, Created, Status Section -->
@@ -120,9 +121,9 @@
                             @lang('admin::app.sales.orders.index.datagrid.pay-by', ['method' => ''])@{{ record.method }}
                         </p>
 
-                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                            @{{ record.channel_name }}
-                        </p>
+{{--                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">--}}
+{{--                            @{{ record.channel_name }}--}}
+{{--                        </p>--}}
                     </div>
 
                     <!-- Customer, Email, Location Section -->
@@ -135,9 +136,9 @@
                             @{{ record.customer_email }}
                         </p>
 
-                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                            @{{ record.location }}
-                        </p>
+{{--                        <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-300">--}}
+{{--                            @{{ record.location }}--}}
+{{--                        </p>--}}
                     </div>
 
                     <!-- Images Section -->
@@ -148,11 +149,9 @@
                         >
                         </div>
 
-                        <a :href=`{{ route('admin.sales.orders.view', '') }}/${record.id}`>
-                            <span class="icon-sort-right rtl:icon-sort-left cursor-pointer p-1.5 text-xl sm:text-2xl hover:rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 ltr:ml-1 rtl:mr-1"></span>
-                        </a>
+                        <span class="icon-sort-right rtl:icon-sort-left p-1.5 text-xl sm:text-2xl hover:rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 ltr:ml-1 rtl:mr-1"></span>
                     </div>
-                </div>
+                </a>
             </template>
         </template>
     </x-admin::datagrid>

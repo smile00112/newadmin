@@ -11,10 +11,6 @@ use Illuminate\Support\Facades\Cache;
  */
 trait ProvideApiCache
 {
-    /**
-     * Default cache TTL in seconds (24 hours for static data).
-     */
-    protected int $cacheTtl = 86400;
 
     /**
      * Get cache key prefix for this controller.
@@ -49,7 +45,7 @@ trait ProvideApiCache
     {
         $cacheKey = $this->buildCacheKey($suffix);
 
-        return Cache::remember($cacheKey, $ttl ?? $this->cacheTtl, $callback);
+        return Cache::remember($cacheKey, $ttl ?? ($this->cacheTtl ?? 600), $callback);
     }
 
     /**
@@ -59,7 +55,7 @@ trait ProvideApiCache
     {
         $cacheKey = $this->buildCacheKey($suffix, $params);
 
-        return Cache::remember($cacheKey, $ttl ?? $this->cacheTtl, $callback);
+        return Cache::remember($cacheKey, $ttl ?? ($this->cacheTtl ?? 600), $callback);
     }
 
     /**

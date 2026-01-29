@@ -132,45 +132,97 @@ class AuthController extends CustomerController
     {
         $customer = $this->resolveShopUser($request);
 
+        // Получаем только переданные поля (исключаем служебные)
+        $inputData = $request->except(['_method', '_token']);
+        
+        // Проверяем, что передано хотя бы одно поле для обновления
+        if (empty($inputData)) {
+            return response([
+                'message' => trans('rest-api::app.shop.customer.accounts.error.no-fields-provided'),
+                'errors' => ['general' => ['At least one field must be provided for update.']],
+            ], 422);
+        }
+
         $isPasswordChanged = false;
 
-        $request->validate([
-            'first_name'                => ['required'],
-            'last_name'                 => ['required'],
-            'gender'                    => 'required|in:Other,Male,Female',
-            'date_of_birth'             => 'date|before:today',
-            'email'                     => 'email|unique:customers,email,'.$customer->id,
-            'new_password'              => 'confirmed|min:6|required_with:current_password',
-            'new_password_confirmation' => 'required_with:new_password',
-            'current_password'          => 'required_with:new_password',
-            'image'                     => 'array',
-            'image.*'                   => 'mimes:bmp,jpeg,jpg,png,webp',
-            'phone'                     => ['required', new PhoneNumber, 'unique:customers,phone,'.$customer->id],
-            'subscribed_to_news_letter' => 'nullable',
-        ]);
+        // Валидируем только те поля, которые переданы
+        $validationRules = [];
+        
+        if ($request->has('first_name')) {
+            $validationRules['first_name'] = ['required'];
+        }
+        
+        if ($request->has('last_name')) {
+            $validationRules['last_name'] = ['required'];
+        }
+        
+        if ($request->has('gender')) {
+            $validationRules['gender'] = 'required|in:Other,Male,Female';
+        }
+        
+        if ($request->has('date_of_birth')) {
+            $validationRules['date_of_birth'] = 'date|before:today';
+        }
+        
+        if ($request->has('email')) {
+            $validationRules['email'] = 'email|unique:customers,email,'.$customer->id;
+        }
+        
+        if ($request->has('phone')) {
+            $validationRules['phone'] = ['required', new PhoneNumber, 'unique:customers,phone,'.$customer->id];
+        }
+        
+        if ($request->has('current_password') || $request->has('new_password')) {
+            $validationRules['new_password'] = 'confirmed|min:6|required_with:current_password';
+            $validationRules['new_password_confirmation'] = 'required_with:new_password';
+            $validationRules['current_password'] = 'required_with:new_password';
+        }
+        
+        if ($request->hasFile('image')) {
+            $validationRules['image'] = 'array';
+            $validationRules['image.*'] = 'mimes:bmp,jpeg,jpg,png,webp';
+        } elseif ($request->has('image')) {
+            // Если изображение передано как массив данных (для удаления)
+            $validationRules['image'] = 'array';
+        }
+        
+        if ($request->has('subscribed_to_news_letter')) {
+            $validationRules['subscribed_to_news_letter'] = 'nullable';
+        }
 
-        $data = $request->all();
+        $request->validate($validationRules);
 
+        // Используем только переданные поля
+        $data = $inputData;
+
+        // Обрабатываем подписку на рассылку только если поле передано
+        if ($request->has('subscribed_to_news_letter')) {
+            $data['subscribed_to_news_letter'] = $request->boolean('subscribed_to_news_letter');
+        }
+
+        // Обрабатываем изображение только если оно передано
+        // Если изображение передано через multipart/form-data, оно будет обработано отдельно
         if (
             core()->getCurrentChannel()->theme === 'default'
-            && ! isset($data['image'])
+            && ! $request->hasFile('image')
+            && isset($data['image'])
+            && empty($data['image'])
         ) {
             $data['image']['image_0'] = '';
         }
 
-        $data['subscribed_to_news_letter'] = $request->boolean('subscribed_to_news_letter');
-
-        if (! empty($data['current_password'])) {
+        // Обрабатываем пароль только если переданы все необходимые поля
+        if (! empty($data['current_password']) && ! empty($data['new_password'])) {
             if (Hash::check($data['current_password'], $customer->password)) {
                 $isPasswordChanged = true;
-
                 $data['password'] = bcrypt($data['new_password']);
             } else {
-                return response(['message' => trans('rest-api::app.shop.customer.accounts.error.password-mismatch')]);
+                return response(['message' => trans('rest-api::app.shop.customer.accounts.error.password-mismatch')], 422);
             }
-        } else {
-            unset($data['new_password']);
         }
+        
+        // Удаляем поля пароля из данных, если они не были использованы
+        unset($data['current_password'], $data['new_password'], $data['new_password_confirmation']);
 
         Event::dispatch('customer.update.before');
 
@@ -181,31 +233,36 @@ class AuthController extends CustomerController
 
             Event::dispatch('customer.update.after', $customer);
 
-            if ($request->boolean('subscribed_to_news_letter')) {
-                $subscription = $this->subscriptionRepository->firstOrNew(['email' => $data['email']]);
+            // Обрабатываем подписку на рассылку только если поле передано
+            if ($request->has('subscribed_to_news_letter')) {
+                $email = $data['email'] ?? $customer->email;
+                
+                if ($request->boolean('subscribed_to_news_letter')) {
+                    $subscription = $this->subscriptionRepository->firstOrNew(['email' => $email]);
 
-                if ($subscription) {
-                    $this->subscriptionRepository->update([
-                        'customer_id'   => $customer->id,
-                        'is_subscribed' => 1,
-                    ], $subscription->id);
+                    if ($subscription->id) {
+                        $this->subscriptionRepository->update([
+                            'customer_id'   => $customer->id,
+                            'is_subscribed' => 1,
+                        ], $subscription->id);
+                    } else {
+                        $this->subscriptionRepository->create([
+                            'email'         => $email,
+                            'customer_id'   => $customer->id,
+                            'channel_id'    => core()->getCurrentChannel()->id,
+                            'is_subscribed' => 1,
+                            'token'         => uniqid(),
+                        ]);
+                    }
                 } else {
-                    $this->subscriptionRepository->create([
-                        'email'         => $data['email'],
-                        'customer_id'   => $customer->id,
-                        'channel_id'    => core()->getCurrentChannel()->id,
-                        'is_subscribed' => 1,
-                        'token'         => uniqid(),
-                    ]);
-                }
-            } else {
-                $subscription = $this->subscriptionRepository->findOneWhere(['email' => $data['email']]);
+                    $subscription = $this->subscriptionRepository->findOneWhere(['email' => $email]);
 
-                if ($subscription) {
-                    $this->subscriptionRepository->update([
-                        'customer_id'   => $customer->id,
-                        'is_subscribed' => 0,
-                    ], $subscription->id);
+                    if ($subscription) {
+                        $this->subscriptionRepository->update([
+                            'customer_id'   => $customer->id,
+                            'is_subscribed' => 0,
+                        ], $subscription->id);
+                    }
                 }
             }
 

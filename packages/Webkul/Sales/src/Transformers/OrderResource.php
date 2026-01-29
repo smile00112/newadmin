@@ -34,7 +34,7 @@ class OrderResource extends JsonResource
                 'base_shipping_amount_incl_tax' => $this->selected_shipping_rate->base_price_incl_tax,
                 'shipping_discount_amount'      => $this->selected_shipping_rate->discount_amount,
                 'base_shipping_discount_amount' => $this->selected_shipping_rate->base_discount_amount,
-                'shipping_address'              => (new OrderAddressResource($this->shipping_address))->jsonSerialize(),
+                'shipping_address'              => $this->shipping_address ? (new OrderAddressResource($this->shipping_address))->jsonSerialize() : null,
             ];
         }
 
@@ -68,7 +68,7 @@ class OrderResource extends JsonResource
             'applied_cart_rule_ids'    => $this->applied_cart_rule_ids,
             'discount_amount'          => $this->discount_amount,
             'base_discount_amount'     => $this->base_discount_amount,
-            'billing_address'          => (new OrderAddressResource($this->billing_address))->jsonSerialize(),
+            'billing_address'          => $this->billing_address ? (new OrderAddressResource($this->billing_address))->jsonSerialize() : null,
             $this->mergeWhen($this->haveStockableItems(), $shippingInformation),
             'payment'                  => (new OrderPaymentResource($this->payment))->jsonSerialize(),
             'items'                    => OrderItemResource::collection($this->items)->jsonSerialize(),

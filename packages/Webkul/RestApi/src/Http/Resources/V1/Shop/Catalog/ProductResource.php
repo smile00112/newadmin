@@ -215,6 +215,14 @@ class ProductResource extends JsonResource
                     ? $this->getBookingProductInfo($product)
                     : null
             ),
+
+            /* constructor product */
+            $this->mergeWhen(
+                $productTypeInstance instanceof \Webkul\Product\Type\Constructor,
+                $product->type == 'constructor'
+                    ? $this->getConstructorProductInfo($product)
+                    : null
+            ),
         ];
     }
 
@@ -308,6 +316,78 @@ class ProductResource extends JsonResource
     {
         return [
             'booking' => $product->booking_products,
+        ];
+    }
+
+    /**
+     * Get constructor product's extra information.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getConstructorProductInfo($product)
+    {
+        // Load constructor data with relationships
+        $product->load('constructor.groups.products.images');
+
+        // Return empty array if no constructor exists
+        if ($product->constructor->isEmpty()) {
+            return [
+                'constructor_options' => [],
+            ];
+        }
+
+        $constructorOptions = $product->constructor->map(function ($constructor) {
+            return [
+                'id'               => $constructor->id,
+                'visible'          => $constructor->visible,
+                'required'         => $constructor->required,
+                'combo'            => $constructor->combo,
+                'discount'         => $constructor->discount,
+                'design'            => $constructor->design,
+                'discount_type'    => $constructor->discount_type,
+                'discount_value'   => $constructor->discount_value,
+                'min_selected_sum' => $constructor->min_selected_sum,
+                'groups'           => $constructor->groups->map(function ($group) {
+                    return [
+                        'id'                          => $group->id,
+                        'name'                        => $group->name,
+                        'field_type'                  => $group->field_type,
+                        'checked_type'                => $group->checked_type,
+                        'quantity_min'                => $group->quantity_min,
+                        'quantity_max'                => $group->quantity_max,
+                        'show_title'                  => $group->show_title,
+                        'opened_by_default'          => $group->opened_by_default,
+                        'zero_price'                  => $group->zero_price,
+                        'required'                    => $group->required,
+                        'hidden'                      => $group->hidden,
+                        'sort'                        => $group->sort,
+                        'double_portions'             => $group->double_portions,
+                        'half_portions'               => $group->half_portions,
+                        'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
+                        'products'                    => $group->products->map(function ($groupProduct) {
+                            $productTypeInstance = $groupProduct->getTypeInstance();
+
+                            return [
+                                'id'             => $groupProduct->id,
+                                'sku'            => $groupProduct->sku,
+                                'name'           => $groupProduct->name,
+                                'price'          => core()->convertPrice($productTypeInstance->getMinimalPrice()),
+                                'formatted_price' => core()->currency($productTypeInstance->getMinimalPrice()),
+                                'in_stock'       => $groupProduct->haveSufficientQuantity(1),
+                                'sort'           => $groupProduct->pivot->sort ?? 0,
+                                'default'        => (bool) ($groupProduct->pivot->default ?? false),
+                                'base_image'     => ProductImage::getProductBaseImage($groupProduct),
+                                'nutrition'      => $this->getNutritionData($groupProduct),
+                            ];
+                        })->sortBy('sort')->values(),
+                    ];
+                })->sortBy('sort')->values(),
+            ];
+        });
+
+        return [
+            'constructor_options' => $constructorOptions,
         ];
     }
 

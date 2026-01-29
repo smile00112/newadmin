@@ -4,6 +4,7 @@ namespace Webkul\Category\Observers;
 
 use Illuminate\Support\Facades\Storage;
 use Webkul\Category\Models\Category;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 
 class CategoryObserver
 {
@@ -16,6 +17,8 @@ class CategoryObserver
     public function deleted($category)
     {
         Storage::deleteDirectory('category/'.$category->id);
+
+        $this->clearCatalogCache();
     }
 
     /**
@@ -28,6 +31,18 @@ class CategoryObserver
     {
         foreach ($category->children as $child) {
             $child->touch();
+        }
+
+        $this->clearCatalogCache();
+    }
+
+    /**
+     * Clear catalog API cache.
+     */
+    protected function clearCatalogCache(): void
+    {
+        if (class_exists(CatalogCategoryController::class)) {
+            CatalogCategoryController::clearCatalogCache();
         }
     }
 }
