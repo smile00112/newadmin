@@ -234,6 +234,15 @@ class Constructor extends AbstractType
             return trans('product::app.checkout.cart.missing-options');
         }
 
+        $constructorQuantity = parent::handleQuantity((int) ($data['quantity'] ?? 1));
+
+        // First, create the parent constructor product cart item
+        $products = parent::prepareForCart($data);
+
+        if (is_string($products)) {
+            return $products;
+        }
+
         $cartProductsList = [];
 
         foreach ($data['constructor_options'] as $groupId => $selectedProducts) {
@@ -252,24 +261,53 @@ class Constructor extends AbstractType
                     return trans('product::app.checkout.cart.selected-products-simple');
                 }
 
-                $cartProducts = $product->getTypeInstance()->prepareForCart([
-                    'product_id' => $productId,
-                    'quantity'   => $qty,
-                ]);
-
-                if (is_string($cartProducts)) {
-                    return $cartProducts;
+                /* need to check each individual quantity as well if don't have then show error */
+                if (! $product->getTypeInstance()->haveSufficientQuantity($qty * $constructorQuantity)) {
+                    return trans('product::app.checkout.cart.inventory-warning');
                 }
 
-                $cartProductsList[] = $cartProducts;
+                if (! $product->getTypeInstance()->isSaleable()) {
+                    continue;
+                }
+
+                $cartProduct = $product->getTypeInstance()->prepareForCart([
+                    'product_id' => $productId,
+                    'quantity'   => $qty,
+                    'parent_id'  => $this->product->id,
+                ]);
+
+                if (is_string($cartProduct)) {
+                    return $cartProduct;
+                }
+
+                // Set parent_id for the cart product
+                $cartProduct[0]['parent_id'] = $this->product->id;
+
+                $cartProductsList[] = $cartProduct;
+
+                // Accumulate prices to parent constructor product
+                $products[0]['price'] += $cartProduct[0]['total'];
+                $products[0]['price_incl_tax'] += $cartProduct[0]['total'];
+                $products[0]['base_price'] += $cartProduct[0]['base_total'];
+                $products[0]['base_price_incl_tax'] += $cartProduct[0]['base_total'];
+                $products[0]['total'] += $cartProduct[0]['total'];
+                $products[0]['total_incl_tax'] += $cartProduct[0]['total'];
+                $products[0]['base_total'] += $cartProduct[0]['base_total'];
+                $products[0]['base_total_incl_tax'] += $cartProduct[0]['base_total'];
+                $products[0]['weight'] += $cartProduct[0]['total_weight'];
             }
         }
 
-        $products = array_merge(...$cartProductsList);
-
-        if (! count($products)) {
+        if (empty($cartProductsList)) {
             return trans('product::app.checkout.cart.integrity.qty-missing');
         }
+
+        // Merge all child products (ingredients) into the products array
+        $childProducts = array_merge(...$cartProductsList);
+        $products = array_merge($products, $childProducts);
+
+        // Recalculate total weight for parent
+        $products[0]['total_weight'] = $products[0]['base_total_weight'] = $products[0]['weight'] * $products[0]['quantity'];
 
         return $products;
     }

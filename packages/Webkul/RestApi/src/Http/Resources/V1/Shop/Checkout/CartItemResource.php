@@ -49,6 +49,7 @@ class CartItemResource extends JsonResource
                 ? $this->resource->additional
                 : json_decode($this->resource->additional, true),
             'child'                          => new self($this->child),
+            'children'                       => $this->when($this->children->isNotEmpty(), self::collection($this->children)),
             'product'                        => $this->when($this->product_id, new ProductResource($this->product)),
             'created_at'                     => $this->created_at,
             'updated_at'                     => $this->updated_at,
