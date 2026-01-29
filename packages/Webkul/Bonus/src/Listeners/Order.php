@@ -48,7 +48,8 @@ class Order
             
             // Check deduction statuses - списание бонусов при смене статуса
             $deductionStatuses = core()->getConfigData('bonus.general.settings.deduction_status');
-            if (is_array($deductionStatuses) && in_array($status, $deductionStatuses)) {
+            $deductionStatuses = is_array($deductionStatuses) ? $deductionStatuses : ($deductionStatuses ? [$deductionStatuses] : []);
+            if (in_array($status, $deductionStatuses)) {
                 // Списать бонусы, если они были использованы, но еще не списаны
                 $bonusAmount = $order->base_bonus_amount ?? 0;
                 if ($bonusAmount > 0 && ($order->base_bonus_amount_used ?? 0) == 0) {

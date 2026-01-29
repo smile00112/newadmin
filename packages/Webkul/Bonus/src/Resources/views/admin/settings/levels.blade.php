@@ -35,7 +35,6 @@
             <div
                 v-if="showCreateModal"
                 class="fixed inset-0 z-[10001] flex items-center justify-center bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full"
-                @click.self="closeCreateModal"
             >
                 <div class="relative top-10 mx-auto p-5 border w-11/12 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto md:w-3/4 lg:w-2/3">
                     <!-- Modal Header -->

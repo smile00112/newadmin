@@ -19,6 +19,17 @@ return [
                 'title' => 'Общие настройки',
                 'info' => 'Основные параметры бонусной системы',
             ],
+            'order-status' => [
+                'pending' => 'Оплата',
+                'pending_payment' => 'Ожидание оплаты',
+                'processing' => 'Обработка',
+                'preparing' => 'Готовим',
+                'ready' => 'Готов',
+                'completed' => 'Выполнен',
+                'canceled' => 'Отмена',
+                'closed' => 'Закрыт',
+                'fraud' => 'Мошенничество',
+            ],
             'fields' => [
                 'enabled' => 'Включить бонусную систему',
                 'calculation-type' => 'Тип расчета уровня',

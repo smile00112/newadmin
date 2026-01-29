@@ -55,8 +55,9 @@ class BonusOrderListener
 
         // Check if we need to accrue bonuses immediately
         $accrualStatuses = core()->getConfigData('bonus.general.settings.accrual_status');
-        
-        if (is_array($accrualStatuses) && in_array($order->status, $accrualStatuses)) {
+        $accrualStatuses = is_array($accrualStatuses) ? $accrualStatuses : ($accrualStatuses ? [$accrualStatuses] : []);
+
+        if (in_array($order->status, $accrualStatuses)) {
             $this->bonusService->accrueBonuses($order);
         }
     }
@@ -87,7 +88,8 @@ class BonusOrderListener
 
         // Check accrual statuses
         $accrualStatuses = core()->getConfigData('bonus.general.settings.accrual_status');
-        if (is_array($accrualStatuses) && in_array($status, $accrualStatuses)) {
+        $accrualStatuses = is_array($accrualStatuses) ? $accrualStatuses : ($accrualStatuses ? [$accrualStatuses] : []);
+        if (in_array($status, $accrualStatuses)) {
             // Only accrue if not already accrued
             if ($order->base_bonus_amount_accrued == 0) {
                 $this->bonusService->accrueBonuses($order);
@@ -96,7 +98,8 @@ class BonusOrderListener
 
         // Check refund statuses
         $refundStatuses = core()->getConfigData('bonus.general.settings.refund_status');
-        if (is_array($refundStatuses) && in_array($status, $refundStatuses)) {
+        $refundStatuses = is_array($refundStatuses) ? $refundStatuses : ($refundStatuses ? [$refundStatuses] : []);
+        if (in_array($status, $refundStatuses)) {
             // Return bonuses if they were used
             if ($order->base_bonus_amount_used > 0) {
                 $this->bonusService->returnBonuses($order);
