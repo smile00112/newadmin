@@ -4,7 +4,6 @@ namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
-use Webkul\Checkout\Facades\Cart;
 use Webkul\Product\Facades\ProductImage;
 use Webkul\Product\Helpers\BundleOption;
 
@@ -24,9 +23,6 @@ class ProductResource extends JsonResource
         /* get type instance */
         $productTypeInstance = $product->getTypeInstance();
 
-        /* Get review helper */
-        $reviewHelper = app(\Webkul\Product\Helpers\Review::class);
-
         /* generating resource */
         return [
             /* product's information */
@@ -34,7 +30,6 @@ class ProductResource extends JsonResource
             'sku'                => $product->sku,
             'type'               => $product->type,
             'name'               => $product->name,
-            'url_key'            => $product->url_key,
             'price'              => core()->convertPrice($productTypeInstance->getMinimalPrice()),
             'formatted_price'    => core()->currency($productTypeInstance->getMinimalPrice()),
             'short_description'  => $product->short_description,
@@ -43,21 +38,10 @@ class ProductResource extends JsonResource
             'videos'             => ProductVideoResource::collection($product->videos),
             'base_image'         => ProductImage::getProductBaseImage($product),
             'category_image'     => $this->getCategoryImage($product),
-            'created_at'         => $product->created_at,
-            'updated_at'         => $product->updated_at,
-
-            /* product's reviews */
-            'reviews' => [
-                'total'          => $total = $reviewHelper->getTotalReviews($product),
-                'total_rating'   => $total ? $reviewHelper->getTotalRating($product) : 0,
-                'average_rating' => $total ? $reviewHelper->getAverageRating($product) : 0,
-                'percentage'     => $total ? json_encode($reviewHelper->getPercentageRating($product)) : [],
-            ],
 
             /* product's checks */
             'in_stock'              => $product->haveSufficientQuantity(1),
             'is_saved'              => false,
-            'is_item_in_cart'       => Cart::getCart(),
             'show_quantity_changer' => $this->when(
                 $product->type !== 'grouped',
                 $product->getTypeInstance()->showQuantityBox()
