@@ -20,7 +20,7 @@ class ProductResource extends JsonResource
         /* assign product */
         $product = $this->product ?? $this;
 
-        /* get type instance */
+        /* get type instance - cache it to avoid multiple calls */
         $productTypeInstance = $product->getTypeInstance();
 
         /* generating resource */
@@ -44,7 +44,7 @@ class ProductResource extends JsonResource
             'is_saved'              => false,
             'show_quantity_changer' => $this->when(
                 $product->type !== 'grouped',
-                $product->getTypeInstance()->showQuantityBox()
+                $productTypeInstance->showQuantityBox()
             ),
 
             /* product attributes with their options */
@@ -54,10 +54,10 @@ class ProductResource extends JsonResource
             'nutrition' => $this->getNutritionData($product),
 
             /* product's extra information */
-            $this->merge($this->allProductExtraInfo()),
+            $this->merge($this->allProductExtraInfo($product, $productTypeInstance)),
 
             /* special price cases */
-            $this->merge($this->specialPriceInfo()),
+            $this->merge($this->specialPriceInfo($product, $productTypeInstance)),
 
             /* super attributes */
             $this->mergeWhen($productTypeInstance->isComposite(), [
@@ -120,13 +120,14 @@ class ProductResource extends JsonResource
     /**
      * Get special price information.
      *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
      * @return array
      */
-    private function specialPriceInfo()
+    private function specialPriceInfo($product = null, $productTypeInstance = null)
     {
-        $product = $this->product ?? $this;
-
-        $productTypeInstance = $product->getTypeInstance();
+        $product = $product ?? $this->product ?? $this;
+        $productTypeInstance = $productTypeInstance ?? $product->getTypeInstance();
 
         return [
             'special_price'           => $this->when(
@@ -151,13 +152,14 @@ class ProductResource extends JsonResource
     /**
      * Get all product's extra information.
      *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
      * @return array
      */
-    private function allProductExtraInfo()
+    private function allProductExtraInfo($product = null, $productTypeInstance = null)
     {
-        $product = $this->product ?? $this;
-
-        $productTypeInstance = $product->getTypeInstance();
+        $product = $product ?? $this->product ?? $this;
+        $productTypeInstance = $productTypeInstance ?? $product->getTypeInstance();
 
         return [
             /* grouped product */
@@ -311,8 +313,11 @@ class ProductResource extends JsonResource
      */
     private function getConstructorProductInfo($product)
     {
-        // Load constructor data with relationships
-        $product->load('constructor.groups.products.images');
+        // Check if constructor is already loaded (via eager loading)
+        if (!$product->relationLoaded('constructor')) {
+            // Only load if not already loaded
+            $product->load('constructor.groups.products.images');
+        }
 
         // Return empty array if no constructor exists
         if ($product->constructor->isEmpty()) {

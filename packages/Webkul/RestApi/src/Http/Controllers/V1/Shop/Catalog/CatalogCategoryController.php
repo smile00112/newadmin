@@ -61,7 +61,26 @@ class CatalogCategoryController extends CatalogController
 
         $response = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
             $query = $this->getRepositoryInstance()
-                ->with(['translations', 'products'])
+                ->with([
+                    'translations',
+                    'products' => function ($query) {
+                        $query->with([
+                            'images',
+                            'videos',
+                            'attribute_family.custom_attributes.options',
+                            'super_attributes',
+                            'constructor.groups.products' => function ($query) {
+                                $query->with('images');
+                            },
+                            'grouped_products.associated_product',
+                            'variants',
+                            'downloadable_links',
+                            'downloadable_samples',
+                            'booking_products',
+                            'bundle_options',
+                        ]);
+                    },
+                ])
                 ->where('status', 1)
                 ->orderBy('position', 'asc');
 
