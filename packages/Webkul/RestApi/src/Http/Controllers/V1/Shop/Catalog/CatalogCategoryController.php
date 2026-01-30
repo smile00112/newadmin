@@ -60,6 +60,7 @@ class CatalogCategoryController extends CatalogController
         $cacheKey = self::CACHE_PREFIX . ":{$channelId}:{$locale}:page_{$page}:limit_{$limit}:paginated_" . ($usePagination ? '1' : '0');
 
         $response = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
+            echo 1234;
             $query = $this->getRepositoryInstance()
                 ->with([
                     'translations',

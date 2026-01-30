@@ -314,6 +314,9 @@ class CartController extends CustomerController
             ], 400);
         }
 
+        // Remove bonus from cart
+        $this->bonusPaymentService->removeBonusFromCart($cart);
+
         // Set auto_apply to false
         $cart->update(['auto_apply' => false]);
 
