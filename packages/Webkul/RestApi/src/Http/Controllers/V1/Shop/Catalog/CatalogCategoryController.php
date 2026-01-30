@@ -67,7 +67,7 @@ class CatalogCategoryController extends CatalogController
                         $query->with([
                             'images',
                             'videos',
-                            'attribute_family.custom_attributes.options',
+                            'attribute_family.attribute_groups.custom_attributes.options',
                             'super_attributes',
                             'constructor.groups.products' => function ($query) {
                                 $query->with('images');

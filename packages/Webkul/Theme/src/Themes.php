@@ -231,7 +231,13 @@ class Themes
          * detect the theme and provide Vite assets based on the current theme.
          */
         if (empty($namespace)) {
-            return $this->current()->url($url);
+            $currentTheme = $this->current();
+            
+            if ($currentTheme === null) {
+                throw new \RuntimeException('No active theme is set. Make sure the theme middleware has run.');
+            }
+            
+            return $currentTheme->url($url);
         }
 
         /**
@@ -264,7 +270,13 @@ class Themes
          * detect the theme and provide Vite assets based on the current theme.
          */
         if (empty($namespace)) {
-            return $this->current()->setBagistoVite($entryPoints);
+            $currentTheme = $this->current();
+            
+            if ($currentTheme === null) {
+                throw new \RuntimeException('No active theme is set. Make sure the theme middleware has run.');
+            }
+            
+            return $currentTheme->setBagistoVite($entryPoints);
         }
 
         /**
