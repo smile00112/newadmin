@@ -289,12 +289,40 @@ class CartController extends CustomerController
             ], 400);
         }
 
+        // Set auto_apply to true
+        $cart->update(['auto_apply' => true]);
+
         Cart::collectTotals();
         $cart = Cart::getCart();
 
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
+        ]);
+    }
+
+    /**
+     * Disable auto-apply bonus for cart.
+     */
+    public function disableAutoApplyBonus(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        // Set auto_apply to false
+        $cart->update(['auto_apply' => false]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => 'Auto-apply bonus disabled successfully',
         ]);
     }
 

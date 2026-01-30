@@ -786,6 +786,47 @@ class CartController
 
     /**
      * @OA\Delete(
+     *      path="/api/v1/checkout/bonus/auto-apply",
+     *      operationId="disableAutoApplyBonus",
+     *      tags={"Checkout"},
+     *      summary="Disable auto-apply bonus for cart",
+     *      description="Disables automatic bonus recalculation for the current customer's cart. Sets auto_apply to false. Requires authenticated customer with active cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Auto-apply bonus disabled successfully"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad request (empty cart or customer not authenticated)"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated"
+     *      )
+     * )
+     */
+    public function disableAutoApplyBonus() {}
+
+    /**
+     * @OA\Delete(
      *      path="/api/v1/customer/cart/coupon",
      *      operationId="removeCartCoupon",
      *      tags={"Cart"},

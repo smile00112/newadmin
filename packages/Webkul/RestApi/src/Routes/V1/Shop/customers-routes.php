@@ -196,6 +196,7 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
      */
     Route::controller(CartController::class)->prefix('checkout/bonus')->group(function () {
         Route::post('auto-apply', 'autoApplyBonus');
+        Route::delete('auto-apply', 'disableAutoApplyBonus');
     });
 
     /**
