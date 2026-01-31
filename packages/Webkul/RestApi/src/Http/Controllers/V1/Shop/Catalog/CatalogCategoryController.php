@@ -49,7 +49,7 @@ class CatalogCategoryController extends CatalogController
     /**
      * Returns a listing of catalog categories (cached with pagination).
      */
-    public function allResources(Request $request): \Illuminate\Http\JsonResponse
+    public function allResources(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $channelId = core()->getCurrentChannel()->id;
         $locale = core()->getRequestedLocaleCode();
@@ -59,7 +59,7 @@ class CatalogCategoryController extends CatalogController
 
         $cacheKey = self::CACHE_PREFIX . ":{$channelId}:{$locale}:page_{$page}:limit_{$limit}:paginated_" . ($usePagination ? '1' : '0');
 
-        $response = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
+        $jsonResponse = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
 
             $query = $this->getRepositoryInstance()
                 ->with([
@@ -88,7 +88,7 @@ class CatalogCategoryController extends CatalogController
             if ($usePagination) {
                 $paginator = $query->paginate($limit);
 
-                return [
+                $data = [
                     'data'  => CatalogResource::collection($paginator->items())->resolve($request),
                     'links' => [
                         'first' => $paginator->url(1),
@@ -107,16 +107,21 @@ class CatalogCategoryController extends CatalogController
                         'total'        => $paginator->total(),
                     ],
                 ];
+
+                return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
 
             $categories = $query->get();
 
-            return [
+            $data = [
                 'data' => CatalogResource::collection($categories)->resolve($request),
             ];
+
+            return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         });
 
-        return response()->json($response);
+        // Используем helper функцию для быстрого возврата JSON через stream
+        return api_stream_json($jsonResponse, 'catalog.json');
     }
 
     /**

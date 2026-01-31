@@ -71,8 +71,19 @@ Route::controller(AttributeFamilyController::class)->prefix('attribute-families'
 /**
  * Catalog routes (categories with products).
  */
-Route::controller(CatalogCategoryController::class)->prefix('catalog')->group(function () {
-    Route::get('', 'allResources');
+Route::controller(CatalogCategoryController::class)
+    ->prefix('catalog')
+    ->withoutMiddleware([
+        'api',                    // отключает всю группу api
+        'etag',
+        'api.response-time',
+        'sanctum.locale',
+        'sanctum.currency',
+        \Webkul\Core\Http\Middleware\SecureHeaders::class,
+        \Webkul\Installer\Http\Middleware\CanInstall::class,
+    ])
+    ->group(function () {
+        Route::get('', 'allResources');
 
-    Route::get('{id}', 'getResource');
-});
+        Route::get('{id}', 'getResource');
+    });
