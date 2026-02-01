@@ -1,0 +1,82 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+UPGRADE.md
+DOCKER_DEPLOYMENT.md
+
+# Docker
+docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+.dockerignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Laravel
+.env
+.env.*
+!.env.example
+storage/*.key
+storage/logs/*
+!storage/logs/.gitkeep
+storage/framework/cache/*
+!storage/framework/cache/.gitkeep
+storage/framework/sessions/*
+!storage/framework/sessions/.gitkeep
+storage/framework/views/*
+!storage/framework/views/.gitkeep
+bootstrap/cache/*
+!bootstrap/cache/.gitkeep
+
+# Testing
+.phpunit.result.cache
+tests
+.phpunit.cache
+coverage
+.nyc_output
+
+# Build artifacts
+public/hot
+public/build
+public/storage
+public/themes
+public/vendor
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+.cache
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Development
+docker-compose.yml
+docker-compose.override.yml
+
+# RoadRunner
+.rr.yaml.local
