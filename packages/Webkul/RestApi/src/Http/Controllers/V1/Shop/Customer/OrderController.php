@@ -3,7 +3,6 @@
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
@@ -167,7 +166,7 @@ class OrderController extends CustomerController
     /**
      * Get active orders.
      */
-    public function activeOrders(Request $request): AnonymousResourceCollection
+    public function activeOrders(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $channelCode = core()->getCurrentChannelCode();
         $statuses = core()->getConfigData('sales.order_settings.order_statuses.active_statuses', $channelCode);
@@ -192,7 +191,7 @@ class OrderController extends CustomerController
     /**
      * Get completed orders.
      */
-    public function completedOrders(Request $request): AnonymousResourceCollection
+    public function completedOrders(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $channelCode = core()->getCurrentChannelCode();
         $statuses = core()->getConfigData('sales.order_settings.order_statuses.completed_statuses', $channelCode);
@@ -214,7 +213,7 @@ class OrderController extends CustomerController
     /**
      * Get cancelled orders.
      */
-    public function cancelledOrders(Request $request): AnonymousResourceCollection
+    public function cancelledOrders(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $channelCode = core()->getCurrentChannelCode();
         $statuses = core()->getConfigData('sales.order_settings.order_statuses.cancelled_statuses', $channelCode);
@@ -236,7 +235,7 @@ class OrderController extends CustomerController
     /**
      * Get orders by statuses.
      */
-    protected function getOrdersByStatuses(Request $request, array $statuses): AnonymousResourceCollection
+    protected function getOrdersByStatuses(Request $request, array $statuses): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request, $statuses) {
             $query = $query->where('customer_id', $this->resolveShopUser($request)->id)
@@ -255,12 +254,40 @@ class OrderController extends CustomerController
             return $query;
         });
 
-        if (is_null($request->input('pagination')) || $request->input('pagination')) {
-            $results = $query->paginate($request->input('limit') ?? 10);
+        $usePagination = is_null($request->input('pagination')) || $request->input('pagination');
+
+        if ($usePagination) {
+            $paginator = $query->paginate($request->input('limit') ?? 10);
+
+            $data = [
+                'data'  => $this->getResourceCollection($paginator->items())->resolve($request),
+                'links' => [
+                    'first' => $paginator->url(1),
+                    'last'  => $paginator->url($paginator->lastPage()),
+                    'prev'  => $paginator->previousPageUrl(),
+                    'next'  => $paginator->nextPageUrl(),
+                ],
+                'meta'  => [
+                    'current_page' => $paginator->currentPage(),
+                    'from'         => $paginator->firstItem(),
+                    'last_page'    => $paginator->lastPage(),
+                    'links'        => $paginator->linkCollection()->toArray(),
+                    'path'         => $paginator->path(),
+                    'per_page'     => $paginator->perPage(),
+                    'to'           => $paginator->lastItem(),
+                    'total'        => $paginator->total(),
+                ],
+            ];
         } else {
             $results = $query->get();
+
+            $data = [
+                'data' => $this->getResourceCollection($results)->resolve($request),
+            ];
         }
 
-        return $this->getResourceCollection($results);
+        $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return api_stream_json($jsonResponse, 'orders.json');
     }
 }

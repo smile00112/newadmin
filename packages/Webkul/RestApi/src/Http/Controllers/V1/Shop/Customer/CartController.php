@@ -42,14 +42,20 @@ class CartController extends CustomerController
     /**
      * Get the customer cart.
      */
-    public function index(): Response
+    public function index(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         Cart::collectTotals();
 
-        return response([
-            'data' => ($cart = Cart::getCart()) ? app()->make($this->resource(), ['resource' => $cart]) : null,
+        $cart = Cart::getCart();
+
+        $data = [
+            'data'      => $cart ? app()->make($this->resource(), ['resource' => $cart])->resolve(request()) : null,
             'cross_sell' => [],//$this->getCrossSellProducts(),
-        ]);
+        ];
+
+        $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return api_stream_json($jsonResponse, 'cart.json');
     }
 
     /**
