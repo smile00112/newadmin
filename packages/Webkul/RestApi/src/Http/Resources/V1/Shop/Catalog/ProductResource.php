@@ -63,6 +63,12 @@ class ProductResource extends JsonResource
             $this->mergeWhen($productTypeInstance->isComposite(), [
                 'super_attributes' => AttributeResource::collection($product->super_attributes),
             ]),
+
+            /* drinks for product */
+            $this->mergeWhen(
+                in_array($product->type, ['simple', 'constructor', 'configurable', 'grouped', 'bundle']),
+                $this->getDrinksInfo($product)
+            ),
         ];
     }
 
@@ -401,6 +407,53 @@ class ProductResource extends JsonResource
             'small_image_url'    => url('cache/small/'.$categoryImagePath),
             'medium_image_url'   => url('cache/medium/'.$categoryImagePath),
             'large_image_url'    => url('cache/large/'.$categoryImagePath),
+        ];
+    }
+
+    /**
+     * Get drinks information for the product.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getDrinksInfo($product)
+    {
+        // Check if drinks are already loaded (via eager loading)
+        if (!$product->relationLoaded('drinks')) {
+            // Only load if not already loaded
+            $product->load(['drinks' => function ($query) {
+                $query->with('images')
+                    ->orderByPivot('sort', 'asc');
+            }]);
+        }
+
+        // Return empty array if no drinks exist
+        if ($product->drinks->isEmpty()) {
+            return [
+                'drinks' => [],
+            ];
+        }
+
+        $drinks = $product->drinks->map(function ($drink) {
+            $drinkTypeInstance = $drink->getTypeInstance();
+
+            return [
+                'id'                 => $drink->id,
+                'sku'                => $drink->sku,
+                'name'               => $drink->name,
+                'price'              => core()->convertPrice($drinkTypeInstance->getMinimalPrice()),
+                'formatted_price'    => core()->currency($drinkTypeInstance->getMinimalPrice()),
+                'in_stock'           => $drink->haveSufficientQuantity(1),
+                'sort'               => $drink->pivot->sort ?? 0,
+                'default'            => (bool) ($drink->pivot->default ?? false),
+                'base_image'         => ProductImage::getProductBaseImage($drink),
+                'images'             => ProductImageResource::collection($drink->images),
+                'nutrition'          => $this->getNutritionData($drink),
+            ];
+        });
+
+        return [
+            'drinks' => $drinks->values()->all(),
         ];
     }
 
