@@ -286,7 +286,7 @@ class Product extends Model implements ProductContract
     }
 
     /**
-     * The drinks that belong to the product.
+     * The drinks that belong to the product. bla bla bla
      */
     public function drinks(): BelongsToMany
     {
