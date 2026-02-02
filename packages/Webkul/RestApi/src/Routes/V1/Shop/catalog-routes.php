@@ -73,15 +73,6 @@ Route::controller(AttributeFamilyController::class)->prefix('attribute-families'
  */
 Route::controller(CatalogCategoryController::class)
     ->prefix('catalog')
-    ->withoutMiddleware([
-        'api',                    // отключает всю группу api
-        'etag',
-        'api.response-time',
-        'sanctum.locale',
-        'sanctum.currency',
-        \Webkul\Core\Http\Middleware\SecureHeaders::class,
-        \Webkul\Installer\Http\Middleware\CanInstall::class,
-    ])
     ->group(function () {
         Route::get('', 'allResources');
 
