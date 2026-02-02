@@ -34,6 +34,7 @@ return [
         'error'                    => 'Error retrieving data',
         'no-data'                  => 'No data found',
         'organization-id-required' => 'Organization ID is required',
+        'external-menu-id-required' => 'External menu ID is required',
         'import-nomenclature-success' => 'Nomenclature imported successfully',
         'import-nomenclature-error' => 'Error importing nomenclature',
         'no-nomenclature-data'    => 'Nomenclature not found. Please get nomenclature first.',

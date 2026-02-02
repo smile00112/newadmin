@@ -231,8 +231,18 @@ class IikoManagementController extends Controller
                 ], 400);
             }
 
+            if (!$externalMenuId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => trans('iiko-integration::app.management.external-menu-id-required'),
+                ], 400);
+            }
+
+            // Convert organizationId to array for API request
+            $organizationIds = [$organizationId];
+
             // Sync nomenclature from API and save
-            $syncSuccess = $this->nomenclatureService->syncNomenclature($organizationId, null, $externalMenuId);
+            $syncSuccess = $this->nomenclatureService->syncNomenclature($organizationIds, $externalMenuId, null);
 
             if (!$syncSuccess) {
                 return response()->json([
@@ -244,9 +254,36 @@ class IikoManagementController extends Controller
             // Get synced nomenclature
             $nomenclature = $this->nomenclatureService->getCachedNomenclature($organizationId);
 
+            // Extract groups from nomenclature data
+            // Support both old format (groups) and new format (itemCategories)
+            $groups = [];
+            if ($nomenclature) {
+                // Check for normalized groups (from new API format)
+                if (isset($nomenclature['groups']) && is_array($nomenclature['groups'])) {
+                    foreach ($nomenclature['groups'] as $group) {
+                        $groups[] = [
+                            'id'         => $group['id'] ?? null,
+                            'name'       => $group['name'] ?? 'Unnamed Group',
+                            'parentGroup' => $group['parentGroup'] ?? null,
+                        ];
+                    }
+                } 
+                // Fallback to itemCategories (new API format before normalization)
+                elseif (isset($nomenclature['itemCategories']) && is_array($nomenclature['itemCategories'])) {
+                    foreach ($nomenclature['itemCategories'] as $category) {
+                        $groups[] = [
+                            'id'         => $category['id'] ?? null,
+                            'name'       => $category['name'] ?? 'Unnamed Category',
+                            'parentGroup' => null,
+                        ];
+                    }
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'data'    => $nomenclature,
+                'groups'  => $groups,
                 'message' => trans('iiko-integration::app.management.success'),
             ]);
         } catch (\Exception $e) {
@@ -264,6 +301,7 @@ class IikoManagementController extends Controller
     {
         try {
             $organizationId = $request->input('organization_id');
+            $groupIds = $request->input('group_ids', []);
 
             if (!$organizationId) {
                 return response()->json([
@@ -282,9 +320,31 @@ class IikoManagementController extends Controller
                 ], 400);
             }
 
+            // Validate group_ids if provided
+            if (!empty($groupIds) && is_array($groupIds)) {
+                $availableGroupIds = [];
+                if (isset($nomenclature['groups']) && is_array($nomenclature['groups'])) {
+                    foreach ($nomenclature['groups'] as $group) {
+                        if (isset($group['id'])) {
+                            $availableGroupIds[] = $group['id'];
+                        }
+                    }
+                }
+
+                // Filter to only include valid group IDs
+                $groupIds = array_intersect($groupIds, $availableGroupIds);
+
+                if (empty($groupIds)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => trans('iiko-integration::app.management.groups-required'),
+                    ], 400);
+                }
+            }
+
             // Import nomenclature using import service
             $importService = app(\Webkul\IikoIntegration\Services\IikoNomenclatureImportService::class);
-            $result = $importService->importNomenclature($organizationId, $nomenclature);
+            $result = $importService->importNomenclature($organizationId, $nomenclature, !empty($groupIds) ? $groupIds : null);
 
             if ($result['success']) {
                 return response()->json([

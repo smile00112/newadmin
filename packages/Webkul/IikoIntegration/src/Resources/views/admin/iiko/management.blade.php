@@ -130,6 +130,22 @@
                     @lang('iiko-integration::app.management.import-nomenclature')
                 </button>
             </div>
+            <div id="groups-select-container" class="mt-4 hidden">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    @lang('iiko-integration::app.management.select-groups')
+                </label>
+                <select
+                    id="groups-select"
+                    multiple
+                    size="10"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white bg-white"
+                    onchange="onGroupsChange()"
+                >
+                </select>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    @lang('iiko-integration::app.management.select-groups-hint')
+                </p>
+            </div>
         </div>
 
         <div class="box-shadow rounded bg-white p-4 dark:bg-gray-900">
@@ -203,12 +219,10 @@
                 @lang('iiko-integration::app.management.clear-results')
             </button>
         </div>
-        <textarea
+        <div
             id="request-results"
-            readonly
-            class="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-gray-200 bg-gray-50 font-mono text-sm resize-none"
-            placeholder="@lang('iiko-integration::app.management.request-results-placeholder')"
-        ></textarea>
+            class="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-800 dark:text-gray-200 bg-gray-50 font-mono text-sm overflow-y-auto"
+        ></div>
     </div>
 
         @push('scripts')
@@ -260,35 +274,93 @@
             }
 
             function logRequest(action, requestData, responseData, error = null) {
-                const resultsTextarea = document.getElementById('request-results');
+                const resultsDiv = document.getElementById('request-results');
                 const timestamp = new Date().toLocaleString('ru-RU');
                 const separator = '='.repeat(80);
                 
-                let logEntry = `\n${separator}\n`;
-                logEntry += `[${timestamp}] ${action}\n`;
-                logEntry += `${separator}\n`;
+                let logEntry = '';
+                
+                // Create separator line
+                logEntry += `<div style="border-top: 1px solid #e5e7eb; margin: 10px 0; padding-top: 10px;"></div>`;
+                logEntry += `<div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 8px;">[${timestamp}] ${action}</div>`;
                 
                 if (requestData) {
-                    logEntry += `REQUEST:\n${JSON.stringify(requestData, null, 2)}\n\n`;
+                    logEntry += `<div style="margin: 8px 0;"><strong>REQUEST:</strong></div>`;
+                    logEntry += `<pre style="background: #f3f4f6; padding: 8px; border-radius: 4px; overflow-x: auto; margin: 4px 0;">${JSON.stringify(requestData, null, 2)}</pre>`;
                 }
                 
                 if (error) {
-                    logEntry += `ERROR:\n${error.message || error}\n`;
+                    logEntry += `<div style="margin: 8px 0;"><strong style="color: #dc2626;">ERROR:</strong></div>`;
+                    logEntry += `<div style="color: #dc2626; margin: 4px 0;">${error.message || error}</div>`;
                     if (error.stack) {
-                        logEntry += `\nStack:\n${error.stack}\n`;
+                        logEntry += `<pre style="background: #fee2e2; padding: 8px; border-radius: 4px; overflow-x: auto; margin: 4px 0; color: #991b1b;">${error.stack}</pre>`;
                     }
                 } else if (responseData) {
-                    logEntry += `RESPONSE:\n${JSON.stringify(responseData, null, 2)}\n`;
+                    // Special handling for nomenclature
+                    if (action === 'Get Nomenclature' && responseData.success && responseData.data) {
+                        logEntry += `<div style="margin: 8px 0;"><strong>RESPONSE:</strong></div>`;
+                        
+                        // Extract nomenclature data
+                        const nomData = responseData.data;
+                        const groups = nomData.groups || nomData.categories || [];
+                        const items = nomData.items || nomData.products || [];
+                        
+                        // Separate products and modifiers
+                        const products = items.filter(item => (item.type || 'Dish') !== 'Modifier');
+                        const modifiers = items.filter(item => (item.type || '') === 'Modifier');
+                        
+                        // Display groups
+                        if (groups.length > 0) {
+                            logEntry += `<div style="margin: 12px 0;"><strong style="color: #059669;">Группы товаров (${groups.length}):</strong></div>`;
+                            logEntry += `<div style="margin-left: 16px;">`;
+                            groups.forEach(group => {
+                                const id = group.id || group.externalId || 'N/A';
+                                const name = group.name || 'Без названия';
+                                logEntry += `<div style="margin: 4px 0;">• <span style="color: #6b7280;">ID:</span> ${id} | <span style="color: #6b7280;">Название:</span> ${name}</div>`;
+                            });
+                            logEntry += `</div>`;
+                        }
+                        
+                        // Display products
+                        if (products.length > 0) {
+                            logEntry += `<div style="margin: 12px 0;"><strong style="color: #2563eb;">Товары (${products.length}):</strong></div>`;
+                            logEntry += `<div style="margin-left: 16px;">`;
+                            products.forEach(product => {
+                                const id = product.id || product.externalId || 'N/A';
+                                const name = product.name || 'Без названия';
+                                logEntry += `<div style="margin: 4px 0;">• <span style="color: #6b7280;">ID:</span> ${id} | <span style="color: #6b7280;">Название:</span> ${name}</div>`;
+                            });
+                            logEntry += `</div>`;
+                        }
+                        
+                        // Display modifiers
+                        if (modifiers.length > 0) {
+                            logEntry += `<div style="margin: 12px 0;"><strong style="color: #7c3aed;">Модификаторы (${modifiers.length}):</strong></div>`;
+                            logEntry += `<div style="margin-left: 16px;">`;
+                            modifiers.forEach(modifier => {
+                                const id = modifier.id || modifier.externalId || 'N/A';
+                                const name = modifier.name || 'Без названия';
+                                logEntry += `<div style="margin: 4px 0;">• <span style="color: #6b7280;">ID:</span> ${id} | <span style="color: #6b7280;">Название:</span> ${name}</div>`;
+                            });
+                            logEntry += `</div>`;
+                        }
+                        
+                        if (groups.length === 0 && products.length === 0 && modifiers.length === 0) {
+                            logEntry += `<div style="color: #6b7280; margin: 8px 0;">Данные номенклатуры не найдены</div>`;
+                        }
+                    } else {
+                        // Regular response display
+                        logEntry += `<div style="margin: 8px 0;"><strong>RESPONSE:</strong></div>`;
+                        logEntry += `<pre style="background: #f3f4f6; padding: 8px; border-radius: 4px; overflow-x: auto; margin: 4px 0;">${JSON.stringify(responseData, null, 2)}</pre>`;
+                    }
                 }
                 
-                logEntry += `\n${separator}\n`;
-                
-                resultsTextarea.value += logEntry;
-                resultsTextarea.scrollTop = resultsTextarea.scrollHeight;
+                resultsDiv.innerHTML += logEntry;
+                resultsDiv.scrollTop = resultsDiv.scrollHeight;
             }
 
             function clearResults() {
-                document.getElementById('request-results').value = '';
+                document.getElementById('request-results').innerHTML = '';
             }
 
             async function getOrganizations() {
@@ -574,9 +646,23 @@
                 }
             }
 
+            function onGroupsChange() {
+                const select = document.getElementById('groups-select');
+                const selectedOptions = Array.from(select.selectedOptions);
+                const hasSelection = selectedOptions.length > 0;
+                
+                // Enable import button only if at least one group is selected
+                document.getElementById('btn-import-nomenclature').disabled = !hasSelection;
+            }
+
             async function getNomenclature() {
                 if (!selectedOrganizationId) {
                     showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
+                    return;
+                }
+
+                if (!selectedMenuId) {
+                    showMessage("@lang('iiko-integration::app.management.external-menu-id-required')", 'error');
                     return;
                 }
 
@@ -584,10 +670,10 @@
                 const originalText = button.innerHTML;
                 setButtonLoading('btn-get-nomenclature', true);
 
-                const requestBody = { organization_id: selectedOrganizationId };
-                if (selectedMenuId) {
-                    requestBody.external_menu_id = selectedMenuId;
-                }
+                const requestBody = { 
+                    organization_id: selectedOrganizationId,
+                    external_menu_id: selectedMenuId
+                };
 
                 const requestData = {
                     endpoint: "{{ route('admin.iiko.management.nomenclature') }}",
@@ -610,11 +696,36 @@
 
                     if (data.success) {
                         showMessage(data.message, 'success');
-                        // Enable import button after successful nomenclature fetch
-                        document.getElementById('btn-import-nomenclature').disabled = false;
+                        
+                        // Populate groups select if groups are available
+                        if (data.groups && Array.isArray(data.groups) && data.groups.length > 0) {
+                            const groupsSelect = document.getElementById('groups-select');
+                            groupsSelect.innerHTML = '';
+                            
+                            data.groups.forEach(group => {
+                                if (group.id) {
+                                    const option = document.createElement('option');
+                                    option.value = group.id;
+                                    // Add "--" prefix for subcategories (groups with parentGroup)
+                                    const displayName = group.parentGroup 
+                                        ? '-- ' + (group.name || 'Unnamed Group')
+                                        : (group.name || 'Unnamed Group');
+                                    option.textContent = displayName;
+                                    groupsSelect.appendChild(option);
+                                }
+                            });
+                            
+                            document.getElementById('groups-select-container').classList.remove('hidden');
+                        } else {
+                            document.getElementById('groups-select-container').classList.add('hidden');
+                        }
+                        
+                        // Disable import button until groups are selected
+                        document.getElementById('btn-import-nomenclature').disabled = true;
                     } else {
                         showMessage(data.message || "@lang('iiko-integration::app.management.error')", 'error');
                         document.getElementById('btn-import-nomenclature').disabled = true;
+                        document.getElementById('groups-select-container').classList.add('hidden');
                     }
                 } catch (error) {
                     logRequest('Get Nomenclature', requestData, null, error);
@@ -631,6 +742,16 @@
                     return;
                 }
 
+                // Get selected group IDs
+                const groupsSelect = document.getElementById('groups-select');
+                const selectedOptions = Array.from(groupsSelect.selectedOptions);
+                const groupIds = selectedOptions.map(option => option.value);
+
+                if (groupIds.length === 0) {
+                    showMessage("@lang('iiko-integration::app.management.groups-required')", 'error');
+                    return;
+                }
+
                 const button = document.getElementById('btn-import-nomenclature');
                 const originalText = button.innerHTML;
                 setButtonLoading('btn-import-nomenclature', true);
@@ -638,7 +759,10 @@
                 const requestData = {
                     endpoint: "{{ route('admin.iiko.management.import-nomenclature') }}",
                     method: 'POST',
-                    body: { organization_id: selectedOrganizationId }
+                    body: { 
+                        organization_id: selectedOrganizationId,
+                        group_ids: groupIds
+                    }
                 };
 
                 try {

@@ -26,9 +26,10 @@ class IikoNomenclatureImportService
      *
      * @param  string  $organizationId
      * @param  array  $nomenclatureData
+     * @param  array|null  $selectedGroupIds
      * @return array
      */
-    public function importNomenclature(string $organizationId, array $nomenclatureData): array
+    public function importNomenclature(string $organizationId, array $nomenclatureData, ?array $selectedGroupIds = null): array
     {
         try {
             // Validate nomenclature data structure
@@ -47,9 +48,49 @@ class IikoNomenclatureImportService
             ];
 
             // Extract categories and items from nomenclature data
-            // iiko API may return 'groups' for categories and 'items' for products
+            // Support both old format (groups/items) and new format (itemCategories with nested items)
+            // New format is normalized in IikoNomenclatureService, but we handle both for safety
             $categories = $nomenclatureData['groups'] ?? $nomenclatureData['categories'] ?? [];
             $items = $nomenclatureData['items'] ?? $nomenclatureData['products'] ?? [];
+
+            // If no groups/items found, try to extract from itemCategories (new API format)
+            if (empty($categories) && isset($nomenclatureData['itemCategories']) && is_array($nomenclatureData['itemCategories'])) {
+                foreach ($nomenclatureData['itemCategories'] as $category) {
+                    $categories[] = [
+                        'id' => $category['id'] ?? null,
+                        'name' => $category['name'] ?? 'Unnamed Category',
+                        'description' => $category['description'] ?? null,
+                        'parentGroup' => null,
+                    ];
+                }
+            }
+
+            if (empty($items) && isset($nomenclatureData['itemCategories']) && is_array($nomenclatureData['itemCategories'])) {
+                foreach ($nomenclatureData['itemCategories'] as $category) {
+                    $categoryId = $category['id'] ?? null;
+                    if (isset($category['items']) && is_array($category['items'])) {
+                        foreach ($category['items'] as $item) {
+                            $item['groupId'] = $categoryId;
+                            $items[] = $item;
+                        }
+                    }
+                }
+            }
+
+            // Filter by selected group IDs if provided
+            if (!empty($selectedGroupIds) && is_array($selectedGroupIds)) {
+                // Filter categories - only include groups with IDs in selectedGroupIds
+                $categories = array_filter($categories, function ($category) use ($selectedGroupIds) {
+                    $categoryId = $category['id'] ?? null;
+                    return $categoryId && in_array($categoryId, $selectedGroupIds);
+                });
+
+                // Filter items - only include products with groupId in selectedGroupIds
+                $items = array_filter($items, function ($item) use ($selectedGroupIds) {
+                    $groupId = $item['groupId'] ?? null;
+                    return $groupId && in_array($groupId, $selectedGroupIds);
+                });
+            }
 
             // Import categories first
             if (!empty($categories)) {
@@ -125,25 +166,25 @@ class IikoNomenclatureImportService
         usort($categories, function ($a, $b) {
             $aParent = $a['parentGroup'] ?? null;
             $bParent = $b['parentGroup'] ?? null;
-            
+
             if ($aParent === $bParent) {
                 return 0;
             }
-            
+
             if ($aParent === null) {
                 return -1;
             }
-            
+
             if ($bParent === null) {
                 return 1;
             }
-            
+
             return strcmp($aParent, $bParent);
         });
 
         foreach ($categories as $categoryData) {
             $iikoId = $categoryData['id'] ?? null;
-            
+
             if (!$iikoId) {
                 continue;
             }
@@ -153,11 +194,15 @@ class IikoNomenclatureImportService
 
             $categoryName = $categoryData['name'] ?? 'Unnamed Category';
             $parentIikoId = $categoryData['parentGroup'] ?? null;
-            $parentId = null;
 
             // Find parent category if exists
+            $parentId = null;
             if ($parentIikoId && isset($categoryMap[$parentIikoId])) {
-                $parentId = $categoryMap[$parentIikoId];
+                $parentCategoryId = $categoryMap[$parentIikoId];
+                // Ensure parentCategoryId is an integer and not null
+                if (is_numeric($parentCategoryId) && $parentCategoryId > 0) {
+                    $parentId = (int) $parentCategoryId;
+                }
             }
 
             $categoryDataToSave = [
@@ -173,7 +218,8 @@ class IikoNomenclatureImportService
             // Set translations for all locales
             $locales = core()->getAllLocales();
             foreach ($locales as $locale) {
-                $categoryDataToSave[$locale->code] = [
+                $localeCode = is_string($locale->code) ? $locale->code : (string) $locale->code;
+                $categoryDataToSave[$localeCode] = [
                     'name' => $categoryName,
                     'slug' => \Illuminate\Support\Str::slug($categoryName),
                     'description' => $categoryData['description'] ?? null,
@@ -182,13 +228,29 @@ class IikoNomenclatureImportService
 
             if ($existingCategory) {
                 // Update existing category
+                Log::info([
+                    'type' => 'update category',
+                    '$categoryDataToSave' => $categoryDataToSave,
+                    '$existingCategory->id' => $existingCategory->id,
+                ]);
                 $this->categoryRepository->update($categoryDataToSave, $existingCategory->id);
-                $categoryMap[$iikoId] = $existingCategory->id;
+                $categoryId = $existingCategory->id;
+                // Ensure categoryId is an integer before storing in map
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $categoryMap[$iikoId] = (int) $categoryId;
+                }
                 $stats['updated']++;
             } else {
                 // Create new category
+                // Ensure status is integer, not boolean
+                $categoryDataToSave['status'] = (int) ($categoryDataToSave['status'] ?? 1);
+                
                 $category = $this->categoryRepository->create($categoryDataToSave);
-                $categoryMap[$iikoId] = $category->id;
+                $categoryId = $category->id;
+                // Ensure categoryId is an integer before storing in map
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $categoryMap[$iikoId] = (int) $categoryId;
+                }
                 $stats['created']++;
             }
         }
@@ -208,14 +270,31 @@ class IikoNomenclatureImportService
         $categoryMap = $this->buildCategoryMap();
 
         foreach ($items as $item) {
-            $iikoId = $item['id'] ?? null;
-            
+            // Support both 'id' and 'itemId' from new API format
+            $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+
             if (!$iikoId) {
                 continue;
             }
 
-            $productType = $this->mapIikoProductType($item['type'] ?? 'Dish');
+            $productType = $this->mapIikoProductType($item['type'] ?? 'DISH');
+
+            // Extract prices from sizePrices or itemSizes (new API format)
             $prices = $item['sizePrices'] ?? [];
+            if (empty($prices) && isset($item['itemSizes']) && is_array($item['itemSizes'])) {
+                foreach ($item['itemSizes'] as $size) {
+                    $sizePrice = 0;
+                    if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
+                        $sizePrice = $size['prices'][0]['price'] ?? 0;
+                    }
+                    $prices[] = [
+                        'sizeId' => $size['sizeId'] ?? null,
+                        'sizeName' => $size['sizeName'] ?? null,
+                        'sizeCode' => $size['sizeCode'] ?? null,
+                        'price' => $sizePrice,
+                    ];
+                }
+            }
 
             // Handle products with multiple prices
             if (count($prices) > 1) {
@@ -227,7 +306,7 @@ class IikoNomenclatureImportService
             } else {
                 // Handle single price product
                 $existingProduct = $this->findProductByIikoId($iikoId);
-                
+
                 if ($existingProduct) {
                     $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
                     $stats['updated']++;
@@ -249,10 +328,13 @@ class IikoNomenclatureImportService
      */
     protected function mapIikoProductType(string $iikoType): string
     {
-        return match ($iikoType) {
-            'Dish' => 'simple',
-            'Modifier' => 'ingredient',
-            'Group' => 'grouped',
+        // Normalize to lowercase for comparison
+        $normalizedType = strtolower(trim($iikoType));
+
+        return match ($normalizedType) {
+            'dish', 'product' => 'simple',
+            'modifier' => 'ingredient',
+            'group', 'grouped' => 'grouped',
             default => 'simple',
         };
     }
@@ -267,7 +349,8 @@ class IikoNomenclatureImportService
     protected function handleMultiPriceProduct(array $item, array $categoryMap): ?array
     {
         try {
-            $iikoId = $item['id'] ?? null;
+            // Support both 'id' and 'itemId' from new API format
+            $iikoId = $item['id'] ?? $item['itemId'] ?? null;
             $prices = $item['sizePrices'] ?? [];
             $categoryIikoId = $item['groupId'] ?? null;
 
@@ -277,13 +360,19 @@ class IikoNomenclatureImportService
             // Get default attribute family
             $attributeFamily = $this->getDefaultAttributeFamily();
 
+            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+            $channels = [];
+            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                $channels[] = (int) $defaultChannelId;
+            }
+
             // Create main grouped product
             $mainProductData = [
                 'type' => 'grouped',
                 'sku' => 'iiko_' . $iikoId,
                 'attribute_family_id' => $attributeFamily->id,
                 'additional' => ['iiko_id' => $iikoId],
-                'channels' => [core()->getDefaultChannel()->id],
+                'channels' => $channels,
             ];
 
             // Set translations
@@ -302,7 +391,11 @@ class IikoNomenclatureImportService
             // Set categories for main product
             $mainCategories = [];
             if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-                $mainCategories[] = $categoryMap[$categoryIikoId];
+                $categoryId = $categoryMap[$categoryIikoId];
+                // Ensure categoryId is an integer and not null
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $mainCategories[] = (int) $categoryId;
+                }
             }
             $mainProduct->categories()->sync($mainCategories);
 
@@ -318,6 +411,12 @@ class IikoNomenclatureImportService
                 $variantSku = 'iiko_' . $iikoId . '_price_' . $priceId;
                 $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
 
+                $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+                $variantChannels = [];
+                if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                    $variantChannels[] = (int) $defaultChannelId;
+                }
+
                 $variantData = [
                     'type' => 'simple',
                     'sku' => $variantSku,
@@ -327,7 +426,7 @@ class IikoNomenclatureImportService
                         'iiko_id' => $iikoId . '_price_' . $priceId,
                         'iiko_main_id' => $iikoId,
                     ],
-                    'channels' => [core()->getDefaultChannel()->id],
+                    'channels' => $variantChannels,
                 ];
 
                 // Set translations
@@ -341,10 +440,15 @@ class IikoNomenclatureImportService
                 }
 
                 $variantProduct = $this->productRepository->create($variantData);
-                
+
                 // Set category for variant
-                $variantProduct->categories()->sync([$priceVariantsCategory->id]);
-                
+                $priceVariantCategoryId = $priceVariantsCategory->id ?? null;
+                $variantCategories = [];
+                if ($priceVariantCategoryId && is_numeric($priceVariantCategoryId) && $priceVariantCategoryId > 0) {
+                    $variantCategories[] = (int) $priceVariantCategoryId;
+                }
+                $variantProduct->categories()->sync($variantCategories);
+
                 $variantProducts[] = $variantProduct;
                 $variantsCreated++;
             }
@@ -369,7 +473,7 @@ class IikoNomenclatureImportService
             ];
         } catch (\Exception $e) {
             Log::error('iiko: Error handling multi-price product', [
-                'item_id' => $item['id'] ?? null,
+                'item_id' => $item['id'] ?? $item['itemId'] ?? null,
                 'message' => $e->getMessage(),
             ]);
             return null;
@@ -387,16 +491,23 @@ class IikoNomenclatureImportService
      */
     protected function createProduct(array $item, string $productType, array $categoryMap, array $prices): void
     {
-        $iikoId = $item['id'] ?? null;
+        // Support both 'id' and 'itemId' from new API format
+        $iikoId = $item['id'] ?? $item['itemId'] ?? null;
         $attributeFamily = $this->getDefaultAttributeFamily();
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
+
+        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+        $channels = [];
+        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+            $channels[] = (int) $defaultChannelId;
+        }
 
             $productData = [
                 'type' => $productType,
                 'sku' => 'iiko_' . $iikoId,
                 'attribute_family_id' => $attributeFamily->id,
                 'additional' => ['iiko_id' => $iikoId],
-                'channels' => [core()->getDefaultChannel()->id],
+                'channels' => $channels,
             ];
 
             // Set translations
@@ -417,7 +528,11 @@ class IikoNomenclatureImportService
             $categoryIikoId = $item['groupId'] ?? null;
             $categories = [];
             if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-                $categories[] = $categoryMap[$categoryIikoId];
+                $categoryId = $categoryMap[$categoryIikoId];
+                // Ensure categoryId is an integer and not null
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $categories[] = (int) $categoryId;
+                }
             }
             $product->categories()->sync($categories);
     }
@@ -437,10 +552,18 @@ class IikoNomenclatureImportService
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
         $productName = $item['name'] ?? 'Unnamed Product';
 
+        // Support both 'id' and 'itemId' from new API format
+        $itemId = $item['id'] ?? $item['itemId'] ?? null;
+        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+        $channels = [];
+        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+            $channels[] = (int) $defaultChannelId;
+        }
+
         $productData = [
             'type' => $productType,
-            'additional' => array_merge($product->additional ?? [], ['iiko_id' => $item['id'] ?? null]),
-            'channels' => [core()->getDefaultChannel()->id],
+            'additional' => array_merge($product->additional ?? [], ['iiko_id' => $itemId]),
+            'channels' => $channels,
         ];
 
         // Set translations
@@ -458,7 +581,11 @@ class IikoNomenclatureImportService
         $categoryIikoId = $item['groupId'] ?? null;
         $categories = [];
         if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-            $categories[] = $categoryMap[$categoryIikoId];
+            $categoryId = $categoryMap[$categoryIikoId];
+            // Ensure categoryId is an integer and not null
+            if (is_numeric($categoryId) && $categoryId > 0) {
+                $categories[] = (int) $categoryId;
+            }
         }
         $productData['categories'] = $categories;
 
@@ -508,8 +635,10 @@ class IikoNomenclatureImportService
         $map = [];
         foreach ($categories as $category) {
             $iikoId = $category->additional['iiko_id'] ?? null;
-            if ($iikoId) {
-                $map[$iikoId] = $category->id;
+            $categoryId = $category->id ?? null;
+            // Ensure both iikoId and categoryId are valid
+            if ($iikoId && $categoryId && is_numeric($categoryId) && $categoryId > 0) {
+                $map[$iikoId] = (int) $categoryId;
             }
         }
 
@@ -524,7 +653,7 @@ class IikoNomenclatureImportService
     protected function getOrCreatePriceVariantsCategory()
     {
         $categoryName = 'Варианты цен iiko';
-        
+
         // Try to find existing category
         $existing = $this->categoryRepository
             ->getModel()
@@ -545,7 +674,8 @@ class IikoNomenclatureImportService
         ];
 
         foreach ($locales as $locale) {
-            $categoryData[$locale->code] = [
+            $localeCode = is_string($locale->code) ? $locale->code : (string) $locale->code;
+            $categoryData[$localeCode] = [
                 'name' => $categoryName,
                 'slug' => \Illuminate\Support\Str::slug($categoryName),
             ];
@@ -562,7 +692,7 @@ class IikoNomenclatureImportService
     protected function getDefaultAttributeFamily()
     {
         $family = $this->attributeFamilyRepository->findWhere(['code' => 'default'])->first();
-        
+
         if (!$family) {
             $family = $this->attributeFamilyRepository->first();
         }

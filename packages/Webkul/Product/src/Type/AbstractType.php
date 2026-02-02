@@ -160,7 +160,14 @@ abstract class AbstractType
          * If attributes are provided then only save the provided attributes and return.
          */
         if (! empty($attributes)) {
-            $attributes = $this->attributeRepository->findWhereIn('code', $attributes);
+            // Ensure attributes is always an array, not an integer or other type
+            if (! is_array($attributes)) {
+                $attributes = [];
+            }
+            
+            if (! empty($attributes)) {
+                $attributes = $this->attributeRepository->findWhereIn('code', $attributes);
+            }
 
             $this->attributeValueRepository->saveValues($data, $product, $attributes);
 
@@ -169,9 +176,26 @@ abstract class AbstractType
 
         $this->attributeValueRepository->saveValues($data, $product, $product->attribute_family->custom_attributes);
 
-        if (empty($data['channels'])) {
-            $data['channels'][] = core()->getDefaultChannel()->id;
+        // Ensure channels is always an array, not an integer or other type
+        if (! is_array($data['channels'])) {
+            $data['channels'] = [];
         }
+        
+        if (empty($data['channels'])) {
+            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                $data['channels'] = [(int) $defaultChannelId];
+            } else {
+                $data['channels'] = [];
+            }
+        }
+        
+        // Filter out invalid values and ensure all are integers
+        $data['channels'] = array_filter(array_map(function($id) {
+            return is_numeric($id) && $id > 0 ? (int) $id : null;
+        }, $data['channels']), function($id) {
+            return $id !== null;
+        });
 
         $product->channels()->sync($data['channels']);
 
@@ -179,15 +203,64 @@ abstract class AbstractType
             $data['categories'] = [];
         }
 
+        // Ensure categories is always an array, not an integer or other type
+        if (! is_array($data['categories'])) {
+            $data['categories'] = [];
+        }
+        
+        // Filter out invalid values and ensure all are integers
+        $data['categories'] = array_filter(array_map(function($id) {
+            return is_numeric($id) && $id > 0 ? (int) $id : null;
+        }, $data['categories']), function($id) {
+            return $id !== null;
+        });
+
         $product->categories()->sync($data['categories']);
 
-        $product->up_sells()->sync($data['up_sells'] ?? []);
+        // Ensure all sync arrays are actually arrays and filter invalid values
+        $upSells = $data['up_sells'] ?? [];
+        if (! is_array($upSells)) {
+            $upSells = [];
+        }
+        $upSells = array_filter(array_map(function($id) {
+            return is_numeric($id) && $id > 0 ? (int) $id : null;
+        }, $upSells), function($id) {
+            return $id !== null;
+        });
+        $product->up_sells()->sync($upSells);
 
-        $product->cross_sells()->sync($data['cross_sells'] ?? []);
+        $crossSells = $data['cross_sells'] ?? [];
+        if (! is_array($crossSells)) {
+            $crossSells = [];
+        }
+        $crossSells = array_filter(array_map(function($id) {
+            return is_numeric($id) && $id > 0 ? (int) $id : null;
+        }, $crossSells), function($id) {
+            return $id !== null;
+        });
+        $product->cross_sells()->sync($crossSells);
 
-        $product->related_products()->sync($data['related_products'] ?? []);
+        $relatedProducts = $data['related_products'] ?? [];
+        if (! is_array($relatedProducts)) {
+            $relatedProducts = [];
+        }
+        $relatedProducts = array_filter(array_map(function($id) {
+            return is_numeric($id) && $id > 0 ? (int) $id : null;
+        }, $relatedProducts), function($id) {
+            return $id !== null;
+        });
+        $product->related_products()->sync($relatedProducts);
 
-        $product->ingredients_incompatibility()->sync($data['ingredients_incompatibility'] ?? []);
+        $ingredientsIncompatibility = $data['ingredients_incompatibility'] ?? [];
+        if (! is_array($ingredientsIncompatibility)) {
+            $ingredientsIncompatibility = [];
+        }
+        $ingredientsIncompatibility = array_filter(array_map(function($id) {
+            return is_numeric($id) && $id > 0 ? (int) $id : null;
+        }, $ingredientsIncompatibility), function($id) {
+            return $id !== null;
+        });
+        $product->ingredients_incompatibility()->sync($ingredientsIncompatibility);
 
         $this->productInventoryRepository->saveInventories($data, $product);
 
