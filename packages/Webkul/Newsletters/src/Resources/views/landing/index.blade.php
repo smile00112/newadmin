@@ -209,7 +209,7 @@
             align-items: center;
             justify-content: center;
             font-size: 32px;
-            margin-bottom: 20px;
+            margin: 0 auto 20px auto;
             color: #2563eb;
         }
 
@@ -515,7 +515,7 @@
         <div class="container">
             <h1>Профессиональный сервис рассылки</h1>
             <p>Эффективные массовые рассылки через Email, WhatsApp и Telegram для вашего бизнеса</p>
-            <button class="btn-primary" onclick="openModal()" style="font-size: 18px; padding: 16px 32px;">
+            <button class="btn-primary" onclick="openModal(); return false;" style="font-size: 18px; padding: 16px 32px;" data-cursor-element-id="cursor-el-1">
                 Получить доступ
             </button>
         </div>

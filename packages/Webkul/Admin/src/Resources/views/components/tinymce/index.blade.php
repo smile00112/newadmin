@@ -272,6 +272,11 @@
                                 ...extraConfiguration,
                                 skin: self.currentSkin,
                                 content_css: self.currentContentCSS,
+                                // Разрешаем onclick и другие атрибуты на button и других элементах
+                                extended_valid_elements: 'button[onclick|class|id|style|type|name|value|disabled|title|aria-*|data-*],a[onclick|href|target|class|id|style|title|aria-*|data-*],div[onclick|class|id|style|title|aria-*|data-*],span[onclick|class|id|style|title|aria-*|data-*]',
+                                // Предотвращаем добавление &nbsp; в пустые элементы
+                                remove_trailing_brs: true,
+                                remove_linebreaks: false,
                             };
 
                             const image_upload_handler = (blobInfo, progress) => new Promise((resolve, reject) => {
@@ -388,6 +393,18 @@
                                     };
 
                                     self.$refs.magicAIModal.toggle()
+                                }
+                            });
+
+                            // Очищаем &nbsp; из пустых элементов перед получением контента
+                            editor.on('GetContent', function(e) {
+                                if (e.format === 'html') {
+                                    var content = e.content;
+                                    // Удаляем &nbsp; из пустых элементов (div, span, p, button, i и т.д.)
+                                    content = content.replace(/(<(div|span|p|a|button|h[1-6]|li|td|th|i|em|strong|b)[^>]*>)&nbsp;(<\/\2>)/gi, '$1$3');
+                                    // Также удаляем случаи, где &nbsp; стоит между тегами без пробелов
+                                    content = content.replace(/(<[^>]+>)&nbsp;(<\/[^>]+>)/g, '$1$2');
+                                    e.content = content;
                                 }
                             });
 
