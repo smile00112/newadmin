@@ -189,6 +189,38 @@ abstract class AbstractType
 
         $product->ingredients_incompatibility()->sync($data['ingredients_incompatibility'] ?? []);
 
+        // Обработка drinks с pivot данными (sort, default)
+        if (isset($data['drinks']) && is_array($data['drinks'])) {
+            $drinksData = [];
+            foreach ($data['drinks'] as $key => $drink) {
+                // Обработка формата drinks[product_id][id], drinks[product_id][sort], drinks[product_id][default]
+                if (is_array($drink) && isset($drink['id'])) {
+                    $productId = $drink['id'];
+                    $drinksData[$productId] = [
+                        'sort' => isset($drink['sort']) ? (int) $drink['sort'] : 0,
+                        'default' => !empty($drink['default']) ? 1 : 0,
+                    ];
+                }
+                // Обработка формата drinks[] = product_id (простой массив ID)
+                elseif (is_numeric($drink) && $drink > 0) {
+                    $drinksData[$drink] = [
+                        'sort' => 0,
+                        'default' => false,
+                    ];
+                }
+                // Обработка формата drinks[product_id] = product_id (ключ = значение)
+                elseif (is_numeric($key) && $key > 0 && is_numeric($drink) && $drink > 0) {
+                    $drinksData[$drink] = [
+                        'sort' => 0,
+                        'default' => false,
+                    ];
+                }
+            }
+            $product->drinks()->sync($drinksData);
+        } else {
+            $product->drinks()->sync([]);
+        }
+
         $this->productInventoryRepository->saveInventories($data, $product);
 
         $this->productImageRepository->upload($data, $product, 'images');

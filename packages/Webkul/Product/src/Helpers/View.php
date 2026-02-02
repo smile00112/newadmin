@@ -23,10 +23,16 @@ class View
         foreach ($attributes as $attribute) {
             $value = $product->{$attribute->code};
 
+            // Список атрибутов КЖБУ, которые не должны форматироваться как цена
+            $nutritionAttributes = ['calories', 'proteins', 'fats', 'carbs'];
+
             if ($attribute->type == 'boolean') {
                 $value = $value ? 'Yes' : 'No';
             } elseif ($value) {
-                if ($attribute->type == 'select') {
+                // Для атрибутов КЖБУ типа price выводим число без символа валюты
+                if ($attribute->type == 'price' && in_array($attribute->code, $nutritionAttributes)) {
+                    $value = is_numeric($value) ? number_format((float) $value, 2, '.', '') : $value;
+                } elseif ($attribute->type == 'select') {
                     $attributeOption = $attributeOptionRepository->find($value);
 
                     if ($attributeOption) {

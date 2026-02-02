@@ -23,6 +23,12 @@ return new class extends Migration
             $table->unique(['parent_id', 'child_id']);
         });
 
+        if (Schema::hasTable('product_drinks')) {
+            Schema::table('product_drinks', function (Blueprint $table) {
+                $table->unique(['parent_id', 'child_id']);
+            });
+        }
+
         Schema::table('product_up_sells', function (Blueprint $table) {
             $table->unique(['parent_id', 'child_id']);
         });
@@ -88,6 +94,14 @@ return new class extends Migration
 
             $table->dropUnique(['parent_id', 'child_id']);
         });
+
+        if (Schema::hasTable('product_drinks')) {
+            Schema::table('product_drinks', function (Blueprint $table) {
+                $table->dropForeign(['parent_id']);
+
+                $table->dropUnique(['parent_id', 'child_id']);
+            });
+        }
 
         Schema::table('product_relations', function (Blueprint $table) {
             $table->dropForeign(['parent_id']);

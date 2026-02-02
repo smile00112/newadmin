@@ -284,6 +284,16 @@ class Product extends Model implements ProductContract
     {
         return $this->belongsToMany(static::class, 'product_cross_sells', 'parent_id', 'child_id');
     }
+
+    /**
+     * The drinks that belong to the product.
+     */
+    public function drinks(): BelongsToMany
+    {
+        return $this->belongsToMany(static::class, 'product_drinks', 'parent_id', 'child_id')
+            ->withPivot('sort', 'default');
+    }
+
     /**
      * The cross sells that belong to the product.
      */

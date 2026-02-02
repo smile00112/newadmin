@@ -430,17 +430,17 @@ return [
     'shop' => [
         'customer' => [
             'addresses' => [
-                'create-success' => 'Seu endereço foi criado com sucesso.',
-                'delete-success' => 'Seu endereço foi excluído com sucesso.',
-                'update-success' => 'Seu endereço foi atualizado com sucesso.',
+                'create-success' => 'Ваш адрес успешно создан.',
+                'delete-success' => 'Ваш адрес был успешно удален.',
+                'update-success' => 'Ваш адрес был успешно обновлен.',
             ],
 
             'accounts' => [
-                'create-success'     => 'Sua conta foi criada com sucesso.',
-                'delete-success'     => 'Sua conta foi excluída com sucesso.',
-                'logged-in-success'  => 'Logado com sucesso.',
-                'logged-out-success' => 'Deslogado com sucesso.',
-                'update-success'     => 'Sua conta foi atualizada com sucesso.',
+                'create-success'     => 'Ваша учетная запись была успешно создана.',
+                'delete-success'     => 'Ваша учетная запись была успешно удалена.',
+                'logged-in-success'  => 'Успешно вошел в систему.',
+                'logged-out-success' => 'Успешно вытеснен.',
+                'update-success'     => 'Ваша учетная запись была успешно обновлена.',
 
                 'error' => [
                     'credential-error'  => 'Предоставленные учетные данные неверны.',

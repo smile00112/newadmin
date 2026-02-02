@@ -909,6 +909,15 @@ return [
                         'title'      => 'Cross-Sell Products',
                     ],
 
+                    'drinks' => [
+                        'empty-info' => 'Add drinks for the dish on the go.',
+                        'info'       => 'Drinks that complement the dish and can be selected by default.',
+                        'title'      => 'Drinks for the Dish',
+                        'sort'       => 'Sort',
+                        'default'     => 'Default',
+                        'default-label' => 'Set as default',
+                    ],
+
                     'add-btn'           => 'Add Product',
                     'delete'            => 'Delete',
                     'empty-info'        => 'To add :type products on a go.',

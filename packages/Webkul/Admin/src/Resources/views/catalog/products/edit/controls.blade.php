@@ -22,19 +22,36 @@
 
         @break
     @case('price')
-        <x-admin::form.control-group.control
-            type="price"
-            :id="$attribute->code"
-            :class="($attribute->code == 'price' ? 'py-2.5 bg-gray-50 text-xl font-bold' : '')"
-            :name="$attribute->code"
-            ::rules="{{ $attribute->validations }}"
-            value="{{ old($attribute->code) ?: $product[$attribute->code] }}"
-            :label="$attribute->admin_name"
-        >
-            <x-slot:currency :class="'dark:text-gray-300 ' . ($attribute->code == 'price' ? 'bg-gray-50 dark:bg-gray-900 text-xl' : '')">
-                {{ core()->currencySymbol(core()->getBaseCurrencyCode()) }}
-            </x-slot>
-        </x-admin::form.control-group.control>
+        @php
+            // Список атрибутов КЖБУ, которые не должны иметь символ валюты
+            $nutritionAttributes = ['calories', 'proteins', 'fats', 'carbs'];
+            $isNutritionAttribute = in_array($attribute->code, $nutritionAttributes);
+        @endphp
+        
+        @if ($isNutritionAttribute)
+            <x-admin::form.control-group.control
+                type="text"
+                :id="$attribute->code"
+                :name="$attribute->code"
+                ::rules="{{ $attribute->validations }}"
+                value="{{ old($attribute->code) ?: $product[$attribute->code] }}"
+                :label="$attribute->admin_name"
+            />
+        @else
+            <x-admin::form.control-group.control
+                type="price"
+                :id="$attribute->code"
+                :class="($attribute->code == 'price' ? 'py-2.5 bg-gray-50 text-xl font-bold' : '')"
+                :name="$attribute->code"
+                ::rules="{{ $attribute->validations }}"
+                value="{{ old($attribute->code) ?: $product[$attribute->code] }}"
+                :label="$attribute->admin_name"
+            >
+                <x-slot:currency :class="'dark:text-gray-300 ' . ($attribute->code == 'price' ? 'bg-gray-50 dark:bg-gray-900 text-xl' : '')">
+                    {{ core()->currencySymbol(core()->getBaseCurrencyCode()) }}
+                </x-slot>
+            </x-admin::form.control-group.control>
+        @endif
 
         @break
     @case('textarea')
