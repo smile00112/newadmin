@@ -55,7 +55,7 @@
 
                                 <!-- Product SKU -->
                                 <p class="text-gray-600 dark:text-gray-300">
-                                    @{{ "@lang('admin::app.dashboard.index.sku', ['sku' => ':replace'])".replace(':replace', product.sku) }}
+                                    @{{ translations.sku.replace(':replace', product.sku) }}
                                 </p>
                             </div>
                         </div>
@@ -69,7 +69,7 @@
 
                                 <!-- Total Product Stock -->
                                 <p :class="[product.total_qty > {{ core()->getConfigData('catalog.inventory.stock_options.out_of_stock_threshold') }} ? 'text-emerald-500' : 'text-red-500']">
-                                    @{{ "@lang('admin::app.dashboard.index.total-stock', ['total_stock' => ':replace'])".replace(':replace', product.total_qty) }}
+                                    @{{ translations.totalStock.replace(':replace', product.total_qty) }}
                                 </p>
                             </div>
 
@@ -113,6 +113,11 @@
                     report: [],
 
                     isLoading: true,
+
+                    translations: {
+                        sku: @json(__('admin::app.dashboard.index.sku', ['sku' => ':replace'])),
+                        totalStock: @json(__('admin::app.dashboard.index.total-stock', ['total_stock' => ':replace'])),
+                    },
                 }
             },
 

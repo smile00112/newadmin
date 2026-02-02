@@ -110,6 +110,9 @@ class Flat extends AbstractIndexer
      */
     public function refresh($product)
     {
+        // Reload product to get fresh data from database
+        $product = $this->productRepository->find($product->id);
+        
         $this->updateOrCreate($product);
 
         if (! ProductType::hasVariants($product->type)) {
@@ -137,6 +140,7 @@ class Flat extends AbstractIndexer
             $channelIds[] = core()->getDefaultChannel()->id;
         }
 
+        // Always get fresh attribute values from database
         $attributeValues = $product->attribute_values()->get();
 
         foreach (core()->getAllChannels() as $channel) {
@@ -152,6 +156,8 @@ class Flat extends AbstractIndexer
                         'attribute_family_id' => $product->attribute_family_id,
                     ]);
 
+                    $fallbackLocale = config('app.fallback_locale', 'en');
+                    
                     foreach ($familyAttributes as $attribute) {
                         if (
                             ! in_array($attribute->code, $this->flatColumns)
@@ -164,21 +170,37 @@ class Flat extends AbstractIndexer
 
                         if ($attribute->value_per_channel) {
                             if ($attribute->value_per_locale) {
-                                $productAttributeValues = $productAttributeValues
+                                $filteredValues = $productAttributeValues
                                     ->where('channel', $channel->code)
                                     ->where('locale', $locale->code);
+                                    
+                                // Fallback to default locale if no value found
+                                if ($filteredValues->isEmpty() && $locale->code !== $fallbackLocale) {
+                                    $filteredValues = $productAttributeValues
+                                        ->where('channel', $channel->code)
+                                        ->where('locale', $fallbackLocale);
+                                }
+                                $productAttributeValues = $filteredValues;
                             } else {
                                 $productAttributeValues = $productAttributeValues->where('channel', $channel->code);
                             }
                         } else {
                             if ($attribute->value_per_locale) {
-                                $productAttributeValues = $productAttributeValues->where('locale', $locale->code);
+                                $filteredValues = $productAttributeValues->where('locale', $locale->code);
+                                
+                                // Fallback to default locale if no value found
+                                if ($filteredValues->isEmpty() && $locale->code !== $fallbackLocale) {
+                                    $filteredValues = $productAttributeValues->where('locale', $fallbackLocale);
+                                }
+                                $productAttributeValues = $filteredValues;
                             }
                         }
 
                         $productAttributeValue = $productAttributeValues->first();
+                        
+                        $newValue = $productAttributeValue[$attribute->column_name] ?? null;
 
-                        $productFlat->{$attribute->code} = $productAttributeValue[$attribute->column_name] ?? null;
+                        $productFlat->{$attribute->code} = $newValue;
                     }
 
                     $productFlat->save();

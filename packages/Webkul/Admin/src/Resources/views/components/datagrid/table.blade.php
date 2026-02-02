@@ -17,7 +17,7 @@
         id="v-datagrid-table-template"
     >
         <div class="w-full">
-            <div class="table-responsive box-shadow grid w-full overflow-x-auto rounded bg-white dark:bg-gray-900">
+            <div class="table-responsive box-shadow grid w-full overflow-x-auto rounded-2xl bg-white dark:bg-gray-900">
                 <slot
                     name="header"
                     :is-loading="isLoading"
@@ -33,12 +33,12 @@
 
                     <template v-else>
                         <div
-                            class="row grid min-h-[47px] items-center gap-2.5 border-b bg-gray-50 px-4 py-2.5 font-semibold text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                            class="row grid min-h-[52px] items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 to-transparent px-5 py-3 font-semibold text-gray-600 dark:border-gray-800 dark:from-gray-800/50 dark:text-gray-300"
                             :style="`grid-template-columns: repeat(${gridsCount}, minmax(150px, 1fr))`"
                         >
                             <!-- Mass Actions -->
                             <p v-if="available.massActions.length">
-                                <label for="mass_action_select_all_records">
+                                <label for="mass_action_select_all_records" class="cursor-pointer">
                                     <input
                                         type="checkbox"
                                         name="mass_action_select_all_records"
@@ -49,10 +49,10 @@
                                     >
 
                                     <span
-                                        class="icon-uncheckbox cursor-pointer rounded-md text-2xl"
+                                        class="icon-uncheckbox cursor-pointer rounded-lg text-2xl transition-all duration-200 hover:text-indigo-500"
                                         :class="[
-                                            applied.massActions.meta.mode === 'all' ? 'peer-checked:icon-checked peer-checked:text-blue-600 ' : (
-                                                applied.massActions.meta.mode === 'partial' ? 'peer-checked:icon-checkbox-partial peer-checked:text-blue-600' : ''
+                                            applied.massActions.meta.mode === 'all' ? 'peer-checked:icon-checked peer-checked:text-indigo-600' : (
+                                                applied.massActions.meta.mode === 'partial' ? 'peer-checked:icon-checkbox-partial peer-checked:text-indigo-600' : ''
                                             ),
                                         ]"
                                     >
@@ -63,15 +63,15 @@
                             <!-- Columns -->
                             <template v-for="column in available.columns">
                                 <p
-                                    class="flex items-center gap-1.5 break-words"
-                                    :class="{'cursor-pointer select-none hover:text-gray-800 dark:hover:text-white': column.sortable}"
+                                    class="flex items-center gap-2 break-words text-sm font-medium"
+                                    :class="{'cursor-pointer select-none hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors': column.sortable}"
                                     @click="sort(column)"
                                     v-if="column.visibility"
                                 >
                                     @{{ column.label }}
 
                                     <i
-                                        class="align-text-bottom text-base text-gray-600 dark:text-gray-300"
+                                        class="align-text-bottom text-sm text-indigo-500"
                                         :class="[applied.sort.order === 'asc' ? 'icon-down-stat': 'icon-up-stat']"
                                         v-if="column.index == applied.sort.column"
                                     ></i>
@@ -80,7 +80,7 @@
 
                             <!-- Actions -->
                             <p
-                                class="place-self-end"
+                                class="place-self-end text-sm font-medium"
                                 v-if="available.actions.length"
                             >
                                 @lang('admin::app.components.datagrid.table.actions')
@@ -105,13 +105,13 @@
                     <template v-else>
                         <template v-if="available.records.length">
                             <div
-                                class="row grid items-center gap-2.5 border-b px-4 py-4 text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950"
+                                class="row grid items-center gap-3 border-b border-gray-50 px-5 py-4 text-gray-600 transition-all duration-200 hover:bg-indigo-50/30 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/30"
                                 v-for="record in available.records"
                                 :style="`grid-template-columns: repeat(${gridsCount}, minmax(150px, 1fr))`"
                             >
                                 <!-- Mass Actions -->
                                 <p v-if="available.massActions.length">
-                                    <label :for="`mass_action_select_record_${record[available.meta.primary_column]}`">
+                                    <label :for="`mass_action_select_record_${record[available.meta.primary_column]}`" class="cursor-pointer">
                                         <input
                                             type="checkbox"
                                             :name="`mass_action_select_record_${record[available.meta.primary_column]}`"
@@ -121,7 +121,7 @@
                                             v-model="applied.massActions.indices"
                                         >
 
-                                        <span class="icon-uncheckbox peer-checked:icon-checked cursor-pointer rounded-md text-2xl peer-checked:text-blue-600">
+                                        <span class="icon-uncheckbox peer-checked:icon-checked cursor-pointer rounded-lg text-2xl transition-all duration-200 hover:text-indigo-500 peer-checked:text-indigo-600">
                                         </span>
                                     </label>
                                 </p>
@@ -129,7 +129,7 @@
                                 <!-- Columns -->
                                 <template v-for="column in available.columns">
                                     <p
-                                        class="break-words"
+                                        class="break-words text-sm"
                                         v-html="record[column.index]"
                                         v-if="column.visibility"
                                     >
@@ -138,11 +138,11 @@
 
                                 <!-- Actions -->
                                 <p
-                                    class="place-self-end"
+                                    class="place-self-end flex gap-1"
                                     v-if="available.actions.length"
                                 >
                                     <span
-                                        class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
+                                        class="cursor-pointer rounded-lg p-2 text-xl transition-all duration-200 hover:bg-indigo-100 hover:text-indigo-600 dark:hover:bg-gray-700 dark:hover:text-indigo-400 max-sm:place-self-center"
                                         :class="action.icon"
                                         v-text="! action.icon ? action.title : ''"
                                         v-for="action in record.actions"
@@ -154,10 +154,13 @@
                         </template>
 
                         <template v-else>
-                            <div class="row grid border-b px-4 py-4 text-center text-gray-600 dark:border-gray-800 dark:text-gray-300">
-                                <p>
-                                    @lang('admin::app.components.datagrid.table.no-records-available')
-                                </p>
+                            <div class="row grid border-b border-gray-50 px-5 py-8 text-center text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                                <div class="flex flex-col items-center gap-3">
+                                    <span class="icon-folder text-5xl text-gray-300 dark:text-gray-600"></span>
+                                    <p class="text-sm">
+                                        @lang('admin::app.components.datagrid.table.no-records-available')
+                                    </p>
+                                </div>
                             </div>
                         </template>
                     </template>

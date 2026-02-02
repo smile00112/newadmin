@@ -2,11 +2,9 @@
 
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
-use App\Services\BonusPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
-use Webkul\Bonus\Services\BonusService;
 use Webkul\CartRule\Repositories\CartRuleCouponRepository;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\WishlistRepository;
@@ -24,9 +22,7 @@ class CartController extends CustomerController
     public function __construct(
         protected WishlistRepository $wishlistRepository,
         protected ProductRepository $productRepository,
-        protected CartRuleCouponRepository $cartRuleCouponRepository,
-        protected BonusPaymentService $bonusPaymentService,
-        protected BonusService $bonusService
+        protected CartRuleCouponRepository $cartRuleCouponRepository
     ) {}
 
     /**
@@ -42,20 +38,14 @@ class CartController extends CustomerController
     /**
      * Get the customer cart.
      */
-    public function index(): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function index(): Response
     {
         Cart::collectTotals();
 
-        $cart = Cart::getCart();
-
-        $data = [
-            'data'      => $cart ? app()->make($this->resource(), ['resource' => $cart])->resolve(request()) : null,
+        return response([
+            'data' => ($cart = Cart::getCart()) ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'cross_sell' => [],//$this->getCrossSellProducts(),
-        ];
-
-        $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        return api_stream_json($jsonResponse, 'cart.json');
+        ]);
     }
 
     /**
@@ -260,78 +250,6 @@ class CartController extends CustomerController
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'message' => trans('rest-api::app.shop.checkout.cart.coupon.success-remove'),
-        ]);
-    }
-
-    /**
-     * Auto-apply maximum possible bonus amount to cart.
-     * Uses order total and max_usage_percent to compute amount; no body required.
-     */
-    public function autoApplyBonus(Request $request): Response
-    {
-        $cart = Cart::getCart();
-
-        if (! $cart || ! $cart->customer_id) {
-            return response([
-                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
-            ], 400);
-        }
-
-        if (! $this->bonusService->isEnabled()) {
-            return response([
-                'message' => trans('rest-api::app.shop.checkout.cart.coupon.invalid'),
-            ], 400);
-        }
-
-        $maxAmount = $this->bonusService->getMaxUsableBonuses($cart, (int) $cart->customer_id);
-
-        try {
-            $this->bonusPaymentService->applyBonusToCart($cart, $maxAmount);
-        } catch (\Exception $e) {
-            report($e);
-
-            return response([
-                'message' => $e->getMessage(),
-            ], 400);
-        }
-
-        // Set auto_apply to true
-        $cart->update(['auto_apply' => true]);
-
-        Cart::collectTotals();
-        $cart = Cart::getCart();
-
-        return response([
-            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
-            'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
-        ]);
-    }
-
-    /**
-     * Disable auto-apply bonus for cart.
-     */
-    public function disableAutoApplyBonus(Request $request): Response
-    {
-        $cart = Cart::getCart();
-
-        if (! $cart || ! $cart->customer_id) {
-            return response([
-                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
-            ], 400);
-        }
-
-        // Remove bonus from cart
-        $this->bonusPaymentService->removeBonusFromCart($cart);
-
-        // Set auto_apply to false
-        $cart->update(['auto_apply' => false]);
-
-        Cart::collectTotals();
-        $cart = Cart::getCart();
-
-        return response([
-            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
-            'message' => 'Auto-apply bonus disabled successfully',
         ]);
     }
 

@@ -91,11 +91,11 @@
 
             methods: {
                 open({
-                    title = "@lang('admin::app.components.modal.confirm.title')",
-                    message = "@lang('admin::app.components.modal.confirm.message')",
+                    title = @json(__('admin::app.components.modal.confirm.title')),
+                    message = @json(__('admin::app.components.modal.confirm.message')),
                     options = {
-                        btnDisagree: "@lang('admin::app.components.modal.confirm.disagree-btn')",
-                        btnAgree: "@lang('admin::app.components.modal.confirm.agree-btn')",
+                        btnDisagree: @json(__('admin::app.components.modal.confirm.disagree-btn')),
+                        btnAgree: @json(__('admin::app.components.modal.confirm.agree-btn')),
                     },
                     agree = () => {},
                     disagree = () => {},

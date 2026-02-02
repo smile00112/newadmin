@@ -49,7 +49,7 @@ class CatalogCategoryController extends CatalogController
     /**
      * Returns a listing of catalog categories (cached with pagination).
      */
-    public function allResources(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function allResources(Request $request): \Illuminate\Http\JsonResponse
     {
         $channelId = core()->getCurrentChannel()->id;
         $locale = core()->getRequestedLocaleCode();
@@ -59,36 +59,16 @@ class CatalogCategoryController extends CatalogController
 
         $cacheKey = self::CACHE_PREFIX . ":{$channelId}:{$locale}:page_{$page}:limit_{$limit}:paginated_" . ($usePagination ? '1' : '0');
 
-        $jsonResponse = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
-
+        $response = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
             $query = $this->getRepositoryInstance()
-                ->with([
-                    'translations',
-                    'products' => function ($query) {
-                        $query->with([
-                            'images',
-                            'videos',
-                            'attribute_family.attribute_groups.custom_attributes.options',
-                            'super_attributes',
-                            'constructor.groups.products' => function ($query) {
-                                $query->with('images');
-                            },
-                            'grouped_products.associated_product',
-                            'variants',
-                            'downloadable_links',
-                            'downloadable_samples',
-                            'booking_products',
-                            'bundle_options',
-                        ]);
-                    },
-                ])
+                ->with(['translations', 'products'])
                 ->where('status', 1)
                 ->orderBy('position', 'asc');
 
             if ($usePagination) {
                 $paginator = $query->paginate($limit);
 
-                $data = [
+                return [
                     'data'  => CatalogResource::collection($paginator->items())->resolve($request),
                     'links' => [
                         'first' => $paginator->url(1),
@@ -107,21 +87,16 @@ class CatalogCategoryController extends CatalogController
                         'total'        => $paginator->total(),
                     ],
                 ];
-
-                return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             }
 
             $categories = $query->get();
 
-            $data = [
+            return [
                 'data' => CatalogResource::collection($categories)->resolve($request),
             ];
-
-            return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         });
 
-        // Используем helper функцию для быстрого возврата JSON через stream
-        return api_stream_json($jsonResponse, 'catalog.json');
+        return response()->json($response);
     }
 
     /**

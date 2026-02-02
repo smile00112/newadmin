@@ -4,6 +4,7 @@ namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
+use Webkul\Checkout\Facades\Cart;
 use Webkul\Product\Facades\ProductImage;
 use Webkul\Product\Helpers\BundleOption;
 
@@ -20,8 +21,11 @@ class ProductResource extends JsonResource
         /* assign product */
         $product = $this->product ?? $this;
 
-        /* get type instance - cache it to avoid multiple calls */
+        /* get type instance */
         $productTypeInstance = $product->getTypeInstance();
+
+        /* Get review helper */
+        $reviewHelper = app(\Webkul\Product\Helpers\Review::class);
 
         /* generating resource */
         return [
@@ -30,6 +34,7 @@ class ProductResource extends JsonResource
             'sku'                => $product->sku,
             'type'               => $product->type,
             'name'               => $product->name,
+            'url_key'            => $product->url_key,
             'price'              => core()->convertPrice($productTypeInstance->getMinimalPrice()),
             'formatted_price'    => core()->currency($productTypeInstance->getMinimalPrice()),
             'short_description'  => $product->short_description,
@@ -38,13 +43,24 @@ class ProductResource extends JsonResource
             'videos'             => ProductVideoResource::collection($product->videos),
             'base_image'         => ProductImage::getProductBaseImage($product),
             'category_image'     => $this->getCategoryImage($product),
+            'created_at'         => $product->created_at,
+            'updated_at'         => $product->updated_at,
+
+            /* product's reviews */
+            'reviews' => [
+                'total'          => $total = $reviewHelper->getTotalReviews($product),
+                'total_rating'   => $total ? $reviewHelper->getTotalRating($product) : 0,
+                'average_rating' => $total ? $reviewHelper->getAverageRating($product) : 0,
+                'percentage'     => $total ? json_encode($reviewHelper->getPercentageRating($product)) : [],
+            ],
 
             /* product's checks */
             'in_stock'              => $product->haveSufficientQuantity(1),
             'is_saved'              => false,
+            'is_item_in_cart'       => Cart::getCart(),
             'show_quantity_changer' => $this->when(
                 $product->type !== 'grouped',
-                $productTypeInstance->showQuantityBox()
+                $product->getTypeInstance()->showQuantityBox()
             ),
 
             /* product attributes with their options */
@@ -54,10 +70,10 @@ class ProductResource extends JsonResource
             'nutrition' => $this->getNutritionData($product),
 
             /* product's extra information */
-            $this->merge($this->allProductExtraInfo($product, $productTypeInstance)),
+            $this->merge($this->allProductExtraInfo()),
 
             /* special price cases */
-            $this->merge($this->specialPriceInfo($product, $productTypeInstance)),
+            $this->merge($this->specialPriceInfo()),
 
             /* super attributes */
             $this->mergeWhen($productTypeInstance->isComposite(), [
@@ -120,14 +136,13 @@ class ProductResource extends JsonResource
     /**
      * Get special price information.
      *
-     * @param  \Webkul\Product\Models\Product  $product
-     * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
      * @return array
      */
-    private function specialPriceInfo($product = null, $productTypeInstance = null)
+    private function specialPriceInfo()
     {
-        $product = $product ?? $this->product ?? $this;
-        $productTypeInstance = $productTypeInstance ?? $product->getTypeInstance();
+        $product = $this->product ?? $this;
+
+        $productTypeInstance = $product->getTypeInstance();
 
         return [
             'special_price'           => $this->when(
@@ -152,14 +167,13 @@ class ProductResource extends JsonResource
     /**
      * Get all product's extra information.
      *
-     * @param  \Webkul\Product\Models\Product  $product
-     * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
      * @return array
      */
-    private function allProductExtraInfo($product = null, $productTypeInstance = null)
+    private function allProductExtraInfo()
     {
-        $product = $product ?? $this->product ?? $this;
-        $productTypeInstance = $productTypeInstance ?? $product->getTypeInstance();
+        $product = $this->product ?? $this;
+
+        $productTypeInstance = $product->getTypeInstance();
 
         return [
             /* grouped product */
@@ -313,11 +327,8 @@ class ProductResource extends JsonResource
      */
     private function getConstructorProductInfo($product)
     {
-        // Check if constructor is already loaded (via eager loading)
-        if (!$product->relationLoaded('constructor')) {
-            // Only load if not already loaded
-            $product->load('constructor.groups.products.images');
-        }
+        // Load constructor data with relationships
+        $product->load('constructor.groups.products.images');
 
         // Return empty array if no constructor exists
         if ($product->constructor->isEmpty()) {

@@ -520,6 +520,49 @@ return [
             ],
         ],
     ], [
+        'key'    => 'general.magic_ai.ai_assistant',
+        'name'   => 'admin::app.configuration.index.general.magic-ai.ai-assistant.title',
+        'info'   => 'admin::app.configuration.index.general.magic-ai.ai-assistant.title-info',
+        'sort'   => 5,
+        'fields' => [
+            [
+                'name'          => 'enabled',
+                'title'         => 'admin::app.configuration.index.general.magic-ai.ai-assistant.enabled',
+                'type'          => 'boolean',
+                'default'       => 1,
+                'channel_based' => true,
+            ], [
+                'name'          => 'api_key',
+                'title'         => 'admin::app.configuration.index.general.magic-ai.ai-assistant.api-key',
+                'type'          => 'password',
+                'info'          => 'admin::app.configuration.index.general.magic-ai.ai-assistant.api-key-info',
+                'channel_based' => true,
+            ], [
+                'name'          => 'model',
+                'title'         => 'admin::app.configuration.index.general.magic-ai.ai-assistant.model',
+                'type'          => 'select',
+                'default'       => 'gpt-4o-mini',
+                'channel_based' => true,
+                'options'       => [
+                    [
+                        'title' => 'admin::app.configuration.index.general.magic-ai.ai-assistant.gpt-4o-mini',
+                        'value' => 'gpt-4o-mini',
+                    ], [
+                        'title' => 'admin::app.configuration.index.general.magic-ai.ai-assistant.gpt-4o',
+                        'value' => 'gpt-4o',
+                    ], [
+                        'title' => 'admin::app.configuration.index.general.magic-ai.ai-assistant.gpt-4-turbo',
+                        'value' => 'gpt-4-turbo',
+                    ],
+                ],
+            ], [
+                'name'          => 'instructions',
+                'title'         => 'admin::app.configuration.index.general.magic-ai.ai-assistant.instructions',
+                'type'          => 'textarea',
+                'info'          => 'admin::app.configuration.index.general.magic-ai.ai-assistant.instructions-info',
+            ],
+        ],
+    ], [
         'key'  => 'general.sitemap',
         'name' => 'admin::app.configuration.index.general.sitemap.title',
         'info' => 'admin::app.configuration.index.general.sitemap.info',

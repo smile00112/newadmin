@@ -102,7 +102,7 @@
                                 </p>
 
                                 <p class="text-gray-600 dark:text-gray-300">
-                                    @{{ "@lang('admin::app.components.products.search.sku')".replace(':sku', product.sku) }}
+                                    @{{ translations.sku.replace(':sku', product.sku) }}
                                 </p>
                             </div>
                         </div>
@@ -114,7 +114,7 @@
                             </p>
 
                             <p class="text-green-600">
-                                @{{ "@lang('admin::app.components.products.search.qty')".replace(':qty', totalQty(product)) }}
+                                @{{ translations.qty.replace(':qty', totalQty(product)) }}
                             </p>
                         </div>
                     </div>
@@ -174,6 +174,11 @@
                     searchedProducts: [],
 
                     isSearching: false,
+
+                    translations: {
+                        sku: @json(__('admin::app.components.products.search.sku')),
+                        qty: @json(__('admin::app.components.products.search.qty')),
+                    },
                 }
             },
 

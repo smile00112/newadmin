@@ -1,11 +1,11 @@
-<div class="flex flex-wrap gap-1.5">
+<div class="flex items-center -space-x-2">
     @php
         $restCount = max($order->items->count() - 3, 0);
     @endphp
 
-    @foreach ($order->items->take(3) as $item)
-        <div class="relative">
-            <div class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded">
+    @foreach ($order->items->take(3) as $index => $item)
+        <div class="relative group" style="z-index: {{ 10 - $index }}">
+            <div class="relative h-12 w-12 rounded-xl overflow-hidden ring-2 ring-white dark:ring-gray-900 shadow-md transition-transform duration-200 hover:scale-110 hover:z-20">
                 @php
                     $imageUrl = null;
                     
@@ -21,33 +21,32 @@
 
                 @if ($imageUrl)
                     <img 
-                        class="h-full w-full rounded" 
+                        class="h-full w-full object-cover" 
                         src="{{ $imageUrl }}"
                     >
-
-                    <span class="absolute bottom-px rounded-full bg-darkPink px-1.5 text-xs font-bold leading-normal text-white ltr:left-px rtl:right-px">
+                @else
+                    <div class="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                @endif
+                
+                <!-- Quantity Badge -->
+                @if ($item->qty_ordered > 1)
+                    <span class="absolute -bottom-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-violet-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-gray-900 px-1">
                         {{ $item->qty_ordered }}
                     </span>
-                @else
-                    <div class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert">
-                        <img src="{{ bagisto_asset('images/product-placeholders/front.svg') }}">
-                        
-                        <p class="absolute bottom-1.5 w-full text-center text-[6px] font-semibold text-gray-400"> 
-                            @lang('admin::app.sales.invoices.view.product-image') 
-                        </p>
-                    </div>
                 @endif
             </div>
         </div>
     @endforeach
 
     @if ($restCount >= 1)
-        <a href="{{ route('admin.sales.orders.view', $order->id) }}">
-            <div class="flex h-[65px] w-[65px] items-center rounded bg-gray-50 dark:bg-gray-800">
-                <p class="px-1.5 py-1.5 text-center text-xs font-bold text-gray-600 dark:text-gray-300">
-                    @lang('admin::app.sales.orders.index.datagrid.product-count', ['count' => $restCount])
-                </p>
+        <div class="relative" style="z-index: 1">
+            <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-100 to-violet-200 dark:from-violet-900/50 dark:to-violet-800/50 ring-2 ring-white dark:ring-gray-900 flex items-center justify-center shadow-md">
+                <span class="text-xs font-bold text-violet-600 dark:text-violet-400">+{{ $restCount }}</span>
             </div>
-        </a>
+        </div>
     @endif
 </div>

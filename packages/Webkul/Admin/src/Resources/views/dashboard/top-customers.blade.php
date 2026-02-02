@@ -50,7 +50,7 @@
                                 </p>
 
                                 <p class="text-gray-600 dark:text-gray-300" v-if="customer.orders">
-                                    @{{ "@lang('admin::app.dashboard.index.order-count')".replace(':count', customer.orders) }}
+                                    @{{ translations.orderCount.replace(':count', customer.orders) }}
                                 </p>
                             </div>
                         </div>
@@ -93,6 +93,10 @@
                     report: [],
 
                     isLoading: true,
+
+                    translations: {
+                        orderCount: @json(__('admin::app.dashboard.index.order-count')),
+                    },
                 }
             },
 

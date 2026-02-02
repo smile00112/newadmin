@@ -551,7 +551,8 @@ abstract class DataGrid
         $this->processRequestedFilters($requestedParams['filters'] ?? []);
 
 //        TODO remove it
-        if(strpos($_SERVER['REDIRECT_URL'], 'products')!==false) {
+        $redirectUrl = $_SERVER['REDIRECT_URL'] ?? $_SERVER['REQUEST_URI'] ?? '';
+        if(strpos($redirectUrl, 'products')!==false) {
             if (!empty($_GET['ingredient'])) {
                 $this->queryBuilder->where('product_flat.type', 'ingredient');
             } else {

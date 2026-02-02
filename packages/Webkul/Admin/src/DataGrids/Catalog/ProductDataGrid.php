@@ -70,7 +70,7 @@ class ProductDataGrid extends DataGrid
             ->addSelect(DB::raw('SUM(DISTINCT '.$tablePrefix.'product_inventories.qty) as quantity'))
             ->addSelect(DB::raw('COUNT(DISTINCT '.$tablePrefix.'product_images.id) as images_count'))
             // select для суммы цен ингредиентов
-            ->addSelect(DB::raw('COALESCE(SUM(ingredient_flat.price), 0) as selected_ingredients_sum'))
+            ->addSelect(DB::raw('COALESCE(SUM('.$tablePrefix.'ingredient_flat.price), 0) as selected_ingredients_sum'))
             ->where('product_flat.locale', app()->getLocale())
             ->groupBy('product_flat.product_id');
 

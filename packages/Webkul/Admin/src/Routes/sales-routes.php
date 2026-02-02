@@ -50,7 +50,11 @@ Route::prefix('sales')->group(function () {
 
         Route::post('update-status/{id}', 'updateStatus')->name('admin.sales.orders.update_status');
 
+        Route::post('mass-update-status', 'massUpdateStatus')->name('admin.sales.orders.mass_update_status');
+
         Route::get('search', 'search')->name('admin.sales.orders.search');
+        
+        Route::get('pending-orders', 'getPendingOrders')->name('admin.api.orders.pending');
     });
 
     /**

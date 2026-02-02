@@ -163,6 +163,15 @@ class ProductController extends Controller
      */
     public function update(ProductForm $request, int $id)
     {
+        // Debug: check images data
+        \Log::info('Product update - images data:', [
+            'images_exists' => request()->has('images'),
+            'images_input' => request()->input('images'),
+            'images_file' => request()->file('images'),
+            'all_files' => request()->allFiles(),
+            'all_data_keys' => array_keys(request()->all()),
+        ]);
+        
         Event::dispatch('catalog.product.update.before', $id);
 
         $product = $this->productRepository->update(request()->all(), $id);
@@ -323,6 +332,46 @@ class ProductController extends Controller
         return new JsonResponse([
             'message' => trans('admin::app.catalog.products.index.datagrid.mass-update-success'),
         ], 200);
+    }
+
+    /**
+     * Toggle product stock status - sets inventory to 0 or 1.
+     */
+    public function toggleStock(int $id): JsonResponse
+    {
+        // Быстрый запрос текущего количества без загрузки всей модели
+        $currentQty = \DB::table('product_inventories')
+            ->where('product_id', $id)
+            ->sum('qty');
+        
+        // Toggle: if has stock -> set to 0, if no stock -> set to 1
+        $newQty = $currentQty > 0 ? 0 : 1;
+        
+        // Получаем ID первого активного inventory source (кэшируется)
+        $inventorySourceId = \Cache::remember('default_inventory_source_id', 3600, function () {
+            return \DB::table('inventory_sources')
+                ->where('status', 1)
+                ->value('id');
+        });
+        
+        if ($inventorySourceId) {
+            // Прямой upsert без ORM для скорости
+            \DB::table('product_inventories')->updateOrInsert(
+                [
+                    'product_id' => $id,
+                    'inventory_source_id' => $inventorySourceId,
+                ],
+                [
+                    'qty' => $newQty,
+                    'vendor_id' => 0,
+                ]
+            );
+        }
+        
+        return new JsonResponse([
+            'success' => true,
+            'quantity' => $newQty,
+        ]);
     }
 
     /**

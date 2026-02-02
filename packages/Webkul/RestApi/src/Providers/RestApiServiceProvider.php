@@ -39,9 +39,6 @@ class RestApiServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
         $this->app->bind(BaseHandler::class, Handler::class);
-
-        // Load helpers
-        require_once __DIR__.'/../Http/helpers.php';
     }
 
     /**

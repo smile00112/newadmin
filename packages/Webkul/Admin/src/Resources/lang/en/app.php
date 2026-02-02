@@ -5011,6 +5011,7 @@ return [
                 'gdpr-data-requests'       => 'GDPR Data Requests',
                 'groups'                   => 'Groups',
                 'imports'                  => 'Imports',
+                'ingredients'              => 'Ingredients',
                 'inventory-sources'        => 'Inventory Sources',
                 'invoices'                 => 'Invoices',
                 'locales'                  => 'Locales',
