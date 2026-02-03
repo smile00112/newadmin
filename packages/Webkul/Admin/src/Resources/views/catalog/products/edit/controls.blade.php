@@ -121,6 +121,7 @@
     @case('multiselect')
         @php
             $selectedOption = old($attribute->code) ?: explode(',', $product[$attribute->code]);
+            $isPreferences = $attribute->code === 'preferences';
         @endphp
 
         <x-admin::form.control-group.control
@@ -139,6 +140,40 @@
                 </option>
             @endforeach
         </x-admin::form.control-group.control>
+
+        @if($isPreferences)
+            @push('scripts')
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const selectElement = document.querySelector('select[name="preferences[]"]');
+                        
+                        if (selectElement) {
+                            // Перехватываем клик на опции для переключения выбора
+                            selectElement.addEventListener('mousedown', function(e) {
+                                const option = e.target;
+                                
+                                if (option.tagName === 'OPTION') {
+                                    e.preventDefault();
+                                    
+                                    // Сохраняем текущее состояние
+                                    const wasSelected = option.selected;
+                                    
+                                    // Переключаем выбор опции
+                                    option.selected = !wasSelected;
+                                
+                                    // Триггерим события для обновления формы и Vue.js
+                                    const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                                    selectElement.dispatchEvent(changeEvent);
+                                    
+                                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                                    selectElement.dispatchEvent(inputEvent);
+                                }
+                            });
+                        }
+                    });
+                </script>
+            @endpush
+        @endif
 
         @break
     @case('checkbox')

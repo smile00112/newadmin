@@ -591,7 +591,7 @@
 
                         <!-- Group Options -->
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 hidden">
                                 <input
                                     type="checkbox"
                                     id="show_title"
@@ -603,7 +603,7 @@
                                 </label>
                             </div>
 
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 hidden">
                                 <input
                                     type="checkbox"
                                     id="opened_by_default"
@@ -642,7 +642,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 hidden">
                             <input
                                 type="checkbox"
                                 id="hidden"
