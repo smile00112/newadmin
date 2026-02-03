@@ -55,7 +55,7 @@ const tests = [
         id: 3,
         name: 'Каталог товаров',
         method: 'GET',
-        url: `${API_BASE_URL}/products`,
+        url: `${API_BASE_URL}/catalog`,
         body: null,
         needsAuth: true
     },
@@ -96,11 +96,19 @@ const tests = [
         body: null, // Будет установлен динамически
         needsAuth: true
     },
+    // {
+    //     id: 7,
+    //     name: 'Удаление товара из корзины',
+    //     method: 'DELETE',
+    //     url: null, // Будет установлен динамически
+    //     body: null,
+    //     needsAuth: true
+    // },
     {
         id: 7,
-        name: 'Удаление товара из корзины',
-        method: 'DELETE',
-        url: null, // Будет установлен динамически
+        name: 'Получение товаров корзины',
+        method: 'GET',
+        url: `${API_BASE_URL}/customer/cart`,
         body: null,
         needsAuth: true
     },
@@ -173,7 +181,7 @@ const tests = [
 /**
  * Обновляет строку в таблице результатов
  */
-function updateTestResult(testId, status, time, response) {
+function updateTestResult(testId, status, time, response, serverTime = null) {
     const row = document.querySelector(`#test-${testId}`);
     if (!row) return;
 
@@ -185,7 +193,11 @@ function updateTestResult(testId, status, time, response) {
     statusCell.className = `status ${status}`;
 
     if (time !== null) {
-        timeCell.textContent = `${time} мс`;
+        if (serverTime !== null) {
+            timeCell.textContent = `Клиент: ${time} мс | Сервер: ${serverTime} мс`;
+        } else {
+            timeCell.textContent = `Клиент: ${time} мс`;
+        }
     }
 
     if (response) {
@@ -260,7 +272,26 @@ async function executeTest(test, phone) {
     // Специальная обработка для некоторых тестов
     if (test.id === 1) {
         // Отправка SMS кода
-        body = { phone: phone };
+        const countryCodeInput = document.getElementById('country_code');
+        const deviceNameInput = document.getElementById('device_name');
+        const countryCode = countryCodeInput ? countryCodeInput.value.trim() : 'RU';
+        const deviceName = deviceNameInput ? deviceNameInput.value.trim() : 'API Test Device';
+
+        if (!phone) {
+            throw new Error('Номер телефона не указан');
+        }
+        if (!countryCode) {
+            throw new Error('Код страны не указан');
+        }
+        if (!deviceName) {
+            throw new Error('Название устройства не указано');
+        }
+
+        body = {
+            phone_number: phone,
+            country_code: countryCode,
+            device_name: deviceName
+        };
     } else if (test.id === 2) {
         // Проверка кода
         if (!verificationToken) {
@@ -329,6 +360,20 @@ async function executeTest(test, phone) {
         const endTime = performance.now();
         const duration = Math.round(endTime - startTime);
 
+        // Извлекаем время сервера из заголовка X-Response-Time
+        // axios может возвращать заголовки в разных регистрах, проверяем оба варианта
+        let serverTime = null;
+        const responseTimeHeader = response.headers['x-response-time'] ||
+                                   response.headers['X-Response-Time'] ||
+                                   (response.headers.get && response.headers.get('x-response-time'));
+        if (responseTimeHeader) {
+            // Заголовок может быть в формате "123.45 ms" или просто число
+            const match = responseTimeHeader.toString().match(/([\d.]+)/);
+            if (match) {
+                serverTime = Math.round(parseFloat(match[1]));
+            }
+        }
+
         // Обработка ответа через handler если есть
         if (test.handler) {
             test.handler(response);
@@ -337,17 +382,31 @@ async function executeTest(test, phone) {
         updateTestResult(test.id, 'success', duration, {
             status: response.status,
             message: response.data?.message || 'Успешно'
-        });
+        }, serverTime);
 
-        return { success: true, response, duration };
+        return { success: true, response, duration, serverTime };
     } catch (error) {
         const endTime = performance.now();
         const duration = Math.round(endTime - startTime);
 
-        const errorMessage = error.response?.data?.message || error.message || 'Неизвестная ошибка';
-        updateTestResult(test.id, 'error', duration, errorMessage);
+        // Пытаемся извлечь время сервера даже при ошибке (если есть ответ)
+        let serverTime = null;
+        if (error.response && error.response.headers) {
+            const responseTimeHeader = error.response.headers['x-response-time'] ||
+                                       error.response.headers['X-Response-Time'] ||
+                                       (error.response.headers.get && error.response.headers.get('x-response-time'));
+            if (responseTimeHeader) {
+                const match = responseTimeHeader.toString().match(/([\d.]+)/);
+                if (match) {
+                    serverTime = Math.round(parseFloat(match[1]));
+                }
+            }
+        }
 
-        return { success: false, error, duration };
+        const errorMessage = error.response?.data?.message || error.message || 'Неизвестная ошибка';
+        updateTestResult(test.id, 'error', duration, errorMessage, serverTime);
+
+        return { success: false, error, duration, serverTime };
     }
 }
 
@@ -356,10 +415,25 @@ async function executeTest(test, phone) {
  */
 async function startTesting() {
     const phoneInput = document.getElementById('phone');
-    const phone = phoneInput.value.trim();
+    const countryCodeInput = document.getElementById('country_code');
+    const deviceNameInput = document.getElementById('device_name');
+
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const countryCode = countryCodeInput ? countryCodeInput.value.trim() : '';
+    const deviceName = deviceNameInput ? deviceNameInput.value.trim() : '';
 
     if (!phone) {
         alert('Пожалуйста, введите номер телефона');
+        return;
+    }
+
+    if (!countryCode) {
+        alert('Пожалуйста, введите код страны');
+        return;
+    }
+
+    if (!deviceName) {
+        alert('Пожалуйста, введите название устройства');
         return;
     }
 
@@ -375,6 +449,8 @@ async function startTesting() {
     document.getElementById('startBtn').disabled = true;
     document.getElementById('stopBtn').disabled = false;
     phoneInput.disabled = true;
+    if (countryCodeInput) countryCodeInput.disabled = true;
+    if (deviceNameInput) deviceNameInput.disabled = true;
 
     // Выполнение тестов последовательно
     for (let i = 0; i < tests.length; i++) {
@@ -397,6 +473,8 @@ async function startTesting() {
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;
     phoneInput.disabled = false;
+    if (countryCodeInput) countryCodeInput.disabled = false;
+    if (deviceNameInput) deviceNameInput.disabled = false;
 }
 
 /**
@@ -407,7 +485,12 @@ function stopTesting() {
     isTesting = false;
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;
-    document.getElementById('phone').disabled = false;
+    const phoneInput = document.getElementById('phone');
+    const countryCodeInput = document.getElementById('country_code');
+    const deviceNameInput = document.getElementById('device_name');
+    if (phoneInput) phoneInput.disabled = false;
+    if (countryCodeInput) countryCodeInput.disabled = false;
+    if (deviceNameInput) deviceNameInput.disabled = false;
 }
 
 // Экспорт функций для использования в HTML
@@ -417,4 +500,16 @@ window.stopTesting = stopTesting;
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     initializeResultsTable();
+
+    // Привязка обработчиков событий к кнопкам
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
+    if (startBtn) {
+        startBtn.addEventListener('click', startTesting);
+    }
+
+    if (stopBtn) {
+        stopBtn.addEventListener('click', stopTesting);
+    }
 });
