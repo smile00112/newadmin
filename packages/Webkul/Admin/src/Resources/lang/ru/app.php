@@ -425,6 +425,7 @@ return [
                 'total-refund'                   => 'Всего возвратов',
                 'view'                           => 'Просмотр',
                 'write-your-comment'             => 'Напишите свой комментарий',
+                'status-updated-success'             => 'Статус заказа изменён',
             ],
         ],
 
