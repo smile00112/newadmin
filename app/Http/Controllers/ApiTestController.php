@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\View\View;
+
 class ApiTestController extends Controller
 {
     /**
@@ -9,7 +11,7 @@ class ApiTestController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(): View
     {
         return view('api-test');
     }
