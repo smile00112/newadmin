@@ -48,6 +48,9 @@ class CartController extends CustomerController
 
         $cart = Cart::getCart();
 
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
         $data = [
             'data'      => $cart ? app()->make($this->resource(), ['resource' => $cart])->resolve(request()) : null,
             'cross_sell' => [],//$this->getCrossSellProducts(),

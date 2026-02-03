@@ -15,6 +15,48 @@ class CartResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Если запрошен минимальный набор данных (для index)
+        if ($request->get('minimal', false)) {
+            return $this->toMinimalArray($request);
+        }
+
+        // Полный набор данных (для других методов)
+        return $this->toFullArray($request);
+    }
+
+    /**
+     * Минимальный набор данных для быстрой сериализации.
+     */
+    private function toMinimalArray(Request $request): array
+    {
+        return [
+            'id'                    => $this->id,
+            'items_count'           => $this->items_count,
+            'items_qty'             => $this->items_qty,
+            'grand_total'           => $this->grand_total,
+            'formatted_grand_total' => core()->formatPrice($this->grand_total, $this->cart_currency_code),
+            'sub_total'             => $this->sub_total,
+            'formatted_sub_total'   => core()->formatPrice($this->sub_total, $this->cart_currency_code),
+            'discount'              => $this->discount_amount,
+            'formatted_discount'    => core()->formatPrice($this->discount_amount, $this->cart_currency_code),
+            'tax_total'             => $this->tax_total,
+            'formatted_tax_total'   => core()->formatPrice($this->tax_total, $this->cart_currency_code),
+            'coupon_code'           => $this->coupon_code,
+            'shipping_method'       => $this->shipping_method,
+            'shipping_amount'       => $this->shipping_amount,
+            'formatted_shipping_amount' => core()->formatPrice($this->shipping_amount, $this->cart_currency_code),
+            'auto_apply'            => $this->auto_apply ?? false,
+            'bonus_amount'          => $this->bonus_amount ?? 0,
+            'formatted_bonus_amount' => core()->formatPrice($this->bonus_amount ?? 0, $this->cart_currency_code),
+            'items'                 => CartItemResource::collection($this->items)->additional(['minimal' => true]),
+        ];
+    }
+
+    /**
+     * Полный набор данных (оригинальная логика).
+     */
+    private function toFullArray(Request $request): array
+    {
         $tax = new Tax;
 
         $taxes = $tax->getTaxRatesWithAmount($this, false);

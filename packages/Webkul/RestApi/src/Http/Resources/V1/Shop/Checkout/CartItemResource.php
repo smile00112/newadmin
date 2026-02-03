@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Http\Resources\V1\Shop\Checkout;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Webkul\Product\Facades\ProductImage;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
 
 class CartItemResource extends JsonResource
@@ -14,6 +15,56 @@ class CartItemResource extends JsonResource
      * @return array
      */
     public function toArray($request)
+    {
+        // Если запрошен минимальный набор данных
+        if ($request->get('minimal', false) || ($this->resource->additional['minimal'] ?? false)) {
+            return $this->toMinimalArray($request);
+        }
+
+        // Полный набор данных
+        return $this->toFullArray($request);
+    }
+
+    /**
+     * Минимальный набор данных для быстрой сериализации.
+     */
+    private function toMinimalArray($request): array
+    {
+        return [
+            'id'                    => $this->id,
+            'quantity'              => $this->quantity,
+            'sku'                   => $this->sku,
+            'type'                  => $this->type,
+            'name'                  => $this->name,
+            'price'                 => $this->price,
+            'formatted_price'       => core()->formatPrice($this->price, $this->cart->cart_currency_code),
+            'total'                 => $this->total,
+            'formatted_total'       => core()->formatPrice($this->total, $this->cart->cart_currency_code),
+            'discount_amount'       => $this->discount_amount,
+            'formatted_discount_amount' => core()->formatPrice($this->discount_amount, $this->cart->cart_currency_code),
+            'tax_amount'            => $this->tax_amount,
+            'formatted_tax_amount'  => core()->formatPrice($this->tax_amount, $this->cart->cart_currency_code),
+            // Минимальная информация о продукте - только ID, SKU, название и базовое изображение
+            'product'               => $this->when($this->product_id, function () {
+                $product = $this->product;
+                if (!$product) {
+                    return null;
+                }
+                
+                return [
+                    'id'         => $product->id,
+                    'sku'        => $product->sku,
+                    'name'       => $product->name,
+                    'base_image' => ProductImage::getProductBaseImage($product),
+                ];
+            }),
+        ];
+    }
+
+    /**
+     * Полный набор данных (оригинальная логика).
+     */
+    private function toFullArray($request): array
     {
         return [
             'id'                             => $this->id,

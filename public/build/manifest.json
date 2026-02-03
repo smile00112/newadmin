@@ -5,6 +5,15 @@
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/js/api-test.js": {
+    "file": "assets/api-test-CPD14kFO.js",
+    "name": "api-test",
+    "src": "resources/js/api-test.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
   "resources/js/app.js": {
     "file": "assets/app-Bj43h_rG.js",
     "name": "app",
