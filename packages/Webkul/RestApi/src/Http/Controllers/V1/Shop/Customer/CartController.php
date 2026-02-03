@@ -105,6 +105,9 @@ class CartController extends CustomerController
                     Event::dispatch('shop.item.buy-now', $productId);
                 }
 
+                // Устанавливаем параметр minimal для упрощенной сериализации
+                request()->merge(['minimal' => true]);
+
                 return response([
                     'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
                     'cross_sell' => [],//$this->getCrossSellProducts(),
@@ -155,6 +158,9 @@ class CartController extends CustomerController
         try {
             Cart::updateItems(request()->input());
 
+            // Устанавливаем параметр minimal для упрощенной сериализации
+            request()->merge(['minimal' => true]);
+
             return response([
                 'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
                 'cross_sell' => [],//$this->getCrossSellProducts(),
@@ -197,6 +203,9 @@ class CartController extends CustomerController
 
         $cart = Cart::getCart();
 
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
         return response([
             'data'       => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'cross_sell' => [],//$this->getCrossSellProducts(),
@@ -235,6 +244,9 @@ class CartController extends CustomerController
 
                     $cart = Cart::getCart();
 
+                    // Устанавливаем параметр minimal для упрощенной сериализации
+                    request()->merge(['minimal' => true]);
+
                     return response([
                         'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
                         'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
@@ -259,6 +271,9 @@ class CartController extends CustomerController
         Cart::removeCouponCode()->collectTotals();
 
         $cart = Cart::getCart();
+
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
 
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
@@ -304,6 +319,9 @@ class CartController extends CustomerController
         Cart::collectTotals();
         $cart = Cart::getCart();
 
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
@@ -331,6 +349,9 @@ class CartController extends CustomerController
 
         Cart::collectTotals();
         $cart = Cart::getCart();
+
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
 
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,

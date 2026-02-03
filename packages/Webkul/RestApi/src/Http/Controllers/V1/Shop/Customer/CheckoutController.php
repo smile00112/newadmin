@@ -61,6 +61,9 @@ class CheckoutController extends CustomerController
 
             Cart::collectTotals();
 
+            // Устанавливаем параметр minimal для упрощенной сериализации
+            request()->merge(['minimal' => true]);
+
             return response()->json([
                 'data'    => [
                     'rates' => $rates,
@@ -123,6 +126,9 @@ class CheckoutController extends CustomerController
 
             Cart::collectTotals();
 
+            // Устанавливаем параметр minimal для упрощенной сериализации
+            request()->merge(['minimal' => true]);
+
             return response()->json([
                 'data'    => [
                     'methods' => Payment::getPaymentMethods(),
@@ -160,6 +166,9 @@ class CheckoutController extends CustomerController
 
             Cart::collectTotals();
 
+            // Устанавливаем параметр minimal для упрощенной сериализации
+            request()->merge(['minimal' => true]);
+
             return response()->json([
                 'data'    => [
                     'cart' => new CartResource(Cart::getCart()),
@@ -193,6 +202,9 @@ class CheckoutController extends CustomerController
             $minimumOrderAmount = (float) core()->getConfigData('sales.orderSettings.minimum-order.minimum_order_amount') ?? 0;
 
             $status = Cart::haveMinimumOrderAmount();
+
+            // Устанавливаем параметр minimal для упрощенной сериализации
+            request()->merge(['minimal' => true]);
 
             return response()->json([
                 'data'    => [
