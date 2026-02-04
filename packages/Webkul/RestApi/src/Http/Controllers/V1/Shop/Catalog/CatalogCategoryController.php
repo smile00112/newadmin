@@ -4,6 +4,7 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop\Catalog;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\CatalogResource;
 use Webkul\RestApi\Traits\ProvideApiCache;
@@ -133,14 +134,38 @@ class CatalogCategoryController extends CatalogController
      */
     public static function clearCatalogCache(): void
     {
-        $prefix = config('cache.prefix', 'laravel_cache') . '_' . self::CACHE_PREFIX;
+        $store = Cache::getStore();
+        
+        // Get the actual cache prefix from Laravel Cache store
+        $cachePrefix = method_exists($store, 'getPrefix') 
+            ? $store->getPrefix() 
+            : config('cache.prefix', 'laravel_cache');
+        
+        // Laravel Cache adds prefix with colon separator for Redis
+        // Format: {prefix}:{key}
+        $prefix = rtrim($cachePrefix, ':') . ':' . self::CACHE_PREFIX;
 
         // For Redis driver, use pattern-based deletion
-        if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
-            $redis = Cache::getStore()->getRedis();
-            $keys = $redis->keys($prefix . ':*');
-
-            if (! empty($keys)) {
+        if ($store instanceof \Illuminate\Cache\RedisStore) {
+            $redis = $store->getRedis();
+            
+            // Use SCAN instead of KEYS for better performance in production
+            $pattern = $prefix . '*';
+            $cursor = 0;
+            $keys = [];
+            
+            do {
+                $result = $redis->scan($cursor, ['match' => $pattern, 'count' => 100]);
+                $cursor = $result[0];
+                if (!empty($result[1])) {
+                    $keys = array_merge($keys, $result[1]);
+                }
+            } while ($cursor > 0);
+            
+            // Remove duplicates
+            $keys = array_unique($keys);
+            
+            if (!empty($keys)) {
                 $redis->del($keys);
             }
 
@@ -148,8 +173,18 @@ class CatalogCategoryController extends CatalogController
         }
 
         // For file/database drivers, we need to track keys or use tags
-        if (method_exists(Cache::getStore(), 'tags')) {
+        if (method_exists($store, 'tags')) {
             Cache::tags([self::CACHE_PREFIX])->flush();
+        } else {
+            // Fallback: try to clear by pattern if possible
+            // This is a best-effort approach for drivers that don't support tags
+            try {
+                // For drivers without tags support, we can't easily clear by pattern
+                // So we'll just log a warning
+                Log::warning('Catalog cache cannot be cleared automatically for this cache driver. Please clear cache manually.');
+            } catch (\Exception $e) {
+                Log::warning('Failed to clear catalog cache: ' . $e->getMessage());
+            }
         }
     }
 }

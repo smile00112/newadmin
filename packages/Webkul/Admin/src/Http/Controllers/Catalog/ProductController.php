@@ -23,6 +23,7 @@ use Webkul\Product\Repositories\ProductDownloadableLinkRepository;
 use Webkul\Product\Repositories\ProductDownloadableSampleRepository;
 use Webkul\Product\Repositories\ProductInventoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 
 class ProductController extends Controller
 {
@@ -169,6 +170,9 @@ class ProductController extends Controller
 
         Event::dispatch('catalog.product.update.after', $product);
 
+        // Clear catalog API cache after product update
+        CatalogCategoryController::clearCatalogCache();
+
         session()->flash('success', trans('admin::app.catalog.products.update-success'));
 
         //dd('save');
@@ -194,6 +198,9 @@ class ProductController extends Controller
         $this->productInventoryRepository->saveInventories(request()->all(), $product);
 
         Event::dispatch('catalog.product.update.after', $product);
+
+        // Clear catalog cache after inventory update
+        CatalogCategoryController::clearCatalogCache();
 
         return response()->json([
             'message'      => __('admin::app.catalog.products.saved-inventory-message'),
