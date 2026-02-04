@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://dolinger_new_admin.test",
+            "url": "http://dolinger_new_admin.test",
             "description": "Rest API"
         }
     ],
@@ -4132,6 +4132,46 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Disable auto-apply bonus for cart",
+                "description": "Disables automatic bonus recalculation for the current customer's cart. Sets auto_apply to false. Requires authenticated customer with active cart.",
+                "operationId": "disableAutoApplyBonus",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Auto-apply bonus disabled successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart or customer not authenticated)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/customer/cart/cross-sell": {
@@ -6966,6 +7006,385 @@
                     }
                 ]
             }
+        },
+        "/api/v1/websocket/info": {
+            "get": {
+                "tags": [
+                    "WebSocket Notifications"
+                ],
+                "summary": "Get WebSocket connection information",
+                "description": "Returns WebSocket server connection details, available channels and events for real-time notifications.\r\n *      \r\n *      ## WebSocket Connection\r\n *      \r\n *      The API supports real-time notifications via WebSocket using Laravel Reverb (Pusher-compatible protocol).\r\n *      \r\n *      ### Connection Details\r\n *      - **Protocol**: Pusher-compatible WebSocket\r\n *      - **Server**: Laravel Reverb\r\n *      - **Channels**: Public and Private channels available\r\n *      \r\n *      ### Channel Types\r\n *      \r\n *      #### Public Channels\r\n *      - **notification**: Public channel for general notifications (no authentication required)\r\n *      \r\n *      #### Private Channels (Authentication Required)\r\n *      - **order.{orderId}**: Private channel for specific order updates (e.g., `order.123`)\r\n *      - **customer.{customerId}.orders**: Private channel for all orders of a specific customer (e.g., `customer.456.orders`)\r\n *      \r\n *      ### Available Events\r\n *      - **create-notification**: Fired when a new order is created (public channel)\r\n *      - **update-notification**: Fired when an order status is updated (private channels)\r\n *      - **product-status-changed**: Fired when a product becomes out of stock (public channel)\r\n *      - **product-price-changed**: Fired when a product price changes (public channel)\r\n *      \r\n *      ### Authentication for Private Channels\r\n *      \r\n *      Private channels require authentication. The authorization endpoint is:\r\n *      - **POST** `/api/v1/customer/broadcasting/auth`\r\n *      \r\n *      This endpoint requires authentication token in the Authorization header.\r\n *      \r\n *      ### Example Connection (JavaScript)\r\n *      ```javascript\r\n *      import Echo from 'laravel-echo';\r\n *      import Pusher from 'pusher-js';\r\n *      \r\n *      window.Echo = new Echo({\r\n *          broadcaster: 'pusher',\r\n *          key: process.env.VITE_REVERB_APP_KEY,\r\n *          wsHost: process.env.VITE_REVERB_HOST,\r\n *          wsPort: process.env.VITE_REVERB_PORT ?? 80,\r\n *          wssPort: process.env.VITE_REVERB_PORT ?? 443,\r\n *          wsPath: '/app',\r\n *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',\r\n *          enabledTransports: ['ws', 'wss'],\r\n *          authEndpoint: '/api/v1/customer/broadcasting/auth',\r\n *          auth: {\r\n *              headers: {\r\n *                  Authorization: 'Bearer ' + yourAuthToken\r\n *              }\r\n *          }\r\n *      });\r\n *      \r\n *      // Public channel - no authentication required\r\n *      Echo.channel('notification')\r\n *          .listen('.product-status-changed', (e) => {\r\n *              console.log('Product out of stock:', e);\r\n *          })\r\n *          .listen('.product-price-changed', (e) => {\r\n *              console.log('Price changed:', e);\r\n *          })\r\n *          .listen('.create-notification', (e) => {\r\n *              console.log('New order created:', e);\r\n *          });\r\n *      \r\n *      // Private channel for specific order\r\n *      Echo.private('order.123')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order updated:', e);\r\n *          });\r\n *      \r\n *      // Private channel for all customer orders\r\n *      Echo.private('customer.456.orders')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order status changed:', e);\r\n *          });\r\n *      ```\r\n *      ",
+                "operationId": "getWebSocketInfo",
+                "responses": {
+                    "200": {
+                        "description": "WebSocket connection information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "server": {
+                                            "description": "WebSocket server configuration",
+                                            "properties": {
+                                                "url": {
+                                                    "description": "WebSocket server URL",
+                                                    "type": "string",
+                                                    "example": "wss://your-domain.com/app"
+                                                },
+                                                "protocol": {
+                                                    "description": "WebSocket protocol (Pusher-compatible)",
+                                                    "type": "string",
+                                                    "example": "pusher"
+                                                },
+                                                "key": {
+                                                    "description": "Application key (available in VITE_REVERB_APP_KEY)",
+                                                    "type": "string",
+                                                    "example": "your-app-key"
+                                                },
+                                                "host": {
+                                                    "description": "WebSocket host",
+                                                    "type": "string",
+                                                    "example": "your-domain.com"
+                                                },
+                                                "port": {
+                                                    "description": "WebSocket port (443 for HTTPS, 80 for HTTP)",
+                                                    "type": "integer",
+                                                    "example": 443
+                                                },
+                                                "path": {
+                                                    "description": "WebSocket path",
+                                                    "type": "string",
+                                                    "example": "/app"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "channels": {
+                                            "description": "Available WebSocket channels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "notification"
+                                                    },
+                                                    "type": {
+                                                        "description": "Channel type",
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "public",
+                                                            "private"
+                                                        ],
+                                                        "example": "public"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Main notification channel for all real-time updates"
+                                                    },
+                                                    "requires_auth": {
+                                                        "description": "Whether authentication is required",
+                                                        "type": "boolean",
+                                                        "example": false
+                                                    },
+                                                    "events": {
+                                                        "description": "Available events on this channel",
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "product-status-changed"
+                                                                },
+                                                                "description": {
+                                                                    "type": "string",
+                                                                    "example": "Fired when a product becomes out of stock"
+                                                                },
+                                                                "payload_schema": {
+                                                                    "type": "string",
+                                                                    "example": "#/components/schemas/ProductStatusChanged"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "private_channels": {
+                                            "description": "Available private WebSocket channels (require authentication)",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "pattern": {
+                                                        "description": "Channel name pattern",
+                                                        "type": "string",
+                                                        "example": "order.{orderId}"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Private channel for specific order updates"
+                                                    },
+                                                    "example": {
+                                                        "description": "Example channel name",
+                                                        "type": "string",
+                                                        "example": "order.123"
+                                                    },
+                                                    "events": {
+                                                        "description": "Available events on this channel",
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "update-notification"
+                                                                },
+                                                                "description": {
+                                                                    "type": "string",
+                                                                    "example": "Fired when order status is updated"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "auth_endpoint": {
+                                            "description": "Authorization endpoint for private channels",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string",
+                                                    "example": "/api/v1/customer/broadcasting/auth"
+                                                },
+                                                "method": {
+                                                    "type": "string",
+                                                    "example": "POST"
+                                                },
+                                                "requires_auth": {
+                                                    "description": "Requires Bearer token in Authorization header",
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "example_code": {
+                                            "description": "Example code snippets for connecting",
+                                            "properties": {
+                                                "javascript": {
+                                                    "type": "string",
+                                                    "example": "import Echo from 'laravel-echo';\\nimport Pusher from 'pusher-js';\\n\\nwindow.Echo = new Echo({\\n    broadcaster: 'pusher',\\n    key: 'your-app-key',\\n    wsHost: 'your-domain.com',\\n    wsPort: 443,\\n    wssPort: 443,\\n    wsPath: '/app',\\n    forceTLS: true,\\n    enabledTransports: ['ws', 'wss'],\\n});\\n\\nEcho.channel('notification')\\n    .listen('.product-status-changed', (e) => {\\n        console.log('Product out of stock:', e);\\n    })\\n    .listen('.product-price-changed', (e) => {\\n        console.log('Price changed:', e);\\n    });"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/websocket/events": {
+            "get": {
+                "tags": [
+                    "WebSocket Notifications"
+                ],
+                "summary": "Get list of available WebSocket events",
+                "description": "Returns detailed information about all available WebSocket events with their payload schemas",
+                "operationId": "getWebSocketEvents",
+                "responses": {
+                    "200": {
+                        "description": "List of WebSocket events",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "public_events": {
+                                            "description": "Events available on public channels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "channel": {
+                                                        "type": "string",
+                                                        "example": "notification"
+                                                    },
+                                                    "event_name": {
+                                                        "type": "string",
+                                                        "example": "product-status-changed"
+                                                    },
+                                                    "full_event_name": {
+                                                        "description": "Full event name to use in Echo.listen()",
+                                                        "type": "string",
+                                                        "example": ".product-status-changed"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Fired when a product becomes out of stock"
+                                                    },
+                                                    "payload": {
+                                                        "oneOf": [
+                                                            {
+                                                                "$ref": "#/components/schemas/ProductStatusChanged"
+                                                            },
+                                                            {
+                                                                "$ref": "#/components/schemas/ProductPriceChanged"
+                                                            },
+                                                            {
+                                                                "$ref": "#/components/schemas/OrderNotification"
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "private_events": {
+                                            "description": "Events available on private channels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "channel_pattern": {
+                                                        "type": "string",
+                                                        "example": "order.{orderId}"
+                                                    },
+                                                    "channel_example": {
+                                                        "type": "string",
+                                                        "example": "order.123"
+                                                    },
+                                                    "event_name": {
+                                                        "type": "string",
+                                                        "example": "update-notification"
+                                                    },
+                                                    "full_event_name": {
+                                                        "description": "Full event name to use in Echo.listen()",
+                                                        "type": "string",
+                                                        "example": ".update-notification"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Fired when order status is updated"
+                                                    },
+                                                    "requires_auth": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "payload": {
+                                                        "$ref": "#/components/schemas/OrderNotification"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/broadcasting/auth": {
+            "post": {
+                "tags": [
+                    "WebSocket Notifications"
+                ],
+                "summary": "Authorize private WebSocket channel",
+                "description": "Authorizes access to private WebSocket channels. This endpoint is called automatically by Laravel Echo when subscribing to private channels.\r\n *      \r\n *      ## Private Channels\r\n *      \r\n *      Private channels require authentication and authorization. When a client attempts to subscribe to a private channel, Laravel Echo automatically sends a POST request to this endpoint.\r\n *      \r\n *      ### Available Private Channels\r\n *      \r\n *      1. **order.{orderId}** - Private channel for specific order updates\r\n *         - Pattern: `order.{orderId}` (e.g., `order.123`)\r\n *         - Authorization: User must be the owner of the order\r\n *         - Events: `update-notification`\r\n *      \r\n *      2. **customer.{customerId}.orders** - Private channel for all customer orders\r\n *         - Pattern: `customer.{customerId}.orders` (e.g., `customer.456.orders`)\r\n *         - Authorization: User ID must match the customerId\r\n *         - Events: `update-notification`\r\n *      \r\n *      ### Authorization Logic\r\n *      \r\n *      - **order.{orderId}**: Checks if the authenticated user is the owner of the order\r\n *      - **customer.{customerId}.orders**: Checks if the authenticated user ID matches the customerId\r\n *      \r\n *      ### Usage\r\n *      \r\n *      This endpoint is called automatically by Laravel Echo. You don't need to call it manually.\r\n *      \r\n *      ```javascript\r\n *      // Laravel Echo automatically handles authorization\r\n *      Echo.private('order.123')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order updated:', e);\r\n *          });\r\n *      ```\r\n *      ",
+                "operationId": "authorizeBroadcastingChannel",
+                "requestBody": {
+                    "description": "Channel authorization request",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "socket_id",
+                                    "channel_name"
+                                ],
+                                "properties": {
+                                    "socket_id": {
+                                        "description": "Socket ID from Pusher/Echo",
+                                        "type": "string",
+                                        "example": "123.456"
+                                    },
+                                    "channel_name": {
+                                        "description": "Channel name (prefixed with 'private-' for private channels)",
+                                        "type": "string",
+                                        "example": "private-order.123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Channel authorized successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "auth": {
+                                            "description": "Authorization signature",
+                                            "type": "string",
+                                            "example": "your-app-key:signature"
+                                        },
+                                        "channel_data": {
+                                            "description": "Channel data (for presence channels)",
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Channel authorization denied",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Access denied to channel"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -8433,15 +8852,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
@@ -12785,6 +13200,139 @@
                     }
                 },
                 "type": "object"
+            },
+            "OrderNotification": {
+                "title": "OrderNotification",
+                "description": "WebSocket event payload for order notifications (create/update)",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Order ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "status": {
+                        "title": "Status",
+                        "description": "Order status (for update-notification event)",
+                        "type": "string",
+                        "example": "processing",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProductPriceChanged": {
+                "title": "ProductPriceChanged",
+                "description": "WebSocket event payload when product price changes",
+                "properties": {
+                    "product_id": {
+                        "title": "Product ID",
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Product SKU",
+                        "type": "string",
+                        "example": "PRODUCT-SKU-123"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product name",
+                        "type": "string",
+                        "example": "Product Name"
+                    },
+                    "previous_price": {
+                        "title": "Previous Price",
+                        "description": "Previous price before change",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1000
+                    },
+                    "current_price": {
+                        "title": "Current Price",
+                        "description": "Current price after change",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1200
+                    },
+                    "price_change": {
+                        "title": "Price Change",
+                        "description": "Absolute price change amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 200
+                    },
+                    "price_change_percent": {
+                        "title": "Price Change Percent",
+                        "description": "Percentage change in price",
+                        "type": "number",
+                        "format": "float",
+                        "example": 20
+                    },
+                    "timestamp": {
+                        "title": "Timestamp",
+                        "description": "Event timestamp in ISO 8601 format",
+                        "type": "string",
+                        "example": "2025-01-15T10:30:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "ProductStatusChanged": {
+                "title": "ProductStatusChanged",
+                "description": "WebSocket event payload when product status changes to out of stock",
+                "properties": {
+                    "product_id": {
+                        "title": "Product ID",
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Product SKU",
+                        "type": "string",
+                        "example": "PRODUCT-SKU-123"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product name",
+                        "type": "string",
+                        "example": "Product Name"
+                    },
+                    "status": {
+                        "title": "Status",
+                        "description": "Product status",
+                        "type": "string",
+                        "example": "out_of_stock"
+                    },
+                    "previous_qty": {
+                        "title": "Previous Quantity",
+                        "description": "Previous quantity before change",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 10
+                    },
+                    "current_qty": {
+                        "title": "Current Quantity",
+                        "description": "Current quantity after change",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 0
+                    },
+                    "timestamp": {
+                        "title": "Timestamp",
+                        "description": "Event timestamp in ISO 8601 format",
+                        "type": "string",
+                        "example": "2025-01-15T10:30:00Z"
+                    }
+                },
+                "type": "object"
             }
         },
         "responses": {
@@ -12891,6 +13439,10 @@
         {
             "name": "Multi-Channel Authentication",
             "description": "API endpoints for SMS, WhatsApp, and Telegram authentication"
+        },
+        {
+            "name": "WebSocket Notifications",
+            "description": "WebSocket Real-time Notifications API - Real-time events via Laravel Reverb"
         },
         {
             "name": "Catalog",
