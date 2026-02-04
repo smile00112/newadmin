@@ -144,9 +144,9 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {{ __('newsletters::app.admin.account.amount') }}
                             </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                {{ __('newsletters::app.admin.account.admin') }}
-                            </th>
+{{--                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">--}}
+{{--                                {{ __('newsletters::app.admin.account.admin') }}--}}
+{{--                            </th>--}}
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                 {{ __('newsletters::app.admin.account.notes') }}
                             </th>
@@ -168,9 +168,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold {{ $transaction->type === 'topup' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                                     {{ $transaction->type === 'topup' ? '+' : '-' }}{{ number_format($transaction->amount, 2) }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                    {{ $transaction->admin ? $transaction->admin->name : '-' }}
-                                </td>
+{{--                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">--}}
+{{--                                    {{ $transaction->admin ? $transaction->admin->name : '-' }}--}}
+{{--                                </td>--}}
                                 <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
                                     {{ $transaction->notes ?: '-' }}
                                 </td>
