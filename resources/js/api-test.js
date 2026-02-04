@@ -339,7 +339,7 @@ async function executeTest(test, phone) {
     if (test.needsAuth && authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
     }
-
+console.log(headers, authToken)
     // Выполнение запроса с измерением времени
     const startTime = performance.now();
     updateTestResult(test.id, 'running', null, null);
