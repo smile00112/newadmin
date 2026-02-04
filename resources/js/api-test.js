@@ -339,7 +339,7 @@ async function executeTest(test, phone) {
     if (test.needsAuth && authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
     }
-console.log(headers, authToken)
+
     // Выполнение запроса с измерением времени
     const startTime = performance.now();
     updateTestResult(test.id, 'running', null, null);
@@ -348,7 +348,8 @@ console.log(headers, authToken)
         const config = {
             method: test.method,
             url: url,
-            headers: headers
+            headers: headers,
+            withCredentials: false // Не отправляем cookies, чтобы Sanctum использовал токен Bearer
         };
 
         if (body && (test.method === 'POST' || test.method === 'PUT')) {
