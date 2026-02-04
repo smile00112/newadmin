@@ -10,11 +10,26 @@ import './bootstrap';
 const API_BASE_URL = '/api/v1';
 const TEST_CODE = '123456';
 
-// Захардкоженные ID товаров для добавления в корзину (в формате JSON)
-const TEST_PRODUCTS = [
-    { product_id: 1, quantity: 2 },
-    { product_id: 2, quantity: 1 }
-];
+/**
+ * Получает список товаров из поля ввода
+ * Формат: "1,2,3" - ID товаров через запятую
+ */
+function getTestProducts() {
+    const productIdsInput = document.getElementById('product_ids');
+    if (!productIdsInput || !productIdsInput.value.trim()) {
+        // Если поле пустое, возвращаем пустой массив
+        return [];
+    }
+    
+    const idsString = productIdsInput.value.trim();
+    const ids = idsString.split(',').map(id => id.trim()).filter(id => id !== '');
+    
+    // Преобразуем в массив объектов с quantity = 1 по умолчанию
+    return ids.map(id => ({
+        product_id: parseInt(id, 10),
+        quantity: 1
+    })).filter(item => !isNaN(item.product_id) && item.product_id > 0);
+}
 
 // Состояние тестирования
 let isTesting = false;
@@ -303,10 +318,11 @@ async function executeTest(test, phone) {
         };
     } else if (test.id === 5) {
         // Добавление товара в корзину
-        if (TEST_PRODUCTS.length === 0) {
-            throw new Error('Нет товаров для добавления');
+        const testProducts = getTestProducts();
+        if (testProducts.length === 0) {
+            throw new Error('Нет товаров для добавления. Укажите ID товаров через запятую.');
         }
-        const product = TEST_PRODUCTS[0];
+        const product = testProducts[0];
         url = `${API_BASE_URL}/customer/cart/add/${product.product_id}`;
         body = {
             product_id: product.product_id,
@@ -339,7 +355,7 @@ async function executeTest(test, phone) {
     if (test.needsAuth && authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
     }
-
+console.log(headers, authToken)
     // Выполнение запроса с измерением времени
     const startTime = performance.now();
     updateTestResult(test.id, 'running', null, null);
@@ -348,8 +364,7 @@ async function executeTest(test, phone) {
         const config = {
             method: test.method,
             url: url,
-            headers: headers,
-            withCredentials: false // Не отправляем cookies, чтобы Sanctum использовал токен Bearer
+            headers: headers
         };
 
         if (body && (test.method === 'POST' || test.method === 'PUT')) {
@@ -447,11 +462,14 @@ async function startTesting() {
 
     // Инициализация UI
     initializeResultsTable();
+    const productIdsInput = document.getElementById('product_ids');
+    
     document.getElementById('startBtn').disabled = true;
     document.getElementById('stopBtn').disabled = false;
     phoneInput.disabled = true;
     if (countryCodeInput) countryCodeInput.disabled = true;
     if (deviceNameInput) deviceNameInput.disabled = true;
+    if (productIdsInput) productIdsInput.disabled = true;
 
     // Выполнение тестов последовательно
     for (let i = 0; i < tests.length; i++) {
@@ -476,6 +494,7 @@ async function startTesting() {
     phoneInput.disabled = false;
     if (countryCodeInput) countryCodeInput.disabled = false;
     if (deviceNameInput) deviceNameInput.disabled = false;
+    if (productIdsInput) productIdsInput.disabled = false;
 }
 
 /**
@@ -489,9 +508,11 @@ function stopTesting() {
     const phoneInput = document.getElementById('phone');
     const countryCodeInput = document.getElementById('country_code');
     const deviceNameInput = document.getElementById('device_name');
+    const productIdsInput = document.getElementById('product_ids');
     if (phoneInput) phoneInput.disabled = false;
     if (countryCodeInput) countryCodeInput.disabled = false;
     if (deviceNameInput) deviceNameInput.disabled = false;
+    if (productIdsInput) productIdsInput.disabled = false;
 }
 
 // Экспорт функций для использования в HTML

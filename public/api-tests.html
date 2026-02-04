@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование API</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #45a049;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-stop {
+            background: #f44336;
+        }
+
+        .btn-stop:hover {
+            background: #da190b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.pending {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .status.running {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status.success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status.error {
+            background: #f44336;
+            color: white;
+        }
+
+        .response {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .response.expanded {
+            white-space: normal;
+            max-width: 500px;
+            word-break: break-word;
+        }
+
+        .time {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тестирование API запросов</h1>
+
+        <div class="form-group">
+            <label for="country_code">Код страны (2 символа с плюсом, например: +7, +1):</label>
+            <input type="text" id="country_code" placeholder="+7" value="+7" maxlength="2">
+        </div>
+
+        <div class="form-group">
+            <label for="phone">Номер телефона без кода страны (будет в исключениях, код: 123456):</label>
+            <input type="text" id="phone" placeholder="9123456789" value="">
+        </div>
+
+        <div class="form-group">
+            <label for="device_name">Название устройства:</label>
+            <input type="text" id="device_name" placeholder="API Test Device" value="API Test Device">
+        </div>
+
+        <div class="form-group">
+            <label for="product_ids">ID товаров для добавления в корзину (через запятую, например: 1,2,3):</label>
+            <input type="text" id="product_ids" placeholder="1,2" value="1,2">
+        </div>
+
+        <div class="button-group">
+            <button class="btn" id="startBtn">Начать тестирование</button>
+            <button class="btn btn-stop" id="stopBtn" disabled>Остановить</button>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Название запроса</th>
+                    <th>Статус</th>
+                    <th>Время выполнения</th>
+                    <th>Ответ</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Конфигурация
+        const API_BASE_URL = 'https://newdemo.softnova.ru/api/v1';
+        const TEST_CODE = '123456';
+
+        // Настройка axios для работы с Laravel
+        axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+        axios.defaults.headers.common['Accept'] = 'application/json';
+        axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+        /**
+         * Получает список товаров из поля ввода
+         * Формат: "1,2,3" - ID товаров через запятую
+         */
+        function getTestProducts() {
+            const productIdsInput = document.getElementById('product_ids');
+            if (!productIdsInput || !productIdsInput.value.trim()) {
+                return [];
+            }
+
+            const idsString = productIdsInput.value.trim();
+            const ids = idsString.split(',').map(id => id.trim()).filter(id => id !== '');
+
+            return ids.map(id => ({
+                product_id: parseInt(id, 10),
+                quantity: 1
+            })).filter(item => !isNaN(item.product_id) && item.product_id > 0);
+        }
+
+        // Состояние тестирования
+        let isTesting = false;
+        let shouldStop = false;
+        let authToken = null;
+        let verificationToken = null;
+        let cartItemId = null;
+
+        // Список тестов
+        const tests = [
+            {
+                id: 1,
+                name: 'Отправка SMS кода',
+                method: 'POST',
+                url: `${API_BASE_URL}/customer/auth/sms/initiate`,
+                body: null,
+                needsAuth: false,
+                handler: (response) => {
+                    if (response.data && response.data.verification_token) {
+                        verificationToken = response.data.verification_token;
+                    }
+                }
+            },
+            {
+                id: 2,
+                name: 'Проверка кода',
+                method: 'POST',
+                url: `${API_BASE_URL}/customer/auth/verify`,
+                body: null,
+                needsAuth: false,
+                handler: (response) => {
+                    if (response.data && response.data.token) {
+                        authToken = response.data.token;
+                    }
+                }
+            },
+            {
+                id: 3,
+                name: 'Каталог товаров',
+                method: 'GET',
+                url: `${API_BASE_URL}/catalog`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 4,
+                name: 'Бонусы пользователя',
+                method: 'GET',
+                url: `${API_BASE_URL}/customer/bonuses`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 5,
+                name: 'Добавление товара в корзину',
+                method: 'POST',
+                url: null,
+                body: null,
+                needsAuth: true,
+                handler: (response) => {
+                    if (response.data) {
+                        const data = response.data.data || response.data;
+                        if (data && data.items && Array.isArray(data.items) && data.items.length > 0) {
+                            cartItemId = data.items[data.items.length - 1].id;
+                        } else if (data && data.id) {
+                            cartItemId = data.id;
+                        }
+                    }
+                }
+            },
+            {
+                id: 6,
+                name: 'Изменение количества товаров в корзине',
+                method: 'PUT',
+                url: `${API_BASE_URL}/customer/cart/update`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 7,
+                name: 'Получение товаров корзины',
+                method: 'GET',
+                url: `${API_BASE_URL}/customer/cart`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 8,
+                name: 'Добавление метода доставки',
+                method: 'POST',
+                url: `${API_BASE_URL}/customer/checkout/save-shipping`,
+                body: { shipping_method: 'flatrate_flatrate' },
+                needsAuth: true
+            },
+            {
+                id: 9,
+                name: 'Добавление метода оплаты',
+                method: 'POST',
+                url: `${API_BASE_URL}/customer/checkout/save-payment`,
+                body: { payment: { method: 'cashondelivery' } },
+                needsAuth: true
+            },
+            {
+                id: 10,
+                name: 'Добавление бонусов к заказу',
+                method: 'POST',
+                url: `${API_BASE_URL}/checkout/bonus/auto-apply`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 11,
+                name: 'Получение корзины пользователя',
+                method: 'GET',
+                url: `${API_BASE_URL}/customer/cart`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 12,
+                name: 'Создание заказа',
+                method: 'POST',
+                url: `${API_BASE_URL}/customer/checkout/save-order`,
+                body: {},
+                needsAuth: true
+            },
+            {
+                id: 13,
+                name: 'Получение всех заказов',
+                method: 'GET',
+                url: `${API_BASE_URL}/customer/orders`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 14,
+                name: 'Получение активных заказов',
+                method: 'GET',
+                url: `${API_BASE_URL}/customer/active-orders`,
+                body: null,
+                needsAuth: true
+            },
+            {
+                id: 15,
+                name: 'Получение закрытых заказов',
+                method: 'GET',
+                url: `${API_BASE_URL}/customer/cancelled-orders`,
+                body: null,
+                needsAuth: true
+            }
+        ];
+
+        /**
+         * Обновляет строку в таблице результатов
+         */
+        function updateTestResult(testId, status, time, response, serverTime = null) {
+            const row = document.querySelector(`#test-${testId}`);
+            if (!row) return;
+
+            const statusCell = row.querySelector('.status');
+            const timeCell = row.querySelector('.time');
+            const responseCell = row.querySelector('.response');
+
+            statusCell.textContent = getStatusText(status);
+            statusCell.className = `status ${status}`;
+
+            if (time !== null) {
+                if (serverTime !== null) {
+                    timeCell.textContent = `Клиент: ${time} мс | Сервер: ${serverTime} мс`;
+                } else {
+                    timeCell.textContent = `Клиент: ${time} мс`;
+                }
+            }
+
+            if (response) {
+                const responseText = typeof response === 'string' ? response : JSON.stringify(response);
+                responseCell.textContent = responseText;
+                responseCell.title = responseText;
+            }
+        }
+
+        /**
+         * Возвращает текст статуса
+         */
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': 'Ожидание',
+                'running': 'Выполняется',
+                'success': 'Успех',
+                'error': 'Ошибка'
+            };
+            return statusMap[status] || status;
+        }
+
+        /**
+         * Создает строку в таблице результатов
+         */
+        function createTestRow(test) {
+            const tbody = document.getElementById('resultsBody');
+            const row = document.createElement('tr');
+            row.id = `test-${test.id}`;
+
+            row.innerHTML = `
+                <td>${test.id}</td>
+                <td>${test.name}</td>
+                <td><span class="status pending">Ожидание</span></td>
+                <td class="time">-</td>
+                <td class="response">-</td>
+            `;
+
+            tbody.appendChild(row);
+        }
+
+        /**
+         * Инициализирует таблицу результатов
+         */
+        function initializeResultsTable() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            tests.forEach(test => {
+                createTestRow(test);
+            });
+        }
+
+        /**
+         * Обновляет прогресс-бар
+         */
+        function updateProgress(current, total) {
+            const percentage = Math.round((current / total) * 100);
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = `${percentage}%`;
+            progressFill.textContent = `${percentage}%`;
+        }
+
+        /**
+         * Выполняет один API запрос
+         */
+        async function executeTest(test, phone) {
+            let url = test.url;
+            let body = test.body;
+
+            if (test.id === 1) {
+                const countryCodeInput = document.getElementById('country_code');
+                const deviceNameInput = document.getElementById('device_name');
+                const countryCode = countryCodeInput ? countryCodeInput.value.trim() : '+7';
+                const deviceName = deviceNameInput ? deviceNameInput.value.trim() : 'API Test Device';
+
+                if (!phone) {
+                    throw new Error('Номер телефона не указан');
+                }
+                if (!countryCode) {
+                    throw new Error('Код страны не указан');
+                }
+                if (!deviceName) {
+                    throw new Error('Название устройства не указано');
+                }
+
+                body = {
+                    phone_number: phone,
+                    country_code: countryCode,
+                    device_name: deviceName
+                };
+            } else if (test.id === 2) {
+                if (!verificationToken) {
+                    throw new Error('Verification token не получен');
+                }
+                body = {
+                    verification_token: verificationToken,
+                    verification_code: TEST_CODE
+                };
+            } else if (test.id === 5) {
+                const testProducts = getTestProducts();
+                if (testProducts.length === 0) {
+                    throw new Error('Нет товаров для добавления. Укажите ID товаров через запятую.');
+                }
+                const product = testProducts[0];
+                url = `${API_BASE_URL}/customer/cart/add/${product.product_id}`;
+                body = {
+                    product_id: product.product_id,
+                    quantity: product.quantity
+                };
+            } else if (test.id === 6) {
+                if (!cartItemId) {
+                    throw new Error('Cart item ID не получен');
+                }
+                body = {
+                    qty: {
+                        [cartItemId]: 3
+                    }
+                };
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            };
+
+            if (test.needsAuth && authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const startTime = performance.now();
+            updateTestResult(test.id, 'running', null, null);
+
+            try {
+                const config = {
+                    method: test.method,
+                    url: url,
+                    headers: headers
+                };
+
+                if (body && (test.method === 'POST' || test.method === 'PUT')) {
+                    config.data = body;
+                }
+
+                const response = await axios(config);
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                let serverTime = null;
+                // Axios нормализует заголовки в lowercase, проверяем все варианты
+                const headers = response.headers || {};
+                let responseTimeHeader = headers['x-response-time'] || 
+                                        headers['x-response-time-ms'] ||
+                                        headers['response-time'] ||
+                                        headers['server-timing'];
+                
+                // Если заголовок не найден, пробуем через get() метод (если доступен)
+                if (!responseTimeHeader && headers.get) {
+                    responseTimeHeader = headers.get('x-response-time') || 
+                                        headers.get('x-response-time-ms') ||
+                                        headers.get('response-time');
+                }
+                
+                // Если все еще не найден, проверяем все заголовки на наличие времени
+                if (!responseTimeHeader) {
+                    for (const key in headers) {
+                        if (key.toLowerCase().includes('time') || key.toLowerCase().includes('duration')) {
+                            const value = headers[key];
+                            const match = value.toString().match(/([\d.]+)\s*(ms|s|сек)?/i);
+                            if (match) {
+                                responseTimeHeader = value;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (responseTimeHeader) {
+                    // Извлекаем число (может быть в формате "123.45 ms" или просто "123.45")
+                    const match = responseTimeHeader.toString().match(/([\d.]+)/);
+                    if (match) {
+                        let timeValue = parseFloat(match[1]);
+                        // Если значение больше 1000, возможно это секунды, конвертируем в миллисекунды
+                        if (timeValue > 1000 && !responseTimeHeader.toString().toLowerCase().includes('ms')) {
+                            timeValue = timeValue * 1000;
+                        }
+                        serverTime = Math.round(timeValue);
+                    }
+                }
+
+                if (test.handler) {
+                    test.handler(response);
+                }
+
+                updateTestResult(test.id, 'success', duration, {
+                    status: response.status,
+                    message: response.data?.message || 'Успешно'
+                }, serverTime);
+
+                return { success: true, response, duration, serverTime };
+            } catch (error) {
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                let serverTime = null;
+                if (error.response && error.response.headers) {
+                    const headers = error.response.headers || {};
+                    let responseTimeHeader = headers['x-response-time'] || 
+                                            headers['x-response-time-ms'] ||
+                                            headers['response-time'] ||
+                                            headers['server-timing'];
+                    
+                    // Если заголовок не найден, пробуем через get() метод (если доступен)
+                    if (!responseTimeHeader && headers.get) {
+                        responseTimeHeader = headers.get('x-response-time') || 
+                                            headers.get('x-response-time-ms') ||
+                                            headers.get('response-time');
+                    }
+                    
+                    // Если все еще не найден, проверяем все заголовки на наличие времени
+                    if (!responseTimeHeader) {
+                        for (const key in headers) {
+                            if (key.toLowerCase().includes('time') || key.toLowerCase().includes('duration')) {
+                                const value = headers[key];
+                                const match = value.toString().match(/([\d.]+)\s*(ms|s|сек)?/i);
+                                if (match) {
+                                    responseTimeHeader = value;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (responseTimeHeader) {
+                        // Извлекаем число (может быть в формате "123.45 ms" или просто "123.45")
+                        const match = responseTimeHeader.toString().match(/([\d.]+)/);
+                        if (match) {
+                            let timeValue = parseFloat(match[1]);
+                            // Если значение больше 1000, возможно это секунды, конвертируем в миллисекунды
+                            if (timeValue > 1000 && !responseTimeHeader.toString().toLowerCase().includes('ms')) {
+                                timeValue = timeValue * 1000;
+                            }
+                            serverTime = Math.round(timeValue);
+                        }
+                    }
+                }
+
+                const errorMessage = error.response?.data?.message || error.message || 'Неизвестная ошибка';
+                updateTestResult(test.id, 'error', duration, errorMessage, serverTime);
+
+                return { success: false, error, duration, serverTime };
+            }
+        }
+
+        /**
+         * Основная функция запуска тестирования
+         */
+        async function startTesting() {
+            const phoneInput = document.getElementById('phone');
+            const countryCodeInput = document.getElementById('country_code');
+            const deviceNameInput = document.getElementById('device_name');
+            const productIdsInput = document.getElementById('product_ids');
+
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+            const countryCode = countryCodeInput ? countryCodeInput.value.trim() : '';
+            const deviceName = deviceNameInput ? deviceNameInput.value.trim() : '';
+
+            if (!phone) {
+                alert('Пожалуйста, введите номер телефона');
+                return;
+            }
+
+            if (!countryCode) {
+                alert('Пожалуйста, введите код страны');
+                return;
+            }
+
+            if (!deviceName) {
+                alert('Пожалуйста, введите название устройства');
+                return;
+            }
+
+            isTesting = true;
+            shouldStop = false;
+            authToken = null;
+            verificationToken = null;
+            cartItemId = null;
+
+            initializeResultsTable();
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            phoneInput.disabled = true;
+            if (countryCodeInput) countryCodeInput.disabled = true;
+            if (deviceNameInput) deviceNameInput.disabled = true;
+            if (productIdsInput) productIdsInput.disabled = true;
+
+            for (let i = 0; i < tests.length; i++) {
+                if (shouldStop) {
+                    break;
+                }
+
+                const test = tests[i];
+                await executeTest(test, phone);
+                updateProgress(i + 1, tests.length);
+
+                if (i < tests.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            isTesting = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            phoneInput.disabled = false;
+            if (countryCodeInput) countryCodeInput.disabled = false;
+            if (deviceNameInput) deviceNameInput.disabled = false;
+            if (productIdsInput) productIdsInput.disabled = false;
+        }
+
+        /**
+         * Остановка тестирования
+         */
+        function stopTesting() {
+            shouldStop = true;
+            isTesting = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            const phoneInput = document.getElementById('phone');
+            const countryCodeInput = document.getElementById('country_code');
+            const deviceNameInput = document.getElementById('device_name');
+            const productIdsInput = document.getElementById('product_ids');
+            if (phoneInput) phoneInput.disabled = false;
+            if (countryCodeInput) countryCodeInput.disabled = false;
+            if (deviceNameInput) deviceNameInput.disabled = false;
+            if (productIdsInput) productIdsInput.disabled = false;
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeResultsTable();
+
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+
+            if (startBtn) {
+                startBtn.addEventListener('click', startTesting);
+            }
+
+            if (stopBtn) {
+                stopBtn.addEventListener('click', stopTesting);
+            }
+        });
+    </script>
+</body>
+</html>
