@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AddressController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AuthController;
@@ -57,6 +59,13 @@ Route::post('telegram/webhook', [TelegramWebhookController::class, 'handleWebhoo
  * Customer authorized routes.
  */
 Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function () {
+    /**
+     * Broadcasting authorization route for private channels.
+     */
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return Broadcast::auth($request);
+    });
+
     /**
      * Customer auth routes.
      */

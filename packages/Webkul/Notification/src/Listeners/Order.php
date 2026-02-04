@@ -34,9 +34,17 @@ class Order
      */
     public function updateOrder($order)
     {
+        // Получаем customer_id из заказа
+        $customerId = null;
+        if ($order->customer_id && $order->customer_type) {
+            $customerId = $order->customer_id;
+        }
+        
         event(new UpdateOrderNotification([
-            'id'     => $order->id,
-            'status' => $order->status,
+            'id'          => $order->id,
+            'status'      => $order->status,
+            'customer_id' => $customerId,
+            'updated_at'  => $order->updated_at->toIso8601String(),
         ]));
     }
 }

@@ -3,6 +3,7 @@
 namespace Webkul\Notification\Events;
 
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -26,7 +27,19 @@ class UpdateOrderNotification implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel('notification');
+        $channels = [];
+        
+        // Приватный канал для конкретного заказа
+        if (isset($this->data['id'])) {
+            $channels[] = new PrivateChannel('order.' . $this->data['id']);
+        }
+        
+        // Приватный канал для всех заказов пользователя
+        if (isset($this->data['customer_id'])) {
+            $channels[] = new PrivateChannel('customer.' . $this->data['customer_id'] . '.orders');
+        }
+        
+        return $channels;
     }
 
     /**
