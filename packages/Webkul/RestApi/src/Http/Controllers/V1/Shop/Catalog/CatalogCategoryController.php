@@ -134,57 +134,113 @@ class CatalogCategoryController extends CatalogController
      */
     public static function clearCatalogCache(): void
     {
-        $store = Cache::getStore();
-        
-        // Get the actual cache prefix from Laravel Cache store
-        $cachePrefix = method_exists($store, 'getPrefix') 
-            ? $store->getPrefix() 
-            : config('cache.prefix', 'laravel_cache');
-        
-        // Laravel Cache adds prefix with colon separator for Redis
-        // Format: {prefix}:{key}
-        $prefix = rtrim($cachePrefix, ':') . ':' . self::CACHE_PREFIX;
-
-        // For Redis driver, use pattern-based deletion
-        if ($store instanceof \Illuminate\Cache\RedisStore) {
-            $redis = $store->getRedis();
+        try {
+            $store = Cache::getStore();
             
-            // Use SCAN instead of KEYS for better performance in production
-            $pattern = $prefix . '*';
-            $cursor = 0;
-            $keys = [];
-            
-            do {
-                $result = $redis->scan($cursor, ['match' => $pattern, 'count' => 100]);
-                $cursor = $result[0];
-                if (!empty($result[1])) {
-                    $keys = array_merge($keys, $result[1]);
+            // For Redis driver, use pattern-based deletion
+            if ($store instanceof \Illuminate\Cache\RedisStore) {
+                $redis = $store->getRedis();
+                
+                // Get the actual cache prefix from Laravel Cache store
+                // Laravel RedisStore uses getPrefix() method which returns the full prefix
+                $cachePrefix = method_exists($store, 'getPrefix') 
+                    ? $store->getPrefix() 
+                    : config('cache.prefix', 'laravel_cache');
+                
+                // Laravel Cache format: {prefix}:{key}
+                // The prefix from getPrefix() already includes the separator if needed
+                // But we need to ensure we have the right format
+                $basePrefix = rtrim($cachePrefix, ':');
+                $searchPattern = $basePrefix . ':' . self::CACHE_PREFIX . '*';
+                
+                // First, try to find keys using SCAN (more efficient)
+                $allKeys = [];
+                $cursor = 0;
+                
+                do {
+                    $result = $redis->scan($cursor, ['match' => $searchPattern, 'count' => 100]);
+                    $cursor = is_array($result) ? ($result[0] ?? 0) : 0;
+                    $keys = is_array($result) ? ($result[1] ?? []) : [];
+                    
+                    if (!empty($keys)) {
+                        $allKeys = array_merge($allKeys, $keys);
+                    }
+                } while ($cursor > 0);
+                
+                // If SCAN didn't find anything, try KEYS as fallback
+                if (empty($allKeys)) {
+                    try {
+                        $keys = $redis->keys($searchPattern);
+                        if (is_array($keys) && !empty($keys)) {
+                            $allKeys = $keys;
+                        }
+                    } catch (\Exception $e) {
+                        // KEYS might be disabled in production, that's okay
+                        Log::debug('KEYS command not available: ' . $e->getMessage());
+                    }
                 }
-            } while ($cursor > 0);
-            
-            // Remove duplicates
-            $keys = array_unique($keys);
-            
-            if (!empty($keys)) {
-                $redis->del($keys);
+                
+                // Also try alternative pattern without prefix (in case prefix is handled differently)
+                if (empty($allKeys)) {
+                    $altPattern = self::CACHE_PREFIX . '*';
+                    $cursor = 0;
+                    do {
+                        $result = $redis->scan($cursor, ['match' => $altPattern, 'count' => 100]);
+                        $cursor = is_array($result) ? ($result[0] ?? 0) : 0;
+                        $keys = is_array($result) ? ($result[1] ?? []) : [];
+                        if (!empty($keys)) {
+                            // Filter only keys that contain our prefix
+                            $keys = array_filter($keys, function($key) {
+                                return strpos($key, self::CACHE_PREFIX) !== false;
+                            });
+                            $allKeys = array_merge($allKeys, $keys);
+                        }
+                    } while ($cursor > 0);
+                }
+                
+                // Remove duplicates
+                $allKeys = array_unique($allKeys);
+                
+                if (!empty($allKeys)) {
+                    // Delete keys in batches to avoid memory issues
+                    $chunks = array_chunk($allKeys, 100);
+                    foreach ($chunks as $chunk) {
+                        $redis->del($chunk);
+                    }
+                    Log::info('Cleared ' . count($allKeys) . ' catalog cache keys', [
+                        'pattern' => $searchPattern,
+                        'keys_count' => count($allKeys)
+                    ]);
+                } else {
+                    Log::warning('No catalog cache keys found to clear', [
+                        'pattern' => $searchPattern,
+                        'cache_prefix' => $cachePrefix,
+                        'base_prefix' => $basePrefix
+                    ]);
+                }
+
+                return;
             }
 
-            return;
-        }
-
-        // For file/database drivers, we need to track keys or use tags
-        if (method_exists($store, 'tags')) {
-            Cache::tags([self::CACHE_PREFIX])->flush();
-        } else {
-            // Fallback: try to clear by pattern if possible
-            // This is a best-effort approach for drivers that don't support tags
-            try {
-                // For drivers without tags support, we can't easily clear by pattern
-                // So we'll just log a warning
+            // For file/database drivers, try to use tags if available
+            if (method_exists($store, 'tags')) {
+                try {
+                    Cache::tags([self::CACHE_PREFIX])->flush();
+                    Log::info('Cleared catalog cache using tags');
+                } catch (\Exception $e) {
+                    Log::warning('Failed to clear catalog cache using tags: ' . $e->getMessage());
+                }
+            } else {
+                // Fallback: log warning
                 Log::warning('Catalog cache cannot be cleared automatically for this cache driver. Please clear cache manually.');
-            } catch (\Exception $e) {
-                Log::warning('Failed to clear catalog cache: ' . $e->getMessage());
             }
+        } catch (\Exception $e) {
+            Log::error('Failed to clear catalog cache: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
         }
     }
 }

@@ -4,6 +4,7 @@ namespace Webkul\Admin\Http\Controllers\Catalog;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Admin\DataGrids\Catalog\ProductDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -171,7 +172,16 @@ class ProductController extends Controller
         Event::dispatch('catalog.product.update.after', $product);
 
         // Clear catalog API cache after product update
-        CatalogCategoryController::clearCatalogCache();
+        try {
+            Log::info('Clearing catalog cache after product update', ['product_id' => $product->id]);
+            CatalogCategoryController::clearCatalogCache();
+            Log::info('Catalog cache cleared successfully', ['product_id' => $product->id]);
+        } catch (\Exception $e) {
+            Log::error('Failed to clear catalog cache after product update', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         session()->flash('success', trans('admin::app.catalog.products.update-success'));
 
