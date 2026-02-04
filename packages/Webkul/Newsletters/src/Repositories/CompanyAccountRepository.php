@@ -52,5 +52,22 @@ class CompanyAccountRepository extends Repository
 
         return $account;
     }
+
+    /**
+     * Deduct balance from account.
+     *
+     * @param  int  $accountId
+     * @param  float  $amount
+     * @return \Webkul\Newsletters\Models\CompanyAccount
+     */
+    public function deductBalance(int $accountId, float $amount)
+    {
+        $account = $this->findOrFail($accountId);
+        
+        $account->balance -= $amount;
+        $account->save();
+
+        return $account;
+    }
 }
 

@@ -179,7 +179,18 @@ class OwnersController extends Controller
 
         $owner->load(['role', 'company', 'company.account']);
 
-        return view('newsletters::admin.owners.edit', compact('owner'));
+        // Load transaction history for the account
+        $transactions = collect();
+        if ($owner->company && $owner->company->account) {
+            $transactions = $this->topupRepository
+                ->where('account_id', $owner->company->account->id)
+                ->with('admin')
+                ->orderBy('transaction_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        return view('newsletters::admin.owners.edit', compact('owner', 'transactions'));
     }
 
     /**
@@ -253,16 +264,74 @@ class OwnersController extends Controller
 
         $this->validate($request, [
             'amount' => 'required|numeric|min:0.01',
+            'transaction_date' => 'required|date',
+            'create_deductions' => 'nullable|boolean',
             'notes' => 'nullable|string|max:500',
         ]);
 
         $admin = auth()->guard('admin')->user();
         $account = $this->accountRepository->getOrCreateForCompany($owner->company_id);
 
+        // Parse transaction date (datetime-local format: Y-m-d\TH:i)
+        $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
+        
+        $createDeductions = $request->boolean('create_deductions');
+
+        // If create_deductions is checked, create deduction records before the transaction date
+        if ($createDeductions) {
+            $messagesCount = floor($request->amount / 2);
+            
+            if ($messagesCount > 0) {
+                // Randomly choose number of groups (mailing lists) from 1 to 3
+                $groupsCount = rand(1, min(3, $messagesCount));
+                
+                // Distribute messages randomly between groups
+                $groups = array_fill(0, $groupsCount, 0);
+                $remainingMessages = $messagesCount;
+                
+                // Distribute messages randomly
+                for ($i = 0; $i < $remainingMessages; $i++) {
+                    $randomGroup = rand(0, $groupsCount - 1);
+                    $groups[$randomGroup]++;
+                }
+                
+                // Create deduction records for each group
+                foreach ($groups as $index => $groupMessagesCount) {
+                    if ($groupMessagesCount > 0) {
+                        // Deduction date is 1 day before transaction date
+                        $deductionDate = $transactionDate->copy()->subDay();
+                        // Add random time between 00:00 and 23:59, different for each group
+                        $deductionDate->setTime(rand(0, 23), rand(0, 59), rand(0, 59));
+                        
+                        // Random mailing list ID between 15 and 100
+                        $mailingListId = rand(15, 100);
+                        
+                        // Calculate total amount for this group
+                        $groupAmount = $groupMessagesCount * 2.00;
+                        
+                        // Create deduction record
+                        $this->topupRepository->create([
+                            'account_id' => $account->id,
+                            'type' => \Webkul\Newsletters\Models\AccountTopup::TYPE_DEDUCTION,
+                            'amount' => $groupAmount,
+                            'transaction_date' => $deductionDate,
+                            'admin_id' => $admin->id,
+                            'notes' => "Списание за рассылку ID={$mailingListId}. Отправлено {$groupMessagesCount} сообщений",
+                        ]);
+                        
+                        // Deduct balance
+                        $this->accountRepository->deductBalance($account->id, $groupAmount);
+                    }
+                }
+            }
+        }
+
         // Create topup record
         $topup = $this->topupRepository->create([
             'account_id' => $account->id,
+            'type' => \Webkul\Newsletters\Models\AccountTopup::TYPE_TOPUP,
             'amount' => $request->amount,
+            'transaction_date' => $transactionDate,
             'admin_id' => $admin->id,
             'notes' => $request->notes ?? 'Top up by admin',
         ]);
@@ -272,7 +341,7 @@ class OwnersController extends Controller
 
         session()->flash('success', trans('newsletters::app.admin.owners.topup-success'));
 
-        return redirect()->route('admin.newsletters.owners.index');
+        return redirect()->route('admin.newsletters.owners.edit', $id);
     }
 
     /**
