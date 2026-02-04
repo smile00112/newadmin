@@ -40,7 +40,9 @@ class AppServiceProvider extends ServiceProvider
 //        if ($this->app->environment('production')) {
 //            URL::forceScheme('https');
 //        }
-       // URL::forceScheme('https');
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
 
         ParallelTesting::setUpTestDatabase(function (string $database, int $token) {
             Artisan::call('db:seed');
