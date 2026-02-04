@@ -102,6 +102,9 @@ Route::group([
                 Route::middleware('newsletters.permission:newsletters.owners.topup')->group(function () {
                     Route::post('{id}/topup', 'topup')->name('admin.newsletters.owners.topup');
                 });
+                Route::middleware('newsletters.permission:newsletters.owners.edit')->group(function () {
+                    Route::post('{id}/clear-history', 'clearHistory')->name('admin.newsletters.owners.clear-history');
+                });
                 Route::middleware('newsletters.permission:newsletters.owners.delete')->group(function () {
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.owners.delete');
                 });

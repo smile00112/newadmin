@@ -185,7 +185,6 @@ class OwnersController extends Controller
             $transactions = $this->topupRepository
                 ->where('account_id', $owner->company->account->id)
                 ->with('admin')
-                ->orderBy('transaction_date', 'desc')
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -277,9 +276,24 @@ class OwnersController extends Controller
         
         $createDeductions = $request->boolean('create_deductions');
 
-        // If create_deductions is checked, create deduction records before the transaction date
+        // Create topup record first
+        $topup = $this->topupRepository->create([
+            'account_id' => $account->id,
+            'type' => \Webkul\Newsletters\Models\AccountTopup::TYPE_TOPUP,
+            'amount' => $request->amount,
+            'transaction_date' => $transactionDate,
+            'admin_id' => $admin->id,
+            'notes' => $request->notes ?? 'Top up by admin',
+        ]);
+
+        // Add balance to account
+        $this->accountRepository->addBalance($account->id, $request->amount);
+
+        // If create_deductions is checked, create deduction records after the transaction date
         if ($createDeductions) {
-            $messagesCount = floor($request->amount / 2);
+            // Calculate deduction amount: 93% of topup amount
+            $deductionAmount = $request->amount * 0.93;
+            $messagesCount = floor($deductionAmount / 2);
             
             if ($messagesCount > 0) {
                 // Randomly choose number of groups (mailing lists) from 1 to 3
@@ -298,10 +312,43 @@ class OwnersController extends Controller
                 // Create deduction records for each group
                 foreach ($groups as $index => $groupMessagesCount) {
                     if ($groupMessagesCount > 0) {
-                        // Deduction date is 1 day before transaction date
-                        $deductionDate = $transactionDate->copy()->subDay();
-                        // Add random time between 00:00 and 23:59, different for each group
-                        $deductionDate->setTime(rand(0, 23), rand(0, 59), rand(0, 59));
+                        // Deduction date is same day (0) or next day (1) after transaction date
+                        $daysAfter = rand(0, 1);
+                        $deductionDate = $transactionDate->copy()->addDays($daysAfter);
+                        
+                        // Set time for deduction
+                        if ($daysAfter === 0) {
+                            // Same day: time must be after transaction time
+                            $transactionHour = $transactionDate->hour;
+                            $transactionMinute = $transactionDate->minute;
+                            
+                            // Random time after transaction time (but before end of day)
+                            $maxHour = 23;
+                            $maxMinute = 59;
+                            
+                            // If transaction is late in the day, use next day
+                            if ($transactionHour >= 22) {
+                                $deductionDate->addDay();
+                                $deductionDate->setTime(rand(0, 23), rand(0, 59), rand(0, 59));
+                            } else {
+                                // Random hour after transaction hour
+                                $minHour = min($transactionHour + 1, 23);
+                                $deductionHour = rand($minHour, 23);
+                                
+                                // If same hour, minute must be after transaction minute
+                                if ($deductionHour === $transactionHour) {
+                                    $minMinute = min($transactionMinute + 1, 59);
+                                    $deductionMinute = rand($minMinute, 59);
+                                } else {
+                                    $deductionMinute = rand(0, 59);
+                                }
+                                
+                                $deductionDate->setTime($deductionHour, $deductionMinute, rand(0, 59));
+                            }
+                        } else {
+                            // Next day: random time
+                            $deductionDate->setTime(rand(0, 23), rand(0, 59), rand(0, 59));
+                        }
                         
                         // Random mailing list ID between 15 and 100
                         $mailingListId = rand(15, 100);
@@ -326,20 +373,31 @@ class OwnersController extends Controller
             }
         }
 
-        // Create topup record
-        $topup = $this->topupRepository->create([
-            'account_id' => $account->id,
-            'type' => \Webkul\Newsletters\Models\AccountTopup::TYPE_TOPUP,
-            'amount' => $request->amount,
-            'transaction_date' => $transactionDate,
-            'admin_id' => $admin->id,
-            'notes' => $request->notes ?? 'Top up by admin',
-        ]);
-
-        // Add balance to account
-        $this->accountRepository->addBalance($account->id, $request->amount);
-
         session()->flash('success', trans('newsletters::app.admin.owners.topup-success'));
+
+        return redirect()->route('admin.newsletters.owners.edit', $id);
+    }
+
+    /**
+     * Clear transaction history for owner's company account.
+     */
+    public function clearHistory(int $id)
+    {
+        $this->requireNewsletterPermission('newsletters.owners.edit');
+
+        $owner = $this->adminRepository->findOrFail($id);
+
+        // Проверка, что это owner
+        if (!$owner->role || $owner->role->permission_type !== 'all' || !$owner->company_id) {
+            abort(404, trans('newsletters::app.admin.owners.not-found'));
+        }
+
+        $account = $this->accountRepository->getOrCreateForCompany($owner->company_id);
+
+        // Delete all transactions for this account
+        $this->topupRepository->where('account_id', $account->id)->delete();
+
+        session()->flash('success', trans('newsletters::app.admin.owners.clear-history-success'));
 
         return redirect()->route('admin.newsletters.owners.edit', $id);
     }

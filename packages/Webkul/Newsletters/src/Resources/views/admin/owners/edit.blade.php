@@ -12,7 +12,7 @@
         </a>
     </div>
 
-    <form method="POST" action="{{ route('admin.newsletters.owners.update', $owner->id) }}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <form method="POST" action="{{ route('admin.newsletters.owners.update', $owner->id) }}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3">
         @csrf
         @method('PUT')
 
@@ -111,11 +111,6 @@
             <button type="submit" class="primary-button">
                 {{ __('newsletters::app.common.actions.save') }}
             </button>
-            @if($owner->company && $owner->company->account)
-                <button type="button" onclick="openTopupModal()" class="secondary-button">
-                    {{ __('newsletters::app.admin.owners.topup-button') }}
-                </button>
-            @endif
             <a href="{{ route('admin.newsletters.owners.index') }}" class="secondary-button">
                 {{ __('newsletters::app.common.actions.cancel') }}
             </a>
@@ -187,6 +182,23 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($owner->company && $owner->company->account)
+                <div class="mt-6 flex items-center gap-x-2.5 px-6 pb-4">
+                    <button type="button" onclick="openTopupModal()" class="primary-button">
+                        {{ __('newsletters::app.admin.owners.topup-button') }}
+                    </button>
+                    @php
+                        $currentAdmin = auth()->guard('admin')->user();
+                        $isSuperAdmin = $currentAdmin && $currentAdmin->role && $currentAdmin->role->permission_type === 'all' && !$currentAdmin->company_id;
+                    @endphp
+                    @if($isSuperAdmin)
+                        <button type="button" onclick="clearHistory({{ $owner->id }})" class="secondary-button button-red">
+                            {{ __('newsletters::app.admin.owners.clear-history') }}
+                        </button>
+                    @endif
+                </div>
+            @endif
         </div>
     @endif
 
@@ -303,6 +315,25 @@
             if (modal) {
                 modal.classList.add('hidden');
             }
+        }
+
+        function clearHistory(ownerId) {
+            if (!confirm('{{ __('newsletters::app.admin.owners.clear-history-confirm') }}')) {
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("admin.newsletters.owners.clear-history", ":id") }}'.replace(':id', ownerId);
+
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+
+            document.body.appendChild(form);
+            form.submit();
         }
 
         // Close modal on outside click
