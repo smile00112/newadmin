@@ -1,0 +1,330 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Точка Банк\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-07 19:10+0000\n"
+"PO-Revision-Date: 2025-11-29 22:27+0000\n"
+"Last-Translator: \n"
+"Language-Team: Русский\n"
+"Language: ru_RU\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10 >= 2 && "
+"n%10<=4 &&(n%100<10||n%100 >= 20)? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.8.0; wp-6.8.3; php-8.2.18\n"
+"X-Domain: tochka-bank-internet-acquiring"
+
+#. URI of the plugin
+msgid "https://tochka.com"
+msgstr "https://tochka.com"
+
+#. Description of the plugin
+msgid "Payment gateway for Tochka Bank in WooCommerce."
+msgstr "Платёжный шлюз Точка Банка для WooCommerce."
+
+#: includes/HooksManager.php:315
+msgid "Settings"
+msgstr "Настройки"
+
+#. Author of the plugin
+msgid "Tochka"
+msgstr "Tochka"
+
+#. Name of the plugin
+msgid "Tochka Bank: Internet-acquiring"
+msgstr "Точка Банк: Интернет-эквайринг"
+
+#: includes/Admin/SettingsForm.php:56
+msgid ""
+"URL платёжной формы. По умолчанию: https://merch.tochka.com/woocommerce."
+msgstr ""
+"URL платёжной формы. По умолчанию: https://merch.tochka.com/woocommerce."
+
+#: includes/Admin/SettingsForm.php:119
+msgid "Автоматический редирект"
+msgstr "Автоматический редирект"
+
+#: includes/Admin/SettingsForm.php:54
+msgid "Адрес формы оплаты"
+msgstr "Адрес формы оплаты"
+
+#: includes/Gateway.php:58 includes/Admin/SettingsForm.php:39
+#: includes/Service/Settings.php:43
+msgid "Банковские карты и СБП"
+msgstr "Банковские карты и СБП"
+
+#: includes/Admin/SettingsForm.php:87
+msgid "Без НДС"
+msgstr "Без НДС"
+
+#: includes/Admin/SettingsForm.php:63
+msgid "Ваш уникальный логин для интеграции из личного кабинета Точка Банка."
+msgstr "Ваш уникальный логин для интеграции из личного кабинета Точка Банка."
+
+#: includes/Admin/SettingsForm.php:127
+msgid ""
+"Включить для тем, использующих AJAX при оформлении заказа (например, блочный "
+"чекаут)."
+msgstr ""
+"Включить для тем, использующих AJAX при оформлении заказа (например, блочный "
+"чекаут)."
+
+#: includes/Admin/SettingsForm.php:80
+msgid "Включить передачу состава заказа (корзины) для фискализации."
+msgstr "Включить передачу состава заказа (корзины) для фискализации."
+
+#: includes/Admin/SettingsForm.php:32
+#| msgid "Включить платежный шлюз \"Точка\""
+msgid "Включить платежный шлюз Точка Банк"
+msgstr "Включить платежный шлюз Точка Банк"
+
+#: includes/Admin/SettingsForm.php:30
+msgid "Включить/Выключить"
+msgstr "Включить/Выключить"
+
+#: includes/Gateway.php:124
+msgid "Вы будете перенаправлены на страницу оплаты..."
+msgstr "Вы будете перенаправлены на страницу оплаты..."
+
+#: includes/Admin/SettingsForm.php:137
+msgid ""
+"Выберите статус, в который будет переведен заказ после получения успешного "
+"уведомления об оплате."
+msgstr ""
+"Выберите статус, в который будет переведен заказ после получения успешного "
+"уведомления об оплате."
+
+#: includes/Admin/SettingsForm.php:155
+msgid ""
+"Выберите, насколько подробную информацию записывать в лог-файл (в wp-"
+"content/uploads/wc-logs/)."
+msgstr ""
+"Выберите, насколько подробную информацию записывать в лог-файл (в wp-"
+"content/uploads/wc-logs/)."
+
+#: includes/Admin/SettingsForm.php:149
+msgid "Выключено"
+msgstr "Выключено"
+
+#: includes/CartBuilder.php:97
+msgid "Доставка"
+msgstr "Доставка"
+
+#: includes/Admin/SettingsForm.php:129
+msgid ""
+"Если после оформления заказа не происходит автоматический редирект на оплату,"
+" включите эту опцию."
+msgstr ""
+"Если после оформления заказа не происходит автоматический редирект на оплату,"
+" включите эту опцию."
+
+#: includes/Admin/SettingsForm.php:36
+msgid "Заголовок"
+msgstr "Заголовок"
+
+#: includes/Gateway.php:87
+msgid "Заказ не найден."
+msgstr "Заказ не найден."
+
+#: includes/Admin/SettingsForm.php:151
+msgid "Информационный (Рекомендуется)"
+msgstr "Информационный (Рекомендуется)"
+
+#: includes/Admin/SettingsForm.php:110
+msgid ""
+"Используется для позиций в чеке, если для товара не указан индивидуальный "
+"признак через атрибут `fiscal-item-type`."
+msgstr ""
+"Используется для позиций в чеке, если для товара не указан индивидуальный "
+"признак через атрибут `fiscal-item-type`."
+
+#: includes/Admin/SettingsForm.php:99
+msgid "Используется, если ставка НДС не задана для товара или доставки."
+msgstr "Используется, если ставка НДС не задана для товара или доставки."
+
+#: includes/Admin/SettingsForm.php:61
+msgid "Логин"
+msgstr "Логин"
+
+#: includes/Admin/SettingsForm.php:88
+msgid "НДС 0%"
+msgstr "НДС 0%"
+
+#: includes/Admin/SettingsForm.php:91
+msgid "НДС 10%"
+msgstr "НДС 10%"
+
+#: includes/Admin/SettingsForm.php:95
+msgid "НДС 10/110"
+msgstr "НДС 10/110"
+
+#: includes/Admin/SettingsForm.php:92
+msgid "НДС 20%"
+msgstr "НДС 20%"
+
+#: includes/Admin/SettingsForm.php:96
+msgid "НДС 20/120"
+msgstr "НДС 20/120"
+
+#: includes/Admin/SettingsForm.php:89
+msgid "НДС 5%"
+msgstr "НДС 5%"
+
+#: includes/Admin/SettingsForm.php:93
+msgid "НДС 5/105"
+msgstr "НДС 5/105"
+
+#: includes/Admin/SettingsForm.php:90
+msgid "НДС 7%"
+msgstr "НДС 7%"
+
+#: includes/Admin/SettingsForm.php:94
+msgid "НДС 7/107"
+msgstr "НДС 7/107"
+
+#: includes/Admin/SettingsForm.php:38
+msgid ""
+"Название способа оплаты, которое увидит покупатель при оформлении заказа."
+msgstr ""
+"Название способа оплаты, которое увидит покупатель при оформлении заказа."
+
+#: includes/Admin/SettingsForm.php:141
+msgid "Настройки логирования"
+msgstr "Настройки логирования"
+
+#: includes/Admin/SettingsForm.php:73
+msgid "Настройки фискализации (54-ФЗ)"
+msgstr "Настройки фискализации (54-ФЗ)"
+
+#: includes/Admin/SettingsForm.php:43
+msgid "Описание"
+msgstr "Описание"
+
+#: includes/Admin/SettingsForm.php:45
+msgid "Описание способа оплаты, которое покупатель увидит под заголовком."
+msgstr "Описание способа оплаты, которое покупатель увидит под заголовком."
+
+#. %s: Transaction ID from the bank.
+#: includes/Service/OrderProcessor.php:81
+#, php-format
+msgid "Оплата успешно получена через \"Точка\". ID транзакции: %s"
+msgstr "Оплата успешно получена через \"Точка\". ID транзакции: %s"
+
+#: includes/Gateway.php:131
+msgid "Оплатить"
+msgstr "Оплатить"
+
+#: includes/Admin/SettingsForm.php:25
+msgid "Основные настройки"
+msgstr "Основные настройки"
+
+#: includes/Admin/SettingsForm.php:152
+msgid "Отладка (Полный лог)"
+msgstr "Отладка (Полный лог)"
+
+#: includes/Admin/SettingsForm.php:78
+msgid "Передавать данные для чека"
+msgstr "Передавать данные для чека"
+
+#: includes/Gateway.php:51
+msgid "Платёжный плагин для интеграции с интернет-эквайрингом Точка Банка."
+msgstr "Платёжный плагин для интеграции с интернет-эквайрингом Точка Банка."
+
+#: includes/Admin/SettingsForm.php:125
+msgid "Поддержка AJAX-чекаута"
+msgstr "Поддержка AJAX-чекаута"
+
+#: includes/HooksManager.php:266
+msgid "Показать/скрыть ключ"
+msgstr "Показать/скрыть ключ"
+
+#: includes/Gateway.php:339
+#| msgid ""
+#| "Поле \"URL платежного сервера\" не может быть пустым и должно содержать "
+#| "корректный URL."
+msgid ""
+"Поле \"Адрес формы оплаты\" не может быть пустым и должно содержать "
+"корректный URL."
+msgstr ""
+"Поле \"Адрес формы оплаты\" не может быть пустым и должно содержать "
+"корректный URL."
+
+#: includes/Gateway.php:355
+msgid "Поле \"Логин\" не может быть пустым."
+msgstr "Поле \"Логин\" не может быть пустым."
+
+#: includes/Gateway.php:371
+msgid "Поле \"Секретное слово\" не может быть пустым."
+msgstr "Поле \"Секретное слово\" не может быть пустым."
+
+#: includes/Admin/SettingsForm.php:114
+msgid "Пользовательский опыт"
+msgstr "Пользовательский опыт"
+
+#: includes/Admin/SettingsForm.php:103
+msgid "Признак предмета расчета по умолчанию"
+msgstr "Признак предмета расчета по умолчанию"
+
+#: includes/Gateway.php:59 includes/Admin/SettingsForm.php:46
+msgid "Приём платежей обеспечивает платёжная платформа Tochka"
+msgstr "Приём платежей обеспечивает платёжная платформа Tochka"
+
+#: includes/Admin/SettingsForm.php:67
+msgid "Секретное слово"
+msgstr "Секретное слово"
+
+#: includes/Admin/SettingsForm.php:69
+msgid "Секретный ключ для интеграции из личного кабинета Точка Банка."
+msgstr "Секретный ключ для интеграции из личного кабинета Точка Банка."
+
+#: includes/Admin/SettingsForm.php:121
+msgid ""
+"Сразу перенаправлять покупателя на страницу оплаты без промежуточной "
+"страницы."
+msgstr ""
+"Сразу перенаправлять покупателя на страницу оплаты без промежуточной "
+"страницы."
+
+#: includes/Admin/SettingsForm.php:84
+msgid "Ставка НДС по умолчанию"
+msgstr "Ставка НДС по умолчанию"
+
+#: includes/Service/OrderProcessor.php:117
+msgid "Статус заказа обновлен согласно настройкам шлюза."
+msgstr "Статус заказа обновлен согласно настройкам шлюза."
+
+#: includes/Admin/SettingsForm.php:133
+msgid "Статус заказа после оплаты"
+msgstr "Статус заказа после оплаты"
+
+#. %s: Minimum payment amount with currency symbol.
+#: includes/Gateway.php:94
+#, php-format
+msgid "Сумма заказа слишком мала. Минимальная сумма — %s."
+msgstr "Сумма заказа слишком мала. Минимальная сумма — %s."
+
+#: includes/Admin/SettingsForm.php:106
+msgid "Товар"
+msgstr "Товар"
+
+#: includes/Admin/SettingsForm.php:150
+msgid "Только ошибки"
+msgstr "Только ошибки"
+
+#: includes/Gateway.php:50
+msgid "Точка Банк: Интернет-эквайринг"
+msgstr "Точка Банк: Интернет-эквайринг"
+
+#: includes/Admin/SettingsForm.php:146
+msgid "Уровень логирования"
+msgstr "Уровень логирования"
+
+#: includes/Admin/SettingsForm.php:107
+msgid "Услуга"
+msgstr "Услуга"
+
+#: includes/Admin/SettingsForm.php:49
+msgid "Учетные данные"
+msgstr "Учетные данные"

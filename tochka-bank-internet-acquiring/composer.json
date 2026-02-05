@@ -1,0 +1,14 @@
+{
+  "name": "tochka-bank/woocommerce-payments",
+  "description": "Payment gateway for Tochka Bank in WooCommerce.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "ext-json": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tochka\\Woocommerce\\": "includes/"
+    }
+  }
+}

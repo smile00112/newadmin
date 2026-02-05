@@ -103,7 +103,8 @@
             "Webkul\\Theme\\": "packages/Webkul/Theme/src",
             "Webkul\\User\\": "packages/Webkul/User/src",
             "Webkul\\RestApi\\": "packages/Webkul/RestApi/src",
-            "Webkul\\Newsletters\\": "packages/Webkul/Newsletters/src"
+            "Webkul\\Newsletters\\": "packages/Webkul/Newsletters/src",
+            "Webkul\\TochkaPayment\\": "packages/Webkul/TochkaPayment/src"
         }
     },
     "autoload-dev": {
