@@ -136,10 +136,20 @@ class CatalogCategoryController extends CatalogController
     {
         try {
             $store = Cache::getStore();
+            $storeClass = get_class($store);
             
-            // For Redis driver, use pattern-based deletion
-            if ($store instanceof \Illuminate\Cache\RedisStore) {
-                $redis = $store->getRedis();
+            // Log store type for debugging
+            Log::debug('Cache store type: ' . $storeClass, [
+                'has_getRedis' => method_exists($store, 'getRedis'),
+                'has_tags' => method_exists($store, 'tags'),
+                'is_RedisStore' => $store instanceof \Illuminate\Cache\RedisStore,
+                'is_FileStore' => $store instanceof \Illuminate\Cache\FileStore,
+            ]);
+            
+            // For Redis driver, check if store has getRedis() method (more reliable than instanceof)
+            if (method_exists($store, 'getRedis')) {
+                try {
+                    $redis = $store->getRedis();
                 
                 // Get the actual cache prefix from Laravel Cache store
                 // Laravel RedisStore uses getPrefix() method which returns the full prefix
@@ -209,31 +219,121 @@ class CatalogCategoryController extends CatalogController
                     }
                     Log::info('Cleared ' . count($allKeys) . ' catalog cache keys', [
                         'pattern' => $searchPattern,
-                        'keys_count' => count($allKeys)
+                        'keys_count' => count($allKeys),
+                        'store_class' => $storeClass
                     ]);
                 } else {
                     Log::warning('No catalog cache keys found to clear', [
                         'pattern' => $searchPattern,
                         'cache_prefix' => $cachePrefix,
-                        'base_prefix' => $basePrefix
+                        'base_prefix' => $basePrefix,
+                        'store_class' => $storeClass
                     ]);
                 }
 
                 return;
+            } catch (\Exception $e) {
+                Log::warning('Failed to clear Redis cache: ' . $e->getMessage(), [
+                    'store_class' => $storeClass,
+                    'exception' => get_class($e)
+                ]);
             }
+        }
 
-            // For file/database drivers, try to use tags if available
-            if (method_exists($store, 'tags')) {
-                try {
-                    Cache::tags([self::CACHE_PREFIX])->flush();
-                    Log::info('Cleared catalog cache using tags');
-                } catch (\Exception $e) {
-                    Log::warning('Failed to clear catalog cache using tags: ' . $e->getMessage());
+        // For file driver, use Cache::forget() for all possible combinations
+        if ($store instanceof \Illuminate\Cache\FileStore) {
+            try {
+                $channels = \Webkul\Core\Facades\Core::getAllChannels();
+                $locales = \Webkul\Core\Facades\Core::getAllLocales();
+                
+                $clearedCount = 0;
+                
+                // Reasonable limits for pagination
+                $maxPages = 20; // Clear first 20 pages
+                $limits = [10, 20, 50, 100]; // Common limit values
+                
+                foreach ($channels as $channel) {
+                    foreach ($locales as $locale) {
+                        // Clear paginated versions
+                        for ($page = 1; $page <= $maxPages; $page++) {
+                            foreach ($limits as $limit) {
+                                // Paginated = 1
+                                $cacheKey = self::CACHE_PREFIX . ":{$channel->id}:{$locale->code}:page_{$page}:limit_{$limit}:paginated_1";
+                                Cache::forget($cacheKey);
+                                $clearedCount++;
+                                
+                                // Paginated = 0
+                                $cacheKey = self::CACHE_PREFIX . ":{$channel->id}:{$locale->code}:page_{$page}:limit_{$limit}:paginated_0";
+                                Cache::forget($cacheKey);
+                                $clearedCount++;
+                            }
+                        }
+                    }
                 }
-            } else {
-                // Fallback: log warning
-                Log::warning('Catalog cache cannot be cleared automatically for this cache driver. Please clear cache manually.');
+                
+                Log::info('Cleared catalog cache entries using Cache::forget()', [
+                    'driver' => 'file',
+                    'attempted' => $clearedCount,
+                    'channels' => $channels->count(),
+                    'locales' => $locales->count(),
+                    'store_class' => $storeClass
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to clear catalog cache for file driver: ' . $e->getMessage(), [
+                    'store_class' => $storeClass,
+                    'exception' => get_class($e)
+                ]);
             }
+            
+            return;
+        }
+        
+        // For database driver, delete entries matching pattern
+        if ($store instanceof \Illuminate\Cache\DatabaseStore) {
+            try {
+                $connection = $store->getConnection();
+                $table = $store->getTable();
+                $cachePrefix = config('cache.prefix', 'laravel_cache');
+                
+                // Delete cache entries where key starts with our prefix
+                $pattern = $cachePrefix . ':' . self::CACHE_PREFIX . '%';
+                $deleted = $connection->table($table)
+                    ->where('key', 'like', $pattern)
+                    ->delete();
+                
+                Log::info('Cleared ' . $deleted . ' catalog cache entries from database', [
+                    'table' => $table,
+                    'pattern' => $pattern,
+                    'store_class' => $storeClass
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to clear catalog cache from database: ' . $e->getMessage(), [
+                    'store_class' => $storeClass,
+                    'exception' => get_class($e)
+                ]);
+            }
+            
+            return;
+        }
+        
+        // For drivers that support tags, try to use tags if available
+        if (method_exists($store, 'tags')) {
+            try {
+                Cache::tags([self::CACHE_PREFIX])->flush();
+                Log::info('Cleared catalog cache using tags', ['store_class' => $storeClass]);
+            } catch (\Exception $e) {
+                Log::warning('Failed to clear catalog cache using tags: ' . $e->getMessage(), [
+                    'store_class' => $storeClass,
+                    'exception' => get_class($e)
+                ]);
+            }
+            return;
+        }
+        
+        // Fallback: log warning if no specific clearing mechanism was found
+        Log::warning('Catalog cache cannot be cleared automatically for this cache driver. Please clear cache manually.', [
+            'store_class' => $storeClass
+        ]);
         } catch (\Exception $e) {
             Log::error('Failed to clear catalog cache: ' . $e->getMessage(), [
                 'exception' => get_class($e),

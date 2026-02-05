@@ -7,7 +7,7 @@ use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Checkout\Models\CartItem;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Product\DataTypes\CartItemValidationResult;
-use Webkul\Product\Helpers\Indexers\Price\Grouped as GroupedIndexer;
+use Webkul\Product\Helpers\Indexers\Price\Constructor as ConstructorIndexer;
 use Webkul\Product\Repositories\ProductAttributeValueRepository;
 use Webkul\Product\Repositories\ProductConstructorRepository;
 use Webkul\Product\Repositories\ProductCustomerGroupPriceRepository;
@@ -223,6 +223,19 @@ class Constructor extends AbstractType
     }
 
     /**
+     * Get product minimal price.
+     *
+     * For constructor products, return the base price from the price field.
+     *
+     * @return float
+     */
+    public function getMinimalPrice()
+    {
+        // For constructor products, base price = price field
+        return (float) ($this->product->price ?? 0);
+    }
+
+    /**
      * Add product. Returns error message if can't prepare product.
      *
      * @param  array  $data
@@ -245,6 +258,19 @@ class Constructor extends AbstractType
         if (is_string($products)) {
             return $products;
         }
+
+        // Override base price of constructor product with price field value
+        $basePrice = (float) ($this->product->price ?? 0);
+        $products[0]['base_price'] = $basePrice;
+        $products[0]['base_price_incl_tax'] = $basePrice;
+        $products[0]['price'] = core()->convertPrice($basePrice);
+        $products[0]['price_incl_tax'] = $products[0]['price'];
+        
+        // Recalculate totals for constructor base price
+        $products[0]['base_total'] = $basePrice * $constructorQuantity;
+        $products[0]['base_total_incl_tax'] = $basePrice * $constructorQuantity;
+        $products[0]['total'] = $products[0]['price'] * $constructorQuantity;
+        $products[0]['total_incl_tax'] = $products[0]['price'] * $constructorQuantity;
 
         $cartProductsList = [];
 
@@ -288,17 +314,23 @@ class Constructor extends AbstractType
 
                 $cartProductsList[] = $cartProduct;
 
-                // Accumulate prices to parent constructor product
-                $products[0]['price'] += $cartProduct[0]['total'];
-                $products[0]['price_incl_tax'] += $cartProduct[0]['total'];
-                $products[0]['base_price'] += $cartProduct[0]['base_total'];
-                $products[0]['base_price_incl_tax'] += $cartProduct[0]['base_total'];
+                // Accumulate totals (not prices) to parent constructor product
+                // Prices are per unit, totals are price * quantity
                 $products[0]['total'] += $cartProduct[0]['total'];
                 $products[0]['total_incl_tax'] += $cartProduct[0]['total'];
                 $products[0]['base_total'] += $cartProduct[0]['base_total'];
                 $products[0]['base_total_incl_tax'] += $cartProduct[0]['base_total'];
                 $products[0]['weight'] += $cartProduct[0]['total_weight'];
             }
+        }
+        
+        // Recalculate per-unit prices after adding all ingredients
+        // Price per unit = total / quantity
+        if ($constructorQuantity > 0) {
+            $products[0]['base_price'] = $products[0]['base_total'] / $constructorQuantity;
+            $products[0]['base_price_incl_tax'] = $products[0]['base_total_incl_tax'] / $constructorQuantity;
+            $products[0]['price'] = $products[0]['total'] / $constructorQuantity;
+            $products[0]['price_incl_tax'] = $products[0]['total_incl_tax'] / $constructorQuantity;
         }
 
         if (empty($cartProductsList)) {
@@ -322,7 +354,7 @@ class Constructor extends AbstractType
      */
     public function getPriceIndexer()
     {
-        return app(GroupedIndexer::class);
+        return app(ConstructorIndexer::class);
     }
 
     /**
@@ -357,7 +389,8 @@ class Constructor extends AbstractType
             return $validation;
         }
 
-        $baseTotal = 0;
+        // Start with constructor base price
+        $baseTotal = (float) ($item->product->price ?? 0) * $item->quantity;
 
         foreach ($item->children as $childItem) {
             $childValidation = $childItem->getTypeInstance()->validateCartItem($childItem);
