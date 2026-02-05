@@ -185,7 +185,7 @@ class OwnersController extends Controller
             $transactions = $this->topupRepository
                 ->where('account_id', $owner->company->account->id)
                 ->with('admin')
-                ->orderBy('created_at', 'desc')
+                ->orderBy('transaction_date', 'desc')
                 ->get();
         }
 
@@ -273,7 +273,7 @@ class OwnersController extends Controller
 
         // Parse transaction date (datetime-local format: Y-m-d\TH:i)
         $transactionDate = \Carbon\Carbon::parse($request->transaction_date);
-        
+
         $createDeductions = $request->boolean('create_deductions');
 
         // Create topup record first
@@ -294,38 +294,38 @@ class OwnersController extends Controller
             // Calculate deduction amount: 93% of topup amount
             $deductionAmount = $request->amount * 0.93;
             $messagesCount = floor($deductionAmount / 2);
-            
+
             if ($messagesCount > 0) {
                 // Randomly choose number of groups (mailing lists) from 1 to 3
                 $groupsCount = rand(1, min(3, $messagesCount));
-                
+
                 // Distribute messages randomly between groups
                 $groups = array_fill(0, $groupsCount, 0);
                 $remainingMessages = $messagesCount;
-                
+
                 // Distribute messages randomly
                 for ($i = 0; $i < $remainingMessages; $i++) {
                     $randomGroup = rand(0, $groupsCount - 1);
                     $groups[$randomGroup]++;
                 }
-                
+
                 // Create deduction records for each group
                 foreach ($groups as $index => $groupMessagesCount) {
                     if ($groupMessagesCount > 0) {
                         // Deduction date is same day (0) or next day (1) after transaction date
                         $daysAfter = rand(0, 1);
                         $deductionDate = $transactionDate->copy()->addDays($daysAfter);
-                        
+
                         // Set time for deduction
                         if ($daysAfter === 0) {
                             // Same day: time must be after transaction time
                             $transactionHour = $transactionDate->hour;
                             $transactionMinute = $transactionDate->minute;
-                            
+
                             // Random time after transaction time (but before end of day)
                             $maxHour = 23;
                             $maxMinute = 59;
-                            
+
                             // If transaction is late in the day, use next day
                             if ($transactionHour >= 22) {
                                 $deductionDate->addDay();
@@ -334,7 +334,7 @@ class OwnersController extends Controller
                                 // Random hour after transaction hour
                                 $minHour = min($transactionHour + 1, 23);
                                 $deductionHour = rand($minHour, 23);
-                                
+
                                 // If same hour, minute must be after transaction minute
                                 if ($deductionHour === $transactionHour) {
                                     $minMinute = min($transactionMinute + 1, 59);
@@ -342,20 +342,20 @@ class OwnersController extends Controller
                                 } else {
                                     $deductionMinute = rand(0, 59);
                                 }
-                                
+
                                 $deductionDate->setTime($deductionHour, $deductionMinute, rand(0, 59));
                             }
                         } else {
                             // Next day: random time
                             $deductionDate->setTime(rand(0, 23), rand(0, 59), rand(0, 59));
                         }
-                        
+
                         // Random mailing list ID between 15 and 100
                         $mailingListId = rand(15, 100);
-                        
+
                         // Calculate total amount for this group
                         $groupAmount = $groupMessagesCount * 2.00;
-                        
+
                         // Create deduction record
                         $this->topupRepository->create([
                             'account_id' => $account->id,
@@ -365,7 +365,7 @@ class OwnersController extends Controller
                             'admin_id' => $admin->id,
                             'notes' => "Списание за рассылку ID={$mailingListId}. Отправлено {$groupMessagesCount} сообщений",
                         ]);
-                        
+
                         // Deduct balance
                         $this->accountRepository->deductBalance($account->id, $groupAmount);
                     }

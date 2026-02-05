@@ -185,14 +185,15 @@
 
             @if($owner->company && $owner->company->account)
                 <div class="mt-6 flex items-center gap-x-2.5 px-6 pb-4">
-                    <button type="button" onclick="openTopupModal()" class="primary-button">
-                        {{ __('newsletters::app.admin.owners.topup-button') }}
-                    </button>
                     @php
                         $currentAdmin = auth()->guard('admin')->user();
                         $isSuperAdmin = $currentAdmin && $currentAdmin->role && $currentAdmin->role->permission_type === 'all' && !$currentAdmin->company_id;
                     @endphp
                     @if($isSuperAdmin)
+                        <button type="button" onclick="openTopupModal()" class="primary-button">
+                            {{ __('newsletters::app.admin.owners.topup-button') }}
+                        </button>
+
                         <button type="button" onclick="clearHistory({{ $owner->id }})" class="secondary-button button-red">
                             {{ __('newsletters::app.admin.owners.clear-history') }}
                         </button>
