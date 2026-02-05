@@ -24,7 +24,7 @@ class VerificationRequest extends FormRequest
     public function rules()
     {
         return [
-            'verification_code' => 'required|string|size:6',
+            'verification_code' => 'required|string|regex:/^\d{4,10}$/',
             'phone_number' => 'nullable|string|regex:/^\+?[1-9]\d{1,14}$/',
             'telegram_id' => 'nullable|string|max:255',
             'whatsapp_id' => 'nullable|string|max:255',
@@ -41,7 +41,7 @@ class VerificationRequest extends FormRequest
     {
         return [
             'verification_code.required' => 'Verification code is required.',
-            'verification_code.size' => 'Verification code must be exactly 6 digits.',
+            'verification_code.regex' => 'Verification code must be numeric and between 4 and 10 digits.',
             'phone_number.regex' => 'Phone number must be in valid international format.',
             'telegram_id.max' => 'Telegram ID cannot exceed 255 characters.',
             'whatsapp_id.max' => 'WhatsApp ID cannot exceed 255 characters.',

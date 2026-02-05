@@ -147,7 +147,7 @@ POST /api/v1/customer/auth/verify-reset
 ## Security Features
 
 ### Verification Code Management
-- **6-digit numeric codes**: Easy to enter but secure
+- **Configurable code length**: Numeric verification codes with configurable length (4-10 digits, default: 6). Code length can be configured separately for each authentication channel (SMS, WhatsApp, Telegram) in the admin panel.
 - **10-minute expiration**: Codes expire after 10 minutes
 - **3 attempt limit**: Maximum 3 verification attempts per code
 - **Token-based verification**: Secure token system prevents replay attacks
@@ -320,7 +320,7 @@ php artisan test --filter=MultiChannelAuth
    - Check system time synchronization
 
 3. **Invalid verification errors**
-   - Check code format (must be 6 digits)
+   - Check code format (must be numeric, 4-10 digits, length configured per channel)
    - Verify token hasn't expired
    - Check attempt limits
 

@@ -5,6 +5,7 @@ namespace Webkul\RestApi\Services\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
 
 class VerificationService
 {
@@ -14,7 +15,8 @@ class VerificationService
      * @return void
      */
     public function __construct(
-        protected TestUserService $testUserService
+        protected TestUserService $testUserService,
+        protected AuthChannelSettingRepository $settingRepository
     ) {}
 
     /**
@@ -26,11 +28,18 @@ class VerificationService
      */
     public function generateVerificationCode(string $identifier, string $channel): array
     {
-        // Check if test user - use fixed code, otherwise generate random
+        // Get code length from settings
+        $channelCode = core()->getCurrentChannelCode();
+        $codeLength = (int) $this->settingRepository->getSetting($channel, 'code_length', $channelCode) ?: 6;
+        
+        // Ensure code length is within valid range (4-10)
+        $codeLength = max(4, min(10, $codeLength));
+        
+        // Check if test user - use fixed code with configured length, otherwise generate random
         $isTestUser = $this->testUserService->isTestUser($identifier, $channel);
         $verificationCode = $isTestUser
-            ? $this->testUserService->getFixedCode()
-            : str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            ? $this->testUserService->getFixedCode($codeLength)
+            : str_pad(random_int(0, pow(10, $codeLength) - 1), $codeLength, '0', STR_PAD_LEFT);
         
         if ($isTestUser) {
             Log::info("Test user verification code generated", [

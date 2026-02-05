@@ -59,6 +59,15 @@
                                             :value="$field['value'] ?? ''"
                                             :placeholder="trans($field['title'])"
                                         />
+                                    @elseif ($field['type'] === 'number')
+                                        <x-admin::form.control-group.control
+                                            type="number"
+                                            name="settings[{{ $field['key'] }}]"
+                                            :value="$field['value'] ?? ($field['default'] ?? '')"
+                                            :placeholder="trans($field['title'])"
+                                            min="4"
+                                            max="10"
+                                        />
                                     @elseif ($field['type'] === 'textarea')
                                         <x-admin::form.control-group.control
                                             type="textarea"

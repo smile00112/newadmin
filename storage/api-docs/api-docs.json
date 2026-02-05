@@ -5387,7 +5387,7 @@
                                 ],
                                 "properties": {
                                     "verification_code": {
-                                        "description": "6-digit verification code",
+                                        "description": "Numeric verification code (length configured per channel, default: 6 digits, range: 4-10)",
                                         "type": "string",
                                         "example": "123456"
                                     },
@@ -5546,7 +5546,7 @@
                                 ],
                                 "properties": {
                                     "verification_code": {
-                                        "description": "6-digit verification code",
+                                        "description": "Numeric verification code (length configured per channel, default: 6 digits, range: 4-10)",
                                         "type": "string",
                                         "example": "123456"
                                     },
