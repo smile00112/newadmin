@@ -27,7 +27,7 @@
             $nutritionAttributes = ['calories', 'proteins', 'fats', 'carbs'];
             $isNutritionAttribute = in_array($attribute->code, $nutritionAttributes);
         @endphp
-        
+
         @if ($isNutritionAttribute)
             <x-admin::form.control-group.control
                 type="text"
@@ -141,38 +141,70 @@
             @endforeach
         </x-admin::form.control-group.control>
 
-        @if($isPreferences)
-            @push('scripts')
+        @if(1)
+{{--            $isPreferences--}}
+            @pushOnce('scripts')
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
-                        const selectElement = document.querySelector('select[name="preferences[]"]');
-                        
-                        if (selectElement) {
-                            // Перехватываем клик на опции для переключения выбора
-                            selectElement.addEventListener('mousedown', function(e) {
-                                const option = e.target;
-                                
-                                if (option.tagName === 'OPTION') {
-                                    e.preventDefault();
-                                    
-                                    // Сохраняем текущее состояние
-                                    const wasSelected = option.selected;
-                                    
-                                    // Переключаем выбор опции
-                                    option.selected = !wasSelected;
-                                
-                                    // Триггерим события для обновления формы и Vue.js
-                                    const changeEvent = new Event('change', { bubbles: true, cancelable: true });
-                                    selectElement.dispatchEvent(changeEvent);
-                                    
-                                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-                                    selectElement.dispatchEvent(inputEvent);
+                        // Функция для инициализации обработчиков
+                        function initMultiselectHandlers() {
+                            // Находим все multiselect поля атрибутов (имена заканчиваются на [])
+                            const selectElements = document.querySelectorAll('select[multiple][name$="[]"]');
+
+                            console.log('Found multiselect elements:', selectElements.length);
+
+                            selectElements.forEach(function(selectElement) {
+                                // Проверяем, не добавлен ли уже обработчик
+                                if (selectElement.dataset.multiselectHandler === 'true') {
+                                    return;
                                 }
+
+                                // Помечаем, что обработчик добавлен
+                                selectElement.dataset.multiselectHandler = 'true';
+
+                                // Перехватываем клик на опции для переключения выбора
+                                selectElement.addEventListener('mousedown', function(e) {
+                                    const option = e.target;
+
+                                         if (option.tagName === 'OPTION') {
+                                        e.preventDefault();
+
+                                        // Сохраняем текущее состояние
+                                        const wasSelected = option.selected;
+
+                                        // Переключаем выбор опции
+                                        option.selected = !wasSelected;
+
+                                        // Триггерим события для обновления формы и Vue.js
+                                        const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                                        selectElement.dispatchEvent(changeEvent);
+
+                                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                                        selectElement.dispatchEvent(inputEvent);
+                                    }
+                                });
                             });
                         }
+
+                        // Инициализируем сразу
+                        initMultiselectHandlers();
+
+                        // Также инициализируем после небольшой задержки (для Vue компонентов)
+                        setTimeout(initMultiselectHandlers, 100);
+                        setTimeout(initMultiselectHandlers, 500);
+
+                        // Используем MutationObserver для отслеживания появления новых элементов
+                        const observer = new MutationObserver(function(mutations) {
+                            initMultiselectHandlers();
+                        });
+
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
                     });
                 </script>
-            @endpush
+            @endpushOnce
         @endif
 
         @break
