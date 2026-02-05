@@ -397,6 +397,10 @@ class OwnersController extends Controller
         // Delete all transactions for this account
         $this->topupRepository->where('account_id', $account->id)->delete();
 
+        // Reset account balance to zero
+        $account->balance = 0;
+        $account->save();
+
         session()->flash('success', trans('newsletters::app.admin.owners.clear-history-success'));
 
         return redirect()->route('admin.newsletters.owners.edit', $id);
