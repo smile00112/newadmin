@@ -1,0 +1,80 @@
+---
+alwaysApply: true
+---
+
+# Context Rules Loader
+
+This file contains instructions for automatically loading specialized rule files based on the context of the user's request.
+
+## Rules for Loading Specialized Files
+
+When working with user requests, if the following topics are mentioned in the request, automatically load the corresponding rule files from the `.cursor/rules/` directory:
+
+### Discount Coupons (Cart Rules & Coupons)
+
+**When to load:**
+- If the request mentions: coupons, discount coupons, promo codes, discount coupons, cart rules, cart rule coupons, coupon application, coupon generation, coupon validation, discount types, action_type, coupon_type, CartRule, CartRuleCoupon
+- If the user asks about discounts, promotional campaigns, cart rules
+- If models are mentioned: `CartRule`, `CartRuleCoupon`, `CartRuleCouponUsage`
+- If classes are mentioned: `CartRuleRepository`, `CartRuleCouponRepository`, `CartRule\Helpers\CartRule`
+
+**File to load:**
+`.cursor/rules/cart-rules-coupons.mdc`
+
+**Instruction:**
+When coupon mentions are detected in the request, always read and use information from `cart-rules-coupons.mdc` to understand the coupon system architecture, discount types, database structure, and logic.
+
+---
+
+## How to Use This File
+
+1. This file is always active (`alwaysApply: true`)
+2. When analyzing a user's request, check for keywords from the list above
+3. If topic mentions are found, read the corresponding specialized rule file
+4. Use information from the specialized file for more accurate responses
+
+## Adding New Rules
+
+When creating a new specialized rule file:
+1. Create a file in `.cursor/rules/` with `alwaysApply: false`
+2. Add a section to this file describing:
+   - When to load (keywords/topics)
+   - Which file to load
+   - Brief topic description
+
+---
+
+## Rules Synchronization
+
+When detecting code changes that relate to rule files:
+
+1. **Check `rules-mapping.json`** to identify which rule files are affected by changed code files
+2. **Remind the developer** if they modify code files related to a rule file but haven't updated the rule file
+3. **Reference `UPDATE_CHECKLIST.md`** to guide what sections need updating
+4. **Suggest running `sync-check.php`** to verify synchronization
+
+### Synchronization Reminder Format
+
+When code changes are detected that relate to rule files:
+
+```
+⚠ Synchronization Reminder:
+You've modified files related to [rule-file-name].mdc:
+- [list of changed files]
+
+Consider updating the rule file. Check:
+- .cursor/rules/UPDATE_CHECKLIST.md for what to update
+- .cursor/rules/rules-mapping.json for related files mapping
+- Run: php .cursor/rules/sync-check.php
+```
+
+### When to Remind
+
+- User modifies files listed in `rules-mapping.json` for a rule file
+- User creates new API endpoints related to a rule file
+- User modifies database migrations related to a rule file
+- User changes business logic in classes tracked by rules
+
+---
+
+**Note:** This file serves as a router for loading specialized rules. It helps avoid context overload by loading only relevant rule files as needed.

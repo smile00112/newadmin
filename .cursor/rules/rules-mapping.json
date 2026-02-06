@@ -1,0 +1,35 @@
+{
+  "cart-rules-coupons.mdc": {
+    "related_files": [
+      "packages/Webkul/CartRule/src/Models/*.php",
+      "packages/Webkul/CartRule/src/Repositories/*.php",
+      "packages/Webkul/CartRule/src/Helpers/*.php",
+      "packages/Webkul/CartRule/src/Database/Migrations/*.php",
+      "packages/Webkul/CartRule/src/Listeners/*.php",
+      "packages/Webkul/CartRule/src/Contracts/*.php",
+      "packages/Webkul/CartRule/src/Providers/*.php",
+      "packages/Webkul/*/Http/Controllers/**/CartRule*.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/**/CartRule*.php",
+      "packages/Webkul/Shop/src/Http/Controllers/API/CartController.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/V1/Shop/Customer/CartController.php",
+      "packages/Webkul/Admin/src/Http/Controllers/Sales/CartController.php"
+    ],
+    "related_tables": [
+      "cart_rules",
+      "cart_rule_coupons",
+      "cart_rule_coupon_usage",
+      "cart_rule_channels",
+      "cart_rule_customer_groups",
+      "cart_rule_customers"
+    ],
+    "critical_sections": [
+      "Database Structure",
+      "API for Working with Coupons",
+      "Discount Types",
+      "Coupon Application Logic",
+      "Main Classes and Files",
+      "Important Points When Working with Coupons"
+    ],
+    "description": "Discount coupon system specification"
+  }
+}

@@ -1,0 +1,345 @@
+---
+alwaysApply: false
+description: "Discount coupon system specification: coupon types, discount types, database structure, application logic, API endpoints"
+keywords: ["coupons", "discount coupons", "promo codes", "cart rules", "cart rule coupons", "CartRule", "CartRuleCoupon", "action_type", "coupon_type", "discounts", "promotions"]
+---
+
+# Discount Coupon System (Cart Rules & Coupons)
+
+**Keywords for automatic loading:** coupons, discount coupons, promo codes, discount coupons, cart rules, cart rule coupons, coupon application, coupon generation, coupon validation, discount types, action_type, coupon_type, CartRule, CartRuleCoupon, CartRuleCouponUsage, CartRuleRepository, CartRuleCouponRepository, promotions, cart rules, discounts
+
+## System Architecture
+
+The coupon system is built on two main entities:
+1. **CartRule** (`Webkul\CartRule\Models\CartRule`) - defines conditions and discount type
+2. **CartRuleCoupon** (`Webkul\CartRule\Models\CartRuleCoupon`) - specific coupon code linked to a rule
+
+## Coupon Types (coupon_type)
+
+In the `cart_rules` table, the `coupon_type` field:
+- `0` - "No Coupon" - rule applies automatically when conditions are met
+- `1` - "Specific Coupon" - requires coupon code input
+
+## Discount Types (action_type)
+
+The `CartRule` model supports 4 discount types:
+
+### 1. `by_percent` - Percentage of Product Price
+- Discount as percentage of product price
+- Maximum 100%
+- Formula: `(price × quantity - already applied discount) × (percentage / 100)`
+- Uses `discount_amount` as percentage (0-100)
+
+### 2. `by_fixed` - Fixed Amount
+- Fixed discount amount per product
+- Multiplied by product quantity
+- Uses `discount_amount` as fixed amount
+
+### 3. `cart_fixed` - Fixed Amount for Entire Cart
+- Fixed discount amount for the entire cart
+- Distributed proportionally among products
+- Uses `discount_amount` as fixed amount
+
+### 4. `buy_x_get_y` - Buy X Get Y Free
+- When buying X products, Y products are free
+- Uses `discount_step` (X) and `discount_amount` (Y)
+- Formula: `floor(quantity / (X + Y)) * Y + max(0, remainder - X)`
+
+## Database Structure
+
+### `cart_rules` Table
+```php
+- id (primary key)
+- name, description
+- starts_from, ends_till (rule validity dates)
+- status (boolean, rule activity)
+- coupon_type (0 or 1)
+- use_auto_generation (boolean, code auto-generation)
+- usage_per_customer (integer, usage limit per customer)
+- uses_per_coupon (integer, coupon usage limit)
+- times_used (integer, how many times rule was used)
+- condition_type (boolean)
+- conditions (JSON, application conditions)
+- end_other_rules (boolean, stop other rules)
+- uses_attribute_conditions (boolean)
+- action_type (string: by_percent, by_fixed, cart_fixed, buy_x_get_y)
+- discount_amount (decimal, discount amount)
+- discount_quantity (integer, max products for discount)
+- discount_step (string, for buy_x_get_y)
+- apply_to_shipping (boolean, apply to shipping)
+- free_shipping (boolean, free shipping)
+- sort_order (integer, application order)
+- timestamps
+```
+
+### `cart_rule_coupons` Table
+```php
+- id (primary key)
+- code (string, coupon code, unique)
+- cart_rule_id (foreign key -> cart_rules.id)
+- usage_limit (integer, usage limit)
+- usage_per_customer (integer, limit per customer)
+- times_used (integer, how many times used)
+- type (integer, coupon type)
+- is_primary (boolean, primary coupon)
+- expired_at (date, expiration date)
+- timestamps
+```
+
+### `cart_rule_coupon_usage` Table
+```php
+- id (primary key)
+- cart_rule_coupon_id (foreign key -> cart_rule_coupons.id)
+- customer_id (foreign key -> customers.id)
+- times_used (integer, how many times customer used coupon)
+```
+
+### Linking Tables
+- `cart_rule_channels` - link rules to channels
+- `cart_rule_customer_groups` - link rules to customer groups
+- `cart_rule_customers` - track rule usage by customers
+
+## Coupon Generation
+
+### Auto-generation supports formats:
+- `alphanumeric` - letters and numbers (A-Z, 0-9)
+- `alphabetical` - letters only (A-Z)
+- `numeric` - numbers only (0-9)
+
+### Generation parameters:
+- `code_prefix` - code prefix
+- `code_length` - random part length (minimum 10 characters)
+- `code_format` - format (alphanumeric/alphabetical/numeric)
+- `code_suffix` - code suffix
+- `coupon_qty` - number of coupons to generate
+
+### Generation method:
+```php
+CartRuleCouponRepository::generateCoupons($data, $cartRuleId)
+```
+
+## Coupon Application Logic
+
+### Validation process (`CartRule::canProcessRule()`):
+
+1. **Coupon type check:**
+   - If `coupon_type = 1`, coupon code is required in cart (`$cart->coupon_code`)
+   - Coupon code match with rule is verified
+
+2. **Usage limit check:**
+   - `usage_limit` - total coupon usage limit
+   - `usage_per_customer` - usage limit per customer
+   - Check via `cart_rule_coupon_usage` table
+
+3. **Validity date check:**
+   - `starts_from` and `ends_till` of rule
+   - `expired_at` of coupon
+
+4. **Condition check:**
+   - Channel (`cart_rule_channels`)
+   - Customer group (`cart_rule_customer_groups`)
+   - Additional conditions from JSON (`conditions`)
+
+5. **Discount application:**
+   - Calculation by discount type (`action_type`)
+   - Update `discount_amount` and `base_discount_amount` of products
+   - Apply to shipping (if `apply_to_shipping` or `free_shipping`)
+
+### Main helper:
+`Webkul\CartRule\Helpers\CartRule` - contains all discount application logic
+
+## API for Working with Coupons
+
+### Shop API (for customers):
+
+#### Apply coupon:
+```http
+POST /api/shop/customers/cart/coupon
+Content-Type: application/json
+
+{
+    "code": "DISCOUNT10"
+}
+```
+
+#### Remove coupon:
+```http
+DELETE /api/shop/customers/cart/coupon
+```
+
+### Admin API (for administrators):
+
+#### Get all rule coupons:
+```http
+GET /api/v1/admin/marketing/promotions/cart-rules/{cartRuleId}/coupons
+```
+
+#### Create coupons (auto-generation):
+```http
+POST /api/v1/admin/marketing/promotions/cart-rules/{cartRuleId}/coupons
+Content-Type: application/json
+
+{
+    "coupon_qty": 10,
+    "code_length": 12,
+    "code_format": "alphanumeric",
+    "code_prefix": "PROMO",
+    "code_suffix": "2024"
+}
+```
+
+#### Delete coupon:
+```http
+DELETE /api/v1/admin/marketing/promotions/cart-rules/{cartRuleId}/coupons/{id}
+```
+
+#### Mass delete:
+```http
+POST /api/v1/admin/marketing/promotions/cart-rules/{cartRuleId}/coupons/mass-destroy
+Content-Type: application/json
+
+{
+    "indices": [1, 2, 3]
+}
+```
+
+## Usage Tracking
+
+### When order is created (`CartRule\Listeners\Order`):
+
+1. Rule `times_used` is incremented (`cart_rules.times_used`)
+2. Coupon `times_used` is incremented (`cart_rule_coupons.times_used`)
+3. Record is created/updated in `cart_rule_coupon_usage` for customer
+4. Record is created/updated in `cart_rule_customers` for customer
+
+### Methods for working with coupons in cart:
+
+```php
+// Set coupon
+Cart::setCouponCode($code)->collectTotals();
+
+// Remove coupon
+Cart::removeCouponCode()->collectTotals();
+
+// Check coupon validity
+CartRule::checkCouponCode()
+```
+
+## System Features
+
+### Primary Coupon (`is_primary = 1`)
+- One coupon per rule can be marked as primary
+- Available via `CartRule::coupon_code()` (accessor)
+- Used for quick access to primary code
+
+### Application Conditions
+- JSON in `conditions` field
+- Validated via `Webkul\Rule\Helpers\Validator`
+- Example conditions: minimum cart amount, product quantity, product categories
+
+### Stop Other Rules
+- `end_other_rules = 1` - after applying this rule, others are not checked
+- Used for priority discounts
+
+### Apply to Shipping
+- `apply_to_shipping = 1` - discount applies to shipping cost
+- `free_shipping = 1` - shipping becomes free
+- Supported types: `by_percent`, `by_fixed`
+
+### Discount Distribution to Child Products
+- For products with child elements (e.g., configurable products)
+- Discount is distributed proportionally to child product costs
+- Method: `CartRule::divideDiscount($item)`
+
+## Main Classes and Files
+
+### Models:
+- `Webkul\CartRule\Models\CartRule`
+- `Webkul\CartRule\Models\CartRuleCoupon`
+- `Webkul\CartRule\Models\CartRuleCouponUsage`
+
+### Repositories:
+- `Webkul\CartRule\Repositories\CartRuleRepository`
+- `Webkul\CartRule\Repositories\CartRuleCouponRepository`
+- `Webkul\CartRule\Repositories\CartRuleCouponUsageRepository`
+- `Webkul\CartRule\Repositories\CartRuleCustomerRepository`
+
+### Helpers:
+- `Webkul\CartRule\Helpers\CartRule` - main discount application logic
+
+### Controllers:
+- `Webkul\Shop\Http\Controllers\API\CartController` - coupon application (Shop)
+- `Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CartController` - REST API for customers
+- `Webkul\Admin\Http\Controllers\Marketing\Promotions\CartRuleCouponController` - coupon management (Admin)
+- `Webkul\RestApi\Http\Controllers\V1\Admin\Marketing\Promotions\CartRuleCouponController` - REST API for admins
+
+### Event Listeners:
+- `Webkul\CartRule\Listeners\Order` - processing after order creation
+
+### Migrations:
+- `2019_05_13_024321_create_cart_rules_table.php`
+- `2019_05_13_024326_create_cart_rule_coupons_table.php`
+- `2019_05_13_024327_create_cart_rule_coupon_usage_table.php`
+
+## Important Points When Working with Coupons
+
+1. **Coupon validation occurs in `CartRule::canProcessRule()`**
+   - All limits and conditions are checked before application
+
+2. **Cart recalculation is required after coupon application**
+   - Use `Cart::collectTotals()` after `setCouponCode()`
+
+3. **Coupon is automatically removed if validation fails**
+   - Method `CartRule::checkCouponCode()` is called during recalculation
+   - If coupon is invalid, `Cart::removeCouponCode()` is called
+
+4. **Application conditions are checked via Validator**
+   - Uses `Webkul\Rule\Helpers\Validator::validate()`
+   - Conditions from JSON `conditions` field are checked
+
+5. **Rule sorting is important**
+   - Rules are applied in `sort_order` order
+   - Rule with `end_other_rules = 1` stops further checking
+
+6. **Usage tracking occurs when order is created**
+   - Listener `CartRule\Listeners\Order` processes order creation event
+   - Usage counters are updated
+
+## Usage Examples
+
+### Creating rule with coupon:
+```php
+$cartRule = CartRuleRepository::create([
+    'name' => '10% Discount',
+    'coupon_type' => 1,
+    'use_auto_generation' => 0,
+    'coupon_code' => 'DISCOUNT10',
+    'action_type' => 'by_percent',
+    'discount_amount' => 10,
+    'status' => 1,
+    // ... other fields
+]);
+```
+
+### Generating coupons:
+```php
+CartRuleCouponRepository::generateCoupons([
+    'coupon_qty' => 100,
+    'code_length' => 12,
+    'code_format' => 'alphanumeric',
+    'code_prefix' => 'PROMO',
+    'code_suffix' => '2024',
+], $cartRuleId);
+```
+
+### Applying coupon in cart:
+```php
+$coupon = CartRuleCouponRepository::findOneByField('code', 'DISCOUNT10');
+if ($coupon && $coupon->cart_rule->status) {
+    Cart::setCouponCode($coupon->code)->collectTotals();
+}
+```
+
+---
+
+**Note:** This file contains the coupon system specification. When working with coupons, always refer to this document to understand the architecture and logic of the system.
