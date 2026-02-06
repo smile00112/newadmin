@@ -24,6 +24,20 @@ When working with user requests, if the following topics are mentioned in the re
 **Instruction:**
 When coupon mentions are detected in the request, always read and use information from `cart-rules-coupons.mdc` to understand the coupon system architecture, discount types, database structure, and logic.
 
+### Products (Catalog Products)
+
+**When to load:**
+- If the request mentions: products, товары, product, catalog, товар, Product, ProductRepository, ProductFlat, product types, simple, configurable, bundle, grouped, ingredient, constructor, product attributes, product inventory, product price
+- If the user asks about product management, catalog, product creation, product types, product attributes, product inventory
+- If models are mentioned: `Product`, `ProductFlat`, `ProductAttributeValue`, `ProductImage`, `ProductInventory`, `ProductPriceIndex`, `ProductReview`
+- If classes are mentioned: `ProductRepository`, `ProductFlatRepository`, `ProductType`, `AbstractType`, `Simple`, `Configurable`, `Bundle`, `Grouped`
+
+**File to load:**
+`.cursor/rules/products.mdc`
+
+**Instruction:**
+When product mentions are detected in the request, always read and use information from `products.mdc` to understand the product system architecture, product types, database structure, attributes system, and logic.
+
 ---
 
 ## How to Use This File
