@@ -10,7 +10,7 @@ class MobileSettingsController
      *      operationId="getMobileAppSettings",
      *      tags={"Mobile App"},
      *      summary="Get mobile app settings",
-     *      description="Returns mobile app configuration settings including app info, filters, and custom data",
+     *      description="Returns mobile app configuration settings including app info, filters, custom data, and contact information",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\Parameter(
@@ -176,6 +176,86 @@ class MobileSettingsController
      *                          @OA\Property(property="in_stock", type="boolean", example=true, description="Product availability"),
      *                          @OA\Property(property="is_saleable", type="boolean", example=true, description="Whether product can be sold"),
      *                          @OA\Property(property="url_key", type="string", example="product-url-key", description="Product URL key")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_telegram",
+     *                      type="string",
+     *                      description="Telegram contact link",
+     *                      example="https://t.me/your_contact",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_whatsapp",
+     *                      type="string",
+     *                      description="WhatsApp contact link",
+     *                      example="https://wa.me/1234567890",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_email",
+     *                      type="string",
+     *                      description="Email address",
+     *                      example="support@example.com",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_max",
+     *                      type="string",
+     *                      description="Max Messenger contact link",
+     *                      example="https://max.me/your_contact",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_us",
+     *                      type="object",
+     *                      description="Contact information in structured format",
+     *                      @OA\Property(
+     *                          property="telegram",
+     *                          type="string",
+     *                          description="Telegram contact link",
+     *                          example="https://t.me/your_contact",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="whatsapp",
+     *                          type="string",
+     *                          description="WhatsApp contact link",
+     *                          example="https://wa.me/1234567890",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="email",
+     *                          type="string",
+     *                          description="Email address",
+     *                          example="support@example.com",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="max",
+     *                          type="string",
+     *                          description="Max Messenger contact link",
+     *                          example="https://max.me/your_contact",
+     *                          nullable=true
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="documents",
+     *                      type="object",
+     *                      description="Document links for mobile app",
+     *                      @OA\Property(
+     *                          property="user_agreement",
+     *                          type="string",
+     *                          description="URL to get HTML content of user agreement page",
+     *                          example="http://example.com/api/v1/cms/1/html",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="privacy_policy",
+     *                          type="string",
+     *                          description="URL to get HTML content of privacy policy page",
+     *                          example="http://example.com/api/v1/cms/2/html",
+     *                          nullable=true
      *                      )
      *                  )
      *              )

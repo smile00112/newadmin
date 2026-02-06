@@ -22,7 +22,22 @@
                         @lang('mobile_app::app.settings.general.title')
                     </p>
 
-                    @foreach ($fields as $field)
+                    @php
+                        $contactFields = [];
+                        $documentFields = [];
+                        $otherFields = [];
+                        foreach ($fields as $field) {
+                            if (isset($field['group']) && $field['group'] === 'contact') {
+                                $contactFields[] = $field;
+                            } elseif (isset($field['group']) && $field['group'] === 'documents') {
+                                $documentFields[] = $field;
+                            } else {
+                                $otherFields[] = $field;
+                            }
+                        }
+                    @endphp
+
+                    @foreach ($otherFields as $field)
                         <div class="mb-4">
                             <x-admin::form.control-group>
                                 <x-admin::form.control-group.label>
@@ -96,6 +111,91 @@
                             </x-admin::form.control-group>
                         </div>
                     @endforeach
+
+                    @if (count($contactFields) > 0)
+                        {{-- Contact Links Group --}}
+                        <div class="mt-6 mb-4 rounded-lg border-2 border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+                            <p class="mb-4 text-base font-semibold text-blue-800 dark:text-blue-300">
+                                @lang('mobile_app::app.settings.general.contact-us.title')
+                            </p>
+                            <p class="mb-4 text-sm text-blue-700 dark:text-blue-400">
+                                @lang('mobile_app::app.settings.general.contact-us.info')
+                            </p>
+
+                            @foreach ($contactFields as $field)
+                                <div class="mb-4">
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            {{ trans($field['title']) }}
+                                        </x-admin::form.control-group.label>
+
+                                        @if ($field['type'] === 'text')
+                                            <x-admin::form.control-group.control
+                                                type="text"
+                                                name="settings[{{ $field['key'] }}]"
+                                                :value="$field['value'] ?? ''"
+                                                :placeholder="trans($field['title'])"
+                                            />
+                                        @endif
+
+                                        @if (isset($field['description']))
+                                            <x-admin::form.control-group.error control-name="settings[{{ $field['key'] }}]" />
+                                            <p class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                                                {{ trans($field['description']) }}
+                                            </p>
+                                        @endif
+                                    </x-admin::form.control-group>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (count($documentFields) > 0)
+                        {{-- Document Links Group --}}
+                        <div class="mt-6 mb-4 rounded-lg border-2 border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+                            <p class="mb-4 text-base font-semibold text-green-800 dark:text-green-300">
+                                @lang('mobile_app::app.settings.general.documents.title')
+                            </p>
+                            <p class="mb-4 text-sm text-green-700 dark:text-green-400">
+                                @lang('mobile_app::app.settings.general.documents.info')
+                            </p>
+
+                            @foreach ($documentFields as $field)
+                                <div class="mb-4">
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            {{ trans($field['title']) }}
+                                        </x-admin::form.control-group.label>
+
+                                        @if ($field['type'] === 'select' && isset($field['options']))
+                                            <x-admin::form.control-group.control
+                                                type="select"
+                                                name="settings[{{ $field['key'] }}]"
+                                                :value="$field['value'] ?? ''"
+                                            >
+                                                <option value="">{{ __('admin::app.common.select') }}</option>
+                                                @foreach ($field['options'] as $option)
+                                                    <option 
+                                                        value="{{ $option['value'] }}"
+                                                        {{ ($field['value'] ?? '') == $option['value'] ? 'selected' : '' }}
+                                                    >
+                                                        {{ $option['title'] }}
+                                                    </option>
+                                                @endforeach
+                                            </x-admin::form.control-group.control>
+                                        @endif
+
+                                        @if (isset($field['description']))
+                                            <x-admin::form.control-group.error control-name="settings[{{ $field['key'] }}]" />
+                                            <p class="mt-1 text-xs text-green-600 dark:text-green-400">
+                                                {{ trans($field['description']) }}
+                                            </p>
+                                        @endif
+                                    </x-admin::form.control-group>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <div class="flex justify-end">
                         <button

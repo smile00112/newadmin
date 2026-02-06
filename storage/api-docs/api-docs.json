@@ -15,6 +15,44 @@
         }
     ],
     "paths": {
+        "/api/v1/cms/{id}/html": {
+            "get": {
+                "tags": [
+                    "CMS Pages"
+                ],
+                "summary": "Get CMS page HTML content",
+                "description": "Returns HTML content of a CMS page by ID. The page must be available for the current channel.",
+                "operationId": "getCmsPageHtml",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "CMS Page ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "text/html": {
+                                "schema": {
+                                    "description": "HTML content of the CMS page",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Page not found or not available for current channel"
+                    }
+                }
+            }
+        },
         "/api/v1/attributes": {
             "get": {
                 "tags": [
@@ -6739,7 +6777,7 @@
                     "Mobile App"
                 ],
                 "summary": "Get mobile app settings",
-                "description": "Returns mobile app configuration settings including app info, filters, and custom data",
+                "description": "Returns mobile app configuration settings including app info, filters, custom data, and contact information",
                 "operationId": "getMobileAppSettings",
                 "parameters": [
                     {
@@ -6992,6 +7030,78 @@
                                                         },
                                                         "type": "object"
                                                     }
+                                                },
+                                                "contact_telegram": {
+                                                    "description": "Telegram contact link",
+                                                    "type": "string",
+                                                    "example": "https://t.me/your_contact",
+                                                    "nullable": true
+                                                },
+                                                "contact_whatsapp": {
+                                                    "description": "WhatsApp contact link",
+                                                    "type": "string",
+                                                    "example": "https://wa.me/1234567890",
+                                                    "nullable": true
+                                                },
+                                                "contact_email": {
+                                                    "description": "Email address",
+                                                    "type": "string",
+                                                    "example": "support@example.com",
+                                                    "nullable": true
+                                                },
+                                                "contact_max": {
+                                                    "description": "Max Messenger contact link",
+                                                    "type": "string",
+                                                    "example": "https://max.me/your_contact",
+                                                    "nullable": true
+                                                },
+                                                "contact_us": {
+                                                    "description": "Contact information in structured format",
+                                                    "properties": {
+                                                        "telegram": {
+                                                            "description": "Telegram contact link",
+                                                            "type": "string",
+                                                            "example": "https://t.me/your_contact",
+                                                            "nullable": true
+                                                        },
+                                                        "whatsapp": {
+                                                            "description": "WhatsApp contact link",
+                                                            "type": "string",
+                                                            "example": "https://wa.me/1234567890",
+                                                            "nullable": true
+                                                        },
+                                                        "email": {
+                                                            "description": "Email address",
+                                                            "type": "string",
+                                                            "example": "support@example.com",
+                                                            "nullable": true
+                                                        },
+                                                        "max": {
+                                                            "description": "Max Messenger contact link",
+                                                            "type": "string",
+                                                            "example": "https://max.me/your_contact",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "documents": {
+                                                    "description": "Document links for mobile app",
+                                                    "properties": {
+                                                        "user_agreement": {
+                                                            "description": "URL to get HTML content of user agreement page",
+                                                            "type": "string",
+                                                            "example": "http://example.com/api/v1/cms/1/html",
+                                                            "nullable": true
+                                                        },
+                                                        "privacy_policy": {
+                                                            "description": "URL to get HTML content of privacy policy page",
+                                                            "type": "string",
+                                                            "example": "http://example.com/api/v1/cms/2/html",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -13460,6 +13570,10 @@
         {
             "name": "WebSocket Notifications",
             "description": "WebSocket Real-time Notifications API - Real-time events via Laravel Reverb"
+        },
+        {
+            "name": "CMS Pages",
+            "description": "CMS Pages"
         },
         {
             "name": "Catalog",

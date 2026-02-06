@@ -17,6 +17,11 @@ Route::group([
     require 'catalog-routes.php';
 
     /**
+     * CMS routes.
+     */
+    require 'cms-routes.php';
+
+    /**
      * Customer routes.
      */
     require 'customers-routes.php';

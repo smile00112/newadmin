@@ -19,6 +19,16 @@ return [
                 'title' => 'Пользовательские настройки',
                 'info'  => 'Пользовательские данные конфигурации',
             ],
+
+            'contact-us' => [
+                'title' => 'Напишите нам',
+                'info'  => 'Контактная информация для мобильного приложения',
+            ],
+
+            'documents' => [
+                'title' => 'Ссылки на документы',
+                'info'  => 'Ссылки на документы для мобильного приложения',
+            ],
         ],
 
         'fields' => [
@@ -45,6 +55,18 @@ return [
             'shipping-methods-info'    => 'Доступные методы доставки в мобильном приложении',
             'home-filters'             => 'Фильтры главного экрана',
             'home-filters-info'        => 'Выберите атрибуты для фильтрации на главном экране',
+            'contact-telegram'         => 'Telegram контакт',
+            'contact-telegram-info'    => 'Ссылка на Telegram контакт',
+            'contact-whatsapp'         => 'WhatsApp контакт',
+            'contact-whatsapp-info'    => 'Ссылка на WhatsApp контакт',
+            'contact-email'            => 'Email',
+            'contact-email-info'       => 'Адрес электронной почты',
+            'contact-max'              => 'Max мессенджер контакт',
+            'contact-max-info'         => 'Ссылка на Max мессенджер контакт',
+            'user-agreement'            => 'Пользовательское соглашение',
+            'user-agreement-info'       => 'Выберите CMS страницу для пользовательского соглашения',
+            'privacy-policy'            => 'Условия конфиденциальности',
+            'privacy-policy-info'       => 'Выберите CMS страницу для условий конфиденциальности',
         ],
     ],
 

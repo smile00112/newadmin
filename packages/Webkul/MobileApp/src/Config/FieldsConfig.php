@@ -4,6 +4,7 @@ namespace Webkul\MobileApp\Config;
 
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Category\Repositories\CategoryRepository;
+use Webkul\CMS\Repositories\PageRepository;
 use Webkul\Core\Repositories\ChannelRepository;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Shipping\Facades\Shipping;
@@ -90,6 +91,50 @@ class FieldsConfig
                 'type'        => 'textarea',
                 'description' => 'mobile_app::app.settings.fields.custom-data-info',
             ],
+            [
+                'key'         => 'contact_telegram',
+                'title'       => 'mobile_app::app.settings.fields.contact-telegram',
+                'type'        => 'text',
+                'description' => 'mobile_app::app.settings.fields.contact-telegram-info',
+                'group'       => 'contact',
+            ],
+            [
+                'key'         => 'contact_whatsapp',
+                'title'       => 'mobile_app::app.settings.fields.contact-whatsapp',
+                'type'        => 'text',
+                'description' => 'mobile_app::app.settings.fields.contact-whatsapp-info',
+                'group'       => 'contact',
+            ],
+            [
+                'key'         => 'contact_email',
+                'title'       => 'mobile_app::app.settings.fields.contact-email',
+                'type'        => 'text',
+                'description' => 'mobile_app::app.settings.fields.contact-email-info',
+                'group'       => 'contact',
+            ],
+            [
+                'key'         => 'contact_max',
+                'title'       => 'mobile_app::app.settings.fields.contact-max',
+                'type'        => 'text',
+                'description' => 'mobile_app::app.settings.fields.contact-max-info',
+                'group'       => 'contact',
+            ],
+            [
+                'key'         => 'user_agreement',
+                'title'       => 'mobile_app::app.settings.fields.user-agreement',
+                'type'        => 'select',
+                'source'      => 'cms_pages',
+                'description' => 'mobile_app::app.settings.fields.user-agreement-info',
+                'group'       => 'documents',
+            ],
+            [
+                'key'         => 'privacy_policy',
+                'title'       => 'mobile_app::app.settings.fields.privacy-policy',
+                'type'        => 'select',
+                'source'      => 'cms_pages',
+                'description' => 'mobile_app::app.settings.fields.privacy-policy-info',
+                'group'       => 'documents',
+            ],
         ];
     }
 
@@ -104,6 +149,7 @@ class FieldsConfig
             'channels'         => $this->getChannelOptions(),
             'shipping_methods' => $this->getShippingMethodOptions(),
             'attributes'       => $this->getAttributeOptions(),
+            'cms_pages'        => $this->getCmsPageOptions(),
             default            => [],
         };
     }
@@ -186,6 +232,22 @@ class FieldsConfig
                 'id'    => $attribute->id,
                 'title' => $attribute->admin_name ?? $attribute->code,
                 'value' => $attribute->code,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get CMS page options.
+     */
+    protected function getCmsPageOptions(): array
+    {
+        $repository = app(PageRepository::class);
+        
+        return $repository->all()->map(function ($page) {
+            return [
+                'id'    => $page->id,
+                'title' => $page->page_title ?? $page->url_key ?? 'Page #' . $page->id,
+                'value' => $page->id,
             ];
         })->toArray();
     }

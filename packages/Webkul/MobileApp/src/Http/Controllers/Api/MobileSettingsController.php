@@ -103,6 +103,27 @@ class MobileSettingsController extends Controller
         // Add cart cross-sell products
         $settings['cart_cross_sell_products'] = $this->getCartCrossSellProducts();
 
+        // Add contact us information in structured format
+        $settings['contact_us'] = [
+            'telegram' => $settings['contact_telegram'] ?? '',
+            'whatsapp' => $settings['contact_whatsapp'] ?? '',
+            'email'    => $settings['contact_email'] ?? '',
+            'max'      => $settings['contact_max'] ?? '',
+        ];
+
+        // Add document links
+        $userAgreementId = $settings['user_agreement'] ?? null;
+        $privacyPolicyId = $settings['privacy_policy'] ?? null;
+
+        $settings['documents'] = [
+            'user_agreement' => $userAgreementId 
+                ? url('/api/v1/cms/' . $userAgreementId . '/html')
+                : '',
+            'privacy_policy' => $privacyPolicyId 
+                ? url('/api/v1/cms/' . $privacyPolicyId . '/html')
+                : '',
+        ];
+
         return $settings;
     }
 
