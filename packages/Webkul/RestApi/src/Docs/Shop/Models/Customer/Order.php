@@ -206,6 +206,18 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Rating Comment",
+     *     description="Comment for the order rating",
+     *     example="Отличное обслуживание, все быстро и качественно!",
+     *     nullable=true
+     * )
+     *
+     * @var string|null
+     */
+    private $rating_comment;
+
+    /**
+     * @OA\Property(
      *     title="Order's Customer",
      *     description="Order's Customer"
      * )

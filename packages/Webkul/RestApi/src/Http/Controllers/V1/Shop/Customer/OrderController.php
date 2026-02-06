@@ -117,6 +117,7 @@ class OrderController extends CustomerController
 
         $validated = $request->validate([
             'rating' => 'required|boolean',
+            'rating_comment' => 'nullable|string|max:1000',
         ]);
 
         // Конвертируем boolean в правильный формат (true/false)
@@ -124,6 +125,7 @@ class OrderController extends CustomerController
 
         $order->update([
             'rating' => $rating,
+            'rating_comment' => $validated['rating_comment'] ?? null,
         ]);
 
         return response([
