@@ -331,13 +331,23 @@
                                         >
                                             @lang('admin::app.marketing.promotions.cart-rules.create.buy-x-get-y-free')
                                         </option>
+
+                                        <option
+                                            value="gift"
+                                            {{ old('action_type') == 'gift' ? 'selected' : '' }}
+                                        >
+                                            @lang('admin::app.marketing.promotions.cart-rules.create.gift')
+                                        </option>
                                     </x-admin::form.control-group.control>
 
                                     <x-admin::form.control-group.error control-name="action_type" />
                                 </x-admin::form.control-group>
 
                                 <!-- Discount Amount -->
-                                <x-admin::form.control-group class="w-full">
+                                <x-admin::form.control-group 
+                                    v-if="actionType !== 'gift'"
+                                    class="w-full"
+                                >
                                     <x-admin::form.control-group.label class="required">
                                         @lang('admin::app.marketing.promotions.cart-rules.create.discount-amount')
                                     </x-admin::form.control-group.label>
@@ -353,6 +363,28 @@
                                     />
 
                                     <x-admin::form.control-group.error control-name="discount_amount" />
+                                </x-admin::form.control-group>
+
+                                <!-- Gift Product -->
+                                <x-admin::form.control-group 
+                                    v-if="actionType === 'gift'"
+                                    class="w-full"
+                                >
+                                    <x-admin::form.control-group.label class="required">
+                                        @lang('admin::app.marketing.promotions.cart-rules.create.gift-product')
+                                    </x-admin::form.control-group.label>
+
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        id="gift_product_id"
+                                        name="gift_product_id"
+                                        rules="required"
+                                        :value="old('gift_product_id')"
+                                        :label="trans('admin::app.marketing.promotions.cart-rules.create.gift-product')"
+                                        :placeholder="trans('admin::app.marketing.promotions.cart-rules.create.gift-product-placeholder')"
+                                    />
+
+                                    <x-admin::form.control-group.error control-name="gift_product_id" />
                                 </x-admin::form.control-group>
                             </div>
 

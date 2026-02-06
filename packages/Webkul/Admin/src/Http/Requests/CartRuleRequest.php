@@ -32,7 +32,6 @@ class CartRuleRequest extends FormRequest
             'starts_from'         => 'nullable|date',
             'ends_till'           => 'nullable|date|after_or_equal:starts_from',
             'action_type'         => 'required',
-            'discount_amount'     => 'required|numeric',
         ];
 
         if (! request('id')) {
@@ -47,6 +46,17 @@ class CartRuleRequest extends FormRequest
         ) {
             $rules = array_merge($rules, [
                 'discount_amount' => 'required|numeric|min:0|max:100',
+            ]);
+        } elseif (
+            request()->has('action_type')
+            && request()->action_type == 'gift'
+        ) {
+            $rules = array_merge($rules, [
+                'gift_product_id' => 'required|exists:products,id',
+            ]);
+        } else {
+            $rules = array_merge($rules, [
+                'discount_amount' => 'required|numeric',
             ]);
         }
 

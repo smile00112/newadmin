@@ -9,6 +9,7 @@ use Webkul\CartRule\Contracts\CartRule as CartRuleContract;
 use Webkul\Core\Database\Factories\CartRuleFactory;
 use Webkul\Core\Models\ChannelProxy;
 use Webkul\Customer\Models\CustomerGroupProxy;
+use Webkul\Product\Models\ProductProxy;
 
 class CartRule extends Model implements CartRuleContract
 {
@@ -39,6 +40,7 @@ class CartRule extends Model implements CartRuleContract
         'discount_amount',
         'discount_quantity',
         'discount_step',
+        'gift_product_id',
         'apply_to_shipping',
         'free_shipping',
         'sort_order',
@@ -123,6 +125,14 @@ class CartRule extends Model implements CartRuleContract
         }
 
         return $coupon->code;
+    }
+
+    /**
+     * Get the gift product associated with the cart rule.
+     */
+    public function giftProduct(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ProductProxy::modelClass(), 'gift_product_id');
     }
 
     /**

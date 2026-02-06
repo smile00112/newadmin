@@ -10,7 +10,9 @@ use Webkul\CartRule\Repositories\CartRuleCustomerRepository;
 use Webkul\CartRule\Repositories\CartRuleRepository;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Checkout\Models\CartItem;
+use Webkul\Checkout\Repositories\CartItemRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Rule\Helpers\Validator;
 
 class CartRule
@@ -42,6 +44,8 @@ class CartRule
         protected CartRuleCouponRepository $cartRuleCouponRepository,
         protected CartRuleCustomerRepository $cartRuleCustomerRepository,
         protected CartRuleCouponUsageRepository $cartRuleCouponUsageRepository,
+        protected ProductRepository $productRepository,
+        protected CartItemRepository $cartItemRepository,
         protected Validator $validator
     ) {}
 
@@ -89,6 +93,9 @@ class CartRule
         $this->processShippingDiscount();
 
         $this->processFreeShippingDiscount();
+
+        // Process gift products for applied rules
+        $this->processGiftProducts($appliedCartRuleIds);
 
         if (! $this->checkCouponCode()) {
             cart()->removeCouponCode();
@@ -278,6 +285,11 @@ class CartRule
 
                     $baseDiscountAmount = $discountQty * $item->base_price;
 
+                    break;
+
+                case 'gift':
+                    // For gift type, we don't apply discount to existing items
+                    // The gift product will be added in collect() method
                     break;
             }
 
@@ -505,7 +517,209 @@ class CartRule
             }
         }
 
+        // If coupon is invalid, remove gift products associated with it
+        $this->removeGiftProducts($this->cart->coupon_code);
+
         return false;
+    }
+
+    /**
+     * Process gift products for applied cart rules
+     *
+     * @param  array  $appliedCartRuleIds
+     * @return void
+     */
+    protected function processGiftProducts(array $appliedCartRuleIds): void
+    {
+        if (empty($appliedCartRuleIds)) {
+            return;
+        }
+
+        $appliedCartRuleIds = array_unique($appliedCartRuleIds);
+
+        foreach ($appliedCartRuleIds as $ruleId) {
+            $rule = $this->cartRuleRepository->find($ruleId);
+
+            if (
+                $rule
+                && $rule->action_type === 'gift'
+                && $rule->gift_product_id
+                && $this->canProcessRule($rule)
+            ) {
+                $this->addGiftProduct($rule);
+            }
+        }
+    }
+
+    /**
+     * Add gift product to cart
+     *
+     * @param  \Webkul\CartRule\Contracts\CartRule  $rule
+     * @return void
+     */
+    protected function addGiftProduct($rule): void
+    {
+        if (! $this->cart || ! $rule->gift_product_id) {
+            return;
+        }
+
+        $product = $this->productRepository->find($rule->gift_product_id);
+
+        if (! $product || ! $product->status) {
+            return;
+        }
+
+        // Check if gift product already exists for this coupon
+        $couponCode = $this->cart->coupon_code;
+        $existingGiftItem = $this->cart->all_items->first(function ($item) use ($product, $couponCode, $rule) {
+            $additional = $item->additional ?? [];
+            return $item->product_id == $product->id
+                && ($additional['is_gift'] ?? false) === true
+                && ($additional['gift_coupon_code'] ?? null) === $couponCode
+                && ($additional['gift_cart_rule_id'] ?? null) == $rule->id;
+        });
+
+        if ($existingGiftItem) {
+            return;
+        }
+
+        try {
+            // Prepare data for adding product with zero price
+            $cartData = [
+                'quantity' => 1,
+                'additional' => [
+                    'is_gift' => true,
+                    'gift_coupon_code' => $couponCode,
+                    'gift_cart_rule_id' => $rule->id,
+                ],
+            ];
+
+            // Add product to cart using Cart facade
+            $cartProducts = $product->getTypeInstance()->prepareForCart(array_merge([
+                'cart_id' => $this->cart->id,
+            ], $cartData));
+
+            if (is_string($cartProducts)) {
+                return;
+            }
+
+            $parentCartItem = null;
+
+            foreach ($cartProducts as $cartProduct) {
+                // Set zero price for gift product
+                $cartProduct['price'] = 0;
+                $cartProduct['base_price'] = 0;
+                $cartProduct['additional'] = array_merge(
+                    $cartProduct['additional'] ?? [],
+                    $cartData['additional']
+                );
+
+                // Check if item already exists
+                $cartItem = $this->getItemByProductForGift($cartProduct, $cartData);
+
+                if (isset($cartProduct['parent_id'])) {
+                    $cartProduct['parent_id'] = $parentCartItem->id;
+                }
+
+                if (! $cartItem) {
+                    $cartItem = $this->cartItemRepository->create(array_merge($cartProduct, ['cart_id' => $this->cart->id]));
+                } else {
+                    if (
+                        isset($cartProduct['parent_id'])
+                        && $cartItem->parent_id !== $parentCartItem->id
+                    ) {
+                        $cartItem = $this->cartItemRepository->create(array_merge($cartProduct, ['cart_id' => $this->cart->id]));
+                    } else {
+                        $this->cartItemRepository->update($cartProduct, $cartItem->id);
+                    }
+                }
+
+                // Ensure price is set to 0 for gift product and update totals
+                if ($cartItem) {
+                    $this->cartItemRepository->update([
+                        'price' => 0,
+                        'base_price' => 0,
+                        'total' => 0,
+                        'base_total' => 0,
+                        'total_incl_tax' => 0,
+                        'base_total_incl_tax' => 0,
+                    ], $cartItem->id);
+                }
+
+                if (! $parentCartItem) {
+                    $parentCartItem = $cartItem;
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail if product cannot be added
+            return;
+        }
+    }
+
+    /**
+     * Get cart item by product for gift
+     *
+     * @param  array  $cartProduct
+     * @param  array  $data
+     * @return \Webkul\Checkout\Models\CartItem|null
+     */
+    protected function getItemByProductForGift(array $cartProduct, array $data)
+    {
+        $items = $this->cart->all_items;
+
+        foreach ($items as $item) {
+            $additional = $item->additional ?? [];
+            
+            if (
+                $item->product_id == $cartProduct['product_id']
+                && ($additional['is_gift'] ?? false) === true
+                && ($additional['gift_coupon_code'] ?? null) === ($data['additional']['gift_coupon_code'] ?? null)
+                && ($additional['gift_cart_rule_id'] ?? null) == ($data['additional']['gift_cart_rule_id'] ?? null)
+            ) {
+                if (! isset($cartProduct['parent_id'])) {
+                    return $item;
+                }
+
+                if ($item->parent_id == $cartProduct['parent_id']) {
+                    return $item;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Remove gift products from cart
+     *
+     * @param  string|null  $couponCode
+     * @return void
+     */
+    public function removeGiftProducts(?string $couponCode = null): void
+    {
+        if (! $this->cart) {
+            return;
+        }
+
+        $items = $this->cart->all_items;
+
+        foreach ($items as $item) {
+            $additional = $item->additional ?? [];
+
+            if (! ($additional['is_gift'] ?? false)) {
+                continue;
+            }
+
+            // If coupon code is specified, remove only gifts for that coupon
+            if ($couponCode !== null) {
+                if (($additional['gift_coupon_code'] ?? null) !== $couponCode) {
+                    continue;
+                }
+            }
+
+            // Remove gift item
+            cart()->removeItem($item->id);
+        }
     }
 
     /**

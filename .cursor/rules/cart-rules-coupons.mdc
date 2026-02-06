@@ -22,7 +22,7 @@ In the `cart_rules` table, the `coupon_type` field:
 
 ## Discount Types (action_type)
 
-The `CartRule` model supports 4 discount types:
+The `CartRule` model supports 5 discount types:
 
 ### 1. `by_percent` - Percentage of Product Price
 - Discount as percentage of product price
@@ -45,6 +45,16 @@ The `CartRule` model supports 4 discount types:
 - Uses `discount_step` (X) and `discount_amount` (Y)
 - Formula: `floor(quantity / (X + Y)) * Y + max(0, remainder - X)`
 
+### 5. `gift` - Gift Product
+- Adds a gift product to the cart at zero price when coupon is applied
+- Uses `gift_product_id` to specify the product to add as a gift
+- Gift product is automatically removed when coupon is removed
+- Gift product is marked in `cart_items.additional` with:
+  - `is_gift: true`
+  - `gift_coupon_code: 'COUPON_CODE'`
+  - `gift_cart_rule_id: rule_id`
+- If the gift product already exists in cart, a separate entry is added with zero price
+
 ## Database Structure
 
 ### `cart_rules` Table
@@ -62,10 +72,11 @@ The `CartRule` model supports 4 discount types:
 - conditions (JSON, application conditions)
 - end_other_rules (boolean, stop other rules)
 - uses_attribute_conditions (boolean)
-- action_type (string: by_percent, by_fixed, cart_fixed, buy_x_get_y)
-- discount_amount (decimal, discount amount)
+- action_type (string: by_percent, by_fixed, cart_fixed, buy_x_get_y, gift)
+- discount_amount (decimal, discount amount, not required for gift type)
 - discount_quantity (integer, max products for discount)
 - discount_step (string, for buy_x_get_y)
+- gift_product_id (unsigned integer, nullable, foreign key to products.id, required for gift type)
 - apply_to_shipping (boolean, apply to shipping)
 - free_shipping (boolean, free shipping)
 - sort_order (integer, application order)
@@ -143,10 +154,16 @@ CartRuleCouponRepository::generateCoupons($data, $cartRuleId)
 5. **Discount application:**
    - Calculation by discount type (`action_type`)
    - Update `discount_amount` and `base_discount_amount` of products
+   - For `gift` type: add gift product to cart with zero price
    - Apply to shipping (if `apply_to_shipping` or `free_shipping`)
 
 ### Main helper:
 `Webkul\CartRule\Helpers\CartRule` - contains all discount application logic
+
+**Methods for gift products:**
+- `addGiftProduct(CartRule $rule)` - adds gift product to cart
+- `removeGiftProducts(?string $couponCode = null)` - removes gift products from cart
+- `processGiftProducts(array $appliedCartRuleIds)` - processes gift products for applied rules
 
 ## API for Working with Coupons
 

@@ -629,6 +629,12 @@ class Cart
      */
     public function removeCouponCode(): self
     {
+        // Remove gift products associated with the coupon before removing it
+        if ($this->cart && $this->cart->coupon_code) {
+            $couponCode = $this->cart->coupon_code;
+            app(\Webkul\CartRule\Helpers\CartRule::class)->removeGiftProducts($couponCode);
+        }
+
         return $this->setCouponCode(null);
     }
 
