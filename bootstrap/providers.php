@@ -27,6 +27,7 @@ return [
     Webkul\Notification\Providers\NotificationServiceProvider::class,
     Webkul\Payment\Providers\PaymentServiceProvider::class,
     Webkul\Paypal\Providers\PaypalServiceProvider::class,
+    Webkul\TochkaPayment\Providers\TochkaPaymentServiceProvider::class,
     Webkul\Product\Providers\ProductServiceProvider::class,
     Webkul\RestApi\Providers\RestApiServiceProvider::class,
     Webkul\Rule\Providers\RuleServiceProvider::class,

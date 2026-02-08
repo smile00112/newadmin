@@ -15,4 +15,18 @@ return [
         'sort'       => 1,
         'icon'       => '',
     ],
+    [
+        'key'        => 'tochka-payment.settings',
+        'name'       => 'tochka-payment::app.admin.menu.settings',
+        'route'      => 'admin.tochka-payment.settings.index',
+        'sort'       => 2,
+        'icon'       => '',
+    ],
+    [
+        'key'        => 'tochka-payment.test-order',
+        'name'       => 'tochka-payment::app.admin.menu.test-order',
+        'route'      => 'admin.tochka-payment.test-order.index',
+        'sort'       => 3,
+        'icon'       => '',
+    ],
 ];

@@ -2,8 +2,10 @@
 
 namespace Webkul\TochkaPayment\Providers;
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Webkul\Core\Models\CoreConfig;
 
 class TochkaPaymentServiceProvider extends ServiceProvider
 {
@@ -29,6 +31,31 @@ class TochkaPaymentServiceProvider extends ServiceProvider
         $this->mapApiRoutes();
 
         $this->mapAdminRoutes();
+
+        $this->mergeCoreConfigIntoConfig();
+    }
+
+    /**
+     * Merge Tochka Payment settings from core_config into config.
+     * Values from database override config file / .env when present.
+     */
+    protected function mergeCoreConfigIntoConfig(): void
+    {
+        try {
+            $records = CoreConfig::where('code', 'like', 'tochka_payment.%')
+                ->whereNull('channel_code')
+                ->whereNull('locale_code')
+                ->get();
+
+            foreach ($records as $record) {
+                $key = substr($record->code, strlen('tochka_payment.'));
+                if ($key !== '') {
+                    Config::set('tochka-payment.'.$key, $record->value);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if core_config table or CoreConfig not available (e.g. during install)
+        }
     }
 
     /**

@@ -32,7 +32,7 @@ class CallbackHandler
      */
     public function process(array $postData): array
     {
-        Log::info('Tochka Payment: Received callback', $this->maskArray($postData));
+        Log::info('Tochka Payment: Bank callback received (raw)', $this->maskArray($postData));
 
         // Validate HTTP method
         if (request()->method() !== 'POST') {

@@ -52,6 +52,15 @@
                     </div>
                 @endif
 
+                @if (!empty($payment->request_data['product_name']))
+                    <div>
+                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            @lang('tochka-payment::app.admin.payment-history.show.product-name')
+                        </label>
+                        <p class="mt-1 text-sm text-gray-800 dark:text-white">{{ $payment->request_data['product_name'] }}</p>
+                    </div>
+                @endif
+
                 @if ($payment->transaction_id)
                     <div>
                         <label class="text-sm font-medium text-gray-600 dark:text-gray-400">

@@ -45,6 +45,7 @@ class PaymentController
             'client_email' => 'required|email|max:255',
             'client_phone' => 'required|string|max:20',
             'external_order_id' => 'nullable|string|max:255',
+            'product_name' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -67,6 +68,7 @@ class PaymentController
 
             // Build request parameters with actual payment ID
             $requestParams = $this->requestBuilder->buildRequestParams($data, $payment->id);
+            $requestParams['product_name'] = $data['product_name'] ?? null;
             $paymentUrl = $this->requestBuilder->buildPaymentUrl($requestParams);
 
             // Update payment with correct URL and request data
@@ -116,6 +118,14 @@ class PaymentController
 
             // Process callback
             $paymentData = $callbackHandler->process($request->all());
+
+            Log::info('Tochka Payment: Bank response (callback) to order creation', [
+                'payment_id' => $paymentData['payment_id'],
+                'order_id' => $paymentData['order_id'],
+                'transaction_id' => $paymentData['transaction_id'],
+                'amount' => $paymentData['amount'],
+                'client_name' => $paymentData['client_name'] ?? null,
+            ]);
 
             // Process successful payment
             $payment = $paymentProcessor->processSuccessfulPayment($paymentData);
