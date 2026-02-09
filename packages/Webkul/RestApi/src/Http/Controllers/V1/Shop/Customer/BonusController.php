@@ -232,8 +232,8 @@ class BonusController extends CustomerController
         })->toArray();
 
         $data = [
-            'points_balance' => (float) $pointsBalance,
-            'balance' => (float) $totalBalance,
+            'points_balance' => (float) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN ),
+            'balance' => (float) round($totalBalance, 0, PHP_ROUND_HALF_DOWN ),
             'spent_sum' => (float) $spentSum,
             'orders_count' => (int) $ordersCount,
             'remaining' => (int) $remaining,
