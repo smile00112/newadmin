@@ -11,6 +11,17 @@
 {!! view_render_event('bagisto.shop.checkout.onepage.payment_methods.after') !!}
 
 @pushOnce('scripts')
+    @if (core()->getConfigData('sales.payment_methods.alfabank.saved_cards_payment_enable'))
+        <script>
+            // Define routes for saved cards
+            window.alfabankRoutes = {
+                getCards: '{{ route("alfabank.saved-cards.get") }}',
+                selectCard: '{{ route("alfabank.saved-cards.select") }}'
+            };
+        </script>
+        <script src="{{ asset('vendor/alfabank-payment/js/saved-cards.js') }}"></script>
+    @endif
+
     <script
         type="text/x-template"
         id="v-payment-methods-template"
@@ -134,6 +145,13 @@
                         })
                         .then(response => {
                             this.$emit('processed', response.data.cart);
+
+                            // Trigger saved cards loading for Alfabank
+                            if (selectedMethod.method === 'alfabank') {
+                                window.dispatchEvent(new CustomEvent('payment-method-selected', {
+                                    detail: { method: 'alfabank' }
+                                }));
+                            }
 
                             // Used in mobile view. 
                             if (window.innerWidth <= 768) {
