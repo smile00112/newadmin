@@ -30,14 +30,14 @@
                 <x-admin::form.control-group.label class="required">
                     @lang('bonus::app.admin.levels.cashback-percent')
                 </x-admin::form.control-group.label>
-                <x-admin::form.control-group.control type="text" name="cashback_percent" rules="required|numeric" />
+                <x-admin::form.control-group.control type="number" name="cashback_percent" rules="required|integer" />
             </x-admin::form.control-group>
 
             <x-admin::form.control-group>
                 <x-admin::form.control-group.label class="required">
                     @lang('bonus::app.admin.levels.threshold')
                 </x-admin::form.control-group.label>
-                <x-admin::form.control-group.control type="text" name="threshold_value" rules="required|numeric" />
+                <x-admin::form.control-group.control type="number" name="threshold_value" rules="required|integer" />
             </x-admin::form.control-group>
 
             <x-admin::form.control-group>

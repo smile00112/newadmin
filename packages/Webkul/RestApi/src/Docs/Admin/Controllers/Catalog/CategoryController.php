@@ -175,6 +175,13 @@ class CategoryController
      *                      enum={"products_and_description", "products_only", "description_only"}
      *                  ),
      *                  @OA\Property(
+     *                      property="product_display_type",
+     *                      type="string",
+     *                      description="Category's product listing layout: standard, enlarged_top (first product enlarged at top), variant_2",
+     *                      example="standard",
+     *                      enum={"standard", "enlarged_top", "variant_2"}
+     *                  ),
+     *                  @OA\Property(
      *                      property="description",
      *                      type="string",
      *                      description="Category's description",
@@ -317,6 +324,13 @@ class CategoryController
      *                      description="Category's display mode",
      *                      example="products_and_description",
      *                      enum={"products_and_description", "products_only", "description_only"}
+     *                  ),
+     *                  @OA\Property(
+     *                      property="product_display_type",
+     *                      type="string",
+     *                      description="Category's product listing layout: standard, enlarged_top, variant_2",
+     *                      example="standard",
+     *                      enum={"standard", "enlarged_top", "variant_2"}
      *                  ),
      *                  @OA\Property(
      *                      property="banner_path[]",

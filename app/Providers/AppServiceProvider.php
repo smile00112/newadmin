@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Repositories\ApplicationErrorRepository;
 use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(ApplicationErrorRepository::class);
+
         $allowedIPs = array_map('trim', explode(',', config('app.debug_allowed_ips')));
 
         $allowedIPs = array_filter($allowedIPs);

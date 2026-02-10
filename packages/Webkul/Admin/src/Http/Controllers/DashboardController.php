@@ -2,6 +2,7 @@
 
 namespace Webkul\Admin\Http\Controllers;
 
+use App\Repositories\ApplicationErrorRepository;
 use Webkul\Admin\Helpers\Dashboard;
 
 class DashboardController extends Controller
@@ -26,7 +27,10 @@ class DashboardController extends Controller
      *
      * @return void
      */
-    public function __construct(protected Dashboard $dashboardHelper) {}
+    public function __construct(
+        protected Dashboard $dashboardHelper,
+        protected ApplicationErrorRepository $applicationErrorRepository
+    ) {}
 
     /**
      * Dashboard page.
@@ -35,9 +39,12 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $recentErrors = $this->applicationErrorRepository->getRecent(20);
+
         return view('admin::dashboard.index')->with([
-            'startDate' => $this->dashboardHelper->getStartDate(),
-            'endDate'   => $this->dashboardHelper->getEndDate(),
+            'startDate'   => $this->dashboardHelper->getStartDate(),
+            'endDate'     => $this->dashboardHelper->getEndDate(),
+            'recentErrors' => $recentErrors,
         ]);
     }
 

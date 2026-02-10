@@ -3005,8 +3005,7 @@
                                                         "example": "Bronze"
                                                     },
                                                     "cashback_percent": {
-                                                        "type": "number",
-                                                        "format": "float",
+                                                        "type": "integer",
                                                         "example": 2
                                                     },
                                                     "description_top": {
@@ -3158,8 +3157,7 @@
                                                         "example": "1 грейд"
                                                     },
                                                     "cashback_percent": {
-                                                        "type": "number",
-                                                        "format": "float",
+                                                        "type": "integer",
                                                         "example": 2
                                                     },
                                                     "description_top": {
@@ -6771,6 +6769,118 @@
                 ]
             }
         },
+        "/api/v1/errors": {
+            "post": {
+                "tags": [
+                    "Application Errors"
+                ],
+                "summary": "Report application error",
+                "description": "Submit an error report from the application (e.g. mobile, web). No authentication required. The error is stored and visible in the admin panel.",
+                "operationId": "reportApplicationError",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "message"
+                                ],
+                                "properties": {
+                                    "message": {
+                                        "description": "Error message (required)",
+                                        "type": "string",
+                                        "example": "Undefined array key 'id'"
+                                    },
+                                    "code": {
+                                        "description": "Error code or exception class",
+                                        "type": "string",
+                                        "example": "ErrorException",
+                                        "nullable": true
+                                    },
+                                    "file": {
+                                        "description": "File path where error occurred",
+                                        "type": "string",
+                                        "example": "/app/Http/Controllers/ExampleController.php",
+                                        "nullable": true
+                                    },
+                                    "line": {
+                                        "description": "Line number",
+                                        "type": "integer",
+                                        "example": 42,
+                                        "nullable": true
+                                    },
+                                    "trace": {
+                                        "description": "Stack trace (string or JSON string)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "context": {
+                                        "description": "Additional context (user_id, device, url, etc.)",
+                                        "type": "object",
+                                        "nullable": true
+                                    },
+                                    "source": {
+                                        "description": "Source identifier (e.g. mobile, web, api)",
+                                        "type": "string",
+                                        "example": "mobile",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Error report saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Error report has been saved successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Created error record ID",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The message field is required."
+                                        },
+                                        "errors": {
+                                            "description": "Validation errors by field",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mobile-settings": {
             "get": {
                 "tags": [
@@ -7871,6 +7981,17 @@
                         ],
                         "example": "products_and_description"
                     },
+                    "product_display_type": {
+                        "title": "Product Display Type",
+                        "description": "Category's product listing layout: standard grid/list, enlarged first product at top, or variant #2",
+                        "type": "string",
+                        "enum": [
+                            "standard",
+                            "enlarged_top",
+                            "variant_2"
+                        ],
+                        "example": "standard"
+                    },
                     "description": {
                         "title": "Description",
                         "description": "Category's description",
@@ -7981,6 +8102,17 @@
                             "description_only"
                         ],
                         "example": "products_and_description"
+                    },
+                    "product_display_type": {
+                        "title": "Product Display Type",
+                        "description": "Category's product listing layout: standard grid/list, enlarged first product at top, or variant #2",
+                        "type": "string",
+                        "enum": [
+                            "standard",
+                            "enlarged_top",
+                            "variant_2"
+                        ],
+                        "example": "standard"
                     },
                     "description": {
                         "title": "Description",
@@ -13582,6 +13714,10 @@
         {
             "name": "Bonuses",
             "description": "Bonuses"
+        },
+        {
+            "name": "Application Errors",
+            "description": "Application Errors"
         },
         {
             "name": "Mobile App",

@@ -77,6 +77,7 @@ class CategoryController extends Controller
             'status',
             'position',
             'display_mode',
+            'product_display_type',
             'attributes',
             'logo_path',
             'banner_path',
@@ -121,6 +122,7 @@ class CategoryController extends Controller
             'banner_path',
             'position',
             'display_mode',
+            'product_display_type',
             'status',
             'attributes',
             $categoryRequest->input('locale')

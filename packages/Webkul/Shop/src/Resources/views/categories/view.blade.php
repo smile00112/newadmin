@@ -54,7 +54,7 @@
 
     @if (in_array($category->display_mode, [null, 'products_only', 'products_and_description']))
         <!-- Category Vue Component -->
-        <v-category>
+        <v-category product-display-type="{{ $category->product_display_type ?? 'standard' }}">
             <!-- Category Shimmer Effect -->
             <x-shop::shimmer.categories.view />
         </v-category>
@@ -77,6 +77,19 @@
                             @include('shop::categories.toolbar')
                         </div>
 
+                        <!-- Enlarged Top Product Display (only for enlarged_top type) -->
+                        <div v-if="productDisplayType === 'enlarged_top' && products.length > 0 && (filters.toolbar.applied.mode ?? filters.toolbar.default.mode) !== 'list'" class="mt-8">
+                            <template v-if="!isLoading">
+                                <div class="mb-8 grid grid-cols-1 gap-8">
+                                    <x-shop::products.card
+                                        ::mode="'grid'"
+                                        v-for="product in [products[0]]"
+                                        :key="product.id"
+                                    />
+                                </div>
+                            </template>
+                        </div>
+
                         <!-- Product List Card Container -->
                         <div
                             class="mt-8 grid grid-cols-1 gap-6"
@@ -94,7 +107,8 @@
                                 <template v-if="products.length">
                                     <x-shop::products.card
                                         ::mode="'list'"
-                                        v-for="product in products"
+                                        v-for="(product, index) in (productDisplayType === 'enlarged_top' ? products.slice(1) : products)"
+                                        :key="product.id"
                                     />
                                 </template>
 
@@ -139,7 +153,8 @@
                                     <div class="grid grid-cols-3 gap-8 max-1060:grid-cols-2 max-md:justify-items-center max-md:gap-x-4">
                                         <x-shop::products.card
                                             ::mode="'grid'"
-                                            v-for="product in products"
+                                            v-for="(product, index) in (productDisplayType === 'enlarged_top' ? products.slice(1) : products)"
+                                            :key="product.id"
                                         />
                                     </div>
                                 </template>
@@ -200,6 +215,13 @@
         <script type="module">
             app.component('v-category', {
                 template: '#v-category-template',
+
+                props: {
+                    productDisplayType: {
+                        type: String,
+                        default: 'standard'
+                    }
+                },
 
                 data() {
                     return {

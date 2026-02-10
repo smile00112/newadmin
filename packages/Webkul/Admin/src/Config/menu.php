@@ -13,6 +13,17 @@ return [
     ],
 
     /**
+     * Application Errors.
+     */
+    [
+        'key'        => 'application_errors',
+        'name'       => 'admin::app.components.layouts.sidebar.application-errors',
+        'route'      => 'admin.application_errors.index',
+        'sort'       => 2,
+        'icon'       => 'icon-report',
+    ],
+
+    /**
      * Sales.
      */
     [
