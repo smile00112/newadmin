@@ -234,7 +234,7 @@ class BonusController extends CustomerController
         $data = [
             'points_balance' => (float) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN ),
             'balance' => (float) round($totalBalance, 0, PHP_ROUND_HALF_DOWN ),
-            'spent_sum' => (float) $spentSum,
+            'spent_sum' => (float) round($spentSum),
             'orders_count' => (int) $ordersCount,
             'remaining' => (int) $remaining,
             'percent_max' => (int) $maxUsagePercent,
