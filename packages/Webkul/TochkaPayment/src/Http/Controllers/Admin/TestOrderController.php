@@ -44,7 +44,8 @@ final class TestOrderController extends Controller
 
         $requestParams = $requestBuilder->buildRequestParams($validated, $payment->id);
         $requestParams['product_name'] = $validated['product_name'] ?? null;
-        $paymentUrl = $requestBuilder->buildPaymentUrl($requestParams);
+        //$paymentUrl = $requestBuilder->buildPaymentUrl($requestParams);
+        $paymentUrl = $requestBuilder->requestPaymentUrl($requestParams);
 
         $payment->update([
             'order_id' => $requestParams['orderid'],

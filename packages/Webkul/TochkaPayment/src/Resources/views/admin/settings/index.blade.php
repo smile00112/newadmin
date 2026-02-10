@@ -43,32 +43,17 @@
 
                     <x-admin::form.control-group>
                         <x-admin::form.control-group.label>
-                            @lang('tochka-payment::app.admin.settings.index.login')
+                            @lang('tochka-payment::app.admin.settings.index.client_id')
                         </x-admin::form.control-group.label>
                         <x-admin::form.control-group.control
                             type="text"
-                            name="login"
-                            :value="old('login', $settings['login'] ?? '')"
-                            v-model="login"
-                            :label="trans('tochka-payment::app.admin.settings.index.login')"
-                            :placeholder="trans('tochka-payment::app.admin.settings.index.login_placeholder')"
+                            name="client_id"
+                            :value="old('client_id', $settings['client_id'] ?? '')"
+                            v-model="client_id"
+                            :label="trans('tochka-payment::app.admin.settings.index.client_id')"
+                            :placeholder="trans('tochka-payment::app.admin.settings.index.client_id_placeholder')"
                         />
-                        <x-admin::form.control-group.error control-name="login" />
-                    </x-admin::form.control-group>
-
-                    <x-admin::form.control-group>
-                        <x-admin::form.control-group.label>
-                            @lang('tochka-payment::app.admin.settings.index.secret_key')
-                        </x-admin::form.control-group.label>
-                        <x-admin::form.control-group.control
-                            type="password"
-                            name="secret_key"
-                            :value="old('secret_key', $settings['secret_key'] ?? '')"
-                            v-model="secret_key"
-                            :label="trans('tochka-payment::app.admin.settings.index.secret_key')"
-                            :placeholder="trans('tochka-payment::app.admin.settings.index.secret_key_placeholder')"
-                        />
-                        <x-admin::form.control-group.error control-name="secret_key" />
+                        <x-admin::form.control-group.error control-name="client_id" />
                     </x-admin::form.control-group>
 
                     <x-admin::form.control-group>
@@ -209,30 +194,16 @@
 
                             <x-admin::form.control-group>
                                 <x-admin::form.control-group.label>
-                                    @lang('tochka-payment::app.admin.settings.index.login')
+                                    @lang('tochka-payment::app.admin.settings.index.client_id')
                                 </x-admin::form.control-group.label>
                                 <x-admin::form.control-group.control
                                     type="text"
-                                    name="login"
-                                    v-model="login"
-                                    :label="trans('tochka-payment::app.admin.settings.index.login')"
-                                    :placeholder="trans('tochka-payment::app.admin.settings.index.login_placeholder')"
+                                    name="client_id"
+                                    v-model="client_id"
+                                    :label="trans('tochka-payment::app.admin.settings.index.client_id')"
+                                    :placeholder="trans('tochka-payment::app.admin.settings.index.client_id_placeholder')"
                                 />
-                                <x-admin::form.control-group.error control-name="login" />
-                            </x-admin::form.control-group>
-
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label>
-                                    @lang('tochka-payment::app.admin.settings.index.secret_key')
-                                </x-admin::form.control-group.label>
-                                <x-admin::form.control-group.control
-                                    type="password"
-                                    name="secret_key"
-                                    v-model="secret_key"
-                                    :label="trans('tochka-payment::app.admin.settings.index.secret_key')"
-                                    :placeholder="trans('tochka-payment::app.admin.settings.index.secret_key_placeholder')"
-                                />
-                                <x-admin::form.control-group.error control-name="secret_key" />
+                                <x-admin::form.control-group.error control-name="client_id" />
                             </x-admin::form.control-group>
 
                             <x-admin::form.control-group>
@@ -332,8 +303,7 @@
                 data() {
                     return {
                         server_url: @json($settings['server_url'] ?? ''),
-                        login: @json($settings['login'] ?? ''),
-                        secret_key: @json($settings['secret_key'] ?? ''),
+                        client_id: @json($settings['client_id'] ?? ''),
                         webhook_url: @json($settings['webhook_url'] ?? ''),
                         api_token: @json($settings['api_token'] ?? ''),
                         min_amount: @json($settings['min_amount'] ?? 1),

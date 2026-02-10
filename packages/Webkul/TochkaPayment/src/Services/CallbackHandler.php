@@ -78,12 +78,13 @@ class CallbackHandler
      */
     public function isSignatureValid(array $postData): bool
     {
+        $secretKey = (string) (config('tochka-payment.secret_key') ?? '');
         $stringToHash = $postData['id'] .
             $postData['sum'] .
             $postData['clientid'] .
             $postData['orderid'] .
             $postData['login'] .
-            config('tochka-payment.secret_key');
+            $secretKey;
 
         $expectedKey = hash(config('tochka-payment.signature_algorithms.callback'), $stringToHash);
 
@@ -98,9 +99,10 @@ class CallbackHandler
      */
     public function getSuccessResponse(string $transactionId): string
     {
+        $secretKey = (string) (config('tochka-payment.secret_key') ?? '');
         $hash = hash(
             config('tochka-payment.signature_algorithms.callback'),
-            $transactionId . config('tochka-payment.secret_key')
+            $transactionId . $secretKey
         );
 
         return 'OK ' . $hash;

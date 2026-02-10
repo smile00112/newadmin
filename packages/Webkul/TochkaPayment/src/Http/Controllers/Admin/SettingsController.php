@@ -17,8 +17,7 @@ class SettingsController extends Controller
      */
     protected static array $configKeys = [
         'server_url',
-        'login',
-        'secret_key',
+        'client_id',
         'webhook_url',
         'api_token',
         'min_amount',
@@ -43,10 +42,9 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'server_url'   => 'required|url',
-            'login'        => 'required|string|max:255',
-            'secret_key'   => 'required|string|max:255',
+            'client_id'    => 'required|string|max:255',
             'webhook_url'  => 'nullable|url|max:500',
-            'api_token'    => 'nullable|string|max:255',
+            'api_token'    => 'nullable|string',
             'min_amount'   => 'required|numeric|min:0',
             'service_name' => 'required|string|max:255',
             'lang'         => 'required|in:ru,en',

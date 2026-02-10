@@ -19,14 +19,34 @@ class PaymentRequestBuilder
         $orderId = $paymentId . '|' . time();
         $amount = number_format((float) $data['amount'], 2, '.', '');
         $clientPhone = preg_replace('/[^0-9+]/', '', $data['client_phone']);
-
+/*
+ *  "Data": {
+    "customerCode": "300000092",
+    "amount": "1234.00",
+    "purpose": "Перевод за оказанные услуги",
+    "redirectUrl": "https://example.com",
+    "failRedirectUrl": "https://example.com/fail",
+    "paymentMode": [
+      "sbp",
+      "card",
+      "tinkoff",
+      "dolyame"
+    ],
+    "saveCard": true,
+    "consumerId": "fedac807-078d-45ac-a43b-5c01c57edbf8",
+    "merchantId": "200000000001056",
+    "preAuthorization": true,
+    "ttl": 10080,
+    "paymentLinkId": "string"
+  }
+ * */
         $formData = [
-            'sum' => $amount,
-            'orderid' => $orderId,
+            'amount' => $amount,
+            'customerCode' => $data['customer_id'],
             'clientid' => trim($data['client_name']),
             'client_email' => $data['client_email'],
             'client_phone' => $clientPhone,
-            'login' => config('tochka-payment.login'),
+            'login' => config('tochka-payment.client_id'),
             'service_name' => config('tochka-payment.service_name'),
             'lang' => config('tochka-payment.lang', 'ru'),
             'callback_url' => $this->getCallbackUrl(),
@@ -52,8 +72,7 @@ class PaymentRequestBuilder
             $formData['service_name'] .
             $formData['client_email'] .
             $formData['client_phone'] .
-            config('tochka-payment.login') .
-            config('tochka-payment.secret_key');
+            config('tochka-payment.client_id');
 
         return hash(config('tochka-payment.signature_algorithms.request'), $stringToHash);
     }
@@ -67,6 +86,24 @@ class PaymentRequestBuilder
     {
         return route('tochka-payment.callback');
     }
+
+    /**
+     * Get payment URL from bank.
+     *
+     * @param  array  $formData
+     * @return string
+     */
+    public function requestPaymentUrl(array $formData): string
+    {
+        dd($formData);
+        $serverUrl = config('tochka-payment.server_url');
+
+        // Build query string
+        $queryParams = http_build_query($formData);
+
+        return $serverUrl . '?' . $queryParams;
+    }
+
 
     /**
      * Build payment URL with form data.
@@ -121,7 +158,7 @@ class PaymentRequestBuilder
         $masked = $data;
 
         if (isset($masked['login'])) {
-            $masked['login'] = '****';
+            $masked['login'] = '****'; // value is client_id
         }
 
         if (isset($masked['sign'])) {

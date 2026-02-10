@@ -69,7 +69,7 @@ class PaymentController
             // Build request parameters with actual payment ID
             $requestParams = $this->requestBuilder->buildRequestParams($data, $payment->id);
             $requestParams['product_name'] = $data['product_name'] ?? null;
-            $paymentUrl = $this->requestBuilder->buildPaymentUrl($requestParams);
+            $paymentUrl = $this->requestBuilder->requestPaymentUrl($requestParams);
 
             // Update payment with correct URL and request data
             $payment->update([
