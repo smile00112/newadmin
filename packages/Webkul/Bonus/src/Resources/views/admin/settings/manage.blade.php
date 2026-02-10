@@ -18,43 +18,134 @@
                     @lang('bonus::app.admin.settings.manage.search-customer')
                 </p>
 
-                <div class="relative">
-                    <input
-                        type="text"
-                        class="block w-full rounded-lg border bg-white py-1.5 leading-6 text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 ltr:pl-3 ltr:pr-10 rtl:pl-10 rtl:pr-3"
-                        :placeholder="translations.searchPlaceholder"
-                        v-model.lazy="searchTerm"
-                        v-debounce="500"
-                        @input="searchCustomers"
-                    />
-
-                    <template v-if="isSearching">
-                        <img
-                            class="absolute top-2.5 h-5 w-5 animate-spin ltr:right-3 rtl:left-3"
-                            src="{{ bagisto_asset('images/spinner.svg') }}"
+                <div class="flex w-full items-center gap-x-1">
+                    <div class="relative flex max-w-[445px] items-center max-sm:w-full max-sm:max-w-full">
+                        <input
+                            type="text"
+                            class="block w-full rounded-lg border bg-white py-1.5 leading-6 text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 dark:focus:border-gray-400 ltr:pl-3 ltr:pr-10 rtl:pl-10 rtl:pr-3"
+                            :placeholder="translations.searchPlaceholder"
+                            v-model.lazy="searchTerm"
+                            v-debounce="500"
+                            @input="searchCustomers"
                         />
+
+                        <template v-if="isSearching">
+                            <img
+                                class="absolute top-2 h-5 w-5 animate-spin ltr:right-2.5 rtl:left-2.5"
+                                src="{{ bagisto_asset('images/spinner.svg') }}"
+                            />
+                        </template>
+
+                        <template v-else>
+                            <span class="icon-search pointer-events-none absolute top-2 flex items-center text-2xl ltr:right-2.5 rtl:left-2.5"></span>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Recent Accruals (before search results) -->
+                <div class="grid gap-2.5" v-if="showRecentAccruals">
+                    <p class="text-base font-semibold text-gray-800 dark:text-white mb-4">
+                        @lang('bonus::app.admin.settings.manage.recent-accruals')
+                    </p>
+
+                    <template v-if="isLoadingRecentAccruals">
+                        <div class="flex items-center justify-center py-8">
+                            <img
+                                class="h-8 w-8 animate-spin"
+                                src="{{ bagisto_asset('images/spinner.svg') }}"
+                            />
+                            <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                                @lang('bonus::app.admin.settings.manage.loading-accruals')
+                            </span>
+                        </div>
                     </template>
 
                     <template v-else>
-                        <span class="icon-search pointer-events-none absolute top-1.5 flex items-center text-2xl ltr:right-3 rtl:left-3"></span>
+                        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.customer')</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.order')</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.amount')</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.date')</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.settings.manage.description')</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tr
+                                        v-for="item in recentAccruals"
+                                        :key="item.id"
+                                        class="px-6 py-4 text-sm text-gray-900 dark:text-white"
+                                    >
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">@{{ item.id }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.customer_name }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.order_increment_id }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.amount_formatted }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.created_at }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">@{{ item.description }}</td>
+                                    </tr>
+                                    <tr v-if="recentAccruals.length === 0 && !isLoadingRecentAccruals">
+                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            @lang('bonus::app.admin.settings.manage.no-accruals')
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div
+                            class="flex items-center gap-x-2 mt-4"
+                            v-if="recentAccrualsPagination.lastPage > 1"
+                        >
+                            <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                                @lang('bonus::app.admin.settings.manage.recent-accruals'): @{{ recentAccrualsPagination.total }}
+                            </span>
+                            <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 max-sm:hidden">
+                                @{{ recentAccrualsPagination.page }} / @{{ recentAccrualsPagination.lastPage }}
+                            </span>
+                            <div class="flex items-center gap-1 ltr:ml-auto rtl:mr-auto">
+                                <button
+                                    type="button"
+                                    class="inline-flex cursor-pointer appearance-none items-center justify-between gap-x-1 rounded-md border border-transparent p-1.5 text-center text-gray-600 transition-all hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    :disabled="recentAccrualsPagination.page <= 1"
+                                    @click="changeRecentAccrualsPage(recentAccrualsPagination.page - 1)"
+                                >
+                                    <span class="icon-sort-left rtl:icon-sort-right text-2xl"></span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="inline-flex cursor-pointer appearance-none items-center justify-between gap-x-1 rounded-md border border-transparent p-1.5 text-center text-gray-600 transition-all hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    :disabled="recentAccrualsPagination.page >= recentAccrualsPagination.lastPage"
+                                    @click="changeRecentAccrualsPage(recentAccrualsPagination.page + 1)"
+                                >
+                                    <span class="icon-sort-right rtl:icon-sort-left text-2xl"></span>
+                                </button>
+                            </div>
+                        </div>
                     </template>
                 </div>
 
                 <!-- Search Results -->
                 <div
-                    class="max-h-60 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800"
+                    class="max-h-60 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
                     v-if="searchResults.length > 0"
                 >
                     <div
-                        class="grid cursor-pointer gap-1.5 border-b border-gray-200 p-3 last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950"
+                        class="grid cursor-pointer gap-1.5 border-b border-gray-200 p-3 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-950"
                         v-for="customer in searchResults"
                         @click="selectCustomer(customer)"
                     >
-                        <p class="text-sm font-semibold text-gray-600 dark:text-gray-300">
+                        <p class="text-sm font-semibold text-gray-900 dark:text-white">
                             @{{ customer.first_name }} @{{ customer.last_name }}
                         </p>
-                        <p class="text-xs text-gray-500">
-                            @{{ customer.email }}
+                        <p class="text-xs text-gray-500 dark:text-gray-400" v-if="customer.phone">
+                            @{{ customer.phone }}
+                        </p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500" v-else>
+                            @lang('bonus::app.admin.settings.manage.no-phone')
                         </p>
                     </div>
                 </div>
@@ -76,19 +167,21 @@
                             @{{ selectedCustomer.name }}
                         </p>
                         <p class="text-sm text-gray-600 dark:text-gray-300">
-                            <span class="font-semibold">@lang('bonus::app.admin.settings.manage.email'):</span>
-                            @{{ selectedCustomer.email }}
+                            <span class="font-semibold">@lang('bonus::app.admin.settings.manage.phone'):</span>
+                            @{{ selectedCustomer.phone }}
                         </p>
                         <p class="text-sm text-gray-600 dark:text-gray-300">
                             <span class="font-semibold">@lang('bonus::app.admin.settings.manage.available-balance'):</span>
-                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            <span class="text-lg font-bold text-blue-600 dark:text-blue-400 ml-2">
                                 @{{ selectedCustomer.available_balance }}
                             </span>
                         </p>
+                        <--
                         <p class="text-sm text-gray-600 dark:text-gray-300">
                             <span class="font-semibold">@lang('bonus::app.admin.settings.manage.total-balance'):</span>
                             @{{ selectedCustomer.total_balance }}
                         </p>
+                        -->
                     </div>
                 </div>
 
@@ -219,10 +312,10 @@
                 </div>
             </div>
 
-            <!-- Empty State -->
+            <!-- Empty State (when no customer selected, no search, and no recent accruals) -->
             <div
                 class="grid justify-center justify-items-center gap-3.5 px-2.5 py-10"
-                v-if="!selectedCustomer && searchTerm.length <= 1"
+                v-if="!selectedCustomer && searchTerm.length <= 1 && recentAccruals.length === 0 && !isLoadingRecentAccruals"
             >
                 <img
                     src="{{ bagisto_asset('images/empty-placeholders/customers.svg') }}"
@@ -259,6 +352,9 @@
                         { value: 'add', title: '{{ trans("bonus::app.admin.settings.manage.add-bonus") }}' },
                         { value: 'deduct', title: '{{ trans("bonus::app.admin.settings.manage.deduct-bonus") }}' }
                     ],
+                    recentAccruals: [],
+                    recentAccrualsPagination: { page: 1, perPage: 20, total: 0, lastPage: 1 },
+                    isLoadingRecentAccruals: false,
                 }
             },
 
@@ -270,9 +366,45 @@
                         descriptionPlaceholder: '{{ trans("bonus::app.admin.settings.manage.description-placeholder") }}',
                     };
                 },
+
+                showRecentAccruals() {
+                    return this.searchTerm.length <= 1 && this.searchResults.length === 0;
+                },
+            },
+
+            mounted() {
+                this.loadRecentAccruals();
             },
 
             methods: {
+                loadRecentAccruals(page = 1) {
+                    this.isLoadingRecentAccruals = true;
+                    const self = this;
+                    this.$axios.get("{{ route('admin.bonus.manage.recent-accruals') }}", {
+                        params: { page }
+                    })
+                    .then(function(response) {
+                        self.isLoadingRecentAccruals = false;
+                        self.recentAccruals = response.data.data || [];
+                        const meta = response.data.meta || {};
+                        self.recentAccrualsPagination = {
+                            page: meta.current_page || 1,
+                            perPage: meta.per_page || 20,
+                            total: meta.total || 0,
+                            lastPage: meta.last_page || 1,
+                        };
+                    })
+                    .catch(function() {
+                        self.isLoadingRecentAccruals = false;
+                        self.recentAccruals = [];
+                    });
+                },
+
+                changeRecentAccrualsPage(page) {
+                    if (page < 1 || page > this.recentAccrualsPagination.lastPage) return;
+                    this.loadRecentAccruals(page);
+                },
+
                 searchCustomers() {
                     if (this.searchTerm.length <= 1) {
                         this.searchResults = [];
