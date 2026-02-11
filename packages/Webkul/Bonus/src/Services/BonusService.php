@@ -406,24 +406,47 @@ class BonusService
                 $currencyCode
             );
 
-            // Cancel accrual if exists
+            // Cancel accrual if exists - найти и обновить исходную транзакцию начисления
             if ($order->base_bonus_amount_accrued > 0) {
+                $accruedAmount = $order->base_bonus_amount_accrued;
+                
+                // Найти транзакцию начисления для этого заказа
+                $accrualTransaction = $this->bonusTransactionRepository->model
+                    ->where('customer_id', $order->customer_id)
+                    ->where('order_id', $order->id)
+                    ->where('type', BonusTransaction::TYPE_ACCRUAL)
+                    ->where('amount', '>', 0)
+                    ->first();
+                
+                if ($accrualTransaction) {
+                    // Уменьшить amount исходной транзакции
+                    $accrualTransaction->amount -= $accruedAmount;
+                    $accrualTransaction->save();
+                }
+                
+                // Создать транзакцию списания для истории
                 $this->bonusTransactionRepository->create([
                     'customer_id' => $order->customer_id,
                     'order_id' => $order->id,
                     'type' => BonusTransaction::TYPE_DEDUCTION,
-                    'amount' => -$order->base_bonus_amount_accrued,
+                    'amount' => -$accruedAmount,
                     'currency_code' => $currencyCode,
                     'description' => trans('bonus::app.transactions.cancel_accrual_description', [
                         'order_id' => $order->increment_id,
                     ]),
                 ]);
 
+                // Обновить баланс клиента
                 $this->customerBonusRepository->updateBalance(
                     $order->customer_id,
-                    -$order->base_bonus_amount_accrued,
+                    -$accruedAmount,
                     $currencyCode
                 );
+                
+                // Обнулить начисленные бонусы в заказе
+                $order->base_bonus_amount_accrued = 0;
+                $order->bonus_amount_accrued = 0;
+                $order->save();
             }
         });
     }
