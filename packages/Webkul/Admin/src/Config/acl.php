@@ -1209,6 +1209,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tochka Payment
+    |--------------------------------------------------------------------------
+    */
+    [
+        'key'   => 'tochka-payment',
+        'name'  => 'tochka-payment::app.admin.menu.tochka-payment',
+        'route' => 'admin.tochka-payment.settings.index',
+        'sort'  => 8,
+    ], [
+        'key'   => 'tochka-payment.settings',
+        'name'  => 'tochka-payment::app.admin.menu.settings',
+        'route' => 'admin.tochka-payment.settings.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'tochka-payment.test-order',
+        'name'  => 'tochka-payment::app.admin.menu.test-order',
+        'route' => 'admin.tochka-payment.test-order.index',
+        'sort'  => 2,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Configuration
     |--------------------------------------------------------------------------
     |

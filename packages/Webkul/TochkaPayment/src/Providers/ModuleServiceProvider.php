@@ -1,0 +1,84 @@
+<?php
+
+namespace Webkul\TochkaPayment\Providers;
+
+use Illuminate\Support\Facades\Route;
+use Webkul\Core\Providers\CoreModuleServiceProvider;
+
+class ModuleServiceProvider extends CoreModuleServiceProvider
+{
+    /**
+     * Models.
+     *
+     * @var array
+     */
+    protected $models = [
+        \Webkul\TochkaPayment\Models\TochkaPaymentSettings::class,
+        \Webkul\TochkaPayment\Models\TochkaPaymentHistory::class,
+        \Webkul\TochkaPayment\Models\TochkaPaymentWebhook::class,
+    ];
+
+    /**
+     * Bootstrap services.
+     *
+     * @return void
+     */
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+
+        $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'tochka-payment');
+
+        $this->loadViewsFrom(__DIR__.'/../Resources/views', 'tochka-payment');
+
+        $this->mapAdminRoutes();
+        $this->mapApiRoutes();
+    }
+
+    /**
+     * Register services.
+     *
+     * @return void
+     */
+    public function register(): void
+    {
+        $this->registerConfig();
+    }
+
+    /**
+     * Register config.
+     *
+     * @return void
+     */
+    protected function registerConfig(): void
+    {
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/tochka-payment.php',
+            'tochka-payment'
+        );
+    }
+
+    /**
+     * Define the "admin" routes for the application.
+     *
+     * @return void
+     */
+    protected function mapAdminRoutes(): void
+    {
+        Route::middleware(['web', 'admin'])
+            ->prefix(config('app.admin_url'))
+            ->group(__DIR__.'/../Routes/admin.php');
+    }
+
+    /**
+     * Define the "api" routes for the application.
+     *
+     * @return void
+     */
+    protected function mapApiRoutes(): void
+    {
+        Route::middleware(['api'])
+            ->prefix('api')
+            ->group(__DIR__.'/../Routes/api.php');
+    }
+}
