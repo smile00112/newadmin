@@ -89,49 +89,50 @@ class IikoNomenclatureService
                         continue;
                     }
 
-                    // Handle itemSizes - create separate items for each size
+                    // Handle itemSizes - convert to sizePrices format for compatibility
+                    $item['id'] = $itemId;
+                    $item['groupId'] = $categoryId;
+                    
+                    // Convert itemSizes to sizePrices format if present
                     if (isset($item['itemSizes']) && is_array($item['itemSizes']) && count($item['itemSizes']) > 0) {
+                        $sizePrices = [];
+                        $itemModifierGroupsMerged = [];
                         foreach ($item['itemSizes'] as $size) {
-                            $sizeItem = $item;
-                            $sizeItem['id'] = $itemId;
-                            $sizeItem['groupId'] = $categoryId;
-                            $sizeItem['sizeId'] = $size['sizeId'] ?? null;
-                            $sizeItem['sizeName'] = $size['sizeName'] ?? null;
-                            $sizeItem['sizeCode'] = $size['sizeCode'] ?? null;
-                            
-                            // Extract price from size
+                            $sizePrice = 0;
                             if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
-                                $sizeItem['price'] = $size['prices'][0]['price'] ?? 0;
-                            } else {
-                                $sizeItem['price'] = 0;
+                                $sizePrice = $size['prices'][0]['price'] ?? 0;
                             }
-
-                            // Store sizePrices for compatibility with existing import logic
-                            $sizeItem['sizePrices'] = [
-                                [
-                                    'sizeId' => $size['sizeId'] ?? null,
-                                    'sizeName' => $size['sizeName'] ?? null,
-                                    'price' => $sizeItem['price'],
-                                ]
+                            $sizePrices[] = [
+                                'sizeId' => $size['sizeId'] ?? null,
+                                'sizeName' => $size['sizeName'] ?? null,
+                                'sizeCode' => $size['sizeCode'] ?? null,
+                                'price' => $sizePrice,
                             ];
-
-                            $items[] = $sizeItem;
-                        }
-                    } else {
-                        // Single item without sizes
-                        $item['id'] = $itemId;
-                        $item['groupId'] = $categoryId;
-                        
-                        // Extract price from item or first size if available
-                        if (isset($item['itemSizes']) && is_array($item['itemSizes']) && count($item['itemSizes']) > 0) {
-                            $firstSize = $item['itemSizes'][0];
-                            if (isset($firstSize['prices']) && is_array($firstSize['prices']) && count($firstSize['prices']) > 0) {
-                                $item['price'] = $firstSize['prices'][0]['price'] ?? 0;
+                            // Preserve itemModifierGroups from itemSizes for constructor product import
+                            if (isset($size['itemModifierGroups']) && is_array($size['itemModifierGroups']) && count($size['itemModifierGroups']) > 0) {
+                                foreach ($size['itemModifierGroups'] as $modGroup) {
+                                    $groupName = $modGroup['name'] ?? 'Unnamed Group';
+                                    if (!isset($itemModifierGroupsMerged[$groupName])) {
+                                        $itemModifierGroupsMerged[$groupName] = $modGroup;
+                                    }
+                                }
                             }
                         }
-
-                        $items[] = $item;
+                        // Store sizePrices for compatibility with existing import logic
+                        $item['sizePrices'] = $sizePrices;
+                        
+                        // Store itemModifierGroups for constructor product import (from first size or merged)
+                        if (!empty($itemModifierGroupsMerged)) {
+                            $item['itemModifierGroups'] = array_values($itemModifierGroupsMerged);
+                        }
+                        
+                        // Set price from first size for single-price fallback
+                        if (count($sizePrices) > 0) {
+                            $item['price'] = $sizePrices[0]['price'] ?? 0;
+                        }
                     }
+
+                    $items[] = $item;
                 }
             }
         }
