@@ -8,6 +8,7 @@ use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Product\Repositories\ProductGroupedProductRepository;
 use Webkul\Attribute\Repositories\AttributeFamilyRepository;
+use Webkul\Product\Helpers\Indexers\Flat as FlatIndexer;
 
 class IikoNomenclatureImportService
 {
@@ -18,7 +19,8 @@ class IikoNomenclatureImportService
         protected CategoryRepository $categoryRepository,
         protected ProductRepository $productRepository,
         protected ProductGroupedProductRepository $productGroupedProductRepository,
-        protected AttributeFamilyRepository $attributeFamilyRepository
+        protected AttributeFamilyRepository $attributeFamilyRepository,
+        protected FlatIndexer $flatIndexer
     ) {}
 
     /**
@@ -305,7 +307,13 @@ class IikoNomenclatureImportService
                 }
             } else {
                 // Handle single price product
+                $sku = 'iiko_' . $iikoId;
                 $existingProduct = $this->findProductByIikoId($iikoId);
+                
+                // If not found by iiko_id, check by SKU
+                if (!$existingProduct) {
+                    $existingProduct = $this->findProductBySku($sku);
+                }
 
                 if ($existingProduct) {
                     $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
@@ -366,27 +374,41 @@ class IikoNomenclatureImportService
                 $channels[] = (int) $defaultChannelId;
             }
 
-            // Create main grouped product
-            $mainProductData = [
-                'type' => 'grouped',
-                'sku' => 'iiko_' . $iikoId,
-                'attribute_family_id' => $attributeFamily->id,
-                'additional' => ['iiko_id' => $iikoId],
-                'channels' => $channels,
-            ];
-
-            // Set translations
-            $productName = $item['name'] ?? 'Unnamed Product';
-            $locales = core()->getAllLocales();
-            foreach ($locales as $locale) {
-                $mainProductData[$locale->code] = [
-                    'name' => $productName,
-                    'short_description' => $item['description'] ?? null,
-                    'description' => $item['description'] ?? null,
+            // Check if main grouped product already exists by SKU
+            $mainSku = 'iiko_' . $iikoId;
+            $mainProduct = $this->findProductBySku($mainSku);
+            
+            if (!$mainProduct) {
+                // Create main grouped product
+                $mainProductData = [
+                    'type' => 'grouped',
+                    'sku' => $mainSku,
+                    'attribute_family_id' => $attributeFamily->id,
+                    'additional' => ['iiko_id' => $iikoId],
+                    'channels' => $channels,
+                    'status' => 1,
+                    'visible_individually' => 1,
                 ];
-            }
 
-            $mainProduct = $this->productRepository->create($mainProductData);
+                // Set translations
+                $productName = $item['name'] ?? 'Unnamed Product';
+                $locales = core()->getAllLocales();
+                foreach ($locales as $locale) {
+                    $mainProductData[$locale->code] = [
+                        'name' => $productName,
+                        'short_description' => $item['description'] ?? null,
+                        'description' => $item['description'] ?? null,
+                    ];
+                }
+
+                $mainProduct = $this->productRepository->create($mainProductData);
+                
+                // Refresh product_flat index for main product
+                $mainProduct->refresh();
+                $this->flatIndexer->refresh($mainProduct);
+            } else {
+                $productName = $item['name'] ?? 'Unnamed Product';
+            }
 
             // Set categories for main product
             $mainCategories = [];
@@ -409,48 +431,61 @@ class IikoNomenclatureImportService
                 $priceName = $price['sizeName'] ?? '';
 
                 $variantSku = 'iiko_' . $iikoId . '_price_' . $priceId;
-                $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
+                
+                // Check if variant already exists by SKU
+                $variantProduct = $this->findProductBySku($variantSku);
+                
+                if (!$variantProduct) {
+                    $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
 
-                $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-                $variantChannels = [];
-                if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                    $variantChannels[] = (int) $defaultChannelId;
-                }
+                    $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+                    $variantChannels = [];
+                    if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                        $variantChannels[] = (int) $defaultChannelId;
+                    }
 
-                $variantData = [
-                    'type' => 'simple',
-                    'sku' => $variantSku,
-                    'attribute_family_id' => $attributeFamily->id,
-                    'parent_id' => $mainProduct->id,
-                    'additional' => [
-                        'iiko_id' => $iikoId . '_price_' . $priceId,
-                        'iiko_main_id' => $iikoId,
-                    ],
-                    'channels' => $variantChannels,
-                ];
-
-                // Set translations
-                foreach ($locales as $locale) {
-                    $variantData[$locale->code] = [
-                        'name' => $variantName,
-                        'short_description' => $item['description'] ?? null,
-                        'description' => $item['description'] ?? null,
-                        'price' => $priceValue,
+                    $variantData = [
+                        'type' => 'simple',
+                        'sku' => $variantSku,
+                        'attribute_family_id' => $attributeFamily->id,
+                        'parent_id' => $mainProduct->id,
+                        'additional' => [
+                            'iiko_id' => $iikoId . '_price_' . $priceId,
+                            'iiko_main_id' => $iikoId,
+                        ],
+                        'channels' => $variantChannels,
+                        'status' => 1,
+                        'visible_individually' => 0,
                     ];
+
+                    // Set translations
+                    foreach ($locales as $locale) {
+                        $variantData[$locale->code] = [
+                            'name' => $variantName,
+                            'short_description' => $item['description'] ?? null,
+                            'description' => $item['description'] ?? null,
+                            'price' => $priceValue,
+                        ];
+                    }
+
+                    $variantProduct = $this->productRepository->create($variantData);
+
+                    // Refresh product_flat index for variant
+                    $variantProduct->refresh();
+                    $this->flatIndexer->refresh($variantProduct);
+
+                    // Set category for variant
+                    $priceVariantCategoryId = $priceVariantsCategory->id ?? null;
+                    $variantCategories = [];
+                    if ($priceVariantCategoryId && is_numeric($priceVariantCategoryId) && $priceVariantCategoryId > 0) {
+                        $variantCategories[] = (int) $priceVariantCategoryId;
+                    }
+                    $variantProduct->categories()->sync($variantCategories);
+                    
+                    $variantsCreated++;
                 }
-
-                $variantProduct = $this->productRepository->create($variantData);
-
-                // Set category for variant
-                $priceVariantCategoryId = $priceVariantsCategory->id ?? null;
-                $variantCategories = [];
-                if ($priceVariantCategoryId && is_numeric($priceVariantCategoryId) && $priceVariantCategoryId > 0) {
-                    $variantCategories[] = (int) $priceVariantCategoryId;
-                }
-                $variantProduct->categories()->sync($variantCategories);
-
+                
                 $variantProducts[] = $variantProduct;
-                $variantsCreated++;
             }
 
             // Link variants to grouped product using saveGroupedProducts format
@@ -467,6 +502,10 @@ class IikoNomenclatureImportService
                 ['links' => $linksData],
                 $mainProduct
             );
+
+            // Refresh main product again after linking variants
+            $mainProduct->refresh();
+            $this->flatIndexer->refresh($mainProduct);
 
             return [
                 'variants_created' => $variantsCreated,
@@ -493,6 +532,16 @@ class IikoNomenclatureImportService
     {
         // Support both 'id' and 'itemId' from new API format
         $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+        $sku = 'iiko_' . $iikoId;
+        
+        // Check if product already exists by SKU
+        $existingProduct = $this->findProductBySku($sku);
+        if ($existingProduct) {
+            // Update existing product instead of creating new one
+            $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
+            return;
+        }
+        
         $attributeFamily = $this->getDefaultAttributeFamily();
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
 
@@ -502,39 +551,45 @@ class IikoNomenclatureImportService
             $channels[] = (int) $defaultChannelId;
         }
 
-            $productData = [
-                'type' => $productType,
-                'sku' => 'iiko_' . $iikoId,
-                'attribute_family_id' => $attributeFamily->id,
-                'additional' => ['iiko_id' => $iikoId],
-                'channels' => $channels,
+        $productData = [
+            'type' => $productType,
+            'sku' => $sku,
+            'attribute_family_id' => $attributeFamily->id,
+            'additional' => ['iiko_id' => $iikoId],
+            'channels' => $channels,
+            'status' => 1,
+            'visible_individually' => 1,
+        ];
+
+        // Set translations
+        $productName = $item['name'] ?? 'Unnamed Product';
+        $locales = core()->getAllLocales();
+        foreach ($locales as $locale) {
+            $productData[$locale->code] = [
+                'name' => $productName,
+                'short_description' => $item['description'] ?? null,
+                'description' => $item['description'] ?? null,
+                'price' => $price,
             ];
+        }
 
-            // Set translations
-            $productName = $item['name'] ?? 'Unnamed Product';
-            $locales = core()->getAllLocales();
-            foreach ($locales as $locale) {
-                $productData[$locale->code] = [
-                    'name' => $productName,
-                    'short_description' => $item['description'] ?? null,
-                    'description' => $item['description'] ?? null,
-                    'price' => $price,
-                ];
+        $product = $this->productRepository->create($productData);
+
+        // Set categories
+        $categoryIikoId = $item['groupId'] ?? null;
+        $categories = [];
+        if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
+            $categoryId = $categoryMap[$categoryIikoId];
+            // Ensure categoryId is an integer and not null
+            if (is_numeric($categoryId) && $categoryId > 0) {
+                $categories[] = (int) $categoryId;
             }
+        }
+        $product->categories()->sync($categories);
 
-            $product = $this->productRepository->create($productData);
-
-            // Set categories
-            $categoryIikoId = $item['groupId'] ?? null;
-            $categories = [];
-            if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-                $categoryId = $categoryMap[$categoryIikoId];
-                // Ensure categoryId is an integer and not null
-                if (is_numeric($categoryId) && $categoryId > 0) {
-                    $categories[] = (int) $categoryId;
-                }
-            }
-            $product->categories()->sync($categories);
+        // Refresh product_flat index after creating product and setting categories
+        $product->refresh();
+        $this->flatIndexer->refresh($product);
     }
 
     /**
@@ -590,6 +645,10 @@ class IikoNomenclatureImportService
         $productData['categories'] = $categories;
 
         $this->productRepository->update($productData, $product->id);
+
+        // Refresh product_flat index after updating product
+        $product->refresh();
+        $this->flatIndexer->refresh($product);
     }
 
     /**
@@ -618,6 +677,18 @@ class IikoNomenclatureImportService
             ->getModel()
             ->whereJsonContains('additional->iiko_id', $iikoId)
             ->first();
+    }
+
+    /**
+     * Find product by SKU.
+     *
+     * @param  string  $sku
+     * @return \Webkul\Product\Contracts\Product|null
+     */
+    protected function findProductBySku(string $sku)
+    {
+        return $this->productRepository
+            ->findOneByField('sku', $sku);
     }
 
     /**
