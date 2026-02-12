@@ -95,7 +95,7 @@ final class TestOrderController extends Controller
             return redirect()
                 ->route('admin.tochka-payment.test-order.index')
                 ->with('payment', $result['payment'])
-                ->with('success', trans('tochka-payment::app.admin.test-order.created'));
+                ->with('success', trans('tochka-payment::app.admin.test-order.index.created'));
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.tochka-payment.test-order.index')
