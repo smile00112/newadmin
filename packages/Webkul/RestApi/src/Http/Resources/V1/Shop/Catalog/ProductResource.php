@@ -38,6 +38,7 @@ class ProductResource extends JsonResource
             'videos'             => ProductVideoResource::collection($product->videos),
             'base_image'         => ProductImage::getProductBaseImage($product),
             'category_image'     => $this->getCategoryImage($product),
+            'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
 
             /* product's checks */
             'in_stock'              => $product->haveSufficientQuantity(1),
@@ -476,10 +477,10 @@ class ProductResource extends JsonResource
 
         // Получаем значения КЖБУ из атрибутов товара
         $nutritionCodes = ['calories', 'proteins', 'fats', 'carbs'];
-        
+
         foreach ($nutritionCodes as $code) {
             $value = $product->{$code};
-            
+
             if ($value !== null && $value !== '') {
                 // Преобразуем в число, если это строка
                 $nutrition[$code] = is_numeric($value) ? (float) $value : $value;

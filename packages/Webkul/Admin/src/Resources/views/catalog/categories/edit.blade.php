@@ -383,6 +383,38 @@
                             <x-admin::form.control-group.error control-name="display_mode" />
                         </x-admin::form.control-group>
 
+                        <!-- Product Display Type -->
+                        <x-admin::form.control-group>
+                            <x-admin::form.control-group.label class="font-medium text-gray-800 dark:text-white">
+                                @lang('admin::app.catalog.categories.edit.product-display-type')
+                            </x-admin::form.control-group.label>
+
+                            @php $selectedProductDisplayType = old('product_display_type') ?? ($category->product_display_type ?? 'standard') @endphp
+
+                            <x-admin::form.control-group.control
+                                type="select"
+                                id="product_display_type"
+                                class="cursor-pointer"
+                                name="product_display_type"
+                                :value="$selectedProductDisplayType"
+                                :label="trans('admin::app.catalog.categories.edit.product-display-type')"
+                            >
+                                <option value="standard" {{ $selectedProductDisplayType == 'standard' ? 'selected' : '' }}>
+                                    @lang('admin::app.catalog.categories.edit.product-display-type-standard')
+                                </option>
+
+                                <option value="enlarged_top" {{ $selectedProductDisplayType == 'enlarged_top' ? 'selected' : '' }}>
+                                    @lang('admin::app.catalog.categories.edit.product-display-type-enlarged-top')
+                                </option>
+
+                                <option value="variant_2" {{ $selectedProductDisplayType == 'variant_2' ? 'selected' : '' }}>
+                                    @lang('admin::app.catalog.categories.edit.product-display-type-variant-2')
+                                </option>
+                            </x-admin::form.control-group.control>
+
+                            <x-admin::form.control-group.error control-name="product_display_type" />
+                        </x-admin::form.control-group>
+
                         <!-- Visible in menu -->
                         <x-admin::form.control-group class="!mb-0">
                             <x-admin::form.control-group.label>

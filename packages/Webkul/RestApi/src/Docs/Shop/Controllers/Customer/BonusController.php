@@ -90,7 +90,7 @@ class BonusController
      *                      type="object",
      *                      @OA\Property(property="id", type="integer", example=1),
      *                      @OA\Property(property="name", type="string", example="Bronze"),
-     *                      @OA\Property(property="cashback_percent", type="number", format="float", example=2.00),
+     *                      @OA\Property(property="cashback_percent", type="integer", example=2),
      *                      @OA\Property(property="description_top", type="string", example="Возвращаем 2% заказа."),
      *                      @OA\Property(property="description_bottom", type="string", example="0-1000 потрачено"),
      *                      @OA\Property(property="is_current", type="boolean", example=false)
@@ -196,7 +196,7 @@ class BonusController
      *                      type="object",
      *                      @OA\Property(property="id", type="integer", example=1),
      *                      @OA\Property(property="name", type="string", example="1 грейд"),
-     *                      @OA\Property(property="cashback_percent", type="number", format="float", example=2.00),
+     *                      @OA\Property(property="cashback_percent", type="integer", example=2),
      *                      @OA\Property(property="description_top", type="string", example="Возвращаем 2% заказа."),
      *                      @OA\Property(property="description_bottom", type="string", example="0-10 заказов")
      *                  )

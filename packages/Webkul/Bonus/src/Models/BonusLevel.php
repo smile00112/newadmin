@@ -29,8 +29,8 @@ class BonusLevel extends Model implements BonusLevelContract
      * @var array
      */
     protected $casts = [
-        'cashback_percent' => 'decimal:2',
-        'threshold_value' => 'decimal:4',
+        'cashback_percent' => 'integer',
+        'threshold_value' => 'integer',
         'is_active' => 'boolean',
     ];
 

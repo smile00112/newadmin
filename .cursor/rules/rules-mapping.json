@@ -1,0 +1,82 @@
+{
+  "cart-rules-coupons.mdc": {
+    "related_files": [
+      "packages/Webkul/CartRule/src/Models/*.php",
+      "packages/Webkul/CartRule/src/Repositories/*.php",
+      "packages/Webkul/CartRule/src/Helpers/*.php",
+      "packages/Webkul/CartRule/src/Database/Migrations/*.php",
+      "packages/Webkul/CartRule/src/Listeners/*.php",
+      "packages/Webkul/CartRule/src/Contracts/*.php",
+      "packages/Webkul/CartRule/src/Providers/*.php",
+      "packages/Webkul/*/Http/Controllers/**/CartRule*.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/**/CartRule*.php",
+      "packages/Webkul/Shop/src/Http/Controllers/API/CartController.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/V1/Shop/Customer/CartController.php",
+      "packages/Webkul/Admin/src/Http/Controllers/Sales/CartController.php"
+    ],
+    "related_tables": [
+      "cart_rules",
+      "cart_rule_coupons",
+      "cart_rule_coupon_usage",
+      "cart_rule_channels",
+      "cart_rule_customer_groups",
+      "cart_rule_customers"
+    ],
+    "critical_sections": [
+      "Database Structure",
+      "API for Working with Coupons",
+      "Discount Types",
+      "Coupon Application Logic",
+      "Main Classes and Files",
+      "Important Points When Working with Coupons"
+    ],
+    "description": "Discount coupon system specification"
+  },
+  "products.mdc": {
+    "related_files": [
+      "packages/Webkul/Product/src/Models/*.php",
+      "packages/Webkul/Product/src/Repositories/*.php",
+      "packages/Webkul/Product/src/Type/*.php",
+      "packages/Webkul/Product/src/Helpers/*.php",
+      "packages/Webkul/Product/src/Database/Migrations/*.php",
+      "packages/Webkul/Product/src/Contracts/*.php",
+      "packages/Webkul/Product/src/Providers/*.php",
+      "packages/Webkul/*/Http/Controllers/**/Product*.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/**/Product*.php",
+      "packages/Webkul/Admin/src/Http/Controllers/Catalog/ProductController.php",
+      "packages/Webkul/Shop/src/Http/Controllers/API/ProductController.php",
+      "packages/Webkul/Product/src/Config/product_types.php"
+    ],
+    "related_tables": [
+      "products",
+      "product_flat",
+      "product_attribute_values",
+      "product_categories",
+      "product_images",
+      "product_videos",
+      "product_inventories",
+      "product_price_indices",
+      "product_reviews",
+      "product_constructor",
+      "product_constructor_group",
+      "product_constructor_group_products",
+      "product_relations",
+      "product_up_sells",
+      "product_cross_sells",
+      "product_drinks",
+      "product_super_attributes",
+      "product_channels",
+      "product_ingredients_incompatibility"
+    ],
+    "critical_sections": [
+      "Database Structure",
+      "Product Types",
+      "ProductFlat Table",
+      "API Endpoints",
+      "Product Types Logic",
+      "Main Classes and Files",
+      "Important Points When Working with Products"
+    ],
+    "description": "Product catalog system specification"
+  }
+}

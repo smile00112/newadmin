@@ -428,6 +428,10 @@ return [
     ],
 
     'shop' => [
+        'errors' => [
+            'report-success' => 'Error report has been saved successfully.',
+        ],
+
         'customer' => [
             'addresses' => [
                 'create-success' => 'Your address has been created successfully.',

@@ -18,6 +18,7 @@ Route::group( ['prefix' => config('app.admin_url')], function () {
         Route::get('transactions', [BonusTransactionController::class, 'index'])->name('admin.bonus.transactions.index');
 
         Route::prefix('manage')->controller(BonusManageController::class)->group(function () {
+            Route::get('recent-accruals', 'getRecentAccruals')->name('admin.bonus.manage.recent-accruals');
             Route::get('search-customer', 'searchCustomer')->name('admin.bonus.manage.search-customer');
             Route::get('customer/{id}', 'getCustomerInfo')->name('admin.bonus.manage.customer-info');
             Route::post('add-bonus', 'addBonus')->name('admin.bonus.manage.add-bonus');

@@ -109,6 +109,9 @@ return [
             'start-date'                  => 'Дата начала',
             'stock-threshold'             => 'Порог запасов',
             'store-stats'                 => 'Статистика магазина',
+            'recent-errors'               => 'Последние ошибки приложения',
+            'view-all-errors'             => 'Все ошибки',
+            'no-recent-errors'            => 'Нет последних ошибок.',
             'title'                       => 'Панель управления',
             'to'                          => 'По',
             'today-customers'             => 'Клиентов сегодня',
@@ -1827,6 +1830,10 @@ return [
                 'position'                 => 'Позиция',
                 'products-and-description' => 'Товары и описание',
                 'products-only'            => 'Только товары',
+                'product-display-type'     => 'Тип вывода товаров',
+                'product-display-type-standard' => 'Стандарт',
+                'product-display-type-enlarged-top' => 'Увеличенный товар вверху',
+                'product-display-type-variant-2' => 'Вариант №2',
                 'save-btn'                 => 'Сохранить категорию',
                 'select-display-mode'      => 'Выберите режим отображения',
                 'seo-details'              => 'SEO-данные',
@@ -1858,6 +1865,10 @@ return [
                 'position'                 => 'Позиция*',
                 'products-and-description' => 'Товары и описание',
                 'products-only'            => 'Только товары',
+                'product-display-type'     => 'Тип вывода товаров',
+                'product-display-type-standard' => 'Стандарт',
+                'product-display-type-enlarged-top' => 'Увеличенный товар вверху',
+                'product-display-type-variant-2' => 'Вариант №2',
                 'save-btn'                 => 'Сохранить категорию',
                 'select-display-mode'      => 'Выберите режим отображения',
                 'select-parent-category'   => 'Выберите родительскую категорию*',
@@ -4994,6 +5005,7 @@ return [
             ],
 
             'sidebar' => [
+                'application-errors'       => 'Ошибки приложения',
                 'attribute-families'       => 'Группы атрибутов',
                 'attributes'               => 'Атрибуты',
                 'booking-product'          => 'Бронирования',
@@ -5241,8 +5253,32 @@ return [
         ],
     ],
 
+    'application_errors' => [
+        'index' => [
+            'title'    => 'Ошибки приложения',
+            'empty'    => 'Ошибок пока нет.',
+            'datagrid' => [
+                'id'         => 'ID',
+                'message'    => 'Сообщение',
+                'code'       => 'Код',
+                'source'     => 'Источник',
+                'created_at' => 'Дата',
+                'view'       => 'Просмотр',
+            ],
+        ],
+        'show' => [
+            'title'    => 'Ошибка #:id',
+            'back'     => 'Назад к списку',
+            'details'  => 'Детали ошибки',
+            'file'     => 'Файл',
+            'trace'    => 'Стек вызовов',
+            'context'  => 'Контекст',
+        ],
+    ],
+
     'acl' => [
         'addresses'                => 'Адреса',
+        'application-errors'       => 'Ошибки приложения',
         'attribute-families'       => 'Группы атрибутов',
         'attributes'               => 'Атрибуты',
         'campaigns'                => 'Кампании',

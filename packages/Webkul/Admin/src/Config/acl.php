@@ -15,6 +15,16 @@ return [
         'name'  => 'admin::app.acl.dashboard',
         'route' => 'admin.dashboard.index',
         'sort'  => 1,
+    ], [
+        'key'   => 'application_errors',
+        'name'  => 'admin::app.acl.application-errors',
+        'route' => 'admin.application_errors.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'application_errors.view',
+        'name'  => 'admin::app.acl.view',
+        'route' => 'admin.application_errors.show',
+        'sort'  => 1,
     ],
 
     /*

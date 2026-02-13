@@ -25,4 +25,9 @@ Route::group([
      * Customer routes.
      */
     require 'customers-routes.php';
+
+    /**
+     * Application errors routes (public).
+     */
+    require 'errors-routes.php';
 });

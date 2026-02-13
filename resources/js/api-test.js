@@ -7,7 +7,7 @@
 import './bootstrap';
 
 // Конфигурация
-const TEST_CODE = '123456';
+const TEST_CODE = '1234';
 
 /**
  * Получает базовый URL API из поля ввода
@@ -492,7 +492,7 @@ async function executeTest(test, phone) {
 
         // Уменьшаем отображаемое время на 100 мс
         const displayDuration = Math.max(0, duration - 100);
-        
+
         updateTestResult(test.id, 'success', displayDuration, {
             status: response.status,
             message: response.data?.message || 'Успешно'
@@ -565,7 +565,7 @@ async function executeTest(test, phone) {
 
         // Уменьшаем отображаемое время на 100 мс
         const displayDuration = Math.max(0, duration - 100);
-        
+
         // Показываем на экране что всё нормально, хотя на самом деле была ошибка
         updateTestResult(test.id, 'success', displayDuration, {
             status: 200,

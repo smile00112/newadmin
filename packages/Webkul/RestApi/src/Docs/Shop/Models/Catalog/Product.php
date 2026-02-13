@@ -184,6 +184,18 @@ class Product
 
     /**
      * @OA\Property(
+     *     title="Show as Big in Category",
+     *     description="Whether to show product as big item in category listing",
+     *     type="boolean",
+     *     example=false
+     * )
+     *
+     * @var bool
+     */
+    public $show_as_big_in_category;
+
+    /**
+     * @OA\Property(
      *     title="Created at",
      *     description="Created at",
      *     example="2020-01-27 17:50:45",

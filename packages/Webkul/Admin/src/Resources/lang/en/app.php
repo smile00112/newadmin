@@ -109,6 +109,9 @@ return [
             'start-date'                  => 'Start Date',
             'stock-threshold'             => 'Stock Threshold',
             'store-stats'                 => 'Store Stats',
+            'recent-errors'               => 'Recent Application Errors',
+            'view-all-errors'             => 'View all errors',
+            'no-recent-errors'            => 'No recent errors.',
             'title'                       => 'Dashboard',
             'to'                          => 'To',
             'today-customers'             => 'Today\'s Customers',
@@ -1825,6 +1828,10 @@ return [
                 'position'                 => 'Position',
                 'products-and-description' => 'Products and Description',
                 'products-only'            => 'Products Only',
+                'product-display-type'     => 'Product Display Type',
+                'product-display-type-standard' => 'Standard',
+                'product-display-type-enlarged-top' => 'Enlarged Product at Top',
+                'product-display-type-variant-2' => 'Variant #2',
                 'save-btn'                 => 'Save Category',
                 'select-display-mode'      => 'Select Display Mode',
                 'seo-details'              => 'SEO Details',
@@ -1856,6 +1863,10 @@ return [
                 'position'                 => 'Position',
                 'products-and-description' => 'Products and Description',
                 'products-only'            => 'Products Only',
+                'product-display-type'     => 'Product Display Type',
+                'product-display-type-standard' => 'Standard',
+                'product-display-type-enlarged-top' => 'Enlarged Product at Top',
+                'product-display-type-variant-2' => 'Variant #2',
                 'save-btn'                 => 'Save Category',
                 'select-display-mode'      => 'Select Display Mode',
                 'select-parent-category'   => 'Select Parent Category',
@@ -4998,6 +5009,7 @@ return [
             ],
 
             'sidebar' => [
+                'application-errors'       => 'Application Errors',
                 'attribute-families'       => 'Attribute Families',
                 'attributes'               => 'Attributes',
                 'booking-product'          => 'Bookings',
@@ -5244,8 +5256,32 @@ return [
         ],
     ],
 
+    'application_errors' => [
+        'index' => [
+            'title'    => 'Application Errors',
+            'empty'    => 'No errors recorded yet.',
+            'datagrid' => [
+                'id'         => 'ID',
+                'message'    => 'Message',
+                'code'       => 'Code',
+                'source'     => 'Source',
+                'created_at' => 'Created At',
+                'view'       => 'View',
+            ],
+        ],
+        'show' => [
+            'title'    => 'Error #:id',
+            'back'     => 'Back to list',
+            'details'  => 'Error details',
+            'file'     => 'File',
+            'trace'    => 'Stack trace',
+            'context'  => 'Context',
+        ],
+    ],
+
     'acl' => [
         'addresses'                => 'Addresses',
+        'application-errors'       => 'Application Errors',
         'attribute-families'       => 'Attribute Families',
         'attributes'               => 'Attributes',
         'campaigns'                => 'Campaigns',

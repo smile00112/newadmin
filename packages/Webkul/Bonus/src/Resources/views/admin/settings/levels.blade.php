@@ -80,7 +80,6 @@
                                     </label>
                                     <input
                                         type="number"
-                                        step="0.01"
                                         min="0"
                                         max="100"
                                         v-model="formData.cashback_percent"
@@ -100,7 +99,6 @@
                                     </label>
                                     <input
                                         type="number"
-                                        step="0.01"
                                         min="0"
                                         v-model="formData.threshold_value"
                                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"

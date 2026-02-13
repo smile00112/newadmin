@@ -43,10 +43,10 @@ class CategoryResource extends JsonResource
         // Remove HTML tags and decode HTML entities
         $cleaned = strip_tags($description);
         $cleaned = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        
+
         // Trim whitespace
         $cleaned = trim($cleaned);
-        
+
         return !empty($cleaned) ? $cleaned : null;
     }
 }

@@ -41,6 +41,7 @@ class Category extends TranslatableModel implements CategoryContract
         'position',
         'status',
         'display_mode',
+        'product_display_type',
         'parent_id',
         'additional',
     ];
