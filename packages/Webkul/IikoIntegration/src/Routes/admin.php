@@ -23,7 +23,7 @@ Route::prefix('iiko')->group(function () {
     });
 
     Route::controller(IikoSettingsController::class)->group(function () {
-        Route::get('settings', 'index')->name('admin.iiko.settings');
+        Route::get('settings', 'index')->name('admin.iiko.settings.index');
         Route::post('settings', 'store')->name('admin.iiko.settings.store');
         Route::post('settings/test-connection', 'testConnection')->name('admin.iiko.settings.test');
     });

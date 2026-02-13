@@ -27,11 +27,33 @@ class IikoSettingsController extends Controller
     public function index(): View
     {
         $channelCode = request('channel', core()->getDefaultChannelCode());
-        $fields = $this->settingRepository->getSettingsWithFields($channelCode);
+        $activeTab = request('tab', 'configuration');
+        $allFields = $this->settingRepository->getSettingsWithFields($channelCode);
+
+        // Group fields by tab
+        $fieldsByTab = [];
+        foreach ($allFields as $field) {
+            $group = $field['group'] ?? 'configuration';
+            if (!isset($fieldsByTab[$group])) {
+                $fieldsByTab[$group] = [];
+            }
+            $fieldsByTab[$group][] = $field;
+        }
+
+        // Define tabs
+        $tabs = [
+            'configuration' => trans('iiko-integration::app.settings.configuration'),
+            'import' => trans('iiko-integration::app.settings.import'),
+        ];
+
+        // Get fields for active tab
+        $fields = $fieldsByTab[$activeTab] ?? [];
 
         return view('iiko-integration::admin.iiko.settings', compact(
             'fields',
-            'channelCode'
+            'channelCode',
+            'tabs',
+            'activeTab'
         ));
     }
 

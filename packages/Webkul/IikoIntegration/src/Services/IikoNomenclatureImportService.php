@@ -14,8 +14,12 @@ use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Product\Repositories\ProductGroupedProductRepository;
 use Webkul\Product\Repositories\ProductConstructorRepository;
 use Webkul\Product\Repositories\ProductImageRepository;
+use Webkul\Product\Repositories\ProductAttributeValueRepository;
+use Webkul\Product\Repositories\ProductInventoryRepository;
 use Webkul\Attribute\Repositories\AttributeFamilyRepository;
 use Webkul\Product\Helpers\Indexers\Flat as FlatIndexer;
+use Webkul\IikoIntegration\Repositories\IikoSettingRepository;
+use Webkul\IikoIntegration\Models\IikoSetting;
 
 class IikoNomenclatureImportService
 {
@@ -28,8 +32,11 @@ class IikoNomenclatureImportService
         protected ProductGroupedProductRepository $productGroupedProductRepository,
         protected ProductConstructorRepository $productConstructorRepository,
         protected ProductImageRepository $productImageRepository,
+        protected ProductAttributeValueRepository $productAttributeValueRepository,
+        protected ProductInventoryRepository $productInventoryRepository,
         protected AttributeFamilyRepository $attributeFamilyRepository,
-        protected FlatIndexer $flatIndexer
+        protected FlatIndexer $flatIndexer,
+        protected IikoSettingRepository $settingRepository
     ) {}
 
     /**
@@ -453,21 +460,33 @@ class IikoNomenclatureImportService
                     'visible_individually' => 1,
                 ];
 
-                // Set translations
+                $mainProduct = $this->productRepository->create($mainProductData);
+                $mainProduct->refresh();
+
+                // Save attribute values for each locale separately
                 $productName = $item['name'] ?? 'Unnamed Product';
                 $locales = core()->getAllLocales();
+                $defaultChannelCode = core()->getDefaultChannelCode();
+                $attributeFamily = $mainProduct->attribute_family;
+                $customAttributes = $attributeFamily->custom_attributes;
+
                 foreach ($locales as $locale) {
-                    $mainProductData[$locale->code] = [
+                    $localeData = [
                         'name' => $productName,
                         'short_description' => $item['description'] ?? null,
                         'description' => $item['description'] ?? null,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
                     ];
+
+                    $this->productAttributeValueRepository->saveValues($localeData, $mainProduct, $customAttributes);
                 }
 
-                $mainProduct = $this->productRepository->create($mainProductData);
+                // Ensure inventory exists for main product
+                $this->ensureProductInventory($mainProduct);
 
                 // Refresh product_flat index for main product
-                $mainProduct->refresh();
                 $this->flatIndexer->refresh($mainProduct);
             } else {
                 $productName = $item['name'] ?? 'Unnamed Product';
@@ -521,20 +540,32 @@ class IikoNomenclatureImportService
                         'visible_individually' => 0,
                     ];
 
-                    // Set translations
+                    $variantProduct = $this->productRepository->create($variantData);
+                    $variantProduct->refresh();
+
+                    // Save attribute values for each locale separately
+                    $defaultChannelCode = core()->getDefaultChannelCode();
+                    $attributeFamily = $variantProduct->attribute_family;
+                    $customAttributes = $attributeFamily->custom_attributes;
+
                     foreach ($locales as $locale) {
-                        $variantData[$locale->code] = [
+                        $localeData = [
                             'name' => $variantName,
                             'short_description' => $item['description'] ?? null,
                             'description' => $item['description'] ?? null,
                             'price' => $priceValue,
+                            'status' => 1,
+                            'locale' => $locale->code,
+                            'channel' => $defaultChannelCode,
                         ];
+
+                        $this->productAttributeValueRepository->saveValues($localeData, $variantProduct, $customAttributes);
                     }
 
-                    $variantProduct = $this->productRepository->create($variantData);
+                    // Ensure inventory exists for variant
+                    $this->ensureProductInventory($variantProduct);
 
                     // Refresh product_flat index for variant
-                    $variantProduct->refresh();
                     $this->flatIndexer->refresh($variantProduct);
 
                     // Set category for variant
@@ -629,20 +660,6 @@ class IikoNomenclatureImportService
                     'additional' => array_merge($existingProduct->additional ?? [], ['iiko_id' => $iikoId]),
                     'channels' => $channels,
                 ];
-                $locales = core()->getAllLocales();
-                foreach ($locales as $locale) {
-                    $productData[$locale->code] = [
-                        'name' => $productName,
-                        'short_description' => $item['description'] ?? null,
-                        'description' => $item['description'] ?? null,
-                        'price' => $price,
-                    ];
-                }
-
-                Log::info('iiko: edit product data', [
-                    '$productData' => $productData,
-
-                ]);
 
                 $categoryIikoId = $item['groupId'] ?? null;
                 $categories = [];
@@ -650,10 +667,42 @@ class IikoNomenclatureImportService
                     $categories[] = (int) $categoryMap[$categoryIikoId];
                 }
                 $productData['categories'] = $categories;
+
+                // Update basic product data first
                 $this->productRepository->update($productData, $existingProduct->id);
                 $product = $existingProduct->refresh();
+
+                // Save attribute values for each locale separately
+                $locales = core()->getAllLocales();
+                $defaultChannelCode = core()->getDefaultChannelCode();
+                $attributeFamily = $product->attribute_family;
+                $customAttributes = $attributeFamily->custom_attributes;
+
+                foreach ($locales as $locale) {
+                    $localeData = [
+                        'name' => $productName,
+                        'short_description' => $item['description'] ?? null,
+                        'description' => $item['description'] ?? null,
+                        'price' => $price,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
+                    ];
+
+                    $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+                }
+
+                // Ensure inventory exists
+                $this->ensureProductInventory($product);
+
                 $result = 'updated';
             } else {
+
+                Log::info('iiko: create product', [
+                    '$productName' => $productName,
+                    '$item' => $item,
+                ]);
+
                 $productData = [
                     'type' => 'constructor',
                     'sku' => $sku,
@@ -663,24 +712,30 @@ class IikoNomenclatureImportService
                     'status' => 1,
                     'visible_individually' => 1,
                 ];
+
+                $product = $this->productRepository->create($productData);
+                $product->refresh();
+
+                // Save attribute values for each locale separately
                 $locales = core()->getAllLocales();
+                $defaultChannelCode = core()->getDefaultChannelCode();
+                $attributeFamily = $product->attribute_family;
+                $customAttributes = $attributeFamily->custom_attributes;
+
                 foreach ($locales as $locale) {
-                    $productData[$locale->code] = [
+                    $localeData = [
                         'name' => $productName,
                         'short_description' => $item['description'] ?? null,
                         'description' => $item['description'] ?? null,
                         'price' => $price,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
                     ];
+
+                    $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
                 }
 
-                Log::info('iiko: Create product data', [
-                    '$productData' => $productData,
-
-                ]);
-
-
-
-                $product = $this->productRepository->create($productData);
                 $categoryIikoId = $item['groupId'] ?? null;
                 $categories = [];
                 if ($categoryIikoId && isset($categoryMap[$categoryIikoId]) && is_numeric($categoryMap[$categoryIikoId]) && $categoryMap[$categoryIikoId] > 0) {
@@ -688,6 +743,10 @@ class IikoNomenclatureImportService
                 }
                 $product->categories()->sync($categories);
                 $product->refresh();
+
+                // Ensure inventory exists
+                $this->ensureProductInventory($product);
+
                 $result = 'created';
             }
 
@@ -923,181 +982,209 @@ class IikoNomenclatureImportService
      */
     protected function findOrCreateIngredient(array $modItem)
     {
+        $ingredientData = $this->extractIngredientData($modItem);
+
+        Log::info('iiko: findOrCreateIngredient', [
+            '$ingredientData' => $ingredientData,
+        ]);
+
+        if (!$ingredientData['sku']) {
+            return null;
+        }
+
+        // Try to find existing ingredient
+        $existing = $this->findIngredientProduct($ingredientData['iikoId'], $ingredientData['ingredientSku']);
+
+        if ($existing) {
+            return $this->updateIngredient($existing, $ingredientData);
+        }
+
+        // Try to create new ingredient
+        try {
+            return $this->createIngredient($ingredientData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle race condition: product was created by another process
+            if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'Duplicate entry')) {
+                $existing = $this->findProductBySku($ingredientData['sku']);
+                if ($existing) {
+                    return $this->updateIngredient($existing, $ingredientData);
+                }
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Extract ingredient data from modifier item.
+     *
+     * @param  array  $modItem
+     * @return array
+     */
+    protected function extractIngredientData(array $modItem): array
+    {
         $itemId = $modItem['itemId'] ?? null;
         $sku = $modItem['sku'] ?? null;
-        $name = $modItem['name'] ?? 'Unnamed Ingredient';
-        $description = $modItem['description'] ?? null;
+        $ingredientSku = $itemId ? 'iiko_' . $itemId : ($sku ? 'iiko_' . $sku : null);
+
         $price = 0;
         if (isset($modItem['prices']) && is_array($modItem['prices']) && count($modItem['prices']) > 0) {
             $price = (float) ($modItem['prices'][0]['price'] ?? 0);
         }
-        $buttonImageUrl = $modItem['buttonImageUrl'] ?? null;
 
-        $ingredientSku = $itemId ? 'iiko_' . $itemId : ($sku ? 'iiko_' . $sku : null);
-        if (!$ingredientSku) {
-            return null;
-        }
+        return [
+            'itemId' => $itemId,
+            'sku' => $sku,
+            'ingredientSku' => $ingredientSku,
+            'iikoId' => $itemId ?? $sku,
+            'name' => $modItem['name'] ?? 'Unnamed Ingredient',
+            'description' => $modItem['description'] ?? null,
+            'price' => $price,
+            'buttonImageUrl' => $modItem['buttonImageUrl'] ?? null,
+        ];
+    }
 
-        $existing = null;
+    /**
+     * Find ingredient product by iiko_id or SKU.
+     *
+     * @param  string|null  $itemId
+     * @param  string  $sku
+     * @return \Webkul\Product\Contracts\Product|null
+     */
+    protected function findIngredientProduct(?string $itemId, string $sku)
+    {
         if ($itemId) {
-            $existing = $this->findProductByIikoId($itemId);
-        }
-        if (!$existing) {
-            $existing = $this->findProductBySku($ingredientSku);
-        }
-
-        // Update existing ingredient
-        if ($existing) {
-            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-            $channels = [];
-            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                $channels[] = (int) $defaultChannelId;
+            $product = $this->findProductByIikoId($itemId);
+            if ($product) {
+                return $product;
             }
-
-            $productData = [
-                'additional' => array_merge($existing->additional ?? [], ['iiko_id' => $itemId ?? $sku]),
-                'channels' => $channels,
-            ];
-
-            $locales = core()->getAllLocales();
-            foreach ($locales as $locale) {
-                $productData[$locale->code] = [
-                    'name' => $name,
-                    'short_description' => $description,
-                    'description' => $description,
-                    'price' => $price,
-                ];
-            }
-
-            $this->productRepository->update($productData, $existing->id);
-            $existing->refresh();
-
-            // Handle image if buttonImageUrl is provided
-            if (!empty($buttonImageUrl)) {
-                $this->downloadAndSaveImage($buttonImageUrl, $existing);
-            }
-
-            $this->flatIndexer->refresh($existing);
-            return $existing;
         }
 
-        // Create new ingredient - double check before creating to handle race conditions
-        // Check again in case product was created between first check and now
-        $existing = $this->findProductBySku($ingredientSku);
-        if ($existing) {
-            // Product was created by another process, update it instead
-            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-            $channels = [];
-            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                $channels[] = (int) $defaultChannelId;
-            }
+        return $this->findProductBySku($sku);
+    }
 
-            $productData = [
-                'additional' => array_merge($existing->additional ?? [], ['iiko_id' => $itemId ?? $sku]),
-                'channels' => $channels,
-            ];
+    /**
+     * Update existing ingredient product.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  array  $ingredientData
+     * @return \Webkul\Product\Contracts\Product
+     */
+    protected function updateIngredient($product, array $ingredientData)
+    {
+        $channels = $this->getDefaultChannels();
 
-            $locales = core()->getAllLocales();
-            foreach ($locales as $locale) {
-                $productData[$locale->code] = [
-                    'name' => $name,
-                    'short_description' => $description,
-                    'description' => $description,
-                    'price' => $price,
-                ];
-            }
+        $productData = [
+            'additional' => array_merge($product->additional ?? [], ['iiko_id' => $ingredientData['iikoId']]),
+            'channels' => $channels,
+        ];
 
-            $this->productRepository->update($productData, $existing->id);
-            $existing->refresh();
+        $this->productRepository->update($productData, $product->id);
+        $product->refresh();
 
-            // Handle image if buttonImageUrl is provided
-            if (!empty($buttonImageUrl)) {
-                $this->downloadAndSaveImage($buttonImageUrl, $existing);
-            }
+        $this->saveIngredientAttributes($product, $ingredientData);
+        $this->handleIngredientImage($product, $ingredientData['buttonImageUrl']);
 
-            $this->flatIndexer->refresh($existing);
-            return $existing;
-        }
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
 
+        $this->flatIndexer->refresh($product);
+
+        return $product;
+    }
+
+    /**
+     * Create new ingredient product.
+     *
+     * @param  array  $ingredientData
+     * @return \Webkul\Product\Contracts\Product
+     */
+    protected function createIngredient(array $ingredientData)
+    {
         $attributeFamily = $this->getDefaultAttributeFamily();
-        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-        $channels = [];
-        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-            $channels[] = (int) $defaultChannelId;
-        }
+        $channels = $this->getDefaultChannels();
 
         $productData = [
             'type' => 'ingredient',
-            'sku' => $ingredientSku,
+            'sku' => $ingredientData['ingredientSku'],
             'attribute_family_id' => $attributeFamily->id,
-            'additional' => ['iiko_id' => $itemId ?? $sku],
+            'additional' => ['iiko_id' => $ingredientData['iikoId']],
             'channels' => $channels,
             'status' => 1,
             'visible_individually' => 0,
         ];
-        $locales = core()->getAllLocales();
-        foreach ($locales as $locale) {
-            $productData[$locale->code] = [
-                'name' => $name,
-                'short_description' => $description,
-                'description' => $description,
-                'price' => $price,
-            ];
-        }
 
-        try {
-            $product = $this->productRepository->create($productData);
-            $product->refresh();
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Handle duplicate key error (1062)
-            if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'Duplicate entry')) {
-                // Product was created by another process, find and update it
-                $existing = $this->findProductBySku($ingredientSku);
-                if ($existing) {
-                    $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-                    $channels = [];
-                    if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                        $channels[] = (int) $defaultChannelId;
-                    }
+        $product = $this->productRepository->create($productData);
+        $product->refresh();
 
-                    $productData = [
-                        'additional' => array_merge($existing->additional ?? [], ['iiko_id' => $itemId ?? $sku]),
-                        'channels' => $channels,
-                    ];
+        $this->saveIngredientAttributes($product, $ingredientData);
+        $this->handleIngredientImage($product, $ingredientData['buttonImageUrl']);
 
-                    $locales = core()->getAllLocales();
-                    foreach ($locales as $locale) {
-                        $productData[$locale->code] = [
-                            'name' => $name,
-                            'short_description' => $description,
-                            'description' => $description,
-                            'price' => $price,
-                        ];
-                    }
-
-                    $this->productRepository->update($productData, $existing->id);
-                    $existing->refresh();
-
-                    // Handle image if buttonImageUrl is provided
-                    if (!empty($buttonImageUrl)) {
-                        $this->downloadAndSaveImage($buttonImageUrl, $existing);
-                    }
-
-                    $this->flatIndexer->refresh($existing);
-                    return $existing;
-                }
-            }
-            // Re-throw if it's not a duplicate key error
-            throw $e;
-        }
-
-        // Handle image if buttonImageUrl is provided
-        if (!empty($buttonImageUrl)) {
-            $this->downloadAndSaveImage($buttonImageUrl, $product);
-        }
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
 
         $this->flatIndexer->refresh($product);
+
         return $product;
+    }
+
+    /**
+     * Save ingredient product attributes for all locales.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  array  $ingredientData
+     * @return void
+     */
+    protected function saveIngredientAttributes($product, array $ingredientData): void
+    {
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        foreach ($locales as $locale) {
+            $localeData = [
+                'name' => $ingredientData['name'],
+                'short_description' => $ingredientData['description'],
+                'description' => $ingredientData['description'],
+                'price' => $ingredientData['price'],
+                'status' => 1,
+                'locale' => $locale->code,
+                'channel' => $defaultChannelCode,
+            ];
+
+            $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+        }
+    }
+
+    /**
+     * Handle ingredient image download and save.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  string|null  $imageUrl
+     * @return void
+     */
+    protected function handleIngredientImage($product, ?string $imageUrl): void
+    {
+        if (!empty($imageUrl)) {
+            $this->downloadAndSaveImage($imageUrl, $product);
+        }
+    }
+
+    /**
+     * Get default channels array.
+     *
+     * @return array
+     */
+    protected function getDefaultChannels(): array
+    {
+        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+        $channels = [];
+
+        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+            $channels[] = (int) $defaultChannelId;
+        }
+
+        return $channels;
     }
 
     /**
@@ -1142,19 +1229,29 @@ class IikoNomenclatureImportService
             'visible_individually' => 1,
         ];
 
-        // Set translations
+        $product = $this->productRepository->create($productData);
+        $product->refresh();
+
+        // Save attribute values for each locale separately
         $productName = $item['name'] ?? 'Unnamed Product';
         $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
         foreach ($locales as $locale) {
-            $productData[$locale->code] = [
+            $localeData = [
                 'name' => $productName,
                 'short_description' => $item['description'] ?? null,
                 'description' => $item['description'] ?? null,
                 'price' => $price,
+                'status' => 1,
+                'locale' => $locale->code,
+                'channel' => $defaultChannelCode,
             ];
-        }
 
-        $product = $this->productRepository->create($productData);
+            $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+        }
 
         // Set categories
         $categoryIikoId = $item['groupId'] ?? null;
@@ -1167,6 +1264,9 @@ class IikoNomenclatureImportService
             }
         }
         $product->categories()->sync($categories);
+
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
 
         // Refresh product_flat index after creating product and setting categories
         $product->refresh();
@@ -1185,6 +1285,10 @@ class IikoNomenclatureImportService
      */
     protected function updateProduct($product, array $item, string $productType, array $categoryMap, array $prices): void
     {
+        // Get import settings
+        $channelCode = core()->getDefaultChannelCode();
+        $settings = $this->settingRepository->getAllSettings(IikoSetting::CHANNEL, $channelCode);
+
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
         $productName = $item['name'] ?? 'Unnamed Product';
 
@@ -1202,17 +1306,6 @@ class IikoNomenclatureImportService
             'channels' => $channels,
         ];
 
-        // Set translations
-        $locales = core()->getAllLocales();
-        foreach ($locales as $locale) {
-            $productData[$locale->code] = [
-                'name' => $productName,
-                'short_description' => $item['description'] ?? null,
-                'description' => $item['description'] ?? null,
-                'price' => $price,
-            ];
-        }
-
         // Set categories
         $categoryIikoId = $item['groupId'] ?? null;
         $categories = [];
@@ -1225,11 +1318,136 @@ class IikoNomenclatureImportService
         }
         $productData['categories'] = $categories;
 
+        // Update basic product data first
         $this->productRepository->update($productData, $product->id);
+        $product->refresh();
+
+        // Save attribute values for each locale separately
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        foreach ($locales as $locale) {
+            $localeData = [
+                'status' => 1,
+                'locale' => $locale->code,
+                'channel' => $defaultChannelCode,
+            ];
+
+            // Update product name if setting allows
+            if ($settings['update_product_name'] ?? true) {
+                $localeData['name'] = $productName;
+            }
+
+            // Update product description if setting allows
+            if ($settings['update_product_description'] ?? true) {
+                $localeData['short_description'] = $item['description'] ?? null;
+                $localeData['description'] = $item['description'] ?? null;
+            }
+
+            // Update product price if setting allows
+            if ($settings['update_product_price'] ?? true) {
+                $localeData['price'] = $price;
+            }
+
+            $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+        }
+
+        // Update product image if setting allows
+        if (($settings['update_product_image'] ?? true) && !empty($item['imageUrl'])) {
+            $this->downloadAndSaveImage($item['imageUrl'], $product);
+        }
+
+        // Update nutritional values (КЖБУ) if setting allows
+        if ($settings['update_product_nutritional'] ?? true) {
+            $this->updateProductNutritional($product, $item);
+        }
+
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
 
         // Refresh product_flat index after updating product
         $product->refresh();
         $this->flatIndexer->refresh($product);
+    }
+
+    /**
+     * Update product nutritional values (КЖБУ).
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  array  $item
+     * @return void
+     */
+    protected function updateProductNutritional($product, array $item): void
+    {
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        // Extract nutritional values from item data
+        // Try different possible field names from iiko API
+        $nutritionalData = [];
+
+        // Calories (калории)
+        $calories = $item['calories'] 
+            ?? $item['energy'] 
+            ?? $item['energyValue'] 
+            ?? $item['nutritionalInfo']['calories'] 
+            ?? $item['nutritionalInfo']['energy'] 
+            ?? null;
+        
+        if ($calories !== null && is_numeric($calories)) {
+            $nutritionalData['calories'] = (float) $calories;
+        }
+
+        // Proteins (белки)
+        $proteins = $item['proteins'] 
+            ?? $item['protein'] 
+            ?? $item['nutritionalInfo']['proteins'] 
+            ?? $item['nutritionalInfo']['protein'] 
+            ?? null;
+        
+        if ($proteins !== null && is_numeric($proteins)) {
+            $nutritionalData['proteins'] = (float) $proteins;
+        }
+
+        // Fats (жиры)
+        $fats = $item['fats'] 
+            ?? $item['fat'] 
+            ?? $item['nutritionalInfo']['fats'] 
+            ?? $item['nutritionalInfo']['fat'] 
+            ?? null;
+        
+        if ($fats !== null && is_numeric($fats)) {
+            $nutritionalData['fats'] = (float) $fats;
+        }
+
+        // Carbohydrates (углеводы)
+        $carbs = $item['carbs'] 
+            ?? $item['carbohydrates'] 
+            ?? $item['carbohydrate'] 
+            ?? $item['nutritionalInfo']['carbs'] 
+            ?? $item['nutritionalInfo']['carbohydrates'] 
+            ?? $item['nutritionalInfo']['carbohydrate'] 
+            ?? null;
+        
+        if ($carbs !== null && is_numeric($carbs)) {
+            $nutritionalData['carbs'] = (float) $carbs;
+        }
+
+        // Update nutritional attributes if we have any data
+        if (!empty($nutritionalData)) {
+            foreach ($locales as $locale) {
+                $localeData = array_merge($nutritionalData, [
+                    'locale' => $locale->code,
+                    'channel' => $defaultChannelCode,
+                ]);
+
+                $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+            }
+        }
     }
 
     /**
@@ -1354,5 +1572,37 @@ class IikoNomenclatureImportService
         }
 
         return $family;
+    }
+
+    /**
+     * Ensure product has inventory record.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @return void
+     */
+    protected function ensureProductInventory($product): void
+    {
+        // Load inventories relationship if not already loaded
+        if (!$product->relationLoaded('inventories')) {
+            $product->load('inventories');
+        }
+
+        // Check if product has any inventory records
+        if ($product->inventories->count() == 0) {
+            // Create a default inventory record
+            $this->productInventoryRepository->create([
+                'product_id' => $product->id,
+                'vendor_id' => 0,
+                'inventory_source_id' => 1, // Default inventory source
+                'qty' => 999, // High quantity to show as available
+            ]);
+        } else {
+            // Update existing inventory record to ensure it shows as available
+            foreach ($product->inventories as $inventory) {
+                if ($inventory->qty <= 0) {
+                    $inventory->update(['qty' => 999]);
+                }
+            }
+        }
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Webkul\Attribute\Enums\AttributeTypeEnum;
 use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Core\Eloquent\Repository;
@@ -70,7 +71,17 @@ class ProductRepository extends Repository
     {
         $product = $this->findOrFail($id);
 
+        Log::info('iiko: product rep update', [
+            '$data' => $data,
+            '$product' => $product,
+
+        ]);
+
         $product = $product->getTypeInstance()->update($data, $id, $attributes);
+
+        Log::info('iiko: product rep AFTER update', [
+            '$product' => $product,
+        ]);
 
         $product->refresh();
 
