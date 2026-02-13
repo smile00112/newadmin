@@ -8680,6 +8680,11 @@
                                                             },
                                                             "type": "object"
                                                         },
+                                                        "description": {
+                                                            "description": "Product description without HTML tags",
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
                                                         "nutrition": {
                                                             "description": "Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
                                                             "properties": {
@@ -8765,6 +8770,7 @@
                                                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
                                                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
                                                 },
+                                                "description": "Ingredient description text without HTML tags",
                                                 "nutrition": {
                                                     "calories": 250.5,
                                                     "proteins": 15.2,
@@ -8787,11 +8793,161 @@
                                                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
                                                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
                                                 },
+                                                "description": null,
                                                 "nutrition": null
                                             }
                                         ]
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    "drinks": {
+                        "title": "Drinks",
+                        "description": "Info: this property will only use with simple, constructor, configurable, grouped, and bundle type products.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Drink product ID",
+                                    "type": "integer"
+                                },
+                                "sku": {
+                                    "description": "Drink product SKU",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "description": "Drink product name",
+                                    "type": "string"
+                                },
+                                "price": {
+                                    "description": "Drink product price",
+                                    "type": "number",
+                                    "format": "float"
+                                },
+                                "formatted_price": {
+                                    "description": "Formatted price",
+                                    "type": "string"
+                                },
+                                "in_stock": {
+                                    "description": "In stock",
+                                    "type": "boolean"
+                                },
+                                "sort": {
+                                    "description": "Sort order",
+                                    "type": "integer"
+                                },
+                                "default": {
+                                    "description": "Is default drink",
+                                    "type": "boolean"
+                                },
+                                "base_image": {
+                                    "description": "Drink product base image with different sizes",
+                                    "properties": {
+                                        "small_image_url": {
+                                            "type": "string"
+                                        },
+                                        "medium_image_url": {
+                                            "type": "string"
+                                        },
+                                        "large_image_url": {
+                                            "type": "string"
+                                        },
+                                        "original_image_url": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "images": {
+                                    "description": "Drink product images",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                },
+                                "description": {
+                                    "description": "Drink description without HTML tags",
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "nutrition": {
+                                    "description": "Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+                                    "properties": {
+                                        "calories": {
+                                            "description": "Calories (ккал)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        },
+                                        "proteins": {
+                                            "description": "Proteins (г)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        },
+                                        "fats": {
+                                            "description": "Fats (г)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        },
+                                        "carbs": {
+                                            "description": "Carbohydrates (г)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "example": [
+                            {
+                                "id": 27,
+                                "sku": "drink-1",
+                                "name": "Coca Cola",
+                                "price": 2.5,
+                                "formatted_price": "$2.50",
+                                "in_stock": true,
+                                "sort": 1,
+                                "default": true,
+                                "base_image": {
+                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                },
+                                "images": [],
+                                "description": "Drink description text without HTML tags",
+                                "nutrition": {
+                                    "calories": 150,
+                                    "proteins": 0,
+                                    "fats": 0,
+                                    "carbs": 39
+                                }
+                            },
+                            {
+                                "id": 28,
+                                "sku": "drink-2",
+                                "name": "Pepsi",
+                                "price": 2.5,
+                                "formatted_price": "$2.50",
+                                "in_stock": true,
+                                "sort": 2,
+                                "default": false,
+                                "base_image": {
+                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                },
+                                "images": [],
+                                "description": null,
+                                "nutrition": null
                             }
                         ]
                     },
@@ -8968,15 +9124,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {

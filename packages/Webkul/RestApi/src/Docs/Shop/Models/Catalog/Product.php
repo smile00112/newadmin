@@ -549,6 +549,7 @@ class Product
      *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
      *                 },
+     *                 "description": "Ingredient description text without HTML tags",
      *                 "nutrition": {
      *                     "calories": 250.5,
      *                     "proteins": 15.2,
@@ -570,6 +571,7 @@ class Product
      *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
      *                 },
+     *                 "description": null,
      *                 "nutrition": null
      *             }}
      *         }}
@@ -670,6 +672,7 @@ class Product
      *                              @OA\Property(property="large_image_url", type="string"),
      *                              @OA\Property(property="original_image_url", type="string")
      *                          ),
+     *                          @OA\Property(property="description", type="string", nullable=true, description="Product description without HTML tags"),
      *                          @OA\Property(
      *                              property="nutrition",
      *                              type="object",
@@ -690,6 +693,97 @@ class Product
      * @var array
      */
     public $constructor_options;
+
+    /**
+     * @OA\Property(
+     *     title="Drinks",
+     *     description="Info: this property will only use with simple, constructor, configurable, grouped, and bundle type products.",
+     *     type="array",
+     *     example={{
+     *         "id": 27,
+     *         "sku": "drink-1",
+     *         "name": "Coca Cola",
+     *         "price": 2.50,
+     *         "formatted_price": "$2.50",
+     *         "in_stock": true,
+     *         "sort": 1,
+     *         "default": true,
+     *         "base_image": {
+     *             "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+     *             "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+     *             "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+     *             "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *         },
+     *         "images": {},
+     *         "description": "Drink description text without HTML tags",
+     *         "nutrition": {
+     *             "calories": 150.0,
+     *             "proteins": 0.0,
+     *             "fats": 0.0,
+     *             "carbs": 39.0
+     *         }
+     *     }, {
+     *         "id": 28,
+     *         "sku": "drink-2",
+     *         "name": "Pepsi",
+     *         "price": 2.50,
+     *         "formatted_price": "$2.50",
+     *         "in_stock": true,
+     *         "sort": 2,
+     *         "default": false,
+     *         "base_image": {
+     *             "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+     *             "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+     *             "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+     *             "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *         },
+     *         "images": {},
+     *         "description": null,
+     *         "nutrition": null
+     *     }},
+     *
+     *     @OA\Items(
+     *
+     *          @OA\Property(property="id", type="integer", description="Drink product ID"),
+     *          @OA\Property(property="sku", type="string", description="Drink product SKU"),
+     *          @OA\Property(property="name", type="string", description="Drink product name"),
+     *          @OA\Property(property="price", type="float", description="Drink product price"),
+     *          @OA\Property(property="formatted_price", type="string", description="Formatted price"),
+     *          @OA\Property(property="in_stock", type="boolean", description="In stock"),
+     *          @OA\Property(property="sort", type="integer", description="Sort order"),
+     *          @OA\Property(property="default", type="boolean", description="Is default drink"),
+     *          @OA\Property(
+     *              property="base_image",
+     *              type="object",
+     *              description="Drink product base image with different sizes",
+     *              @OA\Property(property="small_image_url", type="string"),
+     *              @OA\Property(property="medium_image_url", type="string"),
+     *              @OA\Property(property="large_image_url", type="string"),
+     *              @OA\Property(property="original_image_url", type="string")
+     *          ),
+     *          @OA\Property(
+     *              property="images",
+     *              type="array",
+     *              description="Drink product images",
+     *              @OA\Items(type="object")
+     *          ),
+     *          @OA\Property(property="description", type="string", nullable=true, description="Drink description without HTML tags"),
+     *          @OA\Property(
+     *              property="nutrition",
+     *              type="object",
+     *              nullable=true,
+     *              description="Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+     *              @OA\Property(property="calories", type="float", nullable=true, description="Calories (ккал)"),
+     *              @OA\Property(property="proteins", type="float", nullable=true, description="Proteins (г)"),
+     *              @OA\Property(property="fats", type="float", nullable=true, description="Fats (г)"),
+     *              @OA\Property(property="carbs", type="float", nullable=true, description="Carbohydrates (г)")
+     *          )
+     *     )
+     * )
+     *
+     * @var array
+     */
+    public $drinks;
 
     /**
      * @OA\Property(

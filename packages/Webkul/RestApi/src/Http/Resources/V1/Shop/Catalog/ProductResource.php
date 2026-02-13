@@ -32,8 +32,8 @@ class ProductResource extends JsonResource
             'name'               => $product->name,
             'price'              => core()->convertPrice($productTypeInstance->getMinimalPrice()),
             'formatted_price'    => core()->currency($productTypeInstance->getMinimalPrice()),
-            'short_description'  => $product->short_description,
-            'description'        => $product->description,
+            'short_description'  => $this->cleanHtmlDescription($product->short_description),
+            'description'        => $this->cleanHtmlDescription($product->description),
             'images'             => ProductImageResource::collection($product->images),
             'videos'             => ProductVideoResource::collection($product->videos),
             'base_image'         => ProductImage::getProductBaseImage($product),
@@ -373,6 +373,7 @@ class ProductResource extends JsonResource
                                 'sort'           => $groupProduct->pivot->sort ?? 0,
                                 'default'        => (bool) ($groupProduct->pivot->default ?? false),
                                 'base_image'     => ProductImage::getProductBaseImage($groupProduct),
+                                'description'    => $this->cleanHtmlDescription($groupProduct->description),
                                 'nutrition'      => $this->getNutritionData($groupProduct),
                             ];
                         })->sortBy('sort')->values(),
@@ -448,6 +449,7 @@ class ProductResource extends JsonResource
                 'default'            => (bool) ($drink->pivot->default ?? false),
                 'base_image'         => ProductImage::getProductBaseImage($drink),
                 'images'             => ProductImageResource::collection($drink->images),
+                'description'        => $this->cleanHtmlDescription($drink->description),
                 'nutrition'          => $this->getNutritionData($drink),
             ];
         });
@@ -490,5 +492,27 @@ class ProductResource extends JsonResource
         }
 
         return $nutrition;
+    }
+
+    /**
+     * Clean HTML tags from description text.
+     *
+     * @param  string|null  $description
+     * @return string|null
+     */
+    private function cleanHtmlDescription($description)
+    {
+        if (empty($description)) {
+            return null;
+        }
+
+        // Remove HTML tags and decode HTML entities
+        $cleaned = strip_tags($description);
+        $cleaned = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Trim whitespace
+        $cleaned = trim($cleaned);
+        
+        return !empty($cleaned) ? $cleaned : null;
     }
 }
