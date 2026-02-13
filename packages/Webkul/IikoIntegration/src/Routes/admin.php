@@ -26,6 +26,9 @@ Route::prefix('iiko')->group(function () {
         Route::get('settings', 'index')->name('admin.iiko.settings.index');
         Route::post('settings', 'store')->name('admin.iiko.settings.store');
         Route::post('settings/test-connection', 'testConnection')->name('admin.iiko.settings.test');
+        Route::get('settings/payment-methods-mapping', 'getPaymentMethodsMapping')->name('admin.iiko.settings.payment-methods-mapping');
+        Route::post('settings/payment-methods-mapping', 'storePaymentMethodsMapping')->name('admin.iiko.settings.store-payment-methods-mapping');
+        Route::post('settings/sync-payment-types', 'syncPaymentTypes')->name('admin.iiko.settings.sync-payment-types');
     });
 
     Route::controller(IikoSyncController::class)->group(function () {

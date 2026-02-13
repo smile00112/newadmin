@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Webkul\IikoIntegration\Models\IikoOrderSync;
 use Webkul\IikoIntegration\Models\IikoSyncLog;
 use Webkul\IikoIntegration\Repositories\IikoOrderSyncRepository;
+use Webkul\IikoIntegration\Repositories\IikoPaymentTypeRepository;
 use Webkul\IikoIntegration\Repositories\IikoSettingRepository;
 use Webkul\IikoIntegration\Repositories\IikoSyncLogRepository;
 use Webkul\Inventory\Models\InventorySource;
@@ -22,7 +23,8 @@ class IikoOrderService
         protected IikoOrderSyncRepository $orderSyncRepository,
         protected IikoSettingRepository $settingRepository,
         protected IikoSyncLogRepository $syncLogRepository,
-        protected OrderRepository $orderRepository
+        protected OrderRepository $orderRepository,
+        protected IikoPaymentTypeRepository $paymentTypeRepository
     ) {}
 
     /**
@@ -278,10 +280,12 @@ class IikoOrderService
         // Prepare payment
         $payment = [];
         if ($order->payment) {
+            $paymentTypeId = $this->getPaymentTypeId($order->payment->method, $organizationId);
+            
             $payment = [
                 'paymentTypeKind' => $this->mapPaymentMethod($order->payment->method),
                 'sum'             => (float) $order->grand_total,
-                'paymentTypeId'   => null, // Should be fetched from payment types dictionary
+                'paymentTypeId'   => $paymentTypeId,
                 'prepaid'         => false,
             ];
         }
@@ -319,6 +323,39 @@ class IikoOrderService
             'paypal'         => 'Card',
             default          => 'Card',
         };
+    }
+
+    /**
+     * Get payment type ID from iiko by payment method code.
+     */
+    protected function getPaymentTypeId(string $paymentMethodCode, string $organizationId): ?string
+    {
+        try {
+            $paymentType = $this->paymentTypeRepository->findWhere([
+                'organization_id'      => $organizationId,
+                'payment_method_code'  => $paymentMethodCode,
+                'is_active'            => true,
+            ])->first();
+
+            if ($paymentType) {
+                return $paymentType->iiko_id;
+            }
+
+            Log::warning('iiko: Payment method mapping not found', [
+                'payment_method_code' => $paymentMethodCode,
+                'organization_id'    => $organizationId,
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('iiko: Exception getting payment type ID', [
+                'payment_method_code' => $paymentMethodCode,
+                'organization_id'    => $organizationId,
+                'message'            => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
