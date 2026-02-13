@@ -257,7 +257,7 @@ class IikoNomenclatureImportService
                 // Create new category
                 // Ensure status is integer, not boolean
                 $categoryDataToSave['status'] = (int) ($categoryDataToSave['status'] ?? 1);
-                
+
                 $category = $this->categoryRepository->create($categoryDataToSave);
                 $categoryId = $category->id;
                 // Ensure categoryId is an integer before storing in map
@@ -405,7 +405,7 @@ class IikoNomenclatureImportService
         try {
             // Support both 'id' and 'itemId' from new API format
             $iikoId = $item['id'] ?? $item['itemId'] ?? null;
-            
+
             // Extract prices from sizePrices or itemSizes (new API format)
             $prices = $item['sizePrices'] ?? [];
             if (empty($prices) && isset($item['itemSizes']) && is_array($item['itemSizes'])) {
@@ -422,7 +422,7 @@ class IikoNomenclatureImportService
                     ];
                 }
             }
-            
+
             $categoryIikoId = $item['groupId'] ?? null;
 
             // Get or create category for price variants
@@ -440,7 +440,7 @@ class IikoNomenclatureImportService
             // Check if main grouped product already exists by SKU
             $mainSku = 'iiko_' . $iikoId;
             $mainProduct = $this->findProductBySku($mainSku);
-            
+
             if (!$mainProduct) {
                 // Create main grouped product
                 $mainProductData = [
@@ -465,7 +465,7 @@ class IikoNomenclatureImportService
                 }
 
                 $mainProduct = $this->productRepository->create($mainProductData);
-                
+
                 // Refresh product_flat index for main product
                 $mainProduct->refresh();
                 $this->flatIndexer->refresh($mainProduct);
@@ -494,10 +494,10 @@ class IikoNomenclatureImportService
                 $priceName = $price['sizeName'] ?? '';
 
                 $variantSku = 'iiko_' . $iikoId . '_price_' . $priceId;
-                
+
                 // Check if variant already exists by SKU
                 $variantProduct = $this->findProductBySku($variantSku);
-                
+
                 if (!$variantProduct) {
                     $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
 
@@ -544,10 +544,10 @@ class IikoNomenclatureImportService
                         $variantCategories[] = (int) $priceVariantCategoryId;
                     }
                     $variantProduct->categories()->sync($variantCategories);
-                    
+
                     $variantsCreated++;
                 }
-                
+
                 $variantProducts[] = $variantProduct;
             }
 
@@ -638,6 +638,12 @@ class IikoNomenclatureImportService
                         'price' => $price,
                     ];
                 }
+
+                Log::info('iiko: edit product data', [
+                    '$productData' => $productData,
+
+                ]);
+
                 $categoryIikoId = $item['groupId'] ?? null;
                 $categories = [];
                 if ($categoryIikoId && isset($categoryMap[$categoryIikoId]) && is_numeric($categoryMap[$categoryIikoId]) && $categoryMap[$categoryIikoId] > 0) {
@@ -666,6 +672,14 @@ class IikoNomenclatureImportService
                         'price' => $price,
                     ];
                 }
+
+                Log::info('iiko: Create product data', [
+                    '$productData' => $productData,
+
+                ]);
+
+
+
                 $product = $this->productRepository->create($productData);
                 $categoryIikoId = $item['groupId'] ?? null;
                 $categories = [];
@@ -824,7 +838,7 @@ class IikoNomenclatureImportService
 
             // Download image
             $response = Http::timeout(10)->get($imageUrl);
-            
+
             if (!$response->successful()) {
                 Log::warning('iiko: Failed to download image', [
                     'url' => $imageUrl,
@@ -1100,7 +1114,7 @@ class IikoNomenclatureImportService
         // Support both 'id' and 'itemId' from new API format
         $iikoId = $item['id'] ?? $item['itemId'] ?? null;
         $sku = 'iiko_' . $iikoId;
-        
+
         // Check if product already exists by SKU
         $existingProduct = $this->findProductBySku($sku);
         if ($existingProduct) {
@@ -1108,7 +1122,7 @@ class IikoNomenclatureImportService
             $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
             return;
         }
-        
+
         $attributeFamily = $this->getDefaultAttributeFamily();
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
 
