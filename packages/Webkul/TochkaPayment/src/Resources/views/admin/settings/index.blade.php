@@ -126,6 +126,41 @@
                         />
 
                         <x-admin::form.control-group.error control-name="webhook_url" />
+
+                        <!-- Webhook Subscription Controls -->
+                        <div class="mt-3 flex items-center gap-3">
+                            <x-admin::button
+                                v-if="!webhookSubscribed && !webhookCheckingStatus"
+                                type="button"
+                                class="primary-button"
+                                :title="trans('tochka-payment::app.admin.settings.index.webhook_subscribe')"
+                                @click="subscribeToWebhook"
+                                ::loading="webhookLoading"
+                                ::disabled="webhookLoading"
+                            />
+
+                            <x-admin::button
+                                v-if="webhookSubscribed && !webhookCheckingStatus"
+                                type="button"
+                                class="secondary-button"
+                                :title="trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe')"
+                                @click="unsubscribeFromWebhook"
+                                ::loading="webhookLoading"
+                                ::disabled="webhookLoading"
+                            />
+
+                            <span v-if="webhookCheckingStatus" class="text-sm text-gray-600 dark:text-gray-400">
+                                @{{ trans('tochka-payment::app.admin.settings.index.webhook_checking_status') }}
+                            </span>
+
+                            <span v-if="!webhookCheckingStatus && webhookSubscribed" class="text-sm text-green-600 dark:text-green-400">
+                                @{{ trans('tochka-payment::app.admin.settings.index.webhook_subscribed') }}
+                            </span>
+
+                            <span v-if="!webhookCheckingStatus && !webhookSubscribed && webhookStatusChecked" class="text-sm text-gray-600 dark:text-gray-400">
+                                @{{ trans('tochka-payment::app.admin.settings.index.webhook_not_subscribed') }}
+                            </span>
+                        </div>
                     </x-admin::form.control-group>
 
                     <!-- Customer Code -->
@@ -716,7 +751,7 @@
                         client_id: @json($settings->client_id ?? ''),
                         jwt_token: @json($settings->jwt_token ?? ''),
                         api_base_url: @json($settings->api_base_url ?? ''),
-                        webhook_url: @json($settings->webhook_url ?? ''),
+                        webhook_url: @json($settings->webhook_url ?? route('api.tochka-payment.webhook.handle')),
                         customer_code: @json($settings->customer_code ?? ''),
                         merchant_id: @json($settings->merchant_id ?? ''),
                         payment_mode: @json(is_array($settings->payment_mode ?? null) ? implode(',', $settings->payment_mode) : ($settings->payment_mode ?? '')),
@@ -731,13 +766,31 @@
                         isLoading: false,
                         loadingSettings: false,
                         byCompanySettingsUrl: "{{ route('admin.tochka-payment.settings.by-company', ['companyId' => 'COMPANY_ID']) }}",
+                        webhookSubscribed: false,
+                        webhookCheckingStatus: false,
+                        webhookStatusChecked: false,
+                        webhookLoading: false,
+                        webhookSubscribeUrl: "{{ route('admin.tochka-payment.settings.webhook.subscribe') }}",
+                        webhookUnsubscribeUrl: "{{ route('admin.tochka-payment.settings.webhook.unsubscribe') }}",
+                        webhookStatusUrl: "{{ route('admin.tochka-payment.settings.webhook.status') }}",
                     };
+                },
+
+                mounted() {
+                    // Check webhook status on component mount
+                    if (this.company_id) {
+                        this.checkWebhookStatus();
+                    }
                 },
 
                 watch: {
                     company_id(newVal) {
                         if (!newVal || this.companies.length <= 1) return;
                         this.loadSettingsForCompany(newVal);
+                        // Check webhook status when company changes
+                        if (newVal) {
+                            this.checkWebhookStatus();
+                        }
                     },
                 },
 
@@ -751,7 +804,7 @@
                                 this.client_id = d.client_id ?? '';
                                 this.jwt_token = d.jwt_token ?? '';
                                 this.api_base_url = d.api_base_url ?? '';
-                                this.webhook_url = d.webhook_url ?? '';
+                                this.webhook_url = d.webhook_url || "{{ route('api.tochka-payment.webhook.handle') }}";
                                 this.customer_code = d.customer_code ?? '';
                                 this.merchant_id = d.merchant_id ?? '';
                                 this.payment_mode = d.payment_mode ?? '';
@@ -762,6 +815,9 @@
                                 this.is_active = !!d.is_active;
                                 this.telegram_bot_token = d.telegram_bot_token ?? '';
                                 this.telegram_chat_id = d.telegram_chat_id ?? '';
+                                
+                                // Check webhook status after loading settings
+                                this.checkWebhookStatus();
                             })
                             .catch(() => {
                                 this.$emitter.emit('add-flash', { type: 'error', message: 'Не удалось загрузить настройки компании' });
@@ -794,6 +850,111 @@
                                 } else {
                                     this.$emitter.emit('add-flash', { type: 'error', message: error.response.data.message || 'An error occurred' });
                                 }
+                            });
+                    },
+
+                    checkWebhookStatus() {
+                        if (!this.company_id) {
+                            return;
+                        }
+
+                        this.webhookCheckingStatus = true;
+                        this.webhookStatusChecked = false;
+
+                        this.$axios.get(this.webhookStatusUrl, {
+                            params: {
+                                company_id: this.company_id
+                            }
+                        })
+                            .then((response) => {
+                                if (response.data.success) {
+                                    this.webhookSubscribed = response.data.subscribed;
+                                    this.webhookStatusChecked = true;
+                                }
+                            })
+                            .catch(() => {
+                                this.webhookSubscribed = false;
+                                this.webhookStatusChecked = true;
+                            })
+                            .finally(() => {
+                                this.webhookCheckingStatus = false;
+                            });
+                    },
+
+                    subscribeToWebhook() {
+                        if (!this.company_id) {
+                            this.$emitter.emit('add-flash', { 
+                                type: 'error', 
+                                message: this.trans('tochka-payment::app.admin.settings.index.company_required') 
+                            });
+                            return;
+                        }
+
+                        this.webhookLoading = true;
+
+                        this.$axios.post(this.webhookSubscribeUrl, {
+                            company_id: this.company_id,
+                            webhook_url: this.webhook_url || null
+                        })
+                            .then((response) => {
+                                if (response.data.success) {
+                                    this.$emitter.emit('add-flash', { 
+                                        type: 'success', 
+                                        message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_subscribe_success')
+                                    });
+                                    this.webhookSubscribed = true;
+                                    this.webhookStatusChecked = true;
+                                } else {
+                                    this.$emitter.emit('add-flash', { 
+                                        type: 'error', 
+                                        message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_subscribe_error')
+                                    });
+                                }
+                            })
+                            .catch((error) => {
+                                const message = error.response?.data?.message || this.trans('tochka-payment::app.admin.settings.index.webhook_subscribe_error');
+                                this.$emitter.emit('add-flash', { type: 'error', message: message });
+                            })
+                            .finally(() => {
+                                this.webhookLoading = false;
+                            });
+                    },
+
+                    unsubscribeFromWebhook() {
+                        if (!this.company_id) {
+                            this.$emitter.emit('add-flash', { 
+                                type: 'error', 
+                                message: this.trans('tochka-payment::app.admin.settings.index.company_required') 
+                            });
+                            return;
+                        }
+
+                        this.webhookLoading = true;
+
+                        this.$axios.post(this.webhookUnsubscribeUrl, {
+                            company_id: this.company_id
+                        })
+                            .then((response) => {
+                                if (response.data.success) {
+                                    this.$emitter.emit('add-flash', { 
+                                        type: 'success', 
+                                        message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_success')
+                                    });
+                                    this.webhookSubscribed = false;
+                                    this.webhookStatusChecked = true;
+                                } else {
+                                    this.$emitter.emit('add-flash', { 
+                                        type: 'error', 
+                                        message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_error')
+                                    });
+                                }
+                            })
+                            .catch((error) => {
+                                const message = error.response?.data?.message || this.trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_error');
+                                this.$emitter.emit('add-flash', { type: 'error', message: message });
+                            })
+                            .finally(() => {
+                                this.webhookLoading = false;
                             });
                     },
                 }

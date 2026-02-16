@@ -5,9 +5,11 @@ namespace Webkul\TochkaPayment\Http\Controllers\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Newsletters\Repositories\CompanyRepository;
 use Webkul\TochkaPayment\Services\SettingsService;
+use Webkul\TochkaPayment\Services\WebhookManagementService;
 
 class SettingsController extends Controller
 {
@@ -26,12 +28,20 @@ class SettingsController extends Controller
     protected $companyRepository;
 
     /**
+     * Webhook management service instance.
+     *
+     * @var \Webkul\TochkaPayment\Services\WebhookManagementService
+     */
+    protected $webhookManagementService;
+
+    /**
      * Create a new controller instance.
      */
-    public function __construct(SettingsService $settingsService, CompanyRepository $companyRepository)
+    public function __construct(SettingsService $settingsService, CompanyRepository $companyRepository, WebhookManagementService $webhookManagementService)
     {
         $this->settingsService = $settingsService;
         $this->companyRepository = $companyRepository;
+        $this->webhookManagementService = $webhookManagementService;
     }
 
     /**
@@ -70,6 +80,11 @@ class SettingsController extends Controller
             }
         }
 
+        // Auto-set webhook URL if not set
+        if (empty($settings->webhook_url)) {
+            $settings->webhook_url = route('api.tochka-payment.webhook.handle');
+        }
+
         return view('tochka-payment::admin.settings.index', compact('settings', 'companies'));
     }
 
@@ -90,12 +105,18 @@ class SettingsController extends Controller
             $paymentMode = implode(',', $paymentMode);
         }
 
+        // Auto-set webhook URL if not set
+        $webhookUrl = $settings?->webhook_url ?? '';
+        if (empty($webhookUrl)) {
+            $webhookUrl = route('api.tochka-payment.webhook.handle');
+        }
+
         return new JsonResponse([
             'company_id' => $companyId,
             'client_id' => $settings?->client_id ?? '',
             'jwt_token' => $settings?->jwt_token ?? '',
             'api_base_url' => $settings?->api_base_url ?? '',
-            'webhook_url' => $settings?->webhook_url ?? '',
+            'webhook_url' => $webhookUrl,
             'customer_code' => $settings?->customer_code ?? '',
             'merchant_id' => $settings?->merchant_id ?? '',
             'payment_mode' => $paymentMode,
@@ -166,6 +187,11 @@ class SettingsController extends Controller
             $validated['payment_mode'] = array_map('trim', explode(',', $validated['payment_mode']));
         }
 
+        // Auto-set webhook URL if not provided
+        if (empty($validated['webhook_url'])) {
+            $validated['webhook_url'] = route('api.tochka-payment.webhook.handle');
+        }
+
         unset($validated['company_id']);
 
         // Save settings for the resolved company
@@ -175,5 +201,156 @@ class SettingsController extends Controller
             'message' => trans('tochka-payment::app.admin.settings.index.update-success'),
             'settings' => $settings,
         ]);
+    }
+
+    /**
+     * Subscribe to webhook.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function subscribeWebhook(Request $request): JsonResponse
+    {
+        $admin = auth()->guard('admin')->user();
+        if (!$admin) {
+            return new JsonResponse(['message' => 'Unauthorized'], 401);
+        }
+
+        // Resolve company_id: from request (for super-admin) or from current admin
+        $companyId = $request->input('company_id');
+        if ($companyId !== null) {
+            $companyId = (int) $companyId;
+        } else {
+            $companyId = $admin?->company_id;
+        }
+
+        if (!$companyId) {
+            return new JsonResponse([
+                'message' => trans('tochka-payment::app.admin.settings.index.company_required'),
+            ], 422);
+        }
+
+        try {
+            $webhookUrl = $request->input('webhook_url');
+            $result = $this->webhookManagementService->subscribeToWebhook($companyId, $webhookUrl);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => trans('tochka-payment::app.admin.settings.index.webhook_subscribe_success'),
+                'data' => $result,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Tochka Payment: Webhook subscription error', [
+                'company_id' => $companyId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => trans('tochka-payment::app.admin.settings.index.webhook_subscribe_error') . ': ' . $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Unsubscribe from webhook.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function unsubscribeWebhook(Request $request): JsonResponse
+    {
+        $admin = auth()->guard('admin')->user();
+        if (!$admin) {
+            return new JsonResponse(['message' => 'Unauthorized'], 401);
+        }
+
+        // Resolve company_id: from request (for super-admin) or from current admin
+        $companyId = $request->input('company_id');
+        if ($companyId !== null) {
+            $companyId = (int) $companyId;
+        } else {
+            $companyId = $admin?->company_id;
+        }
+
+        if (!$companyId) {
+            return new JsonResponse([
+                'message' => trans('tochka-payment::app.admin.settings.index.company_required'),
+            ], 422);
+        }
+
+        try {
+            $result = $this->webhookManagementService->unsubscribeFromWebhook($companyId);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_success'),
+                'data' => $result,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Tochka Payment: Webhook unsubscription error', [
+                'company_id' => $companyId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_error') . ': ' . $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Get webhook subscription status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getWebhookStatus(Request $request): JsonResponse
+    {
+        $admin = auth()->guard('admin')->user();
+        if (!$admin) {
+            return new JsonResponse(['message' => 'Unauthorized'], 401);
+        }
+
+        // Resolve company_id: from request (for super-admin) or from current admin
+        $companyId = $request->input('company_id');
+        if ($companyId !== null) {
+            $companyId = (int) $companyId;
+        } else {
+            $companyId = $admin?->company_id;
+        }
+
+        if (!$companyId) {
+            return new JsonResponse([
+                'message' => trans('tochka-payment::app.admin.settings.index.company_required'),
+            ], 422);
+        }
+
+        try {
+            $isSubscribed = $this->webhookManagementService->isSubscribed($companyId);
+
+            return new JsonResponse([
+                'success' => true,
+                'subscribed' => $isSubscribed,
+                'message' => $isSubscribed
+                    ? trans('tochka-payment::app.admin.settings.index.webhook_subscribed')
+                    : trans('tochka-payment::app.admin.settings.index.webhook_not_subscribed'),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Tochka Payment: Get webhook status error', [
+                'company_id' => $companyId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'subscribed' => false,
+                'message' => 'Error checking webhook status: ' . $e->getMessage(),
+            ], 400);
+        }
     }
 }

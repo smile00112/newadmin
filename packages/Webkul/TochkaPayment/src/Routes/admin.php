@@ -16,6 +16,9 @@ Route::group(['prefix' => 'tochka-payment'], function () {
         Route::get('', 'index')->name('admin.tochka-payment.settings.index');
         Route::get('by-company/{companyId}', 'getByCompany')->name('admin.tochka-payment.settings.by-company');
         Route::post('', 'store')->name('admin.tochka-payment.settings.store');
+        Route::post('webhook/subscribe', 'subscribeWebhook')->name('admin.tochka-payment.settings.webhook.subscribe');
+        Route::post('webhook/unsubscribe', 'unsubscribeWebhook')->name('admin.tochka-payment.settings.webhook.unsubscribe');
+        Route::get('webhook/status', 'getWebhookStatus')->name('admin.tochka-payment.settings.webhook.status');
     });
 
     /**
