@@ -25,6 +25,8 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
      */
     public function boot(): void
     {
+        parent::boot();
+
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
         $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'tochka-payment');
@@ -33,6 +35,7 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
 
         $this->mapAdminRoutes();
         $this->mapApiRoutes();
+        $this->mapWebRoutes();
     }
 
     /**
@@ -80,5 +83,16 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
         Route::middleware(['api'])
             ->prefix('api')
             ->group(__DIR__.'/../Routes/api.php');
+    }
+
+    /**
+     * Define the "web" routes for payment redirects (success/fail).
+     *
+     * @return void
+     */
+    protected function mapWebRoutes(): void
+    {
+        Route::middleware(['web'])
+            ->group(__DIR__.'/../Routes/web.php');
     }
 }

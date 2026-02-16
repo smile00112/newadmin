@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Webkul\TochkaPayment\Http\Controllers\Admin\PaymentHistoryController;
 use Webkul\TochkaPayment\Http\Controllers\Admin\SettingsController;
 use Webkul\TochkaPayment\Http\Controllers\Admin\TestOrderController;
 
@@ -13,7 +14,16 @@ Route::group(['prefix' => 'tochka-payment'], function () {
      */
     Route::controller(SettingsController::class)->prefix('settings')->group(function () {
         Route::get('', 'index')->name('admin.tochka-payment.settings.index');
+        Route::get('by-company/{companyId}', 'getByCompany')->name('admin.tochka-payment.settings.by-company');
         Route::post('', 'store')->name('admin.tochka-payment.settings.store');
+    });
+
+    /**
+     * Payment history routes.
+     */
+    Route::controller(PaymentHistoryController::class)->prefix('payment-history')->group(function () {
+        Route::get('', 'index')->name('admin.tochka-payment.payment-history.index');
+        Route::get('{id}', 'show')->name('admin.tochka-payment.payment-history.show');
     });
 
     /**

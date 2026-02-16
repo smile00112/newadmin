@@ -60,16 +60,18 @@ class PaymentRequestBuilder
         // Get callback URLs
         $callbackUrl = $this->getCallbackUrl();
         $baseUrl = rtrim(config('app.url'), '/');
-        $successUrl = $baseUrl . '/payment/success';
-        $failUrl = $baseUrl . '/payment/fail';
+        $successUrl = $baseUrl . '/payment/tochka/success';
+        $failUrl = $baseUrl . '/payment/tochka/fail';
 
-        // Build Data object according to API documentation
-        // Use customer_code from data if provided, otherwise use from settings
-        $customerCode = $data['customer_code'] ?? $settings['customer_code'];
+        // Build Data object according to API documentation.
+        // Merchant ID and Customer Code from settings are included in the order creation request.
+        $customerCode = $data['customer_code'] ?? $settings['customer_code'] ?? '';
+        $merchantId = $settings['merchant_id'] ?? '';
 
         $requestData = [
             'Data' => [
                 'customerCode' => $customerCode,
+                'merchantId' => $merchantId,
                 'amount' => $amount,
                 'purpose' => $purpose,
                 'redirectUrl' => $successUrl,
@@ -77,7 +79,6 @@ class PaymentRequestBuilder
                 'paymentMode' => $settings['payment_mode'],
                 'saveCard' => (bool) $settings['save_card'],
                 'consumerId' => $settings['consumer_id'],
-                'merchantId' => $settings['merchant_id'],
                 'preAuthorization' => (bool) $settings['pre_authorization'],
                 'ttl' => (int) $settings['ttl'],
             ],
@@ -152,25 +153,28 @@ class PaymentRequestBuilder
             unset($dataPayload['_paymentId']);
         }
 
+        // Ensure Data is wrapped correctly
+        $requestPayload = isset($requestData['Data'])
+            ? ['Data' => $dataPayload]
+            : ['Data' => $dataPayload];
+
+        $requestHeaders = [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $bearerToken,
+        ];
+
+        Log::info('Tochka Payment: Request to bank', [
+            'url' => $endpoint,
+            'headers' => $this->getHeadersForLog($requestHeaders),
+            'body' => $this->maskSensitiveData($requestPayload),
+            'payment_id' => $paymentId,
+            'order_id' => $orderId,
+        ]);
+
         try {
-            Log::info('Tochka Payment: Sending API request', [
-                'endpoint' => $endpoint,
-                'payment_id' => $paymentId,
-                'order_id' => $orderId,
-                'data' => $this->maskSensitiveData($dataPayload),
-            ]);
-
-            // Ensure Data is wrapped correctly
-            $requestPayload = isset($requestData['Data']) 
-                ? ['Data' => $dataPayload] 
-                : ['Data' => $dataPayload];
-
             $response = $this->client->post($endpoint, [
                 'json' => $requestPayload,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $bearerToken,
-                ],
+                'headers' => $requestHeaders,
             ]);
 
             $statusCode = $response->getStatusCode();
@@ -181,8 +185,10 @@ class PaymentRequestBuilder
                 throw new \Exception('Invalid JSON response from Tochka API: ' . json_last_error_msg());
             }
 
-            Log::info('Tochka Payment: API response received', [
+            Log::info('Tochka Payment: Response from bank', [
+                'url' => $endpoint,
                 'status_code' => $statusCode,
+                'response_body' => $this->maskSensitiveData(is_array($responseData) ? $responseData : ['raw' => $responseBody]),
                 'payment_id' => $paymentId,
                 'order_id' => $orderId,
             ]);
@@ -232,10 +238,18 @@ class PaymentRequestBuilder
         } catch (GuzzleException $e) {
             $statusCode = $e->hasResponse() ? $e->getResponse()->getStatusCode() : 0;
             $errorBody = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : $e->getMessage();
+            $errorData = is_string($errorBody) ? ['raw' => $errorBody] : (is_array($errorBody) ? $errorBody : ['message' => $errorBody]);
+            if (is_string($errorBody) && preg_match('/^[\{\[]/', trim($errorBody))) {
+                $decoded = json_decode($errorBody, true);
+                $errorData = is_array($decoded) ? $decoded : $errorData;
+            }
 
             Log::error('Tochka Payment: API request failed', [
+                'url' => $endpoint,
+                'request_headers' => $this->getHeadersForLog($requestHeaders),
+                'request_body' => $this->maskSensitiveData($requestPayload),
                 'status_code' => $statusCode,
-                'error' => $errorBody,
+                'response_body' => $this->maskSensitiveData($errorData),
                 'payment_id' => $paymentId,
                 'order_id' => $orderId,
             ]);
@@ -348,8 +362,8 @@ class PaymentRequestBuilder
     /**
      * Mask sensitive data for logging.
      *
-     * @param  array  $data
-     * @return array
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
      */
     public function maskSensitiveData(array $data): array
     {
@@ -361,17 +375,17 @@ class PaymentRequestBuilder
         }
 
         // Mask consumerId (UUID)
-        if (isset($masked['consumerId'])) {
+        if (isset($masked['consumerId']) && is_string($masked['consumerId'])) {
             $masked['consumerId'] = substr($masked['consumerId'], 0, 8) . '...';
         }
 
         // Mask customerCode
-        if (isset($masked['customerCode'])) {
+        if (isset($masked['customerCode']) && is_string($masked['customerCode'])) {
             $masked['customerCode'] = substr($masked['customerCode'], 0, 4) . '****';
         }
 
         // Mask merchantId
-        if (isset($masked['merchantId'])) {
+        if (isset($masked['merchantId']) && is_string($masked['merchantId'])) {
             $masked['merchantId'] = substr($masked['merchantId'], 0, 6) . '****';
         }
 
@@ -380,8 +394,43 @@ class PaymentRequestBuilder
             $masked['login'] = '****';
         }
 
-        if (isset($masked['sign'])) {
+        if (isset($masked['sign']) && is_string($masked['sign'])) {
             $masked['sign'] = substr($masked['sign'], 0, 8) . '...';
+        }
+
+        // Recursively mask nested Data array (request/response payload)
+        if (isset($masked['Data']) && is_array($masked['Data'])) {
+            $masked['Data'] = $this->maskSensitiveData($masked['Data']);
+        }
+
+        return $masked;
+    }
+
+    /**
+     * Get headers for logging: masked in non-local environments, raw on local for debugging.
+     *
+     * @param  array<string, string>  $headers
+     * @return array<string, string>
+     */
+    protected function getHeadersForLog(array $headers): array
+    {
+        return app()->environment('local')
+            ? $headers
+            : $this->maskHeadersForLog($headers);
+    }
+
+    /**
+     * Mask sensitive headers for logging.
+     *
+     * @param  array<string, string>  $headers
+     * @return array<string, string>
+     */
+    protected function maskHeadersForLog(array $headers): array
+    {
+        $masked = $headers;
+
+        if (isset($masked['Authorization'])) {
+            $masked['Authorization'] = 'Bearer ****';
         }
 
         return $masked;

@@ -13,12 +13,17 @@ class SettingsService
      * @param  int|null  $companyId
      * @return array
      */
-    public function getSettings(?int $companyId = null): array
+    public function getSettings($companyId = null): array
     {
+       // dd($companyId);
         if ($companyId === null) {
             $admin = auth()->guard('admin')->user();
             $companyId = $admin?->company_id;
+        }else{
+            $companyId = (int) $companyId;
         }
+
+
 
         if (!$companyId) {
             // Fallback to config for backward compatibility

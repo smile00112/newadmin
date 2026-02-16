@@ -26,6 +26,31 @@
                         </p>
                     </div>
 
+                    <!-- Company -->
+                    <x-admin::form.control-group>
+                        <x-admin::form.control-group.label>
+                            @lang('tochka-payment::app.admin.settings.index.company')
+                        </x-admin::form.control-group.label>
+
+                        <x-admin::form.control-group.control
+                            type="select"
+                            name="company_id"
+                            rules=""
+                            :value="old('company_id', $settings->company_id ?? auth()->guard('admin')->user()?->company_id ?? '')"
+                            v-model="company_id"
+                            :label="trans('tochka-payment::app.admin.settings.index.company')"
+                        >
+                            <option value="">@lang('tochka-payment::app.admin.settings.index.select-company')</option>
+                            @foreach($companies as $company)
+                                <option value="{{ $company->id }}" {{ old('company_id', $settings->company_id ?? auth()->guard('admin')->user()?->company_id) == $company->id ? 'selected' : '' }}>
+                                    {{ $company->name }}
+                                </option>
+                            @endforeach
+                        </x-admin::form.control-group.control>
+
+                        <x-admin::form.control-group.error control-name="company_id" />
+                    </x-admin::form.control-group>
+
                     <!-- Client ID -->
                     <x-admin::form.control-group>
                         <x-admin::form.control-group.label>
@@ -173,7 +198,7 @@
                         <x-admin::form.control-group.control
                             type="switch"
                             name="save_card"
-                            :value="old('save_card', $settings->save_card ?? false)"
+                            :value="old('save_card', (bool)($settings->save_card ?? false))"
                             v-model="save_card"
                             :label="trans('tochka-payment::app.admin.settings.index.save_card')"
                         />
@@ -190,7 +215,7 @@
                         <x-admin::form.control-group.control
                             type="switch"
                             name="pre_authorization"
-                            :value="old('pre_authorization', $settings->pre_authorization ?? false)"
+                            :value="old('pre_authorization', (bool)($settings->pre_authorization ?? false))"
                             v-model="pre_authorization"
                             :label="trans('tochka-payment::app.admin.settings.index.pre_authorization')"
                         />
@@ -249,11 +274,10 @@
                         <x-admin::form.control-group.control
                             type="switch"
                             name="is_active"
-                            :value="old('is_active', $settings->is_active ?? false)"
+                            :value="old('is_active', (bool)($settings->is_active ?? false))"
                             v-model="is_active"
                             :label="trans('tochka-payment::app.admin.settings.index.is_active')"
                         />
-
                         <x-admin::form.control-group.error control-name="is_active" />
                     </x-admin::form.control-group>
 
@@ -299,6 +323,35 @@
                                     @lang('tochka-payment::app.admin.settings.index.description')
                                 </p>
                             </div>
+
+                            <!-- Company -->
+                            <x-admin::form.control-group>
+                                <x-admin::form.control-group.label>
+                                    @lang('tochka-payment::app.admin.settings.index.company')
+                                </x-admin::form.control-group.label>
+
+                                <x-admin::form.control-group.control
+                                    type="select"
+                                    name="company_id"
+                                    rules=""
+                                    v-model="company_id"
+                                    :label="trans('tochka-payment::app.admin.settings.index.company')"
+                                    ::disabled="loadingSettings"
+                                >
+                                    <option value="">@lang('tochka-payment::app.admin.settings.index.select-company')</option>
+                                    <option
+                                        v-for="company in companies"
+                                        :key="company.id"
+                                        :value="company.id"
+                                    >@{{ company.name }}</option>
+                                </x-admin::form.control-group.control>
+
+                                <p v-if="loadingSettings" class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                    @lang('tochka-payment::app.admin.settings.index.loading-settings')
+                                </p>
+
+                                <x-admin::form.control-group.error control-name="company_id" />
+                            </x-admin::form.control-group>
 
                             <!-- Client ID -->
                             <x-admin::form.control-group>
@@ -387,7 +440,9 @@
                                     :label="trans('tochka-payment::app.admin.settings.index.customer_code')"
                                     :placeholder="trans('tochka-payment::app.admin.settings.index.customer_code_placeholder')"
                                 />
-
+                                <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                    @lang('tochka-payment::app.admin.settings.index.customer_code_help')
+                                </p>
                                 <x-admin::form.control-group.error control-name="customer_code" />
                             </x-admin::form.control-group>
 
@@ -405,7 +460,9 @@
                                     :label="trans('tochka-payment::app.admin.settings.index.merchant_id')"
                                     :placeholder="trans('tochka-payment::app.admin.settings.index.merchant_id_placeholder')"
                                 />
-
+                                <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                    @lang('tochka-payment::app.admin.settings.index.merchant_id_help')
+                                </p>
                                 <x-admin::form.control-group.error control-name="merchant_id" />
                             </x-admin::form.control-group>
 
@@ -438,7 +495,8 @@
                                 </x-admin::form.control-group.label>
 
                                 <x-admin::form.control-group.control
-                                    type="switch"
+                                    type="checkbox"
+{{--                                    type="switch"--}}
                                     name="save_card"
                                     v-model="save_card"
                                     :label="trans('tochka-payment::app.admin.settings.index.save_card')"
@@ -454,7 +512,8 @@
                                 </x-admin::form.control-group.label>
 
                                 <x-admin::form.control-group.control
-                                    type="switch"
+{{--                                    type="switch"--}}
+                                    type="checkbox"
                                     name="pre_authorization"
                                     v-model="pre_authorization"
                                     :label="trans('tochka-payment::app.admin.settings.index.pre_authorization')"
@@ -510,7 +569,8 @@
                                 </x-admin::form.control-group.label>
 
                                 <x-admin::form.control-group.control
-                                    type="switch"
+{{--                                    type="switch"--}}
+                                    type="checkbox"
                                     name="is_active"
                                     v-model="is_active"
                                     :label="trans('tochka-payment::app.admin.settings.index.is_active')"
@@ -541,6 +601,8 @@
 
                 data() {
                     return {
+                        companies: @json($companies),
+                        company_id: @json($settings->company_id ?? auth()->guard('admin')->user()?->company_id ?? ''),
                         client_id: @json($settings->client_id ?? ''),
                         jwt_token: @json($settings->jwt_token ?? ''),
                         api_base_url: @json($settings->api_base_url ?? ''),
@@ -548,17 +610,53 @@
                         customer_code: @json($settings->customer_code ?? ''),
                         merchant_id: @json($settings->merchant_id ?? ''),
                         payment_mode: @json(is_array($settings->payment_mode ?? null) ? implode(',', $settings->payment_mode) : ($settings->payment_mode ?? '')),
-                        save_card: @json($settings->save_card ?? false),
-                        pre_authorization: @json($settings->pre_authorization ?? false),
+                        save_card: @json((bool)($settings->save_card ?? false)),
+                        pre_authorization: @json((bool)($settings->pre_authorization ?? false)),
                         ttl: @json($settings->ttl ?? 10080),
                         min_amount: @json($settings->min_amount ?? 1.00),
-                        is_active: @json($settings->is_active ?? false),
+                        is_active: @json((bool)($settings->is_active ?? false)),
 
                         isLoading: false,
+                        loadingSettings: false,
+                        byCompanySettingsUrl: "{{ route('admin.tochka-payment.settings.by-company', ['companyId' => 'COMPANY_ID']) }}",
                     };
                 },
 
+                watch: {
+                    company_id(newVal) {
+                        if (!newVal || this.companies.length <= 1) return;
+                        this.loadSettingsForCompany(newVal);
+                    },
+                },
+
                 methods: {
+                    loadSettingsForCompany(companyId) {
+                        const url = this.byCompanySettingsUrl.replace('COMPANY_ID', companyId);
+                        this.loadingSettings = true;
+                        this.$axios.get(url)
+                            .then((response) => {
+                                const d = response.data;
+                                this.client_id = d.client_id ?? '';
+                                this.jwt_token = d.jwt_token ?? '';
+                                this.api_base_url = d.api_base_url ?? '';
+                                this.webhook_url = d.webhook_url ?? '';
+                                this.customer_code = d.customer_code ?? '';
+                                this.merchant_id = d.merchant_id ?? '';
+                                this.payment_mode = d.payment_mode ?? '';
+                                this.save_card = !!d.save_card;
+                                this.pre_authorization = !!d.pre_authorization;
+                                this.ttl = d.ttl ?? 10080;
+                                this.min_amount = d.min_amount ?? 1.00;
+                                this.is_active = !!d.is_active;
+                            })
+                            .catch(() => {
+                                this.$emitter.emit('add-flash', { type: 'error', message: 'Не удалось загрузить настройки компании' });
+                            })
+                            .finally(() => {
+                                this.loadingSettings = false;
+                            });
+                    },
+
                     updateSettings(params, { resetForm, setErrors }) {
                         this.isLoading = true;
 
@@ -575,7 +673,7 @@
 
                                 if (error.response.status == 422) {
                                     setErrors(error.response.data.errors);
-                                    
+
                                     if (error.response.data.message) {
                                         this.$emitter.emit('add-flash', { type: 'error', message: error.response.data.message });
                                     }

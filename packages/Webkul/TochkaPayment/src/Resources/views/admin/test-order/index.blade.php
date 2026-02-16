@@ -78,12 +78,12 @@
                             type="select"
                             name="company_id"
                             rules="required"
-                            :value="old('company_id')"
+                            :value="old('company_id', $companies->count() === 1 ? $companies->first()->id : null)"
                             label="@lang('tochka-payment::app.admin.test-order.index.company')"
                         >
                             <option value="">@lang('tochka-payment::app.admin.test-order.index.select-company')</option>
                             @foreach($companies as $company)
-                                <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
+                                <option value="{{ $company->id }}" {{ old('company_id', $companies->count() === 1 ? $companies->first()->id : null) == $company->id ? 'selected' : '' }}>
                                     {{ $company->name }}
                                 </option>
                             @endforeach
@@ -101,8 +101,8 @@
                         <x-admin::form.control-group.control
                             type="text"
                             name="name"
-                            rules="required|string|max:255"
-                            :value="old('name')"
+                            rules="required|max:255"
+                            :value="old('name', $defaults['name'] ?? '')"
                             label="@lang('tochka-payment::app.admin.test-order.index.name')"
                             placeholder="@lang('tochka-payment::app.admin.test-order.index.name-placeholder')"
                         />
@@ -120,7 +120,7 @@
                             type="email"
                             name="email"
                             rules="required|email|max:255"
-                            :value="old('email')"
+                            :value="old('email', $defaults['email'] ?? '')"
                             label="@lang('tochka-payment::app.admin.test-order.index.email')"
                             placeholder="@lang('tochka-payment::app.admin.test-order.index.email-placeholder')"
                         />
@@ -137,8 +137,8 @@
                         <x-admin::form.control-group.control
                             type="text"
                             name="phone"
-                            rules="required|string|max:20"
-                            :value="old('phone')"
+                            rules="required|max:20"
+                            :value="old('phone', $defaults['phone'] ?? '')"
                             label="@lang('tochka-payment::app.admin.test-order.index.phone')"
                             placeholder="@lang('tochka-payment::app.admin.test-order.index.phone-placeholder')"
                         />
@@ -155,8 +155,8 @@
                         <x-admin::form.control-group.control
                             type="text"
                             name="purpose"
-                            rules="required|string|max:255"
-                            :value="old('purpose')"
+                            rules="required|max:255"
+                            :value="old('purpose', $defaults['purpose'] ?? '')"
                             label="@lang('tochka-payment::app.admin.test-order.index.purpose')"
                             placeholder="@lang('tochka-payment::app.admin.test-order.index.purpose-placeholder')"
                         />
@@ -174,7 +174,7 @@
                             type="text"
                             name="amount"
                             rules="required|numeric|min:1"
-                            :value="old('amount')"
+                            :value="old('amount', $defaults['amount'] ?? '')"
                             label="@lang('tochka-payment::app.admin.test-order.index.amount')"
                             placeholder="@lang('tochka-payment::app.admin.test-order.index.amount-placeholder')"
                         />
@@ -191,8 +191,8 @@
                         <x-admin::form.control-group.control
                             type="text"
                             name="external_order_id"
-                            rules="nullable|string|max:255"
-                            :value="old('external_order_id')"
+                            rules=""
+                            :value="old('external_order_id', $defaults['external_order_id'] ?? '')"
                             label="@lang('tochka-payment::app.admin.test-order.index.external-order-id')"
                             placeholder="@lang('tochka-payment::app.admin.test-order.index.external-order-id-placeholder')"
                         />

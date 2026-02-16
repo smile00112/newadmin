@@ -12,6 +12,8 @@ return [
             'index' => [
                 'title' => 'Tochka Payment Settings',
                 'description' => 'Integration parameters for Tochka Bank payment gateway. Values from the database override .env.',
+                'company' => 'Company',
+                'select-company' => 'Select company',
                 'client_id' => 'Client ID',
                 'client_id_placeholder' => 'Client ID from Tochka Bank dashboard',
                 'jwt_token' => 'JWT Token',
@@ -37,6 +39,8 @@ return [
                 'is_active' => 'Is Active',
                 'save-btn' => 'Save',
                 'update-success' => 'Settings saved successfully.',
+                'company_required' => 'Company ID is required to save settings. Please ensure your admin account is linked to a company.',
+                'loading-settings' => 'Loading settings…',
             ],
         ],
         'payment-history' => [
@@ -75,6 +79,7 @@ return [
                 'webhook-response' => 'Webhook Response',
                 'request-data' => 'Request Data',
                 'callback-data' => 'Callback Data',
+                'go_to_payment' => 'Go to Payment',
             ],
             'status' => [
                 'pending' => 'Pending',

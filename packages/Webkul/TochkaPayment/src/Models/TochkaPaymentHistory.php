@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Webkul\Newsletters\Traits\BelongsToCompany;
+use Webkul\TochkaPayment\Contracts\TochkaPaymentHistory as TochkaPaymentHistoryContract;
 
-class TochkaPaymentHistory extends Model
+class TochkaPaymentHistory extends Model implements TochkaPaymentHistoryContract
 {
     use HasFactory, BelongsToCompany;
 

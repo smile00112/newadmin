@@ -354,10 +354,16 @@ return [
         'sort'       => 1,
         'icon'       => '',
     ], [
+        'key'        => 'tochka-payment.payment-history',
+        'name'       => 'tochka-payment::app.admin.menu.payment-history',
+        'route'      => 'admin.tochka-payment.payment-history.index',
+        'sort'       => 2,
+        'icon'       => '',
+    ], [
         'key'        => 'tochka-payment.test-order',
         'name'       => 'tochka-payment::app.admin.menu.test-order',
         'route'      => 'admin.tochka-payment.test-order.index',
-        'sort'       => 2,
+        'sort'       => 3,
         'icon'       => '',
     ],
 

@@ -65,7 +65,16 @@ final class TestOrderController extends Controller
             }
         }
 
-        return view('tochka-payment::admin.test-order.index', compact('payment', 'success', 'companies'));
+        $defaults = [
+            'name' => trans('tochka-payment::app.admin.test-order.index.name-placeholder'),
+            'email' => trans('tochka-payment::app.admin.test-order.index.email-placeholder'),
+            'phone' => trans('tochka-payment::app.admin.test-order.index.phone-placeholder'),
+            'purpose' => trans('tochka-payment::app.admin.test-order.index.purpose-placeholder'),
+            'amount' => trans('tochka-payment::app.admin.test-order.index.amount-placeholder'),
+            'external_order_id' => trans('tochka-payment::app.admin.test-order.index.external-order-id-placeholder'),
+        ];
+
+        return view('tochka-payment::admin.test-order.index', compact('payment', 'success', 'companies', 'defaults'));
     }
 
     /**

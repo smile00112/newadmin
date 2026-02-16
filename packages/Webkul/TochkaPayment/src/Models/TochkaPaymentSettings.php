@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Webkul\Newsletters\Traits\BelongsToCompany;
+use Webkul\TochkaPayment\Contracts\TochkaPaymentSettings as TochkaPaymentSettingsContract;
 
-class TochkaPaymentSettings extends Model
+class TochkaPaymentSettings extends Model implements TochkaPaymentSettingsContract
 {
     use HasFactory, BelongsToCompany;
 

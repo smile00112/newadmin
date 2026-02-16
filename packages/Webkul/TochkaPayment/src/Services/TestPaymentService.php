@@ -75,7 +75,7 @@ class TestPaymentService
                 throw new \Exception("Amount must be at least {$minAmount}");
             }
 
-            // Prepare payment data
+            // Prepare payment data (customerCode and merchantId are taken from settings in buildRequestParams)
             $paymentData = [
                 'amount' => $data['amount'],
                 'client_name' => $data['name'],
@@ -83,7 +83,6 @@ class TestPaymentService
                 'client_phone' => $data['phone'] ?? '',
                 'product_name' => $data['purpose'] ?? 'Тестовый платеж',
                 'external_order_id' => $data['external_order_id'] ?? null,
-                'customer_code' => (string) $admin->id, // Use admin ID as customerCode
             ];
 
             // Create temporary payment history
