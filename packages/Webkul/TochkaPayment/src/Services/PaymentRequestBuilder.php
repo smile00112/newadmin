@@ -197,6 +197,7 @@ class PaymentRequestBuilder
             // Response structure may vary, check common fields
             $paymentUrl = $responseData['paymentUrl'] 
                 ?? $responseData['Data']['paymentUrl'] 
+                ?? $responseData['Data']['paymentLink'] 
                 ?? $responseData['url'] 
                 ?? $responseData['link'] 
                 ?? null;

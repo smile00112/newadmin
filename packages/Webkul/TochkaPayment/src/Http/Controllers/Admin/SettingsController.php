@@ -104,6 +104,8 @@ class SettingsController extends Controller
             'ttl' => (int) ($settings?->ttl ?? 10080),
             'min_amount' => (float) ($settings?->min_amount ?? 1.0),
             'is_active' => (bool) ($settings?->is_active ?? false),
+            'telegram_bot_token' => $settings?->telegram_bot_token ?? '',
+            'telegram_chat_id' => $settings?->telegram_chat_id ?? '',
         ]);
     }
 
@@ -145,6 +147,8 @@ class SettingsController extends Controller
             'ttl' => 'nullable|integer|min:1|max:43200',
             'min_amount' => 'nullable|numeric|min:0.01',
             'is_active' => 'nullable|boolean',
+            'telegram_bot_token' => 'nullable|string|max:255',
+            'telegram_chat_id' => 'nullable|string|max:255',
         ]);
 
         // Validate settings

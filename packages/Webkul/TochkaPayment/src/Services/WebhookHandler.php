@@ -2,7 +2,10 @@
 
 namespace Webkul\TochkaPayment\Services;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Webkul\TochkaPayment\Events\PaymentFailed;
+use Webkul\TochkaPayment\Events\PaymentSuccess;
 use Webkul\TochkaPayment\Models\TochkaPaymentHistoryProxy;
 use Webkul\TochkaPayment\Models\TochkaPaymentWebhookProxy;
 use Webkul\TochkaPayment\Exceptions\InvalidSignatureException;
@@ -200,8 +203,12 @@ class WebhookHandler
             throw new PaymentNotFoundException("Payment not found for operation ID: {$operationId}");
         }
 
+        // Save old status before update
+        $oldStatus = $payment->status;
+        $webhookStatus = $data['status'] ?? null;
+
         // Update payment status
-        $status = $this->mapWebhookStatusToPaymentStatus($data['status'] ?? null);
+        $status = $this->mapWebhookStatusToPaymentStatus($webhookStatus);
 
         $updateData = [
             'status' => $status,
@@ -215,13 +222,26 @@ class WebhookHandler
         }
 
         $payment->update($updateData);
+        $payment->refresh();
 
         Log::info('Tochka Payment: Payment status updated from webhook', [
             'payment_id' => $payment->id,
             'operation_id' => $operationId,
-            'status' => $status,
+            'old_status' => $oldStatus,
+            'new_status' => $status,
+            'webhook_status' => $webhookStatus,
             'company_id' => $companyId,
         ]);
+
+        // Dispatch events only if status changed
+        // Telegram notifications will be sent by event listeners
+        if ($oldStatus !== $status) {
+            if ($this->isSuccessfulWebhookStatus($webhookStatus)) {
+                Event::dispatch(new PaymentSuccess($payment));
+            } elseif ($this->isFailedWebhookStatus($webhookStatus)) {
+                Event::dispatch(new PaymentFailed($payment));
+            }
+        }
 
         return [
             'success' => true,
@@ -240,17 +260,52 @@ class WebhookHandler
     {
         $modelClass = TochkaPaymentHistoryProxy::modelClass();
         
-        switch ($webhookStatus) {
+        if (!$webhookStatus) {
+            return $modelClass::STATUS_PENDING;
+        }
+
+        switch (strtoupper($webhookStatus)) {
             case 'APPROVED':
                 return $modelClass::STATUS_PAID;
 
+            case 'EXPIRED':
+            case 'REFUNDED':
+                return $modelClass::STATUS_FAILED;
+
             case 'AUTHORIZED':
                 // For two-step payments, AUTHORIZED means funds are frozen
-                return $modelClass::STATUS_PENDING;
-
+            case 'ON-REFUND':
+            case 'CREATED':
             default:
                 return $modelClass::STATUS_PENDING;
         }
+    }
+
+    /**
+     * Check if webhook status indicates successful payment.
+     *
+     * @param  string|null  $webhookStatus
+     * @return bool
+     */
+    protected function isSuccessfulWebhookStatus(?string $webhookStatus): bool
+    {
+        return $webhookStatus && strtoupper($webhookStatus) === 'APPROVED';
+    }
+
+    /**
+     * Check if webhook status indicates failed payment.
+     *
+     * @param  string|null  $webhookStatus
+     * @return bool
+     */
+    protected function isFailedWebhookStatus(?string $webhookStatus): bool
+    {
+        if (!$webhookStatus) {
+            return false;
+        }
+
+        $status = strtoupper($webhookStatus);
+        return in_array($status, ['EXPIRED', 'REFUNDED']);
     }
 
     /**

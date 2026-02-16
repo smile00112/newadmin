@@ -281,6 +281,62 @@
                         <x-admin::form.control-group.error control-name="is_active" />
                     </x-admin::form.control-group>
 
+                    <!-- Telegram Notifications Section -->
+                    <div class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
+                        <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+                            @lang('tochka-payment::app.admin.settings.index.telegram_notifications')
+                        </h3>
+                        <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
+                            @lang('tochka-payment::app.admin.settings.index.telegram_notifications_description')
+                        </p>
+
+                        <!-- Telegram Bot Token -->
+                        <x-admin::form.control-group>
+                            <x-admin::form.control-group.label>
+                                @lang('tochka-payment::app.admin.settings.index.telegram_bot_token')
+                            </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="text"
+                                name="telegram_bot_token"
+                                rules=""
+                                :value="old('telegram_bot_token', $settings->telegram_bot_token ?? '')"
+                                v-model="telegram_bot_token"
+                                :label="trans('tochka-payment::app.admin.settings.index.telegram_bot_token')"
+                                :placeholder="trans('tochka-payment::app.admin.settings.index.telegram_bot_token_placeholder')"
+                            />
+
+                            <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                @lang('tochka-payment::app.admin.settings.index.telegram_bot_token_help')
+                            </p>
+
+                            <x-admin::form.control-group.error control-name="telegram_bot_token" />
+                        </x-admin::form.control-group>
+
+                        <!-- Telegram Chat ID -->
+                        <x-admin::form.control-group>
+                            <x-admin::form.control-group.label>
+                                @lang('tochka-payment::app.admin.settings.index.telegram_chat_id')
+                            </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="text"
+                                name="telegram_chat_id"
+                                rules=""
+                                :value="old('telegram_chat_id', $settings->telegram_chat_id ?? '')"
+                                v-model="telegram_chat_id"
+                                :label="trans('tochka-payment::app.admin.settings.index.telegram_chat_id')"
+                                :placeholder="trans('tochka-payment::app.admin.settings.index.telegram_chat_id_placeholder')"
+                            />
+
+                            <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                @lang('tochka-payment::app.admin.settings.index.telegram_chat_id_help')
+                            </p>
+
+                            <x-admin::form.control-group.error control-name="telegram_chat_id" />
+                        </x-admin::form.control-group>
+                    </div>
+
                     <!-- Save Button -->
                     <div class="mt-6 flex items-center justify-end gap-x-2.5">
                         <x-admin::button
@@ -579,6 +635,60 @@
                                 <x-admin::form.control-group.error control-name="is_active" />
                             </x-admin::form.control-group>
 
+                            <!-- Telegram Notifications Section -->
+                            <div class="mt-8 border-t border-gray-200 pt-6 dark:border-gray-700">
+                                <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">
+                                    @lang('tochka-payment::app.admin.settings.index.telegram_notifications')
+                                </h3>
+                                <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
+                                    @lang('tochka-payment::app.admin.settings.index.telegram_notifications_description')
+                                </p>
+
+                                <!-- Telegram Bot Token -->
+                                <x-admin::form.control-group>
+                                    <x-admin::form.control-group.label>
+                                        @lang('tochka-payment::app.admin.settings.index.telegram_bot_token')
+                                    </x-admin::form.control-group.label>
+
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        name="telegram_bot_token"
+                                        rules=""
+                                        v-model="telegram_bot_token"
+                                        :label="trans('tochka-payment::app.admin.settings.index.telegram_bot_token')"
+                                        :placeholder="trans('tochka-payment::app.admin.settings.index.telegram_bot_token_placeholder')"
+                                    />
+
+                                    <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                        @lang('tochka-payment::app.admin.settings.index.telegram_bot_token_help')
+                                    </p>
+
+                                    <x-admin::form.control-group.error control-name="telegram_bot_token" />
+                                </x-admin::form.control-group>
+
+                                <!-- Telegram Chat ID -->
+                                <x-admin::form.control-group>
+                                    <x-admin::form.control-group.label>
+                                        @lang('tochka-payment::app.admin.settings.index.telegram_chat_id')
+                                    </x-admin::form.control-group.label>
+
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        name="telegram_chat_id"
+                                        rules=""
+                                        v-model="telegram_chat_id"
+                                        :label="trans('tochka-payment::app.admin.settings.index.telegram_chat_id')"
+                                        :placeholder="trans('tochka-payment::app.admin.settings.index.telegram_chat_id_placeholder')"
+                                    />
+
+                                    <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                        @lang('tochka-payment::app.admin.settings.index.telegram_chat_id_help')
+                                    </p>
+
+                                    <x-admin::form.control-group.error control-name="telegram_chat_id" />
+                                </x-admin::form.control-group>
+                            </div>
+
                             <!-- Save Button -->
                             <div class="mt-6 flex items-center justify-end gap-x-2.5">
                                 <x-admin::button
@@ -615,6 +725,8 @@
                         ttl: @json($settings->ttl ?? 10080),
                         min_amount: @json($settings->min_amount ?? 1.00),
                         is_active: @json((bool)($settings->is_active ?? false)),
+                        telegram_bot_token: @json($settings->telegram_bot_token ?? ''),
+                        telegram_chat_id: @json($settings->telegram_chat_id ?? ''),
 
                         isLoading: false,
                         loadingSettings: false,
@@ -648,6 +760,8 @@
                                 this.ttl = d.ttl ?? 10080;
                                 this.min_amount = d.min_amount ?? 1.00;
                                 this.is_active = !!d.is_active;
+                                this.telegram_bot_token = d.telegram_bot_token ?? '';
+                                this.telegram_chat_id = d.telegram_chat_id ?? '';
                             })
                             .catch(() => {
                                 this.$emitter.emit('add-flash', { type: 'error', message: 'Не удалось загрузить настройки компании' });

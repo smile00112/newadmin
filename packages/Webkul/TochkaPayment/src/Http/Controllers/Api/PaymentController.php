@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Validator;
 use Webkul\TochkaPayment\Exceptions\InvalidRequestException;
 use Webkul\TochkaPayment\Exceptions\InvalidSignatureException;
 use Webkul\TochkaPayment\Exceptions\PaymentNotFoundException;
+use Illuminate\Support\Facades\Event;
+use Webkul\TochkaPayment\Events\PaymentFailed;
+use Webkul\TochkaPayment\Events\PaymentSuccess;
+use Webkul\TochkaPayment\Models\TochkaPaymentHistoryProxy;
 use Webkul\TochkaPayment\Services\CallbackHandler;
 use Webkul\TochkaPayment\Services\PaymentProcessor;
 use Webkul\TochkaPayment\Services\PaymentRequestBuilder;
+use Webkul\TochkaPayment\Services\PaymentStatusService;
 use Webkul\TochkaPayment\Services\SettingsService;
 use Webkul\TochkaPayment\Services\WebhookService;
 
@@ -204,9 +209,26 @@ class PaymentController
 
             // Process successful payment
             $payment = $paymentProcessor->processSuccessfulPayment($paymentData);
+            
+            // Refresh payment to get updated status
+            $payment->refresh();
 
             // Send webhook notification
             $webhookService->sendPaymentNotification($payment);
+
+            // Dispatch events based on payment status
+            // Telegram notifications will be sent by event listeners
+            if ($payment->status === \Webkul\TochkaPayment\Models\TochkaPaymentHistory::STATUS_PAID) {
+                Event::dispatch(new PaymentSuccess($payment));
+            } elseif (in_array($payment->status, [
+                \Webkul\TochkaPayment\Models\TochkaPaymentHistory::STATUS_FAILED,
+                \Webkul\TochkaPayment\Models\TochkaPaymentHistory::STATUS_CANCELLED
+            ])) {
+                Event::dispatch(new PaymentFailed($payment));
+            }
+
+            // Notify External Payments module (for external systems webhooks)
+            Event::dispatch('external_payments.payment.success', [$payment]);
 
             // Return success response to bank
             return response($callbackHandler->getSuccessResponse($paymentData['transaction_id']), 200)
@@ -241,6 +263,137 @@ class PaymentController
 
             return response('Internal server error', 500)
                 ->header('Content-Type', 'text/plain');
+        }
+    }
+
+    /**
+     * Check payment operation status.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int|null  $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkStatus(Request $request, ?int $id = null): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all() + ($id ? ['id' => $id] : []), [
+                'operation_id' => 'nullable|string|max:255',
+                'payment_id' => 'nullable|integer',
+                'id' => 'nullable|integer',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $operationId = $request->input('operation_id');
+            $paymentId = $request->input('payment_id') ?? $id;
+
+            // Get company ID from request or authenticated admin
+            $companyId = $request->input('company_id');
+            if (!$companyId) {
+                $admin = auth()->guard('admin')->user();
+                $companyId = $admin?->company_id;
+            }
+
+            // Find payment by operation_id or payment_id
+            $payment = null;
+            if ($operationId) {
+                $payment = TochkaPaymentHistoryProxy::findByOperationId($operationId);
+            } elseif ($paymentId) {
+                $payment = TochkaPaymentHistoryProxy::find($paymentId);
+            }
+
+            if (!$payment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment not found',
+                ], 404);
+            }
+
+            // Use payment's operation_id if available
+            if (!$operationId && $payment->operation_id) {
+                $operationId = $payment->operation_id;
+            }
+
+            if (!$operationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Operation ID not found for this payment',
+                ], 400);
+            }
+
+            // Get company ID from payment if not provided
+            if (!$companyId) {
+                $companyId = $payment->company_id;
+            }
+
+            // Get operation status from API
+            $statusService = new PaymentStatusService($this->settingsService);
+            $statusData = $statusService->getOperationStatus($operationId, $companyId);
+
+            $apiStatus = $statusData['status'];
+            $newPaymentStatus = $statusService->mapApiStatusToPaymentStatus($apiStatus);
+            $oldPaymentStatus = $payment->status;
+
+            // Update payment status if changed
+            $updateData = [
+                'status' => $newPaymentStatus,
+                'response_data' => array_merge(
+                    $payment->response_data ?? [],
+                    ['status_check' => $statusData['response_data']]
+                ),
+            ];
+
+            // Update operation_id if not set
+            if (!$payment->operation_id) {
+                $updateData['operation_id'] = $operationId;
+            }
+
+            $payment->update($updateData);
+            $payment->refresh();
+
+            // Dispatch events only if status changed
+            if ($oldPaymentStatus !== $newPaymentStatus) {
+                if ($statusService->isSuccessfulStatus($apiStatus)) {
+                    Event::dispatch(new PaymentSuccess($payment));
+                } elseif ($statusService->isFailedStatus($apiStatus)) {
+                    Event::dispatch(new PaymentFailed($payment));
+                }
+            }
+
+            Log::info('Tochka Payment: Status checked', [
+                'payment_id' => $payment->id,
+                'operation_id' => $operationId,
+                'old_status' => $oldPaymentStatus,
+                'new_status' => $newPaymentStatus,
+                'api_status' => $apiStatus,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'payment_id' => $payment->id,
+                'operation_id' => $operationId,
+                'status' => $newPaymentStatus,
+                'api_status' => $apiStatus,
+                'status_changed' => $oldPaymentStatus !== $newPaymentStatus,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Tochka Payment: Failed to check payment status', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to check payment status',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

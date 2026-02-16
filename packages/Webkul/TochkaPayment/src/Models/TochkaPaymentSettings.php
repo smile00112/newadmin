@@ -39,6 +39,8 @@ class TochkaPaymentSettings extends Model implements TochkaPaymentSettingsContra
         'ttl',
         'min_amount',
         'is_active',
+        'telegram_bot_token',
+        'telegram_chat_id',
     ];
 
     /**

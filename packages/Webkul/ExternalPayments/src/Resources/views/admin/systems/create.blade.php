@@ -1,0 +1,111 @@
+<x-admin::layouts>
+    <x-slot:title>
+        @lang('external-payments::app.admin.systems.create.title')
+    </x-slot:title>
+
+    <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
+        <p class="text-xl font-bold text-gray-800 dark:text-white">
+            @lang('external-payments::app.admin.systems.create.title')
+        </p>
+        <a href="{{ route('admin.external-payments.systems.index') }}" class="secondary-button">
+            @lang('external-payments::app.admin.systems.create.cancel')
+        </a>
+    </div>
+
+    <form action="{{ route('admin.external-payments.systems.store') }}" method="post" class="mt-6">
+        @csrf
+        <div class="rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+            <x-admin::form.control-group>
+                <x-admin::form.control-group.label>
+                    @lang('external-payments::app.admin.systems.create.name')
+                </x-admin::form.control-group.label>
+                <x-admin::form.control-group.control
+                    type="text"
+                    name="name"
+                    :value="old('name')"
+                    rules="required"
+                    :label="trans('external-payments::app.admin.systems.create.name')"
+                />
+                <x-admin::form.control-group.error control-name="name" />
+            </x-admin::form.control-group>
+
+            <x-admin::form.control-group>
+                <x-admin::form.control-group.label>
+                    @lang('external-payments::app.admin.systems.create.api_token')
+                </x-admin::form.control-group.label>
+                <input
+                    type="text"
+                    name="api_token"
+                    value="{{ old('api_token') }}"
+                    class="flex min-h-[39px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                    placeholder="Leave empty to auto-generate"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.create.api_token_help')</p>
+                <x-admin::form.control-group.error control-name="api_token" />
+            </x-admin::form.control-group>
+
+            <x-admin::form.control-group>
+                <x-admin::form.control-group.label>
+                    @lang('external-payments::app.admin.systems.create.webhook_url')
+                </x-admin::form.control-group.label>
+                <x-admin::form.control-group.control
+                    type="text"
+                    name="webhook_url"
+                    :value="old('webhook_url')"
+                    :label="trans('external-payments::app.admin.systems.create.webhook_url')"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.create.webhook_url_help')</p>
+                <x-admin::form.control-group.error control-name="webhook_url" />
+            </x-admin::form.control-group>
+
+            <x-admin::form.control-group>
+                <label class="flex items-center gap-2">
+                    <input type="hidden" name="is_active" value="0" />
+                    <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }} class="rounded border-gray-300" />
+                    <span class="text-sm text-gray-700 dark:text-gray-300">@lang('external-payments::app.admin.systems.create.is_active')</span>
+                </label>
+            </x-admin::form.control-group>
+
+            <div class="mt-6 border-t border-gray-200 pt-6 dark:border-gray-700">
+                <p class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">@lang('external-payments::app.admin.systems.create.payment_providers')</p>
+                <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.create.payment_providers_help')</p>
+                <div class="space-y-2">
+                    @foreach ($providers as $key)
+                        @php
+                            $label = $providerConfig[$key]['name'] ?? $key;
+                        @endphp
+                        <label class="flex items-center gap-3">
+                            <input
+                                type="checkbox"
+                                name="payment_providers[]"
+                                value="{{ $key }}"
+                                {{ in_array($key, old('payment_providers', [])) ? 'checked' : '' }}
+                                class="rounded border-gray-300"
+                            />
+                            <span class="text-sm text-gray-800 dark:text-gray-200">{{ $label }}</span>
+                            <input
+                                type="radio"
+                                name="default_provider"
+                                value="{{ $key }}"
+                                {{ old('default_provider') === $key ? 'checked' : (old('default_provider') === null && $loop->first ? 'checked' : '') }}
+                                class="rounded-full border-gray-300"
+                            />
+                            <span class="text-xs text-gray-500">@lang('external-payments::app.admin.systems.create.default')</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('payment_providers')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+                @error('default_provider')
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mt-6 flex gap-2">
+                <x-admin::button type="submit" class="primary-button" :title="trans('external-payments::app.admin.systems.create.save')" />
+                <a href="{{ route('admin.external-payments.systems.index') }}" class="secondary-button">@lang('external-payments::app.admin.systems.create.cancel')</a>
+            </div>
+        </div>
+    </form>
+</x-admin::layouts>

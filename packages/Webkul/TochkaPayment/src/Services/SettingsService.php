@@ -50,6 +50,8 @@ class SettingsService
             'ttl' => $settings->ttl ?? config('tochka-payment.ttl', 10080),
             'min_amount' => $settings->min_amount ?? config('tochka-payment.min_amount', 1.00),
             'is_active' => $settings->is_active ?? false,
+            'telegram_bot_token' => $settings->telegram_bot_token,
+            'telegram_chat_id' => $settings->telegram_chat_id,
             'company_id' => $companyId,
         ];
     }
@@ -170,6 +172,19 @@ class SettingsService
             $errors['ttl'] = 'TTL must be between 1 and 43200 minutes';
         }
 
+        // Validate Telegram fields if provided
+        if (isset($data['telegram_bot_token']) && !empty($data['telegram_bot_token']) && empty($data['telegram_chat_id'])) {
+            $errors['telegram_chat_id'] = 'Telegram Chat ID is required when Telegram Bot Token is provided';
+        }
+
+        if (isset($data['telegram_chat_id']) && !empty($data['telegram_chat_id']) && empty($data['telegram_bot_token'])) {
+            $errors['telegram_bot_token'] = 'Telegram Bot Token is required when Telegram Chat ID is provided';
+        }
+
+        if (isset($data['telegram_chat_id']) && !empty($data['telegram_chat_id']) && !is_numeric($data['telegram_chat_id'])) {
+            $errors['telegram_chat_id'] = 'Telegram Chat ID must be numeric';
+        }
+
         return $errors;
     }
 
@@ -194,6 +209,8 @@ class SettingsService
             'ttl' => config('tochka-payment.ttl', 10080),
             'min_amount' => config('tochka-payment.min_amount', 1.00),
             'is_active' => false,
+            'telegram_bot_token' => null,
+            'telegram_chat_id' => null,
             'company_id' => null,
         ];
     }

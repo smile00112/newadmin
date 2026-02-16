@@ -14,6 +14,8 @@ Route::group(['prefix' => 'tochka-payment'], function () {
     Route::controller(PaymentController::class)->prefix('payments')->group(function () {
         Route::post('', 'create')->name('api.tochka-payment.payments.create');
         Route::post('callback', 'callback')->name('tochka-payment.callback');
+        Route::get('{id}/status', 'checkStatus')->name('api.tochka-payment.payments.check-status');
+        Route::post('check-status', 'checkStatus')->name('api.tochka-payment.payments.check-status-post');
     });
 
     /**

@@ -2,8 +2,13 @@
 
 namespace Webkul\TochkaPayment\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Webkul\Core\Providers\CoreModuleServiceProvider;
+use Webkul\TochkaPayment\Events\PaymentFailed;
+use Webkul\TochkaPayment\Events\PaymentSuccess;
+use Webkul\TochkaPayment\Listeners\SendTelegramNotificationOnPaymentFailed;
+use Webkul\TochkaPayment\Listeners\SendTelegramNotificationOnPaymentSuccess;
 
 class ModuleServiceProvider extends CoreModuleServiceProvider
 {
@@ -33,9 +38,29 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
 
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'tochka-payment');
 
+        $this->registerEventListeners();
+
         $this->mapAdminRoutes();
         $this->mapApiRoutes();
         $this->mapWebRoutes();
+    }
+
+    /**
+     * Register event listeners.
+     *
+     * @return void
+     */
+    protected function registerEventListeners(): void
+    {
+        Event::listen(
+            PaymentSuccess::class,
+            SendTelegramNotificationOnPaymentSuccess::class
+        );
+
+        Event::listen(
+            PaymentFailed::class,
+            SendTelegramNotificationOnPaymentFailed::class
+        );
     }
 
     /**
