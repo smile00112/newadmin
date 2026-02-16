@@ -72,7 +72,7 @@ class WebhookManagementService
 
         if (empty($webhookUrl)) {
             // Generate webhook URL automatically
-            $webhookUrl = route('api.tochka-payment.webhook.handle');
+            $webhookUrl = url(route('api.tochka-payment.webhook.handle', [], false));
         }
 
         // Validate HTTPS requirement

@@ -82,7 +82,7 @@ class SettingsController extends Controller
 
         // Auto-set webhook URL if not set
         if (empty($settings->webhook_url)) {
-            $settings->webhook_url = route('api.tochka-payment.webhook.handle');
+            $settings->webhook_url = url(route('api.tochka-payment.webhook.handle', [], false));
         }
 
         return view('tochka-payment::admin.settings.index', compact('settings', 'companies'));
@@ -108,7 +108,7 @@ class SettingsController extends Controller
         // Auto-set webhook URL if not set
         $webhookUrl = $settings?->webhook_url ?? '';
         if (empty($webhookUrl)) {
-            $webhookUrl = route('api.tochka-payment.webhook.handle');
+            $webhookUrl = url(route('api.tochka-payment.webhook.handle', [], false));
         }
 
         return new JsonResponse([
@@ -153,13 +153,14 @@ class SettingsController extends Controller
         //transform on/off to boolean
         $request['is_active'] = $request->boolean('is_active');
         $request['save_card'] = $request->boolean('save_card');
-
+//print_R($request->all());
+//exit;
         $validated = $request->validate([
             'company_id' => 'nullable|integer|exists:companies,id',
             'client_id' => 'nullable|string|max:255',
             'jwt_token' => 'nullable|string',
             'api_base_url' => 'nullable|url|max:255',
-            'webhook_url' => 'nullable|url|max:255',
+            //'webhook_url' => 'nullable|url|max:255',
             'customer_code' => 'nullable|string|max:255',
             'merchant_id' => 'nullable|string|max:255',
             'payment_mode' => 'nullable|string',
@@ -189,7 +190,7 @@ class SettingsController extends Controller
 
         // Auto-set webhook URL if not provided
         if (empty($validated['webhook_url'])) {
-            $validated['webhook_url'] = route('api.tochka-payment.webhook.handle');
+            $validated['webhook_url'] = url(route('api.tochka-payment.webhook.handle', [], false));
         }
 
         unset($validated['company_id']);

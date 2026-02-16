@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Customer\Repositories\CustomerGroupRepository;
 use Webkul\ExternalPayments\Models\ExternalSystem;
 use Webkul\ExternalPayments\Repositories\ExternalPaymentRequestRepository;
 use Webkul\ExternalPayments\Repositories\ExternalSystemRepository;
@@ -18,7 +20,9 @@ class CreatePaymentController
     public function __construct(
         protected ExternalSystemRepository $externalSystemRepository,
         protected ExternalPaymentRequestRepository $paymentRequestRepository,
-        protected PaymentProviderRegistry $providerRegistry
+        protected PaymentProviderRegistry $providerRegistry,
+        protected CustomerRepository $customerRepository,
+        protected CustomerGroupRepository $customerGroupRepository
     ) {}
 
     public function __invoke(Request $request): JsonResponse
@@ -87,6 +91,36 @@ class CreatePaymentController
         $data = $validator->validated();
         unset($data['payment_provider']);
 
+        // Add company_id from external system
+        if ($externalSystem->company_id) {
+            $data['company_id'] = $externalSystem->company_id;
+        }
+
+        // Find or create customer by email
+        $customer = $this->customerRepository->findOneByField('email', $data['client_email']);
+        
+        if (!$customer && $externalSystem->company_id) {
+            // Parse name into first_name and last_name
+            $nameParts = $this->parseName($data['client_name']);
+            
+            $customer = $this->customerRepository->create([
+                'first_name' => $nameParts['first_name'],
+                'last_name' => $nameParts['last_name'],
+                'email' => $data['client_email'],
+                'phone' => $data['client_phone'],
+                'status' => 1,
+                'is_verified' => 1,
+                'channel_id' => core()->getCurrentChannel()->id,
+                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id,
+            ]);
+
+            Log::info('External Payments: Customer created', [
+                'customer_id' => $customer->id,
+                'email' => $data['client_email'],
+                'external_system_id' => $externalSystem->id,
+            ]);
+        }
+
         try {
             $result = $adapter->createPayment($data);
 
@@ -124,5 +158,23 @@ class CreatePaymentController
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Parse name into first_name and last_name
+     *
+     * @param string $name
+     * @return array
+     */
+    protected function parseName(string $name): array
+    {
+        $name = trim($name);
+        $lastName = (strpos($name, ' ') === false) ? '' : preg_replace('#.*\s([\w-]*)$#', '$1', $name);
+        $firstName = trim(preg_replace('#'.$lastName.'#', '', $name));
+
+        return [
+            'first_name' => $firstName ?: $name,
+            'last_name' => $lastName,
+        ];
     }
 }

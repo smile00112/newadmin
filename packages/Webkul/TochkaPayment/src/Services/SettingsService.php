@@ -160,8 +160,14 @@ class SettingsService
             $errors['api_base_url'] = 'Invalid API base URL';
         }
 
-        if (isset($data['webhook_url']) && !empty($data['webhook_url']) && !filter_var($data['webhook_url'], FILTER_VALIDATE_URL)) {
-            $errors['webhook_url'] = 'Invalid webhook URL';
+        if (isset($data['webhook_url']) && !empty($data['webhook_url'])) {
+            // Validate URL - must be absolute URL with http:// or https://
+            if (!filter_var($data['webhook_url'], FILTER_VALIDATE_URL)) {
+                $errors['webhook_url'] = 'Invalid webhook URL';
+            } elseif (!preg_match('/^https?:\/\//', $data['webhook_url'])) {
+                // Must start with http:// or https://
+                $errors['webhook_url'] = 'Webhook URL must use HTTP or HTTPS protocol';
+            }
         }
 
         if (isset($data['min_amount']) && $data['min_amount'] < 0.01) {

@@ -61,4 +61,12 @@ return [
         'validation_failed'   => 'Ошибка валидации',
         'create_failed'       => 'Не удалось создать платёж',
     ],
+    'woocommerce' => [
+        'missing_parameters' => 'Отсутствуют обязательные параметры запроса',
+        'payment_not_found' => 'Платёж не найден',
+        'external_request_not_found' => 'Запрос внешней системы не найден',
+        'status_check_failed' => 'Не удалось проверить статус платежа',
+        'operation_id_not_found' => 'ID операции не найден',
+        'callback_error' => 'Ошибка при обработке callback',
+    ],
 ];

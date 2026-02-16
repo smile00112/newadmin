@@ -16,6 +16,11 @@ class ExternalSystem extends Model
         'api_token',
         'webhook_url',
         'is_active',
+        'company_id',
+        'woocommerce_site_url',
+        'woocommerce_consumer_key',
+        'woocommerce_consumer_secret',
+        'paid_order_status',
     ];
 
     protected $casts = [

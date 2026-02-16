@@ -24,6 +24,7 @@ class ExternalPaymentsServiceProvider extends ServiceProvider
 
         $this->mapApiRoutes();
         $this->mapAdminRoutes();
+        $this->mapWebRoutes();
 
         Event::listen(
             'external_payments.payment.success',
@@ -56,5 +57,11 @@ class ExternalPaymentsServiceProvider extends ServiceProvider
         Route::middleware(['web', 'admin'])
             ->prefix(config('app.admin_url'))
             ->group(__DIR__.'/../Routes/admin.php');
+    }
+
+    protected function mapWebRoutes(): void
+    {
+        Route::middleware(['web'])
+            ->group(__DIR__.'/../Routes/web.php');
     }
 }

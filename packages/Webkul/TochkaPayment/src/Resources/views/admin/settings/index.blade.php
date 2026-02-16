@@ -515,6 +515,41 @@
                                 />
 
                                 <x-admin::form.control-group.error control-name="webhook_url" />
+
+                                <!-- Webhook Subscription Controls -->
+                                <div class="mt-3 flex items-center gap-3">
+                                    <x-admin::button
+                                        v-if="!webhookSubscribed && !webhookCheckingStatus"
+                                        type="button"
+                                        class="primary-button"
+                                        :title="trans('tochka-payment::app.admin.settings.index.webhook_subscribe')"
+                                        @click="subscribeToWebhook"
+                                        ::loading="webhookLoading"
+                                        ::disabled="webhookLoading"
+                                    />
+
+                                    <x-admin::button
+                                        v-if="webhookSubscribed && !webhookCheckingStatus"
+                                        type="button"
+                                        class="secondary-button"
+                                        :title="trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe')"
+                                        @click="unsubscribeFromWebhook"
+                                        ::loading="webhookLoading"
+                                        ::disabled="webhookLoading"
+                                    />
+
+                                    <span v-if="webhookCheckingStatus" class="text-sm text-gray-600 dark:text-gray-400">
+                                        @lang('tochka-payment::app.admin.settings.index.webhook_checking_status')
+                                    </span>
+
+                                    <span v-if="!webhookCheckingStatus && webhookSubscribed" class="text-sm text-green-600 dark:text-green-400">
+                                        @lang('tochka-payment::app.admin.settings.index.webhook_subscribed')
+                                    </span>
+
+                                    <span v-if="!webhookCheckingStatus && !webhookSubscribed && webhookStatusChecked" class="text-sm text-gray-600 dark:text-gray-400">
+                                        @lang('tochka-payment::app.admin.settings.index.webhook_not_subscribed')
+                                    </span>
+                                </div>
                             </x-admin::form.control-group>
 
                             <!-- Customer Code -->
@@ -751,7 +786,7 @@
                         client_id: @json($settings->client_id ?? ''),
                         jwt_token: @json($settings->jwt_token ?? ''),
                         api_base_url: @json($settings->api_base_url ?? ''),
-                        webhook_url: @json($settings->webhook_url ?? route('api.tochka-payment.webhook.handle')),
+                        webhook_url: @json($settings->webhook_url ?? url(route('api.tochka-payment.webhook.handle', [], false))),
                         customer_code: @json($settings->customer_code ?? ''),
                         merchant_id: @json($settings->merchant_id ?? ''),
                         payment_mode: @json(is_array($settings->payment_mode ?? null) ? implode(',', $settings->payment_mode) : ($settings->payment_mode ?? '')),
@@ -775,6 +810,7 @@
                         webhookStatusUrl: "{{ route('admin.tochka-payment.settings.webhook.status') }}",
                     };
                 },
+
 
                 mounted() {
                     // Check webhook status on component mount
@@ -804,7 +840,7 @@
                                 this.client_id = d.client_id ?? '';
                                 this.jwt_token = d.jwt_token ?? '';
                                 this.api_base_url = d.api_base_url ?? '';
-                                this.webhook_url = d.webhook_url || "{{ route('api.tochka-payment.webhook.handle') }}";
+                                this.webhook_url = d.webhook_url || "{{ url(route('api.tochka-payment.webhook.handle', [], false)) }}";
                                 this.customer_code = d.customer_code ?? '';
                                 this.merchant_id = d.merchant_id ?? '';
                                 this.payment_mode = d.payment_mode ?? '';
