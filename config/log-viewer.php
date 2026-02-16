@@ -18,7 +18,8 @@ return [
 
     'api_only' => env('LOG_VIEWER_API_ONLY', false),
 
-    'require_auth_in_production' => true,
+    /*TODO разобрастья с авторизацией, https и сессией*/
+    'require_auth_in_production' => false,
 
     /*
     |--------------------------------------------------------------------------
