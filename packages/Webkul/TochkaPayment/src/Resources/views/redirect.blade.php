@@ -18,5 +18,12 @@
     </h1>
     <p>Данные из запроса (GET / POST):</p>
     <pre>{{ json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+    <p>Данные из запроса (GET / POST):</p>
+    <pre>{{ json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+    <pre>@php print_R($_GET); @endphp</pre>
+    *******
+    <pre>@php print_R($_POST); @endphp</pre>
+    *******
+    <pre>@php print_R($_REQUEST); @endphp</pre>
 </body>
 </html>

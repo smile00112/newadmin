@@ -84,11 +84,17 @@ class WebhookManagementService
         $endpoint = $apiBaseUrl . '/webhook/v1.0/' . $settings['client_id'];
         $bearerToken = $settings['jwt_token'];
 
+        //        $requestPayload = [
+        //            'Data' => [
+        //                'webhookType' => $webhookType,
+        //                'url' => $webhookUrl,
+        //            ],
+        //        ];
         $requestPayload = [
-            'Data' => [
-                'webhookType' => $webhookType,
-                'url' => $webhookUrl,
-            ],
+
+            'webhooksList' => [$webhookType],
+            'url' => $webhookUrl,
+
         ];
 
         $requestHeaders = [
@@ -380,7 +386,7 @@ class WebhookManagementService
     {
         try {
             $webhooks = $this->getWebhooks($companyId);
-            
+
             // Check if webhooks list contains the requested type
             if (isset($webhooks['data']['Data']) && is_array($webhooks['data']['Data'])) {
                 foreach ($webhooks['data']['Data'] as $webhook) {
