@@ -50,6 +50,14 @@ class ExternalPaymentWebhookSender
 
         $payload = $this->buildPayload($paymentModel, $request);
 
+        Log::info('External Payments: Sending webhook', [
+            'external_payment_request_id' => $request->id,
+            'external_system_id'          => $externalSystem->id,
+            'webhook_url'                 => $externalSystem->webhook_url,
+            'payload_keys'                => array_keys($payload),
+            'payload_size'                => strlen((string) json_encode($payload)),
+        ]);
+
         try {
             $response = $this->client->post($externalSystem->webhook_url, [
                 'json'    => $payload,
@@ -68,16 +76,26 @@ class ExternalPaymentWebhookSender
                 'status'         => 'paid',
             ]);
 
+            $responseBodyLog = strlen($body) > 2000 ? substr($body, 0, 2000) . '...' : $body;
+
             Log::info('External Payments: Webhook sent', [
                 'external_payment_request_id' => $request->id,
                 'external_system_id'          => $externalSystem->id,
                 'status_code'                 => $statusCode,
+                'response_body'               => $responseBodyLog,
             ]);
         } catch (GuzzleException $e) {
-            Log::error('External Payments: Webhook failed', [
+            $context = [
                 'external_payment_request_id' => $request->id,
                 'error'                       => $e->getMessage(),
-            ]);
+            ];
+            if (method_exists($e, 'hasResponse') && $e->hasResponse() && $e->getResponse() !== null) {
+                $response = $e->getResponse();
+                $context['response_status_code'] = $response->getStatusCode();
+                $errorBody = $response->getBody()->getContents();
+                $context['response_body'] = strlen($errorBody) > 2000 ? substr($errorBody, 0, 2000) . '...' : $errorBody;
+            }
+            Log::error('External Payments: Webhook failed', $context);
         }
     }
 

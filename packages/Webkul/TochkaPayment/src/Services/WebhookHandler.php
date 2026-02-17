@@ -257,6 +257,7 @@ class WebhookHandler
         if ($oldStatus !== $status) {
             if ($this->isSuccessfulWebhookStatus($webhookStatus)) {
                 Event::dispatch(new PaymentSuccess($payment));
+                Event::dispatch('external_payments.payment.success', [$payment]);
             } elseif ($this->isFailedWebhookStatus($webhookStatus)) {
                 Event::dispatch(new PaymentFailed($payment));
             }
