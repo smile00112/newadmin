@@ -41,6 +41,7 @@ class TochkaPaymentAdapter implements PaymentProviderAdapterInterface
         Log::info('External Payments TochkaAdapter: request params for Tochka API', [
             'request_params' => $requestParams,
             'payment_id'     => $tempPayment->id,
+            '-$companyId'  =>  $companyId,
         ]);
 
         $paymentResponse = $this->requestBuilder->requestPaymentUrl($requestParams, $companyId);

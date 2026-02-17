@@ -125,6 +125,12 @@ class PaymentRequestBuilder
         // Get settings for company
         $settings = $this->settingsService->getSettings($companyId);
 
+        Log::info('GET requestPaymentUrl', [
+            '$settings' => $settings,
+            '$requestData' => $requestData,
+            '-$companyId'  =>  $companyId,
+        ]);
+
         $apiBaseUrl = $settings['api_base_url'];
         $bearerToken = $settings['jwt_token'];
 
@@ -141,7 +147,7 @@ class PaymentRequestBuilder
         // Extract Data object and metadata
         $orderId = $requestData['_orderId'] ?? null;
         $paymentId = $requestData['_paymentId'] ?? null;
-        
+
         // Extract Data payload - it should already be wrapped in 'Data' key
         $dataPayload = $requestData['Data'] ?? $requestData;
 
@@ -195,11 +201,11 @@ class PaymentRequestBuilder
 
             // Extract payment URL from response
             // Response structure may vary, check common fields
-            $paymentUrl = $responseData['paymentUrl'] 
-                ?? $responseData['Data']['paymentUrl'] 
-                ?? $responseData['Data']['paymentLink'] 
-                ?? $responseData['url'] 
-                ?? $responseData['link'] 
+            $paymentUrl = $responseData['paymentUrl']
+                ?? $responseData['Data']['paymentUrl']
+                ?? $responseData['Data']['paymentLink']
+                ?? $responseData['url']
+                ?? $responseData['link']
                 ?? null;
 
             if (empty($paymentUrl)) {
@@ -303,8 +309,8 @@ class PaymentRequestBuilder
     public function createPaymentHistory(array $data, array $requestParams, string $paymentUrl, ?int $companyId = null, ?array $responseData = null)
     {
         // Extract order_id from request params if available
-        $orderId = $requestParams['_orderId'] 
-            ?? $requestParams['orderid'] 
+        $orderId = $requestParams['_orderId']
+            ?? $requestParams['orderid']
             ?? '';
 
         // Get company ID from request params if not provided
@@ -334,7 +340,7 @@ class PaymentRequestBuilder
         // Add response data if provided
         if ($responseData) {
             $paymentData['response_data'] = $responseData;
-            
+
             // Extract consumerId from response if available
             if (isset($responseData['consumerId'])) {
                 $paymentData['consumer_id'] = $responseData['consumerId'];
