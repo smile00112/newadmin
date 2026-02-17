@@ -30,6 +30,28 @@
                 <x-admin::form.control-group.error control-name="name" />
             </x-admin::form.control-group>
 
+            @if($isSuperAdmin && $companies->isNotEmpty())
+                <x-admin::form.control-group>
+                    <x-admin::form.control-group.label>
+                        @lang('external-payments::app.admin.systems.create.company')
+                    </x-admin::form.control-group.label>
+                    <x-admin::form.control-group.control
+                        type="select"
+                        name="company_id"
+                        :value="old('company_id', $system->company_id)"
+                        :label="trans('external-payments::app.admin.systems.create.company')"
+                    >
+                        <option value="">@lang('external-payments::app.admin.systems.create.select-company')</option>
+                        @foreach($companies as $company)
+                            <option value="{{ $company->id }}" {{ old('company_id', $system->company_id) == $company->id ? 'selected' : '' }}>
+                                {{ $company->name }}
+                            </option>
+                        @endforeach
+                    </x-admin::form.control-group.control>
+                    <x-admin::form.control-group.error control-name="company_id" />
+                </x-admin::form.control-group>
+            @endif
+
             <x-admin::form.control-group>
                 <x-admin::form.control-group.label>
                     @lang('external-payments::app.admin.systems.create.api_token')
@@ -37,11 +59,19 @@
                 <input
                     type="text"
                     name="api_token"
-                    value="{{ old('api_token') }}"
+                    value="{{ old('api_token', $system->api_token) }}"
                     class="flex min-h-[39px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                     placeholder="Leave empty to keep current"
                 />
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.edit.api_token_help')</p>
+                <div class="mt-2">
+                    <form action="{{ route('admin.external-payments.systems.generate-token', $system->id) }}" method="post" class="inline">
+                        @csrf
+                        <button type="submit" class="secondary-button text-sm">
+                            @lang('external-payments::app.admin.systems.edit.generate_token')
+                        </button>
+                    </form>
+                </div>
                 <x-admin::form.control-group.error control-name="api_token" />
             </x-admin::form.control-group>
 

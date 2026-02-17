@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\ExternalPayments\Listeners\SendExternalPaymentWebhookListener;
+use Webkul\ExternalPayments\Listeners\UpdateWooCommerceOrderStatusListener;
+use Webkul\TochkaPayment\Events\PaymentFailed;
+use Webkul\TochkaPayment\Events\PaymentSuccess;
 
 class ExternalPaymentsServiceProvider extends ServiceProvider
 {
@@ -29,6 +32,16 @@ class ExternalPaymentsServiceProvider extends ServiceProvider
         Event::listen(
             'external_payments.payment.success',
             SendExternalPaymentWebhookListener::class.'@handlePaymentSuccess'
+        );
+
+        Event::listen(
+            PaymentSuccess::class,
+            UpdateWooCommerceOrderStatusListener::class.'@handlePaymentSuccess'
+        );
+
+        Event::listen(
+            PaymentFailed::class,
+            UpdateWooCommerceOrderStatusListener::class.'@handlePaymentFailed'
         );
     }
 

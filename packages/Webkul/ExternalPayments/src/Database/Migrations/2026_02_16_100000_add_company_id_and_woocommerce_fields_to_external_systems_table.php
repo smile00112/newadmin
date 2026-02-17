@@ -16,9 +16,9 @@ return new class extends Migration
         Schema::table('external_systems', function (Blueprint $table) {
             $table->unsignedInteger('company_id')->nullable()->after('id');
             $table->string('woocommerce_site_url', 500)->nullable()->after('webhook_url');
-            $table->string('woocommerce_consumer_key', 255)->nullable()->after('woocommerce_site_url');
-            $table->string('woocommerce_consumer_secret', 255)->nullable()->after('woocommerce_consumer_key');
-            $table->string('paid_order_status', 50)->default('processing')->after('woocommerce_consumer_secret');
+            // $table->string('woocommerce_consumer_key', 255)->nullable()->after('woocommerce_site_url');
+            //$table->string('woocommerce_consumer_secret', 255)->nullable()->after('woocommerce_consumer_key');
+            $table->string('paid_order_status', 50)->default('processing');
 
             $table->index('company_id');
         });
@@ -34,8 +34,8 @@ return new class extends Migration
             $table->dropColumn([
                 'company_id',
                 'woocommerce_site_url',
-                'woocommerce_consumer_key',
-                'woocommerce_consumer_secret',
+                //'woocommerce_consumer_key',
+                //'woocommerce_consumer_secret',
                 'paid_order_status',
             ]);
         });

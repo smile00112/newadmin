@@ -12,5 +12,6 @@ Route::group(['prefix' => 'external-payments'], function () {
         Route::post('', 'store')->name('store');
         Route::get('{id}/edit', 'edit')->name('edit');
         Route::put('{id}', 'update')->name('update');
+        Route::post('{id}/generate-token', 'generateToken')->name('generate-token');
     });
 });

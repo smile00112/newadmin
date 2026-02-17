@@ -29,6 +29,28 @@
                 <x-admin::form.control-group.error control-name="name" />
             </x-admin::form.control-group>
 
+            @if($isSuperAdmin || $companies->isNotEmpty())
+                <x-admin::form.control-group>
+                    <x-admin::form.control-group.label>
+                        @lang('external-payments::app.admin.systems.create.company')
+                    </x-admin::form.control-group.label>
+                    <x-admin::form.control-group.control
+                        type="select"
+                        name="company_id"
+                        :value="old('company_id')"
+                        :label="trans('external-payments::app.admin.systems.create.company')"
+                    >
+                        <option value="">@lang('external-payments::app.admin.systems.create.select-company')</option>
+                        @foreach($companies as $company)
+                            <option value="{{ $company->id }}" {{ old('company_id') == $company->id ? 'selected' : '' }}>
+                                {{ $company->name }}
+                            </option>
+                        @endforeach
+                    </x-admin::form.control-group.control>
+                    <x-admin::form.control-group.error control-name="company_id" />
+                </x-admin::form.control-group>
+            @endif
+
             <x-admin::form.control-group>
                 <x-admin::form.control-group.label>
                     @lang('external-payments::app.admin.systems.create.api_token')

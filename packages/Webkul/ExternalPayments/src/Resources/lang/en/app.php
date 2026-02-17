@@ -24,6 +24,8 @@ return [
             'create' => [
                 'title'           => 'Create External System',
                 'name'            => 'Name',
+                'company'         => 'Company',
+                'select-company'  => 'Select company',
                 'api_token'       => 'API Token',
                 'api_token_help'  => 'Leave empty to auto-generate. Use this token in Authorization: Bearer header.',
                 'webhook_url'     => 'Webhook URL',
@@ -39,12 +41,17 @@ return [
             'edit' => [
                 'title'           => 'Edit External System',
                 'api_token_help'  => 'Leave empty to keep current token.',
+                'generate_token'  => 'Generate new token',
                 'save'            => 'Save',
             ],
             'messages' => [
                 'created' => 'External system created successfully.',
                 'updated' => 'External system updated successfully.',
                 'deleted' => 'External system deleted successfully.',
+                'token_generated' => 'New token generated successfully.',
+                'create_failed' => 'Failed to create external system.',
+                'api_token_exists' => 'API token already exists. Please use a different token or leave empty to auto-generate.',
+                'database_error' => 'Database error',
                 'validation' => [
                     'providers_required' => 'Select at least one payment provider.',
                     'default_must_be_allowed' => 'Default provider must be one of the allowed providers.',
