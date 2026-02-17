@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'redirect' => [
+        'success_message' => 'Оплата прошла успешно',
+        'failure_message' => 'Оплата не выполнена',
+        'success_title' => 'Успех',
+        'failure_title' => 'Ошибка',
+        'redirecting' => 'Через :seconds сек. вы будете перенаправлены…',
+    ],
     'admin' => [
         'menu' => [
             'tochka-payment' => 'Точка Банк — оплата',

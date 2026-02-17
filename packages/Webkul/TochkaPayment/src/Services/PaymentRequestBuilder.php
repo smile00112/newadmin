@@ -57,11 +57,11 @@ class PaymentRequestBuilder
             $purpose .= ' (' . trim($data['client_name']) . ')';
         }
 
-        // Get callback URLs
+        // Get callback URLs (include payment_id so redirect controller can resolve payment)
         $callbackUrl = $this->getCallbackUrl();
         $baseUrl = rtrim(config('app.url'), '/');
-        $successUrl = $baseUrl . '/payment/tochka/success';
-        $failUrl = $baseUrl . '/payment/tochka/fail';
+        $successUrl = $baseUrl . '/payment/tochka/success?payment_id=' . $paymentId;
+        $failUrl = $baseUrl . '/payment/tochka/fail?payment_id=' . $paymentId;
 
         // Build Data object according to API documentation.
         // Merchant ID and Customer Code from settings are included in the order creation request.

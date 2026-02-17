@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'redirect' => [
+        'success_message' => 'Payment completed successfully',
+        'failure_message' => 'Payment was not completed',
+        'success_title' => 'Success',
+        'failure_title' => 'Error',
+        'redirecting' => 'Redirecting in :seconds sec…',
+    ],
     'admin' => [
         'menu' => [
             'tochka-payment' => 'Tochka Payment',
