@@ -75,7 +75,7 @@ class CreatePaymentController
         $adapter = $this->providerRegistry->get($providerKey);
         $minAmount = $adapter->getMinAmount();
 
-        $validator = Validator::make($request->all(), [
+        $rules = [
             'amount'            => 'required|numeric|min:'.$minAmount,
             'client_name'       => 'required|string|max:255',
             'client_email'      => 'required|email|max:255',
@@ -83,7 +83,14 @@ class CreatePaymentController
             'external_order_id' => 'nullable|string|max:255',
             'product_name'      => 'nullable|string|max:255',
             'payment_provider'  => 'nullable|string|max:64',
-        ]);
+        ];
+
+        // When WooCommerce is configured, external_order_id is required for redirect to order-received page
+        if (! empty($externalSystem->woocommerce_site_url)) {
+            $rules['external_order_id'] = 'required|string|max:255';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json([
@@ -99,6 +106,12 @@ class CreatePaymentController
         // Add company_id from external system
         if ($externalSystem->company_id) {
             $data['company_id'] = $externalSystem->company_id;
+        }
+
+        // Use WooCommerce callback URLs when external system has WooCommerce configured
+        if (! empty($externalSystem->woocommerce_site_url)) {
+            $data['success_redirect_path'] = '/external-payments/woocommerce/success';
+            $data['fail_redirect_path'] = '/external-payments/woocommerce/failure';
         }
 
         Log::info('External Payments: Create payment - data used for payment', [
