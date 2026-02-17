@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Webkul\ExternalPayments\Services\Adapters;
 
+use Illuminate\Support\Facades\Log;
 use Webkul\ExternalPayments\Contracts\PaymentProviderAdapterInterface;
 use Webkul\TochkaPayment\Services\PaymentRequestBuilder;
 use Webkul\TochkaPayment\Services\SettingsService;
@@ -22,6 +23,10 @@ class TochkaPaymentAdapter implements PaymentProviderAdapterInterface
      */
     public function createPayment(array $data): array
     {
+        Log::info('External Payments TochkaAdapter: createPayment received data', [
+            'data' => $data,
+        ]);
+
         $companyId = $data['company_id'] ?? null;
 
         $tempPayment = $this->requestBuilder->createPaymentHistory(
@@ -32,7 +37,18 @@ class TochkaPaymentAdapter implements PaymentProviderAdapterInterface
         );
 
         $requestParams = $this->requestBuilder->buildRequestParams($data, $tempPayment->id, $companyId);
+
+        Log::info('External Payments TochkaAdapter: request params for Tochka API', [
+            'request_params' => $requestParams,
+            'payment_id'     => $tempPayment->id,
+        ]);
+
         $paymentResponse = $this->requestBuilder->requestPaymentUrl($requestParams, $companyId);
+
+        Log::info('External Payments TochkaAdapter: Tochka API response', [
+            'payment_url'   => $paymentResponse['paymentUrl'] ?? null,
+            'response_keys' => array_keys($paymentResponse),
+        ]);
         $paymentUrl = $paymentResponse['paymentUrl'];
         $responseData = $paymentResponse['response_data'] ?? null;
         $orderId = $requestParams['_orderId'] ?? '';

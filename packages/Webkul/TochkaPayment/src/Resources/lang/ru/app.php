@@ -50,7 +50,7 @@ return [
                 'telegram_bot_token_help' => 'Токен бота, полученный от @BotFather в Telegram',
                 'telegram_chat_id' => 'Telegram ID чата',
                 'telegram_chat_id_placeholder' => '123456789',
-                'telegram_chat_id_help' => 'Ваш Telegram ID (числовой идентификатор). Можно узнать через @userinfobot или @getidsbot',
+                'telegram_chat_id_help' => 'Ваш Telegram ID (числовой идентификатор). Можно узнать через @userinfobot или @my_id_bot',
                 'webhook_subscribe' => 'Подписаться на webhook',
                 'webhook_unsubscribe' => 'Отписаться от webhook',
                 'webhook_subscribed' => 'Подписка активна',

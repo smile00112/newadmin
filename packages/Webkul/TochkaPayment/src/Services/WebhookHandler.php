@@ -31,9 +31,18 @@ class WebhookHandler
      */
     public function process(string $jwtToken, ?int $companyId = null): array
     {
+        Log::info('Tochka Payment: Webhook process - received JWT', [
+            'jwt_length' => strlen($jwtToken),
+            'company_id' => $companyId,
+        ]);
+
         try {
             // Decode JWT token
             $decodedData = $this->decodeJwt($jwtToken);
+
+            Log::info('Tochka Payment: Webhook process - decoded data', [
+                'decoded_data' => $decodedData,
+            ]);
 
             if (!$decodedData) {
                 throw new InvalidSignatureException('Failed to decode JWT token');
@@ -58,6 +67,11 @@ class WebhookHandler
                 'raw_payload' => $jwtToken,
                 'decoded_data' => $decodedData,
                 'status' => 'pending',
+            ]);
+
+            Log::info('Tochka Payment: Webhook process - processing by type', [
+                'webhook_type'  => $webhookType,
+                'company_id'    => $companyId,
             ]);
 
             // Process webhook based on type
@@ -174,6 +188,11 @@ class WebhookHandler
      */
     protected function processAcquiringInternetPayment(array $data, ?int $companyId): array
     {
+        Log::info('Tochka Payment: Webhook acquiringInternetPayment - data used', [
+            'data'       => $data,
+            'company_id' => $companyId,
+        ]);
+
         $operationId = $data['operationId'] ?? null;
 
         if (!$operationId) {

@@ -27,6 +27,11 @@ class CreatePaymentController
 
     public function __invoke(Request $request): JsonResponse
     {
+        Log::info('External Payments: Incoming create payment request - raw data', [
+            'request_all' => $request->all(),
+            'headers'     => $request->headers->all(),
+        ]);
+
         /** @var ExternalSystem|null $externalSystem */
         $externalSystem = $request->attributes->get('external_system');
 
@@ -96,6 +101,12 @@ class CreatePaymentController
             $data['company_id'] = $externalSystem->company_id;
         }
 
+        Log::info('External Payments: Create payment - data used for payment', [
+            'external_system_id' => $externalSystem->id,
+            'provider_key'       => $providerKey,
+            'data'               => $data,
+        ]);
+
         // Find or create customer by email
         $customer = $this->customerRepository->findOneByField('email', $data['client_email']);
         
@@ -122,7 +133,16 @@ class CreatePaymentController
         }
 
         try {
+            Log::info('External Payments: Calling adapter createPayment', [
+                'adapter' => get_class($adapter),
+                'data'    => $data,
+            ]);
+
             $result = $adapter->createPayment($data);
+
+            Log::info('External Payments: Adapter result', [
+                'result' => $result,
+            ]);
 
             $this->paymentRequestRepository->create([
                 'external_system_id'     => $externalSystem->id,

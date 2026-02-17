@@ -53,6 +53,11 @@ class PaymentController
      */
     public function create(Request $request): JsonResponse
     {
+        Log::info('Tochka Payment: Incoming create payment request - raw data', [
+            'request_all' => $request->all(),
+            'headers'     => $request->headers->all(),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:' . config('tochka-payment.min_amount', 1.00),
             'client_name' => 'required|string|max:255',
@@ -72,6 +77,10 @@ class PaymentController
 
         try {
             $data = $validator->validated();
+
+            Log::info('Tochka Payment: Create payment - validated data', [
+                'data' => $data,
+            ]);
 
             // Get company ID from request or authenticated admin
             $companyId = $request->input('company_id');
@@ -97,6 +106,11 @@ class PaymentController
                 ], 422);
             }
 
+            Log::info('Tochka Payment: Create payment - data used', [
+                'company_id' => $companyId,
+                'settings'   => $settings,
+            ]);
+
             // Build request parameters with payment ID (will be created after)
             // We need to create a temporary payment to get ID
             $tempPayment = $this->requestBuilder->createPaymentHistory(
@@ -108,7 +122,11 @@ class PaymentController
 
             // Build request parameters with actual payment ID
             $requestParams = $this->requestBuilder->buildRequestParams($data, $tempPayment->id, $companyId);
-            
+
+            Log::info('Tochka Payment: Create payment - request params for bank API', [
+                'request_params' => $requestParams,
+            ]);
+
             // Request payment URL from Tochka API
             $paymentResponse = $this->requestBuilder->requestPaymentUrl($requestParams, $companyId);
             $paymentUrl = $paymentResponse['paymentUrl'];
@@ -191,6 +209,12 @@ class PaymentController
      */
     public function callback(Request $request)
     {
+        Log::info('Tochka Payment: Incoming bank callback - raw request data', [
+            'request_all' => $request->all(),
+            'headers'     => $request->headers->all(),
+            'content'     => $request->getContent(),
+        ]);
+
         try {
             $callbackHandler = new CallbackHandler();
             $paymentProcessor = new PaymentProcessor();
@@ -199,12 +223,8 @@ class PaymentController
             // Process callback
             $paymentData = $callbackHandler->process($request->all());
 
-            Log::info('Tochka Payment: Bank response (callback) to order creation', [
-                'payment_id' => $paymentData['payment_id'],
-                'order_id' => $paymentData['order_id'],
-                'transaction_id' => $paymentData['transaction_id'],
-                'amount' => $paymentData['amount'],
-                'client_name' => $paymentData['client_name'] ?? null,
+            Log::info('Tochka Payment: Bank callback processed - data used', [
+                'payment_data' => $paymentData,
             ]);
 
             // Process successful payment

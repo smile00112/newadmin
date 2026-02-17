@@ -34,10 +34,17 @@ class WebhookController
      */
     public function handle(Request $request): Response
     {
+        $jwtToken = $request->getContent();
+
+        Log::info('Tochka Payment: Incoming webhook - raw request', [
+            'content_length' => strlen($jwtToken),
+            'headers'        => $request->headers->all(),
+            'company_id'     => $request->route('companyId'),
+        ]);
+
         try {
             // Get JWT token from request body
             // According to documentation, webhook comes as POST with JWT token in body as plain text
-            $jwtToken = $request->getContent();
 
             if (empty($jwtToken)) {
                 Log::error('Tochka Payment: Empty webhook payload');
