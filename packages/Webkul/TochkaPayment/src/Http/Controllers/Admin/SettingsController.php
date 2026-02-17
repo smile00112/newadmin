@@ -80,6 +80,11 @@ class SettingsController extends Controller
             }
         }
 
+        $settings->save_card = 1;
+//        $settings->pre_authorization = $request->boolean('pre_authorization');
+//        $settings->telegram_bot_token = $request->string('telegram_bot_token');
+//        $settings->telegram_chat_id = $request->string('telegram_chat_id');
+
         // Auto-set webhook URL if not set
         if (empty($settings->webhook_url)) {
             $settings->webhook_url = url(route('api.tochka-payment.webhook.handle', [], false));
@@ -153,8 +158,8 @@ class SettingsController extends Controller
         //transform on/off to boolean
         $request['is_active'] = $request->boolean('is_active');
         $request['save_card'] = $request->boolean('save_card');
-//print_R($request->all());
-//exit;
+        $request['pre_authorization'] = $request->boolean('pre_authorization');
+
         $validated = $request->validate([
             'company_id' => 'nullable|integer|exists:companies,id',
             'client_id' => 'nullable|string|max:255',

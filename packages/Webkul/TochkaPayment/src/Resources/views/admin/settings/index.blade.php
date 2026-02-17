@@ -234,6 +234,7 @@
                             type="switch"
                             name="save_card"
                             :value="old('save_card', (bool)($settings->save_card ?? false))"
+                            :checked="(boolean) $settings->save_card"
                             v-model="save_card"
                             :label="trans('tochka-payment::app.admin.settings.index.save_card')"
                         />
@@ -621,11 +622,11 @@
                                 </x-admin::form.control-group.label>
 
                                 <x-admin::form.control-group.control
-                                    type="checkbox"
-{{--                                    type="switch"--}}
+                                    type="switch"
                                     name="save_card"
                                     v-model="save_card"
                                     :label="trans('tochka-payment::app.admin.settings.index.save_card')"
+                                    checked="save_card"
                                 />
 
                                 <x-admin::form.control-group.error control-name="save_card" />
@@ -638,8 +639,7 @@
                                 </x-admin::form.control-group.label>
 
                                 <x-admin::form.control-group.control
-{{--                                    type="switch"--}}
-                                    type="checkbox"
+                                    type="switch"
                                     name="pre_authorization"
                                     v-model="pre_authorization"
                                     :label="trans('tochka-payment::app.admin.settings.index.pre_authorization')"
@@ -695,8 +695,7 @@
                                 </x-admin::form.control-group.label>
 
                                 <x-admin::form.control-group.control
-{{--                                    type="switch"--}}
-                                    type="checkbox"
+                                    type="switch"
                                     name="is_active"
                                     v-model="is_active"
                                     :label="trans('tochka-payment::app.admin.settings.index.is_active')"
@@ -790,7 +789,7 @@
                         customer_code: @json($settings->customer_code ?? ''),
                         merchant_id: @json($settings->merchant_id ?? ''),
                         payment_mode: @json(is_array($settings->payment_mode ?? null) ? implode(',', $settings->payment_mode) : ($settings->payment_mode ?? '')),
-                        save_card: @json((bool)($settings->save_card ?? false)),
+                        save_card: @json((bool)($settings->save_card)),
                         pre_authorization: @json((bool)($settings->pre_authorization ?? false)),
                         ttl: @json($settings->ttl ?? 10080),
                         min_amount: @json($settings->min_amount ?? 1.00),
@@ -851,7 +850,7 @@
                                 this.is_active = !!d.is_active;
                                 this.telegram_bot_token = d.telegram_bot_token ?? '';
                                 this.telegram_chat_id = d.telegram_chat_id ?? '';
-                                
+
                                 // Check webhook status after loading settings
                                 this.checkWebhookStatus();
                             })
@@ -919,9 +918,9 @@
 
                     subscribeToWebhook() {
                         if (!this.company_id) {
-                            this.$emitter.emit('add-flash', { 
-                                type: 'error', 
-                                message: this.trans('tochka-payment::app.admin.settings.index.company_required') 
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: this.trans('tochka-payment::app.admin.settings.index.company_required')
                             });
                             return;
                         }
@@ -934,15 +933,15 @@
                         })
                             .then((response) => {
                                 if (response.data.success) {
-                                    this.$emitter.emit('add-flash', { 
-                                        type: 'success', 
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'success',
                                         message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_subscribe_success')
                                     });
                                     this.webhookSubscribed = true;
                                     this.webhookStatusChecked = true;
                                 } else {
-                                    this.$emitter.emit('add-flash', { 
-                                        type: 'error', 
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'error',
                                         message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_subscribe_error')
                                     });
                                 }
@@ -958,9 +957,9 @@
 
                     unsubscribeFromWebhook() {
                         if (!this.company_id) {
-                            this.$emitter.emit('add-flash', { 
-                                type: 'error', 
-                                message: this.trans('tochka-payment::app.admin.settings.index.company_required') 
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: this.trans('tochka-payment::app.admin.settings.index.company_required')
                             });
                             return;
                         }
@@ -972,15 +971,15 @@
                         })
                             .then((response) => {
                                 if (response.data.success) {
-                                    this.$emitter.emit('add-flash', { 
-                                        type: 'success', 
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'success',
                                         message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_success')
                                     });
                                     this.webhookSubscribed = false;
                                     this.webhookStatusChecked = true;
                                 } else {
-                                    this.$emitter.emit('add-flash', { 
-                                        type: 'error', 
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'error',
                                         message: response.data.message || this.trans('tochka-payment::app.admin.settings.index.webhook_unsubscribe_error')
                                     });
                                 }
