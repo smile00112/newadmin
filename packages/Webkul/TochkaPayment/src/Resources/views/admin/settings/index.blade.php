@@ -64,7 +64,7 @@
                             :value="old('client_id', $settings->client_id ?? '')"
                             v-model="client_id"
                             :label="trans('tochka-payment::app.admin.settings.index.client_id')"
-                            :placeholder="trans('tochka-payment::app.admin.settings.index.client_id_placeholder')"
+                            :placeholder="trans('tochka-payment::app.admin.settings.index.client_switid_placeholder')"
                         />
 
                         <x-admin::form.control-group.error control-name="client_id" />
