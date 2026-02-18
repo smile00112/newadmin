@@ -83,7 +83,7 @@
                                 Пароль
                             </x-admin::form.control-group.label>
                             <x-admin::form.control-group.control
-                                type="password"
+                                type="text"
                                 name="password"
                                 v-model="password"
                                 :label="'Пароль'"
@@ -97,11 +97,11 @@
                                 Токен (альтернатива логину/паролю)
                             </x-admin::form.control-group.label>
                             <x-admin::form.control-group.control
-                                type="password"
+                                type="text"
                                 name="token"
                                 v-model="token"
                                 :label="'Токен'"
-                                autocomplete="new-password"
+
                             />
                             <x-admin::form.control-group.error control-name="token" />
                         </x-admin::form.control-group>

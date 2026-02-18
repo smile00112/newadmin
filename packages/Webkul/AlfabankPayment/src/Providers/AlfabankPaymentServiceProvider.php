@@ -22,6 +22,8 @@ class AlfabankPaymentServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
+        $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'alfabank-payment');
+
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'alfabank-payment');
 
         $this->mapWebRoutes();
@@ -39,6 +41,16 @@ class AlfabankPaymentServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(
             dirname(__DIR__).'/Config/alfabank-payment.php',
             'alfabank-payment'
+        );
+
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/menu.php',
+            'menu.admin'
+        );
+
+        $this->mergeConfigFrom(
+            dirname(__DIR__).'/Config/acl.php',
+            'acl'
         );
     }
 
