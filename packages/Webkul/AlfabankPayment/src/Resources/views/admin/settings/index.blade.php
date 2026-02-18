@@ -35,6 +35,7 @@
                                         name="active"
                                         v-model="active"
                                         :label="'Включить метод оплаты'"
+                                        checked="active"
                                     />
                                     <x-admin::form.control-group.error control-name="active" />
                                 </x-admin::form.control-group>
@@ -115,6 +116,7 @@
                                         type="switch"
                                         name="test_mode"
                                         v-model="test_mode"
+                                        checked="test_mode"
                                         :label="'Тестовый режим'"
                                     />
                                     <x-admin::form.control-group.error control-name="test_mode" />
@@ -198,6 +200,7 @@
                                         type="switch"
                                         name="send_order"
                                         v-model="send_order"
+                                        checked="send_order"
                                         :label="'Отправлять данные корзины'"
                                     />
                                     <x-admin::form.control-group.error control-name="send_order" />
@@ -341,6 +344,7 @@
                                         type="switch"
                                         name="saved_cards_payment_enable"
                                         v-model="saved_cards_payment_enable"
+                                        checked="saved_cards_payment_enable"
                                         :label="'Включить оплату сохраненными картами'"
                                     />
                                     <x-admin::form.control-group.error control-name="saved_cards_payment_enable" />
