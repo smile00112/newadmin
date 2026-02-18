@@ -4,6 +4,7 @@ namespace Webkul\AlfabankPayment\Http\Controllers\Admin;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Core\Models\CoreConfig;
@@ -35,8 +36,8 @@ class SettingsController extends Controller
             'test_mode'                    => 'nullable|boolean',
             'stage_mode'                   => 'nullable|in:one-stage,two-stage',
             'order_status_paid'            => 'nullable|string',
-            'success_url'                  => 'nullable|url|max:512',
-            'fail_url'                     => 'nullable|url|max:512',
+            'success_url'                  => ['nullable', 'max:512', Rule::when($request->filled('success_url'), ['url'])],
+            'fail_url'                     => ['nullable', 'max:512', Rule::when($request->filled('fail_url'), ['url'])],
             'send_order'                   => 'nullable|boolean',
             'tax_system'                   => 'nullable|integer|in:0,1,2,3,4,5',
             'tax_type'                     => 'nullable|integer',
