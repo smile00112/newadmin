@@ -238,9 +238,8 @@ class CheckoutController extends CustomerController
 
             $cart = Cart::getCart();
 
-            $redirectUrl = Payment::getRedirectUrl($cart);
-
-            $orderData = (new OrderTransformer($cart))->jsonSerialize();
+            $paymentMethod = $cart->payment->method ?? null;
+            $redirectUrl = ($paymentMethod === 'alfabank') ? null : Payment::getRedirectUrl($cart);
 
             // Get and validate order labels from request
             $orderLabels = request()->input('order_labels', []);
@@ -276,7 +275,9 @@ class CheckoutController extends CustomerController
                 'order' => new OrderResource($order),
             ];
 
-            if ($redirectUrl) {
+            if ($paymentMethod === 'alfabank') {
+                $responseData['payment_url'] = route('alfabank.payment.start', ['order_id' => $order->id]);
+            } elseif ($redirectUrl) {
                 $responseData['payment_url'] = $redirectUrl;
             }
 

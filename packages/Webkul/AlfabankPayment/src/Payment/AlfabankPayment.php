@@ -8,6 +8,7 @@ use Webkul\AlfabankPayment\Services\AlfabankApiService;
 use Webkul\AlfabankPayment\Services\SavedCardsService;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Payment\Payment\Payment;
+use Webkul\Sales\Contracts\Order as OrderContract;
 
 class AlfabankPayment extends Payment
 {
@@ -259,6 +260,176 @@ class AlfabankPayment extends Payment
         if ($cart->customer && $cart->customer->email) {
             $orderBundle['customerDetails'] = [
                 'email' => $cart->customer->email,
+            ];
+        }
+
+        return $orderBundle;
+    }
+
+    /**
+     * Build order data for registration from existing Order (API flow).
+     *
+     * @param  \Webkul\Sales\Contracts\Order  $order
+     * @return array
+     */
+    public function buildOrderDataFromOrder(OrderContract $order): array
+    {
+        $amount = (int) round($order->grand_total * 100);
+        $orderNumber = (string) $order->id;
+
+        $returnUrl = route('alfabank.payment.return');
+        $failUrl = route('alfabank.payment.return', ['status' => 'fail']);
+
+        $successUrl = $this->getConfigData('success_url');
+        $failUrlConfig = $this->getConfigData('fail_url');
+
+        if ($successUrl) {
+            $returnUrl = $successUrl . '?order_id=' . $order->id;
+        }
+
+        if ($failUrlConfig) {
+            $failUrl = $failUrlConfig . '?order_id=' . $order->id;
+        }
+
+        $orderData = [
+            'orderNumber' => $orderNumber,
+            'amount'      => $amount,
+            'returnUrl'   => $returnUrl,
+            'failUrl'     => $failUrl,
+        ];
+
+        $currency = $order->order_currency_code ?? 'BYN';
+        $currencyNumeric = $this->getNumericCurrencyCode($currency);
+        if ($currencyNumeric) {
+            $orderData['currency'] = $currencyNumeric;
+        }
+
+        if ($order->customer_id && $order->customer) {
+            $email = $order->customer_email ?? ($order->customer->email ?? '');
+            $clientId = $this->savedCardsService->generateClientId($order->customer_id, $email);
+            $orderData['clientId'] = $clientId;
+            if ($email) {
+                $orderData['email'] = $email;
+            }
+        }
+
+        $selectedCard = $this->savedCardsService->getSelectedCard();
+        if ($selectedCard) {
+            $orderData['bindingId'] = $selectedCard;
+        }
+
+        if ($this->getConfigData('send_order') == '1') {
+            $orderBundle = $this->buildOrderBundleFromOrder($order);
+            if ($orderBundle) {
+                $orderData['orderBundle'] = $orderBundle;
+            }
+            $taxSystem = $this->getConfigData('tax_system');
+            if ($taxSystem !== null) {
+                $orderData['taxSystem'] = $taxSystem;
+            }
+        }
+
+        $jsonParams = [
+            'CMS' => 'Laravel ' . app()->version() . ' + Bagisto',
+            'CMS_paymentType' => $selectedCard ? 'saved_card' : 'redirect',
+        ];
+        if ($selectedCard) {
+            $jsonParams['CMS_bindingsEnabled'] = 'true';
+        }
+        $orderData['jsonParams'] = json_encode($jsonParams);
+
+        $callbackType = $this->getConfigData('callback_type') ?? 'STATIC';
+        if ($callbackType === 'DYNAMIC') {
+            $orderData['dynamicCallbackUrl'] = route('alfabank.payment.callback', [
+                'order_id' => $order->id,
+                'order_number' => $orderNumber,
+            ]);
+        }
+
+        return $orderData;
+    }
+
+    /**
+     * Build order bundle from order items (for existing Order).
+     *
+     * @param  \Webkul\Sales\Contracts\Order  $order
+     * @return array|null
+     */
+    protected function buildOrderBundleFromOrder(OrderContract $order): ?array
+    {
+        $items = [];
+        $positionId = 1;
+
+        foreach ($order->items as $item) {
+            $itemPrice = (int) round($item->price * 100);
+            $itemAmount = $itemPrice * $item->qty_ordered;
+
+            $items[] = [
+                'positionId' => $positionId++,
+                'name'      => $item->name,
+                'quantity'  => [
+                    'value'   => (int) $item->qty_ordered,
+                    'measure' => $this->getConfigData('version_ffd') === 'v1_05' ? 'pcs' : '0',
+                ],
+                'itemAmount' => $itemAmount,
+                'itemCode'   => $item->sku ?? ($positionId - 1 . '-' . $item->product_id),
+                'itemPrice'  => $itemPrice,
+                'tax'        => [
+                    'taxType' => $this->getTaxType($item),
+                ],
+                'itemAttributes' => [
+                    'attributes' => [
+                        [
+                            'name'  => 'paymentMethod',
+                            'value' => $this->getConfigData('payment_method_type') ?? '4',
+                        ],
+                        [
+                            'name'  => 'paymentObject',
+                            'value' => $this->getConfigData('payment_object_type') ?? '1',
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        if ($order->shipping_amount && (float) $order->shipping_amount > 0) {
+            $shippingPrice = (int) round($order->shipping_amount * 100);
+            $items[] = [
+                'positionId' => $positionId,
+                'name'      => $order->shipping_title ?? 'Доставка',
+                'quantity'  => [
+                    'value'   => 1,
+                    'measure' => $this->getConfigData('version_ffd') === 'v1_05' ? 'pcs' : '0',
+                ],
+                'itemAmount' => $shippingPrice,
+                'itemCode'   => 'delivery',
+                'itemPrice'  => $shippingPrice,
+                'tax'        => [
+                    'taxType' => $this->getConfigData('payment_object_type_delivery') ?? '1',
+                ],
+                'itemAttributes' => [
+                    'attributes' => [
+                        [
+                            'name'  => 'paymentMethod',
+                            'value' => $this->getConfigData('payment_object_type_delivery') ?? '1',
+                        ],
+                        [
+                            'name'  => 'paymentObject',
+                            'value' => '4',
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        $orderBundle = [
+            'orderCreationDate' => $order->created_at?->format('Y-m-d\TH:i:s') ?? date('Y-m-d\TH:i:s'),
+            'cartItems'         => ['items' => $items],
+        ];
+
+        if ($order->customer_email) {
+            $orderBundle['customerDetails'] = [
+                'email' => $order->customer_email,
             ];
         }
 

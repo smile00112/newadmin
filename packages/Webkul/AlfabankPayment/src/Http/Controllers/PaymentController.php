@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
+use Webkul\AlfabankPayment\Payment\AlfabankPayment;
 use Webkul\AlfabankPayment\Services\AlfabankApiService;
 use Webkul\Checkout\Facades\Cart;
+use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Shop\Http\Controllers\Controller;
 
@@ -72,20 +74,10 @@ class PaymentController extends Controller
             $orderStatus = $response['orderStatus'] ?? null;
             $orderNumber = $response['orderNumber'] ?? '';
 
-            // Extract cart ID from order number (format: cart_id_timestamp)
-            $parts = explode('_', $orderNumber);
-            $cartId = $parts[0] ?? null;
-
-            if (!$cartId) {
-                Log::error('Alfabank callback: invalid order number', ['orderNumber' => $orderNumber]);
-                return response('Bad Request', 400);
-            }
-
-            // Find or create order
-            $order = $this->findOrCreateOrder($cartId);
+            $order = $this->resolveOrderFromOrderNumber($orderNumber);
 
             if (!$order) {
-                Log::error('Alfabank callback: order not found or could not be created', ['cartId' => $cartId]);
+                Log::error('Alfabank callback: order not found or could not be created', ['orderNumber' => $orderNumber]);
                 return response('Order not found', 404);
             }
 
@@ -144,17 +136,7 @@ class PaymentController extends Controller
             $orderStatus = $response['orderStatus'] ?? null;
             $orderNumber = $response['orderNumber'] ?? '';
 
-            // Extract cart ID from order number
-            $parts = explode('_', $orderNumber);
-            $cartId = $parts[0] ?? null;
-
-            if (!$cartId) {
-                return redirect()->route('shop.checkout.cart.index')
-                    ->with('error', 'Ошибка обработки платежа');
-            }
-
-            // Find or create order
-            $order = $this->findOrCreateOrder($cartId);
+            $order = $this->resolveOrderFromOrderNumber($orderNumber);
 
             if (!$order) {
                 return redirect()->route('shop.checkout.cart.index')
@@ -189,6 +171,87 @@ class PaymentController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Alfabank return exception: ' . $e->getMessage());
+            return redirect()->route('shop.checkout.cart.index')
+                ->with('error', 'Ошибка обработки платежа');
+        }
+    }
+
+    /**
+     * Start payment: register order in bank and redirect to formUrl (API flow).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
+     */
+    public function startPayment(Request $request)
+    {
+        $orderId = $request->get('order_id');
+        if (!$orderId) {
+            Log::warning('Alfabank startPayment: missing order_id');
+            return redirect()->route('shop.checkout.cart.index')
+                ->with('error', 'Ошибка: не указан заказ');
+        }
+
+        $order = Order::find($orderId);
+        if (!$order) {
+            Log::warning('Alfabank startPayment: order not found', ['order_id' => $orderId]);
+            return redirect()->route('shop.checkout.cart.index')
+                ->with('error', 'Заказ не найден');
+        }
+
+        $paymentMethod = $order->payment ? $order->payment->method : null;
+        if ($paymentMethod !== 'alfabank') {
+            Log::warning('Alfabank startPayment: order payment is not alfabank', ['order_id' => $orderId]);
+            return redirect()->route('shop.checkout.cart.index')
+                ->with('error', 'Неверный способ оплаты');
+        }
+
+        $allowedStatuses = ['pending', 'pending_payment', 'failed'];
+        if (!in_array($order->status, $allowedStatuses)) {
+            Log::warning('Alfabank startPayment: order status does not allow payment', [
+                'order_id' => $orderId,
+                'status' => $order->status,
+            ]);
+            return redirect()->route('shop.checkout.cart.index')
+                ->with('error', 'Оплата для этого заказа недоступна');
+        }
+
+        try {
+            $alfabankPayment = app(AlfabankPayment::class);
+            $orderData = $alfabankPayment->buildOrderDataFromOrder($order);
+            $response = $this->apiService->registerOrder($orderData);
+
+            if (isset($response['errorCode']) && $response['errorCode'] != '0') {
+                Log::error('Alfabank startPayment: registration error', [
+                    'order_id' => $orderId,
+                    'errorCode' => $response['errorCode'] ?? null,
+                    'errorMessage' => $response['errorMessage'] ?? null,
+                ]);
+                $failUrl = core()->getConfigData('sales.payment_methods.alfabank.fail_url');
+                if ($failUrl) {
+                    return redirect($failUrl . '?order_id=' . $order->id);
+                }
+                return redirect()->route('shop.checkout.cart.index')
+                    ->with('error', 'Ошибка регистрации платежа: ' . ($response['errorMessage'] ?? 'Неизвестная ошибка'));
+            }
+
+            if (empty($response['formUrl'])) {
+                Log::error('Alfabank startPayment: no formUrl in response', ['order_id' => $orderId, 'response' => $response]);
+                return redirect()->route('shop.checkout.cart.index')
+                    ->with('error', 'Ошибка регистрации платежа');
+            }
+
+            $order->update([
+                'additional' => array_merge($order->additional ?? [], [
+                    'alfabank_order_id' => $response['orderId'] ?? null,
+                ]),
+            ]);
+
+            return redirect()->away($response['formUrl']);
+        } catch (\Exception $e) {
+            Log::error('Alfabank startPayment exception: ' . $e->getMessage(), [
+                'order_id' => $orderId,
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect()->route('shop.checkout.cart.index')
                 ->with('error', 'Ошибка обработки платежа');
         }
@@ -247,6 +310,33 @@ class PaymentController extends Controller
             Log::error('Error setting selected card: ' . $e->getMessage());
             return response()->json(['success' => false], 500);
         }
+    }
+
+    /**
+     * Resolve order from bank orderNumber (API flow: numeric id, or cart flow: cart_id_timestamp).
+     *
+     * @param  string  $orderNumber
+     * @return \Webkul\Sales\Contracts\Order|null
+     */
+    protected function resolveOrderFromOrderNumber(string $orderNumber)
+    {
+        if ($orderNumber === '') {
+            return null;
+        }
+
+        // API flow: orderNumber is order id (numeric only)
+        if (ctype_digit($orderNumber)) {
+            return Order::find((int) $orderNumber);
+        }
+
+        // Cart flow: orderNumber is cart_id_timestamp
+        $parts = explode('_', $orderNumber);
+        $cartId = isset($parts[0]) ? (int) $parts[0] : 0;
+        if ($cartId <= 0) {
+            return null;
+        }
+
+        return $this->findOrCreateOrder($cartId);
     }
 
     /**

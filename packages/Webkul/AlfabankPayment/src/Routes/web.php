@@ -13,6 +13,10 @@ Route::group(['middleware' => ['web']], function () {
         Route::get('payment/return', [PaymentController::class, 'return'])
             ->name('alfabank.payment.return');
 
+        // Public start payment page (API flow: redirect to bank form)
+        Route::get('payment/start', [PaymentController::class, 'startPayment'])
+            ->name('alfabank.payment.start');
+
         // Saved cards API
         Route::middleware(['customer'])->group(function () {
             Route::get('saved-cards', [PaymentController::class, 'getSavedCards'])
