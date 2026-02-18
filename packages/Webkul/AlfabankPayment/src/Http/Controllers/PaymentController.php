@@ -43,6 +43,14 @@ class PaymentController extends Controller
      */
     public function callback(Request $request)
     {
+        if (config('alfabank-payment.log_enabled', true)) {
+            $channel = config('alfabank-payment.log_channel', 'daily');
+            Log::channel($channel)->info('Alfabank incoming callback', [
+                'query' => $request->query(),
+                'input' => $request->all(),
+            ]);
+        }
+
         $orderId = $request->get('mdOrder') ?? $request->get('orderId');
 
         if (!$orderId) {
@@ -104,6 +112,14 @@ class PaymentController extends Controller
      */
     public function return(Request $request): RedirectResponse
     {
+        if (config('alfabank-payment.log_enabled', true)) {
+            $channel = config('alfabank-payment.log_channel', 'daily');
+            Log::channel($channel)->info('Alfabank incoming return', [
+                'query' => $request->query(),
+                'input' => $request->all(),
+            ]);
+        }
+
         $orderId = $request->get('orderId') ?? $request->get('mdOrder');
         $status = $request->get('status');
 

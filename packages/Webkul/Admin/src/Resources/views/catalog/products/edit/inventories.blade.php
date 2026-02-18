@@ -24,7 +24,7 @@
                 ?: ($product->inventories->where('inventory_source_id', $inventorySource->id)->pluck('qty')->first() ?? 0);
 
 //            TODO remove
-            $qty = $qty > 0 ? $qty : 1;
+            $qty = $qty > 0 ? $qty : 99;
         @endphp
 
         <x-admin::form.control-group>
@@ -52,7 +52,7 @@
         type="text/x-template"
         id="v-inventories-template"
     >
-        <div v-show="manageStock">
+        <div v-show="true">
             <slot></slot>
         </div>
     </script>

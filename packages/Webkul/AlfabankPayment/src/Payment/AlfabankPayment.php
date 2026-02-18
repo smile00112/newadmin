@@ -2,6 +2,7 @@
 
 namespace Webkul\AlfabankPayment\Payment;
 
+use Illuminate\Foundation\ViteException;
 use Illuminate\Support\Facades\Storage;
 use Webkul\AlfabankPayment\Services\AlfabankApiService;
 use Webkul\AlfabankPayment\Services\SavedCardsService;
@@ -34,7 +35,6 @@ class AlfabankPayment extends Payment
         AlfabankApiService $apiService,
         SavedCardsService $savedCardsService
     ) {
-        parent::__construct();
         $this->apiService = $apiService;
         $this->savedCardsService = $savedCardsService;
     }
@@ -313,10 +313,10 @@ class AlfabankPayment extends Payment
         $cart = $this->getCart();
 
         if (!$cart) {
-            return false;
+            return true;
         }
 
-        // Check min/max order total
+        // Check min/max order total when cart exists
         $minTotal = $this->getConfigData('min_order_total');
         $maxTotal = $this->getConfigData('max_order_total');
 
@@ -340,6 +340,14 @@ class AlfabankPayment extends Payment
     {
         $url = $this->getConfigData('image');
 
-        return $url ? Storage::url($url) : bagisto_asset('images/alfabank-payment.png', 'shop');
+        if ($url) {
+            return Storage::url($url);
+        }
+
+        try {
+            return bagisto_asset('images/alfabank-payment.png', 'shop');
+        } catch (ViteException $e) {
+            return asset('vendor/alfabank-payment/images/alfabank-payment.png');
+        }
     }
 }

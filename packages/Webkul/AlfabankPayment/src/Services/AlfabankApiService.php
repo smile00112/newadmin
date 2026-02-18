@@ -74,11 +74,7 @@ class AlfabankApiService
 
         $data = $this->buildRegistrationData($orderData);
 
-        $response = $this->sendRequest($url, $data);
-
-        $this->logRequest('registerOrder', $url, $data, $response);
-
-        return $response;
+        return $this->sendRequest($url, $data, [], 'registerOrder');
     }
 
     /**
@@ -102,11 +98,7 @@ class AlfabankApiService
             $data['password'] = $this->password;
         }
 
-        $response = $this->sendRequest($url, $data);
-
-        $this->logRequest('getOrderStatus', $url, $data, $response);
-
-        return $response;
+        return $this->sendRequest($url, $data, [], 'getOrderStatus');
     }
 
     /**
@@ -131,11 +123,7 @@ class AlfabankApiService
             $data['password'] = $this->password;
         }
 
-        $response = $this->sendRequest($url, $data);
-
-        $this->logRequest('getBindings', $url, $data, $response);
-
-        return $response;
+        return $this->sendRequest($url, $data, [], 'getBindings');
     }
 
     /**
@@ -203,15 +191,24 @@ class AlfabankApiService
     }
 
     /**
+     * Max length of raw response body to store in log (bytes).
+     */
+    protected const LOG_RAW_RESPONSE_MAX_LENGTH = 2048;
+
+    /**
      * Send HTTP request to Alfa-Bank API.
      *
      * @param  string  $url
      * @param  array  $data
      * @param  array  $headers
+     * @param  string  $method  Method name for logging (e.g. registerOrder, getOrderStatus).
      * @return array
      */
-    protected function sendRequest(string $url, array $data, array $headers = []): array
+    protected function sendRequest(string $url, array $data, array $headers = [], string $method = 'request'): array
     {
+        $sanitizedRequest = $this->sanitizeLogData($data);
+        $startTime = microtime(true);
+
         $ch = curl_init();
 
         $defaultHeaders = [
@@ -230,17 +227,22 @@ class AlfabankApiService
         ]);
 
         $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
+        $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
 
         curl_close($ch);
 
-        if ($error) {
-            Log::error('Alfabank API cURL error: ' . $error);
-            throw new \Exception('Payment gateway connection error: ' . $error);
+        $durationMs = round((microtime(true) - $startTime) * 1000, 2);
+
+        if ($curlError !== '') {
+            $this->logExchange($method, $url, $sanitizedRequest, null, $durationMs, null, 'cURL error: ' . $curlError);
+            Log::error('Alfabank API cURL error: ' . $curlError);
+            throw new \Exception('Payment gateway connection error: ' . $curlError);
         }
 
         if ($httpCode !== 200) {
+            $rawTruncated = is_string($response) ? $this->truncateForLog($response) : (string) $response;
+            $this->logExchange($method, $url, $sanitizedRequest, $httpCode, $durationMs, $rawTruncated, 'HTTP ' . $httpCode);
             Log::error('Alfabank API HTTP error: ' . $httpCode);
             throw new \Exception('Payment gateway returned HTTP code: ' . $httpCode);
         }
@@ -248,32 +250,70 @@ class AlfabankApiService
         $decoded = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
+            $rawTruncated = is_string($response) ? $this->truncateForLog($response) : (string) $response;
+            $this->logExchange($method, $url, $sanitizedRequest, $httpCode, $durationMs, $rawTruncated, 'JSON decode: ' . json_last_error_msg());
             Log::error('Alfabank API JSON decode error: ' . json_last_error_msg());
             throw new \Exception('Invalid response from payment gateway');
         }
+
+        $this->logExchange($method, $url, $sanitizedRequest, $httpCode, $durationMs, $decoded, null);
 
         return $decoded;
     }
 
     /**
-     * Log API request/response.
+     * Log API request/response exchange (success or failure).
      *
      * @param  string  $method
      * @param  string  $url
-     * @param  array  $requestData
-     * @param  array  $response
+     * @param  array  $requestData  Sanitized request data.
+     * @param  int|null  $httpCode
+     * @param  float  $durationMs
+     * @param  array|string|null  $response  Decoded array or raw string (truncated).
+     * @param  string|null  $error  Short error description when applicable.
      * @return void
      */
-    protected function logRequest(string $method, string $url, array $requestData, array $response): void
-    {
+    protected function logExchange(
+        string $method,
+        string $url,
+        array $requestData,
+        ?int $httpCode,
+        float $durationMs,
+        array|string|null $response,
+        ?string $error = null
+    ): void {
+        if (! config('alfabank-payment.log_enabled', true)) {
+            return;
+        }
+
+        $channel = config('alfabank-payment.log_channel', 'daily');
+
         $logData = [
-            'method' => $method,
-            'url'    => $url,
-            'request' => $this->sanitizeLogData($requestData),
-            'response' => $response,
+            'method'     => $method,
+            'url'        => $url,
+            'request'    => $requestData,
+            'http_code'  => $httpCode,
+            'duration_ms' => $durationMs,
+            'response'   => $response,
+            'error'      => $error,
         ];
 
-        Log::channel('daily')->info('Alfabank API Request', $logData);
+        Log::channel($channel)->info('Alfabank API Request', $logData);
+    }
+
+    /**
+     * Truncate string for safe logging.
+     *
+     * @param  string  $value
+     * @return string
+     */
+    protected function truncateForLog(string $value): string
+    {
+        if (strlen($value) <= self::LOG_RAW_RESPONSE_MAX_LENGTH) {
+            return $value;
+        }
+
+        return substr($value, 0, self::LOG_RAW_RESPONSE_MAX_LENGTH) . '... [truncated]';
     }
 
     /**

@@ -34,8 +34,8 @@
                                         type="switch"
                                         name="active"
                                         v-model="active"
+                                        :checked="(bool) (($settings['active'] ?? '0') == '1')"
                                         :label="'Включить метод оплаты'"
-                                        checked="active"
                                     />
                                     <x-admin::form.control-group.error control-name="active" />
                                 </x-admin::form.control-group>
@@ -116,7 +116,7 @@
                                         type="switch"
                                         name="test_mode"
                                         v-model="test_mode"
-                                        checked="test_mode"
+                                        :checked="(bool) (($settings['test_mode'] ?? '0') == '1')"
                                         :label="'Тестовый режим'"
                                     />
                                     <x-admin::form.control-group.error control-name="test_mode" />
@@ -200,7 +200,7 @@
                                         type="switch"
                                         name="send_order"
                                         v-model="send_order"
-                                        checked="send_order"
+                                        :checked="(bool) (($settings['send_order'] ?? '0') == '1')"
                                         :label="'Отправлять данные корзины'"
                                     />
                                     <x-admin::form.control-group.error control-name="send_order" />
@@ -344,7 +344,7 @@
                                         type="switch"
                                         name="saved_cards_payment_enable"
                                         v-model="saved_cards_payment_enable"
-                                        checked="saved_cards_payment_enable"
+                                        :checked="(bool) (($settings['saved_cards_payment_enable'] ?? '0') == '1')"
                                         :label="'Включить оплату сохраненными картами'"
                                     />
                                     <x-admin::form.control-group.error control-name="saved_cards_payment_enable" />
@@ -477,25 +477,25 @@
                         this.isLoading = true;
 
                         const payload = {
-                            active: this.active ? '1' : '0',
+                            active: !this.active ? '1' : '0',
                             title: this.title,
                             description: this.description,
                             merchant: this.merchant,
                             password: this.password,
                             token: this.token,
-                            test_mode: this.test_mode ? '1' : '0',
+                            test_mode: !this.test_mode ? '1' : '0',
                             stage_mode: this.stage_mode,
                             order_status_paid: this.order_status_paid,
                             success_url: this.success_url || '',
                             fail_url: this.fail_url || '',
-                            send_order: this.send_order ? '1' : '0',
+                            send_order: !this.send_order ? '1' : '0',
                             tax_system: String(this.tax_system),
                             tax_type: String(this.tax_type),
                             version_ffd: this.version_ffd,
                             payment_method_type: String(this.payment_method_type),
                             payment_object_type: String(this.payment_object_type),
                             payment_object_type_delivery: String(this.payment_object_type_delivery),
-                            saved_cards_payment_enable: this.saved_cards_payment_enable ? '1' : '0',
+                            saved_cards_payment_enable: !this.saved_cards_payment_enable ? '1' : '0',
                             min_order_total: this.min_order_total !== '' ? String(this.min_order_total) : '',
                             max_order_total: this.max_order_total !== '' ? String(this.max_order_total) : '',
                             callback_type: this.callback_type,
