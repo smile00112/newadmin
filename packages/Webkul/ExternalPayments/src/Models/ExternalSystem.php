@@ -29,6 +29,7 @@ class ExternalSystem extends Model
 
     protected $hidden = [
         'api_token',
+        'woocommerce_consumer_secret',
     ];
 
     public function paymentProviders(): HasMany

@@ -103,6 +103,35 @@
             </x-admin::form.control-group>
 
             <x-admin::form.control-group>
+                <x-admin::form.control-group.label>
+                    @lang('external-payments::app.admin.systems.create.woocommerce_consumer_key')
+                </x-admin::form.control-group.label>
+                <x-admin::form.control-group.control
+                    type="text"
+                    name="woocommerce_consumer_key"
+                    :value="old('woocommerce_consumer_key', $system->woocommerce_consumer_key ?? '')"
+                    :label="trans('external-payments::app.admin.systems.create.woocommerce_consumer_key')"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.create.woocommerce_consumer_key_help')</p>
+                <x-admin::form.control-group.error control-name="woocommerce_consumer_key" />
+            </x-admin::form.control-group>
+
+            <x-admin::form.control-group>
+                <x-admin::form.control-group.label>
+                    @lang('external-payments::app.admin.systems.create.woocommerce_consumer_secret')
+                </x-admin::form.control-group.label>
+                <input
+                    type="text"
+                    name="woocommerce_consumer_secret"
+                    value=""
+                    class="flex min-h-[39px] w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm transition-all dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                    placeholder="@lang('external-payments::app.admin.systems.edit.woocommerce_consumer_secret_placeholder')"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.create.woocommerce_consumer_secret_help')</p>
+                <x-admin::form.control-group.error control-name="woocommerce_consumer_secret" />
+            </x-admin::form.control-group>
+
+            <x-admin::form.control-group>
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="is_active" value="0" />
                     <input type="checkbox" name="is_active" value="1" {{ old('is_active', $system->is_active) ? 'checked' : '' }} class="rounded border-gray-300" />

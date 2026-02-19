@@ -26,6 +26,10 @@ class ExternalPaymentWebhookSender
      */
     public function handlePaymentSuccess(string $paymentProvider, int $providerPaymentId, object $paymentModel): void
     {
+        Log::info('External Payments: handlePaymentSuccess', [
+            '$providerPaymentId' => $providerPaymentId,
+        ]);
+
         $request = $this->paymentRequestRepository->findByProviderPayment($paymentProvider, $providerPaymentId);
 
         if (! $request) {

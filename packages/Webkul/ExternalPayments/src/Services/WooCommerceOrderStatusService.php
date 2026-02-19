@@ -24,6 +24,32 @@ class WooCommerceOrderStatusService
             return false;
         }
 
+        // Determine order status based on payment status
+        $orderStatus = $this->mapPaymentStatusToOrderStatus($paymentStatus, $externalSystem->paid_order_status);
+
+        try {
+            $response = Http::post($externalSystem->webhook_url, [
+                'order_id' => $orderId,
+                'status' => $orderStatus,
+                'payment_status' => $paymentStatus,
+                'external_system_id' => $externalSystem->id,
+
+            ]);
+
+            Log::info('request  ' . $externalSystem->webhook_url , [
+                'response' => $response->body(),
+            ]);
+            return true;
+        }
+        catch (\Exception $e) {
+            Log::error('External Payments WooCommerce (updateOrderStatus): Exception updating order status', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'external_system_id' => $externalSystem->id,
+            ]);
+            return false;
+        }
+
         if (empty($externalSystem->woocommerce_consumer_key) || empty($externalSystem->woocommerce_consumer_secret)) {
             return false;
         }
@@ -31,8 +57,6 @@ class WooCommerceOrderStatusService
         $woocommerceUrl = rtrim($externalSystem->woocommerce_site_url, '/');
         $apiUrl = $woocommerceUrl . '/wp-json/wc/v3/orders/' . $orderId;
 
-        // Determine order status based on payment status
-        $orderStatus = $this->mapPaymentStatusToOrderStatus($paymentStatus, $externalSystem->paid_order_status);
 
         try {
             $response = Http::withBasicAuth(

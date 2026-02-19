@@ -56,6 +56,22 @@ class Menu
             case self::ADMIN:
                 $this->configMenu = $configMenu
                     ->filter(function ($item) {
+                        // external-payments и external-payments.systems — только для супер админа
+                        if ($item['key'] === 'external-payments' || str_starts_with($item['key'], 'external-payments.')) {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role || $admin->role->permission_type !== 'all' || $admin->company_id) {
+                                return false;
+                            }
+                            return true;
+                        }
+                        // tochka-payment.settings — только для супер админа
+                        if ($item['key'] === 'tochka-payment.settings') {
+                            $admin = auth()->guard('admin')->user();
+                            if (!$admin || !$admin->role || $admin->role->permission_type !== 'all' || $admin->company_id) {
+                                return false;
+                            }
+                            return true;
+                        }
                         // Для пункта "administration" и всех его дочерних элементов проверяем роль
                         if ($item['key'] === 'administration' || str_starts_with($item['key'], 'administration.')) {
                             $admin = auth()->guard('admin')->user();

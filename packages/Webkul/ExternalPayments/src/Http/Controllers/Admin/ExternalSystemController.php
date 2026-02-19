@@ -102,8 +102,10 @@ final class ExternalSystemController extends Controller
                 'name'                   => 'required|string|max:255',
                 'api_token'              => 'nullable|string|max:255',
                 'webhook_url'            => 'nullable|url|max:500',
-                'woocommerce_site_url'   => 'nullable|url|max:500',
-                'is_active'              => 'boolean',
+                'woocommerce_site_url'         => 'nullable|url|max:500',
+                'woocommerce_consumer_key'     => 'nullable|string|max:255',
+                'woocommerce_consumer_secret'  => 'nullable|string|max:255',
+                'is_active'                    => 'boolean',
                 'company_id'             => 'nullable|integer|exists:companies,id',
                 'payment_providers'      => 'required|array|min:1',
                 'payment_providers.*'    => 'string|in:'.implode(',', $available),
@@ -126,12 +128,14 @@ final class ExternalSystemController extends Controller
             }
 
             $dataToCreate = [
-                'name'                  => $validated['name'],
-                'api_token'             => $token,
-                'webhook_url'           => $validated['webhook_url'] ?? null,
-                'woocommerce_site_url'  => $validated['woocommerce_site_url'] ?? null,
-                'is_active'             => $request->boolean('is_active', true),
-                'company_id'            => $companyId,
+                'name'                         => $validated['name'],
+                'api_token'                    => $token,
+                'webhook_url'                  => $validated['webhook_url'] ?? null,
+                'woocommerce_site_url'         => $validated['woocommerce_site_url'] ?? null,
+                'woocommerce_consumer_key'     => $validated['woocommerce_consumer_key'] ?? null,
+                'woocommerce_consumer_secret'  => $validated['woocommerce_consumer_secret'] ?? null,
+                'is_active'                    => $request->boolean('is_active', true),
+                'company_id'                   => $companyId,
             ];
 
             // Удаляем null значения для company_id, если оно не требуется
@@ -270,15 +274,20 @@ final class ExternalSystemController extends Controller
         }
 
         $data = [
-            'name'                  => $validated['name'],
-            'webhook_url'           => $validated['webhook_url'] ?? null,
-            'woocommerce_site_url'  => $validated['woocommerce_site_url'] ?? null,
-            'is_active'             => $request->boolean('is_active', true),
-            'company_id'            => $companyId,
+            'name'                         => $validated['name'],
+            'webhook_url'                  => $validated['webhook_url'] ?? null,
+            'woocommerce_site_url'         => $validated['woocommerce_site_url'] ?? null,
+            'woocommerce_consumer_key'     => $validated['woocommerce_consumer_key'] ?? null,
+            'is_active'                    => $request->boolean('is_active', true),
+            'company_id'                   => $companyId,
         ];
 
         if (! empty($validated['api_token'])) {
             $data['api_token'] = $validated['api_token'];
+        }
+
+        if (array_key_exists('woocommerce_consumer_secret', $validated) && $validated['woocommerce_consumer_secret'] !== '') {
+            $data['woocommerce_consumer_secret'] = $validated['woocommerce_consumer_secret'];
         }
 
         $this->externalSystemRepository->update($system, $data);
