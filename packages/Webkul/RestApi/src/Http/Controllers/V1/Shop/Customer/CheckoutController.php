@@ -149,14 +149,23 @@ class CheckoutController extends CustomerController
     public function savePayment(Request $request): JsonResponse
     {
         try {
-            $validatedData = $this->validate($request, [
-                'payment' => 'required',
-            ]);
+            $paymentInput = $request->input('payment');
+            if (is_array($paymentInput)) {
+                $validatedData = $this->validate($request, [
+                    'payment'              => 'required',
+                    'payment.method'       => 'required',
+                    'payment.saved_card_id' => 'nullable|integer',
+                ]);
+                $payment = $validatedData['payment'];
+            } else {
+                $validatedData = $this->validate($request, ['payment' => 'required']);
+                $payment = ['method' => $validatedData['payment']];
+            }
 
             if (
                 Cart::hasError()
-                || ! $validatedData['payment']
-                || ! Cart::savePaymentMethod($validatedData['payment'])
+                || empty($payment['method'])
+                || ! Cart::savePaymentMethod($payment)
             ) {
                 return response()->json([
                     'errors' => Cart::getErrors(),

@@ -435,6 +435,11 @@ return [
                 'update-success' => 'Your address has been updated successfully.',
             ],
 
+            'saved-cards' => [
+                'delete-success' => 'Card removed successfully.',
+                'not-found'      => 'Saved card not found.',
+            ],
+
             'accounts' => [
                 'create-success'     => 'Your Account has been created successfully.',
                 'delete-success'     => 'Your Account has been deleted successfully.',
@@ -518,6 +523,14 @@ return [
             'orders' => [
                 'cancel' => 'Order canceled successfully.',
                 'rate-success' => 'Order rated successfully.',
+
+                'saved-card' => [
+                    'add-success'    => 'Saved card has been added to the order successfully.',
+                    'remove-success' => 'Saved card has been removed from the order successfully.',
+                    'not-found'      => 'Saved card not found.',
+                    'invalid-order'  => 'Order does not allow adding or removing saved card.',
+                    'card-not-found' => 'Saved card not found.',
+                ],
 
                 'error' => [
                     'cancel-error'                    => 'Order can not be canceled.',

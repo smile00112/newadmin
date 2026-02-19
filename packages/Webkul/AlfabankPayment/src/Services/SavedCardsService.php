@@ -206,4 +206,30 @@ class SavedCardsService
             return null;
         }
     }
+
+    /**
+     * Remove saved card: unbind at bank and delete locally.
+     *
+     * @param  int  $customerId
+     * @param  int  $cardId
+     * @return bool
+     */
+    public function removeCard(int $customerId, int $cardId): bool
+    {
+        $card = SavedCard::forCustomer($customerId)->find($cardId);
+
+        if (! $card) {
+            return false;
+        }
+
+        try {
+            $this->apiService->unbindCard($card->binding_id);
+        } catch (\Exception $e) {
+            Log::warning('Alfabank unbind failed, deleting locally: ' . $e->getMessage());
+        }
+
+        $card->delete();
+
+        return true;
+    }
 }

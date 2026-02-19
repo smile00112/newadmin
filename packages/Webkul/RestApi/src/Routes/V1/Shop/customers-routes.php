@@ -155,6 +155,7 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
      */
     Route::controller(SavedCardController::class)->prefix('customer/saved-cards')->group(function () {
         Route::get('', 'index');
+        Route::delete('{id}', 'destroy');
     });
 
     /**

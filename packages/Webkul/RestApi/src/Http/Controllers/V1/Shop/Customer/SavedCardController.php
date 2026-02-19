@@ -24,4 +24,23 @@ class SavedCardController extends CustomerController
             'data' => SavedCardResource::collection($cards),
         ]);
     }
+
+    /**
+     * Delete customer's saved card.
+     */
+    public function destroy(Request $request, int $id): Response
+    {
+        $customer = $this->resolveShopUser($request);
+        $savedCardsService = app(\Webkul\AlfabankPayment\Services\SavedCardsService::class);
+
+        if (! $savedCardsService->removeCard($customer->id, $id)) {
+            return response([
+                'message' => trans('rest-api::app.shop.customer.saved-cards.not-found'),
+            ], 404);
+        }
+
+        return response([
+            'message' => trans('rest-api::app.shop.customer.saved-cards.delete-success'),
+        ]);
+    }
 }

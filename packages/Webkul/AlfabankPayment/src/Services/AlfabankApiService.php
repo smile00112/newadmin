@@ -127,6 +127,30 @@ class AlfabankApiService
     }
 
     /**
+     * Unbind (remove) a saved card from the bank.
+     *
+     * @param  string  $bindingId
+     * @return array
+     */
+    public function unbindCard(string $bindingId): array
+    {
+        $url = $this->getBaseUrl() . 'unbindCard.do';
+
+        $data = [
+            'userName'   => $this->merchant,
+            'bindingId'  => $bindingId,
+        ];
+
+        if ($this->token) {
+            $data['token'] = $this->token;
+        } else {
+            $data['password'] = $this->password;
+        }
+
+        return $this->sendRequest($url, $data, [], 'unbindCard');
+    }
+
+    /**
      * Build registration data for order.
      *
      * @param  array  $orderData

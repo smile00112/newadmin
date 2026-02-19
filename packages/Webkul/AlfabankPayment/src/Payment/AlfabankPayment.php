@@ -304,18 +304,40 @@ class AlfabankPayment extends Payment
             $orderData['currency'] = $currencyNumeric;
         }
 
-        if ($order->customer_id && $order->customer) {
-            $email = $order->customer_email ?? ($order->customer->email ?? '');
-            $clientId = $this->savedCardsService->generateClientId($order->customer_id, $email);
-            $orderData['clientId'] = $clientId;
-            if ($email) {
-                $orderData['email'] = $email;
-            }
-        }
+        $payment = $order->payment;
+        $paymentAdditional = $payment?->additional ?? [];
+        $orderBindingId = $paymentAdditional['alfabank_binding_id'] ?? null;
+        $orderClientId = $paymentAdditional['alfabank_client_id'] ?? null;
 
-        $selectedCard = $this->savedCardsService->getSelectedCard();
-        if ($selectedCard) {
-            $orderData['bindingId'] = $selectedCard;
+        if ($orderBindingId) {
+            $orderData['bindingId'] = $orderBindingId;
+            $orderData['clientId'] = $orderClientId ?: ($order->customer_id && $order->customer
+                ? $this->savedCardsService->generateClientId(
+                    $order->customer_id,
+                    $order->customer_email ?? ($order->customer->email ?? '')
+                )
+                : null);
+            if ($orderData['clientId']) {
+                $email = $order->customer_email ?? ($order->customer->email ?? '');
+                if ($email) {
+                    $orderData['email'] = $email;
+                }
+            }
+            $selectedCard = $orderBindingId;
+        } else {
+            if ($order->customer_id && $order->customer) {
+                $email = $order->customer_email ?? ($order->customer->email ?? '');
+                $clientId = $this->savedCardsService->generateClientId($order->customer_id, $email);
+                $orderData['clientId'] = $clientId;
+                if ($email) {
+                    $orderData['email'] = $email;
+                }
+            }
+
+            $selectedCard = $this->savedCardsService->getSelectedCard();
+            if ($selectedCard) {
+                $orderData['bindingId'] = $selectedCard;
+            }
         }
 
         if ($this->getConfigData('send_order') == '1') {

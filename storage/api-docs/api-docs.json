@@ -642,6 +642,42 @@
                 }
             }
         },
+        "/api/v1/nomenclature": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get nomenclature (products and ingredients)",
+                "description": "Returns products and ingredients in a single cached response. Channel and locale are determined by request headers. Response is streamed as JSON.",
+                "operationId": "getNomenclature",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "products": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NomenclatureProduct"
+                                            }
+                                        },
+                                        "ingredients": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NomenclatureIngredient"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/products": {
             "get": {
                 "tags": [
@@ -4546,7 +4582,7 @@
                     "Checkout"
                 ],
                 "summary": "Save payment method at the checkout",
-                "description": "Save payment method at the checkout",
+                "description": "Save payment method at the checkout. Payment can be a string (method code) or an object with method and optional saved_card_id for Alfabank. When method is alfabank and saved_card_id is provided, the saved card (from GET /api/v1/customer/saved-cards) will be used for payment. bindingId and clientId are then passed to the bank when the order is paid.",
                 "operationId": "saveCheckoutPayment",
                 "requestBody": {
                     "content": {
@@ -4555,23 +4591,40 @@
                                 "required": [
                                     "payment"
                                 ],
-                                "properties": {
-                                    "payment": {
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "method": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "type": "object"
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "payment": {
+                                                "description": "Payment method code (short form)",
+                                                "type": "string",
+                                                "example": "cashondelivery"
+                                            }
                                         },
-                                        "example": {
-                                            "method": "cashondelivery"
-                                        }
+                                        "type": "object"
+                                    },
+                                    {
+                                        "properties": {
+                                            "payment": {
+                                                "description": "Payment object with method and optional saved card for Alfabank",
+                                                "properties": {
+                                                    "method": {
+                                                        "description": "Payment method code",
+                                                        "type": "string",
+                                                        "example": "alfabank"
+                                                    },
+                                                    "saved_card_id": {
+                                                        "description": "ID of saved card from GET /api/v1/customer/saved-cards. Only for method=alfabank.",
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "type": "object"
                                     }
-                                },
-                                "type": "object"
+                                ]
                             }
                         }
                     }
@@ -6334,6 +6387,110 @@
                 ]
             }
         },
+        "/api/v1/customer/saved-cards": {
+            "get": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get customer's saved cards",
+                "description": "Returns customer's saved payment cards from Alfabank, sorted by id in descending order",
+                "operationId": "getCustomerSavedCards",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SavedCard"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/saved-cards/{id}": {
+            "delete": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Delete customer's saved card",
+                "description": "Unbinds the card at Alfa-Bank and removes it from the saved cards list",
+                "operationId": "deleteCustomerSavedCard",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Saved card ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Card removed successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Saved card not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Saved card not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/shipments": {
             "get": {
                 "tags": [
@@ -7129,7 +7286,7 @@
                     "WebSocket Notifications"
                 ],
                 "summary": "Get WebSocket connection information",
-                "description": "Returns WebSocket server connection details, available channels and events for real-time notifications.\n *      \n *      ## WebSocket Connection\n *      \n *      The API supports real-time notifications via WebSocket using Laravel Reverb (Pusher-compatible protocol).\n *      \n *      ### Connection Details\n *      - **Protocol**: Pusher-compatible WebSocket\n *      - **Server**: Laravel Reverb\n *      - **Channels**: Public and Private channels available\n *      \n *      ### Channel Types\n *      \n *      #### Public Channels\n *      - **notification**: Public channel for general notifications (no authentication required)\n *      \n *      #### Private Channels (Authentication Required)\n *      - **order.{orderId}**: Private channel for specific order updates (e.g., `order.123`)\n *      - **customer.{customerId}.orders**: Private channel for all orders of a specific customer (e.g., `customer.456.orders`)\n *      \n *      ### Available Events\n *      - **create-notification**: Fired when a new order is created (public channel)\n *      - **update-notification**: Fired when an order status is updated (private channels)\n *      - **product-status-changed**: Fired when a product becomes out of stock (public channel)\n *      - **product-price-changed**: Fired when a product price changes (public channel)\n *      \n *      ### Authentication for Private Channels\n *      \n *      Private channels require authentication. The authorization endpoint is:\n *      - **POST** `/api/v1/customer/broadcasting/auth`\n *      \n *      This endpoint requires authentication token in the Authorization header.\n *      \n *      ### Example Connection (JavaScript)\n *      ```javascript\n *      import Echo from 'laravel-echo';\n *      import Pusher from 'pusher-js';\n *      \n *      window.Echo = new Echo({\n *          broadcaster: 'pusher',\n *          key: process.env.VITE_REVERB_APP_KEY,\n *          wsHost: process.env.VITE_REVERB_HOST,\n *          wsPort: process.env.VITE_REVERB_PORT ?? 80,\n *          wssPort: process.env.VITE_REVERB_PORT ?? 443,\n *          wsPath: '/app',\n *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',\n *          enabledTransports: ['ws', 'wss'],\n *          authEndpoint: '/api/v1/customer/broadcasting/auth',\n *          auth: {\n *              headers: {\n *                  Authorization: 'Bearer ' + yourAuthToken\n *              }\n *          }\n *      });\n *      \n *      // Public channel - no authentication required\n *      Echo.channel('notification')\n *          .listen('.product-status-changed', (e) => {\n *              console.log('Product out of stock:', e);\n *          })\n *          .listen('.product-price-changed', (e) => {\n *              console.log('Price changed:', e);\n *          })\n *          .listen('.create-notification', (e) => {\n *              console.log('New order created:', e);\n *          });\n *      \n *      // Private channel for specific order\n *      Echo.private('order.123')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order updated:', e);\n *          });\n *      \n *      // Private channel for all customer orders\n *      Echo.private('customer.456.orders')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order status changed:', e);\n *          });\n *      ```\n *      ",
+                "description": "Returns WebSocket server connection details, available channels and events for real-time notifications.\r\n *      \r\n *      ## WebSocket Connection\r\n *      \r\n *      The API supports real-time notifications via WebSocket using Laravel Reverb (Pusher-compatible protocol).\r\n *      \r\n *      ### Connection Details\r\n *      - **Protocol**: Pusher-compatible WebSocket\r\n *      - **Server**: Laravel Reverb\r\n *      - **Channels**: Public and Private channels available\r\n *      \r\n *      ### Channel Types\r\n *      \r\n *      #### Public Channels\r\n *      - **notification**: Public channel for general notifications (no authentication required)\r\n *      \r\n *      #### Private Channels (Authentication Required)\r\n *      - **order.{orderId}**: Private channel for specific order updates (e.g., `order.123`)\r\n *      - **customer.{customerId}.orders**: Private channel for all orders of a specific customer (e.g., `customer.456.orders`)\r\n *      \r\n *      ### Available Events\r\n *      - **create-notification**: Fired when a new order is created (public channel)\r\n *      - **update-notification**: Fired when an order status is updated (private channels)\r\n *      - **product-status-changed**: Fired when a product becomes out of stock (public channel)\r\n *      - **product-price-changed**: Fired when a product price changes (public channel)\r\n *      \r\n *      ### Authentication for Private Channels\r\n *      \r\n *      Private channels require authentication. The authorization endpoint is:\r\n *      - **POST** `/api/v1/customer/broadcasting/auth`\r\n *      \r\n *      This endpoint requires authentication token in the Authorization header.\r\n *      \r\n *      ### Example Connection (JavaScript)\r\n *      ```javascript\r\n *      import Echo from 'laravel-echo';\r\n *      import Pusher from 'pusher-js';\r\n *      \r\n *      window.Echo = new Echo({\r\n *          broadcaster: 'pusher',\r\n *          key: process.env.VITE_REVERB_APP_KEY,\r\n *          wsHost: process.env.VITE_REVERB_HOST,\r\n *          wsPort: process.env.VITE_REVERB_PORT ?? 80,\r\n *          wssPort: process.env.VITE_REVERB_PORT ?? 443,\r\n *          wsPath: '/app',\r\n *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',\r\n *          enabledTransports: ['ws', 'wss'],\r\n *          authEndpoint: '/api/v1/customer/broadcasting/auth',\r\n *          auth: {\r\n *              headers: {\r\n *                  Authorization: 'Bearer ' + yourAuthToken\r\n *              }\r\n *          }\r\n *      });\r\n *      \r\n *      // Public channel - no authentication required\r\n *      Echo.channel('notification')\r\n *          .listen('.product-status-changed', (e) => {\r\n *              console.log('Product out of stock:', e);\r\n *          })\r\n *          .listen('.product-price-changed', (e) => {\r\n *              console.log('Price changed:', e);\r\n *          })\r\n *          .listen('.create-notification', (e) => {\r\n *              console.log('New order created:', e);\r\n *          });\r\n *      \r\n *      // Private channel for specific order\r\n *      Echo.private('order.123')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order updated:', e);\r\n *          });\r\n *      \r\n *      // Private channel for all customer orders\r\n *      Echo.private('customer.456.orders')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order status changed:', e);\r\n *          });\r\n *      ```\r\n *      ",
                 "operationId": "getWebSocketInfo",
                 "responses": {
                     "200": {
@@ -7410,7 +7567,7 @@
                     "WebSocket Notifications"
                 ],
                 "summary": "Authorize private WebSocket channel",
-                "description": "Authorizes access to private WebSocket channels. This endpoint is called automatically by Laravel Echo when subscribing to private channels.\n *      \n *      ## Private Channels\n *      \n *      Private channels require authentication and authorization. When a client attempts to subscribe to a private channel, Laravel Echo automatically sends a POST request to this endpoint.\n *      \n *      ### Available Private Channels\n *      \n *      1. **order.{orderId}** - Private channel for specific order updates\n *         - Pattern: `order.{orderId}` (e.g., `order.123`)\n *         - Authorization: User must be the owner of the order\n *         - Events: `update-notification`\n *      \n *      2. **customer.{customerId}.orders** - Private channel for all customer orders\n *         - Pattern: `customer.{customerId}.orders` (e.g., `customer.456.orders`)\n *         - Authorization: User ID must match the customerId\n *         - Events: `update-notification`\n *      \n *      ### Authorization Logic\n *      \n *      - **order.{orderId}**: Checks if the authenticated user is the owner of the order\n *      - **customer.{customerId}.orders**: Checks if the authenticated user ID matches the customerId\n *      \n *      ### Usage\n *      \n *      This endpoint is called automatically by Laravel Echo. You don't need to call it manually.\n *      \n *      ```javascript\n *      // Laravel Echo automatically handles authorization\n *      Echo.private('order.123')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order updated:', e);\n *          });\n *      ```\n *      ",
+                "description": "Authorizes access to private WebSocket channels. This endpoint is called automatically by Laravel Echo when subscribing to private channels.\r\n *      \r\n *      ## Private Channels\r\n *      \r\n *      Private channels require authentication and authorization. When a client attempts to subscribe to a private channel, Laravel Echo automatically sends a POST request to this endpoint.\r\n *      \r\n *      ### Available Private Channels\r\n *      \r\n *      1. **order.{orderId}** - Private channel for specific order updates\r\n *         - Pattern: `order.{orderId}` (e.g., `order.123`)\r\n *         - Authorization: User must be the owner of the order\r\n *         - Events: `update-notification`\r\n *      \r\n *      2. **customer.{customerId}.orders** - Private channel for all customer orders\r\n *         - Pattern: `customer.{customerId}.orders` (e.g., `customer.456.orders`)\r\n *         - Authorization: User ID must match the customerId\r\n *         - Events: `update-notification`\r\n *      \r\n *      ### Authorization Logic\r\n *      \r\n *      - **order.{orderId}**: Checks if the authenticated user is the owner of the order\r\n *      - **customer.{customerId}.orders**: Checks if the authenticated user ID matches the customerId\r\n *      \r\n *      ### Usage\r\n *      \r\n *      This endpoint is called automatically by Laravel Echo. You don't need to call it manually.\r\n *      \r\n *      ```javascript\r\n *      // Laravel Echo automatically handles authorization\r\n *      Echo.private('order.123')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order updated:', e);\r\n *          });\r\n *      ```\r\n *      ",
                 "operationId": "authorizeBroadcastingChannel",
                 "requestBody": {
                     "description": "Channel authorization request",
@@ -8047,6 +8204,154 @@
                         "type": "string",
                         "format": "datetime",
                         "example": "2020-01-27 17:50:45"
+                    }
+                },
+                "type": "object"
+            },
+            "NomenclatureIngredient": {
+                "title": "NomenclatureIngredient",
+                "description": "Ingredient in nomenclature response",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Ingredient ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Ingredient SKU",
+                        "type": "string",
+                        "example": "ingredient-1"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Ingredient name",
+                        "type": "string",
+                        "example": "Tomato"
+                    },
+                    "price": {
+                        "title": "Price",
+                        "description": "Ingredient price",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12.2
+                    },
+                    "formatted_price": {
+                        "title": "Formatted Price",
+                        "description": "Ingredient's formatted price",
+                        "type": "string",
+                        "example": "$12.20"
+                    },
+                    "base_image": {
+                        "title": "Base Image",
+                        "description": "Ingredient's base image",
+                        "type": "object",
+                        "example": {
+                            "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                            "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                            "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                            "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                        }
+                    },
+                    "in_stock": {
+                        "title": "In Stock",
+                        "description": "Whether ingredient is in stock",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "videos": {
+                        "title": "Videos",
+                        "description": "Ingredient's videos",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductVideo"
+                        }
+                    },
+                    "nutrition": {
+                        "title": "Nutrition",
+                        "description": "Nutrition information (calories, proteins, fats, carbs)",
+                        "type": "object",
+                        "example": {
+                            "calories": 25.5,
+                            "proteins": 1.2,
+                            "fats": 0.3,
+                            "carbs": 5
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "NomenclatureProduct": {
+                "title": "NomenclatureProduct",
+                "description": "Product in nomenclature response",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Product SKU",
+                        "type": "string",
+                        "example": "product-1"
+                    },
+                    "type": {
+                        "title": "Type",
+                        "description": "Product type",
+                        "type": "string",
+                        "enum": [
+                            "simple",
+                            "configurable",
+                            "virtual",
+                            "grouped",
+                            "downloadable",
+                            "bundle",
+                            "booking",
+                            "constructor",
+                            "ingredient"
+                        ]
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product name",
+                        "type": "string",
+                        "example": "Men T-Shirt"
+                    },
+                    "price": {
+                        "title": "Price",
+                        "description": "Product price",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12.2
+                    },
+                    "formatted_price": {
+                        "title": "Formatted Price",
+                        "description": "Product's formatted price",
+                        "type": "string",
+                        "example": "$12.20"
+                    },
+                    "base_image": {
+                        "title": "Base Image",
+                        "description": "Product's base image",
+                        "type": "object",
+                        "example": {
+                            "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                            "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                            "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                            "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                        }
+                    },
+                    "in_stock": {
+                        "title": "In Stock",
+                        "description": "Whether product is in stock",
+                        "type": "boolean",
+                        "example": true
                     }
                 },
                 "type": "object"
@@ -8968,15 +9273,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
@@ -11610,6 +11911,20 @@
                         "type": "string",
                         "example": "flatrate_flatrate"
                     },
+                    "payment_method": {
+                        "title": "Payment Method",
+                        "description": "Selected payment method code for the current cart",
+                        "type": "string",
+                        "example": "cashondelivery",
+                        "nullable": true
+                    },
+                    "payment_method_title": {
+                        "title": "Payment Method Title",
+                        "description": "Human-readable payment method title from config",
+                        "type": "string",
+                        "example": "Cash On Delivery",
+                        "nullable": true
+                    },
                     "coupon_code": {
                         "title": "Coupon Code",
                         "description": "Applied coupon code to the cart",
@@ -13072,6 +13387,58 @@
                         "type": "integer",
                         "format": "int64",
                         "example": 1
+                    }
+                },
+                "type": "object"
+            },
+            "SavedCard": {
+                "title": "SavedCard",
+                "description": "Saved card model (Alfabank)",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Saved card ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "binding_id": {
+                        "title": "Binding ID",
+                        "description": "Bank binding identifier for payment",
+                        "type": "string",
+                        "example": "8ac7a4a8-1234-5678-90ab-cdef12345678"
+                    },
+                    "card_mask": {
+                        "title": "Card Mask",
+                        "description": "Masked card number",
+                        "type": "string",
+                        "example": "4276 **** **** 1234"
+                    },
+                    "card_type": {
+                        "title": "Card Type",
+                        "description": "Payment system (VISA, MasterCard, etc.)",
+                        "type": "string",
+                        "example": "VISA"
+                    },
+                    "is_active": {
+                        "title": "Is Active",
+                        "description": "Whether the card is active",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "title": "Created at",
+                        "description": "Created at",
+                        "type": "string",
+                        "format": "datetime",
+                        "example": "2026-02-19 12:00:00"
+                    },
+                    "updated_at": {
+                        "title": "Updated at",
+                        "description": "Updated at",
+                        "type": "string",
+                        "format": "datetime",
+                        "example": "2026-02-19 12:00:00"
                     }
                 },
                 "type": "object"
