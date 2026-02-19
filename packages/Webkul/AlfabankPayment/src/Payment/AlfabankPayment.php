@@ -155,7 +155,7 @@ class AlfabankPayment extends Payment
 
         // Add JSON params
         $jsonParams = [
-            'CMS' => 'Laravel ' . app()->version() . ' + Bagisto',
+            'CMS' => 'Laravel ' . app()->version() . ' + Surprise',
             'CMS_paymentType' => $selectedCard ? 'saved_card' : 'redirect',
         ];
 
@@ -197,7 +197,7 @@ class AlfabankPayment extends Payment
                 'name'      => $item->name,
                 'quantity'  => [
                     'value'   => $item->quantity,
-                    'measure' => $this->getConfigData('version_ffd') === 'v1_05' ? 'pcs' : '0',
+                    'measure' => '0',
                 ],
                 'itemAmount' => $itemAmount,
                 'itemCode'   => $item->sku ?? ($positionId - 1 . '-' . $item->product_id),
@@ -229,7 +229,7 @@ class AlfabankPayment extends Payment
                 'name'      => $cart->selected_shipping_rate->method_title ?? 'Доставка',
                 'quantity'  => [
                     'value'   => 1,
-                    'measure' => $this->getConfigData('version_ffd') === 'v1_05' ? 'pcs' : '0',
+                    'measure' => '0',
                 ],
                 'itemAmount' => $shippingPrice,
                 'itemCode'   => 'delivery',
@@ -330,7 +330,7 @@ class AlfabankPayment extends Payment
         }
 
         $jsonParams = [
-            'CMS' => 'Laravel ' . app()->version() . ' + Bagisto',
+            'CMS' => 'Laravel ' . app()->version() . ' + Surprise',
             'CMS_paymentType' => $selectedCard ? 'saved_card' : 'redirect',
         ];
         if ($selectedCard) {
@@ -369,7 +369,7 @@ class AlfabankPayment extends Payment
                 'name'      => $item->name,
                 'quantity'  => [
                     'value'   => (int) $item->qty_ordered,
-                    'measure' => $this->getConfigData('version_ffd') === 'v1_05' ? 'pcs' : '0',
+                    'measure' => '0',
                 ],
                 'itemAmount' => $itemAmount,
                 'itemCode'   => $item->sku ?? ($positionId - 1 . '-' . $item->product_id),
@@ -399,7 +399,7 @@ class AlfabankPayment extends Payment
                 'name'      => $order->shipping_title ?? 'Доставка',
                 'quantity'  => [
                     'value'   => 1,
-                    'measure' => $this->getConfigData('version_ffd') === 'v1_05' ? 'pcs' : '0',
+                    'measure' => '0',
                 ],
                 'itemAmount' => $shippingPrice,
                 'itemCode'   => 'delivery',

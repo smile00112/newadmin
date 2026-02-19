@@ -3,8 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use Webkul\AlfabankPayment\Http\Controllers\PaymentController;
 
-Route::group(['middleware' => ['web']], function () {
+Route::group(['middleware' => ['web', 'shop']], function () {
     Route::prefix('alfabank')->group(function () {
+        // Payment error page (redirect target on payment failures)
+        Route::get('payment/error', [PaymentController::class, 'paymentError'])
+            ->name('alfabank.payment.error');
+
         // Payment callback from bank
         Route::any('payment/callback', [PaymentController::class, 'callback'])
             ->name('alfabank.payment.callback');

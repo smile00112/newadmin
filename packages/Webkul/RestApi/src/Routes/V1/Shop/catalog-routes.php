@@ -5,8 +5,14 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\AttributeController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\AttributeFamilyController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CategoryController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\ProductController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\ProductReviewController;
+
+/**
+ * Nomenclature route (products + ingredients, cached).
+ */
+Route::get('nomenclature', [NomenclatureController::class, 'index']);
 
 /**
  * Product routes.

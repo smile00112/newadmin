@@ -13,6 +13,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\InvoiceController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\MultiChannelAuthController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\NewsLetterController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\OrderController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\SavedCardController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\ShipmentController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\TransactionController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\WishlistController;
@@ -147,6 +148,13 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::get('', 'allResources');
 
         Route::get('{id}', 'getResource');
+    });
+
+    /**
+     * Customer saved cards routes.
+     */
+    Route::controller(SavedCardController::class)->prefix('customer/saved-cards')->group(function () {
+        Route::get('', 'index');
     });
 
     /**

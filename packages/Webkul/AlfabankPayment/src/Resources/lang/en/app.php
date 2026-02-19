@@ -8,4 +8,8 @@ return [
     'acl' => [
         'settings' => 'Alfabank',
     ],
+
+    'payment-error' => [
+        'title' => 'Payment Error',
+    ],
 ];

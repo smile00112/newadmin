@@ -8,4 +8,8 @@ return [
     'acl' => [
         'settings' => 'Альфа-Банк',
     ],
+
+    'payment-error' => [
+        'title' => 'Ошибка оплаты',
+    ],
 ];

@@ -88,7 +88,7 @@ class TestOrderController extends Controller
 
             // Add JSON params
             $orderData['jsonParams'] = json_encode([
-                'CMS' => 'Laravel ' . app()->version() . ' + Bagisto',
+                'CMS' => 'Laravel ' . app()->version() . ' + Surprise',
                 'CMS_paymentType' => !empty($validated['bindingId']) ? 'saved_card' : 'redirect',
                 'CMS_testOrder' => 'true',
             ]);

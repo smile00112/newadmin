@@ -122,7 +122,7 @@
                 login(params, { resetForm }) {
                     this.isStoring = true;
 
-                    this.$axios.post("{{ route('shop.api.customers.session.create') }}", params)
+                    this.$axios.post("{{ route('shop.api.auth.login') }}", params)
                         .then((response) => {
                             this.isStoring = false;
 

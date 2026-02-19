@@ -2,6 +2,7 @@
 
 namespace Webkul\AlfabankPayment\Services;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Webkul\AlfabankPayment\Models\SavedCard;
 
@@ -157,5 +158,52 @@ class SavedCardsService
             ->active()
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+
+    /**
+     * Save card from bank payment response (bindingInfo, cardAuthInfo).
+     *
+     * @param  int  $customerId
+     * @param  array  $response  Bank getOrderStatusExtended response
+     * @return \Webkul\AlfabankPayment\Models\SavedCard|null
+     */
+    public function saveCardFromPaymentResponse(int $customerId, array $response): ?SavedCard
+    {
+        try {
+            $bindingInfo = $response['bindingInfo'] ?? [];
+            $cardAuthInfo = $response['cardAuthInfo'] ?? [];
+
+            $clientId = $bindingInfo['clientId'] ?? null;
+            $bindingId = $bindingInfo['bindingId'] ?? null;
+            $maskedPan = $cardAuthInfo['maskedPan'] ?? $cardAuthInfo['pan'] ?? null;
+            $cardType = $cardAuthInfo['paymentSystem'] ?? null;
+
+            if (!$clientId || !$bindingId || !$maskedPan) {
+                return null;
+            }
+
+            $exists = SavedCard::where('client_id', $clientId)
+                ->where('binding_id', $bindingId)
+                ->exists();
+
+            if ($exists) {
+                return null;
+            }
+
+            return SavedCard::create([
+                'customer_id' => $customerId,
+                'client_id'   => $clientId,
+                'binding_id'  => $bindingId,
+                'card_mask'   => $maskedPan,
+                'card_type'   => $cardType,
+                'is_active'   => true,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error saving card from payment response: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return null;
+        }
     }
 }

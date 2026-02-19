@@ -3,9 +3,12 @@
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
+use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderListResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
+use Webkul\RestApi\Services\CustomerOrdersCache;
 use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\OrderRepository;
 
@@ -25,6 +28,68 @@ class OrderController extends CustomerController
     public function resource(): string
     {
         return OrderResource::class;
+    }
+
+    /**
+     * List resource class name (lightweight for listing).
+     */
+    protected function listResource(): string
+    {
+        return OrderListResource::class;
+    }
+
+    /**
+     * Returns a listing of the resource (optimized with eager loading, lightweight resource and caching).
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function allResources(Request $request)
+    {
+        $customerId = $this->resolveShopUser($request)->id;
+
+        $params = $request->only(['page', 'limit', 'pagination', 'sort', 'order'])
+            + $request->except(array_merge($this->requestException, ['token']));
+
+        $cacheKey = CustomerOrdersCache::key($customerId, ['all' => $params]);
+
+        $data = Cache::remember($cacheKey, CustomerOrdersCache::ttl(), function () use ($request) {
+            $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request) {
+                if ($this->isAuthorized()) {
+                    $query = $query->where('customer_id', $this->resolveShopUser($request)->id);
+                }
+
+                foreach ($request->except($this->requestException) as $input => $value) {
+                    $query = $query->whereIn($input, array_map('trim', explode(',', $value)));
+                }
+
+                if ($sort = $request->input('sort')) {
+                    $query = $query->orderBy($sort, $request->input('order') ?? 'desc');
+                } else {
+                    $query = $query->orderBy('id', 'desc');
+                }
+
+                return $query;
+            });
+
+            $query->with([
+                'items.order',
+            ]);
+
+            if (is_null($request->input('pagination')) || $request->input('pagination')) {
+                $results = $query->paginate($request->input('limit') ?? 10);
+            } else {
+                $results = $query->get();
+            }
+
+            $resourceClass = $this->listResource();
+
+            //return $resourceClass::collection($results)->resolve($request);
+            return json_encode($resourceClass::collection($results)->resolve($request), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        });
+
+        //return response()->json($data);
+        return api_stream_json($data, 'orders_'. $cacheKey .'.json');
+
     }
 
     /**
@@ -187,7 +252,7 @@ class OrderController extends CustomerController
             $statuses = array_map('trim', $statuses);
         }
 
-        return $this->getOrdersByStatuses($request, $statuses);
+        return $this->getOrdersByStatuses($request, $statuses, 'active');
     }
 
     /**
@@ -209,7 +274,7 @@ class OrderController extends CustomerController
             $statuses = array_map('trim', $statuses);
         }
 
-        return $this->getOrdersByStatuses($request, $statuses);
+        return $this->getOrdersByStatuses($request, $statuses, 'completed');
     }
 
     /**
@@ -231,65 +296,116 @@ class OrderController extends CustomerController
             $statuses = array_map('trim', $statuses);
         }
 
-        return $this->getOrdersByStatuses($request, $statuses);
+        return $this->getOrdersByStatuses($request, $statuses, 'cancelled');
     }
 
     /**
      * Get orders by statuses.
      */
-    protected function getOrdersByStatuses(Request $request, array $statuses): \Symfony\Component\HttpFoundation\StreamedResponse
+    protected function getOrdersByStatuses(Request $request, array $statuses, string $listType = 'all'): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request, $statuses) {
-            $query = $query->where('customer_id', $this->resolveShopUser($request)->id)
-                ->whereIn('status', $statuses);
+        $customerId = $this->resolveShopUser($request)->id;
 
-            foreach ($request->except(['page', 'limit', 'pagination', 'sort', 'order', 'token']) as $input => $value) {
-                $query = $query->whereIn($input, array_map('trim', explode(',', $value)));
+        $params = array_merge(
+            $request->only(['page', 'limit', 'pagination', 'sort', 'order']),
+            $request->except(array_merge($this->requestException, ['token'])),
+            ['list_type' => $listType, 'statuses' => $statuses]
+        );
+
+        $cacheKey = CustomerOrdersCache::key($customerId, $params);
+
+        $data = Cache::remember($cacheKey, CustomerOrdersCache::ttl(), function () use ($request, $statuses) {
+            $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request, $statuses) {
+                $query = $query->where('customer_id', $this->resolveShopUser($request)->id)
+                    ->whereIn('status', $statuses);
+
+                foreach ($request->except(['page', 'limit', 'pagination', 'sort', 'order', 'token']) as $input => $value) {
+                    $query = $query->whereIn($input, array_map('trim', explode(',', $value)));
+                }
+
+                if ($sort = $request->input('sort')) {
+                    $query = $query->orderBy($sort, $request->input('order') ?? 'desc');
+                } else {
+                    $query = $query->orderBy('id', 'desc');
+                }
+
+                return $query;
+            });
+
+            $query->with([
+                'items.order',
+            ]);
+
+            $usePagination = is_null($request->input('pagination')) || $request->input('pagination');
+
+            if ($usePagination) {
+                $paginator = $query->paginate($request->input('limit') ?? 10);
+
+                $resourceClass = $this->listResource();
+
+                return [
+                    'data'  => $resourceClass::collection($paginator->items())->resolve($request),
+                    'links' => [
+                        'first' => $paginator->url(1),
+                        'last'  => $paginator->url($paginator->lastPage()),
+                        'prev'  => $paginator->previousPageUrl(),
+                        'next'  => $paginator->nextPageUrl(),
+                    ],
+                    'meta'  => [
+                        'current_page' => $paginator->currentPage(),
+                        'from'         => $paginator->firstItem(),
+                        'last_page'    => $paginator->lastPage(),
+                        'links'        => $paginator->linkCollection()->toArray(),
+                        'path'         => $paginator->path(),
+                        'per_page'     => $paginator->perPage(),
+                        'to'           => $paginator->lastItem(),
+                        'total'        => $paginator->total(),
+                    ],
+                ];
             }
 
-            if ($sort = $request->input('sort')) {
-                $query = $query->orderBy($sort, $request->input('order') ?? 'desc');
-            } else {
-                $query = $query->orderBy('id', 'desc');
-            }
-
-            return $query;
-        });
-
-        $usePagination = is_null($request->input('pagination')) || $request->input('pagination');
-
-        if ($usePagination) {
-            $paginator = $query->paginate($request->input('limit') ?? 10);
-
-            $data = [
-                'data'  => $this->getResourceCollection($paginator->items())->resolve($request),
-                'links' => [
-                    'first' => $paginator->url(1),
-                    'last'  => $paginator->url($paginator->lastPage()),
-                    'prev'  => $paginator->previousPageUrl(),
-                    'next'  => $paginator->nextPageUrl(),
-                ],
-                'meta'  => [
-                    'current_page' => $paginator->currentPage(),
-                    'from'         => $paginator->firstItem(),
-                    'last_page'    => $paginator->lastPage(),
-                    'links'        => $paginator->linkCollection()->toArray(),
-                    'path'         => $paginator->path(),
-                    'per_page'     => $paginator->perPage(),
-                    'to'           => $paginator->lastItem(),
-                    'total'        => $paginator->total(),
-                ],
-            ];
-        } else {
             $results = $query->get();
 
-            $data = [
-                'data' => $this->getResourceCollection($results)->resolve($request),
+            $resourceClass = $this->listResource();
+
+            return [
+                'data' => $resourceClass::collection($results)->resolve($request),
             ];
-        }
+        });
 
         $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return api_stream_json($jsonResponse, 'orders.json');
+    }
+
+    /**
+     * Returns an individual resource with eager loading to avoid N+1.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function getResource(Request $request, $id)
+    {
+        $resourceClassName = $this->resource();
+
+        $query = $this->getRepositoryInstance()
+            ->with([
+                'payment',
+                'addresses',
+                'items.product.images',
+                'items.product.parent.images',
+                'items.children',
+                'invoices.address',
+                'invoices.items',
+                'shipments.items',
+                'shipments.customer',
+                'shipments.inventory_source',
+            ]);
+
+        $resource = $this->isAuthorized()
+            ? $query->where('customer_id', $this->resolveShopUser($request)->id)->findOrFail($id)
+            : $query->findOrFail($id);
+
+        return new $resourceClassName($resource);
     }
 }

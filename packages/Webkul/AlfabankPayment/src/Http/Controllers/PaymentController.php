@@ -9,10 +9,12 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Webkul\AlfabankPayment\Payment\AlfabankPayment;
 use Webkul\AlfabankPayment\Services\AlfabankApiService;
+use Webkul\AlfabankPayment\Services\SavedCardsService;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Shop\Http\Controllers\Controller;
+use Illuminate\View\View;
 
 class PaymentController extends Controller
 {
@@ -35,6 +37,16 @@ class PaymentController extends Controller
     ) {
         $this->orderRepository = $orderRepository;
         $this->apiService = $apiService;
+    }
+
+    /**
+     * Display payment error page.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function paymentError(): View
+    {
+        return view('alfabank-payment::shop.payment.error');
     }
 
     /**
@@ -116,7 +128,7 @@ class PaymentController extends Controller
         $status = $request->get('status');
 
         if (!$orderId) {
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Ошибка обработки платежа');
         }
 
@@ -129,7 +141,7 @@ class PaymentController extends Controller
                     'errorMessage' => $response['errorMessage'] ?? null,
                 ]);
 
-                return redirect()->route('shop.checkout.cart.index')
+                return redirect()->route('alfabank.payment.error')
                     ->with('error', 'Ошибка обработки платежа: ' . ($response['errorMessage'] ?? 'Неизвестная ошибка'));
             }
 
@@ -139,7 +151,7 @@ class PaymentController extends Controller
             $order = $this->resolveOrderFromOrderNumber($orderNumber);
 
             if (!$order) {
-                return redirect()->route('shop.checkout.cart.index')
+                return redirect()->route('alfabank.payment.error')
                     ->with('error', 'Заказ не найден');
             }
 
@@ -166,12 +178,12 @@ class PaymentController extends Controller
                     return redirect($failUrl . '?order_id=' . $order->id);
                 }
 
-                return redirect()->route('shop.checkout.cart.index')
+                return redirect()->route('alfabank.payment.error')
                     ->with('error', 'Платеж не был выполнен: ' . ($response['actionCodeDescription'] ?? 'Неизвестная ошибка'));
             }
         } catch (\Exception $e) {
             Log::error('Alfabank return exception: ' . $e->getMessage());
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Ошибка обработки платежа');
         }
     }
@@ -187,21 +199,21 @@ class PaymentController extends Controller
         $orderId = $request->get('order_id');
         if (!$orderId) {
             Log::warning('Alfabank startPayment: missing order_id');
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Ошибка: не указан заказ');
         }
 
         $order = Order::find($orderId);
         if (!$order) {
             Log::warning('Alfabank startPayment: order not found', ['order_id' => $orderId]);
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Заказ не найден');
         }
 
         $paymentMethod = $order->payment ? $order->payment->method : null;
         if ($paymentMethod !== 'alfabank') {
             Log::warning('Alfabank startPayment: order payment is not alfabank', ['order_id' => $orderId]);
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Неверный способ оплаты');
         }
 
@@ -211,7 +223,7 @@ class PaymentController extends Controller
                 'order_id' => $orderId,
                 'status' => $order->status,
             ]);
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Оплата для этого заказа недоступна');
         }
 
@@ -230,13 +242,13 @@ class PaymentController extends Controller
                 if ($failUrl) {
                     return redirect($failUrl . '?order_id=' . $order->id);
                 }
-                return redirect()->route('shop.checkout.cart.index')
+                return redirect()->route('alfabank.payment.error')
                     ->with('error', 'Ошибка регистрации платежа: ' . ($response['errorMessage'] ?? 'Неизвестная ошибка'));
             }
 
             if (empty($response['formUrl'])) {
                 Log::error('Alfabank startPayment: no formUrl in response', ['order_id' => $orderId, 'response' => $response]);
-                return redirect()->route('shop.checkout.cart.index')
+                return redirect()->route('alfabank.payment.error')
                     ->with('error', 'Ошибка регистрации платежа');
             }
 
@@ -252,7 +264,7 @@ class PaymentController extends Controller
                 'order_id' => $orderId,
                 'trace' => $e->getTraceAsString(),
             ]);
-            return redirect()->route('shop.checkout.cart.index')
+            return redirect()->route('alfabank.payment.error')
                 ->with('error', 'Ошибка обработки платежа');
         }
     }
@@ -438,6 +450,11 @@ class PaymentController extends Controller
                         'orderStatus' => $orderStatus,
                         'transactionId' => $response['authRefNum'] ?? null,
                     ]);
+
+                    // Save card from payment response if bindingInfo and cardAuthInfo present
+                    if ($order->customer_id && isset($response['bindingInfo']) && isset($response['cardAuthInfo'])) {
+                        app(SavedCardsService::class)->saveCardFromPaymentResponse($order->customer_id, $response);
+                    }
                 }
             } elseif ($orderStatus == '3') {
                 // Reversed

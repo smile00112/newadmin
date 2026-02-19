@@ -21,6 +21,7 @@ class SavedCard extends Model
      */
     protected $fillable = [
         'customer_id',
+        'client_id',
         'binding_id',
         'card_mask',
         'card_type',
