@@ -93,8 +93,10 @@ class PaymentStatusService
 
             // Extract status from response
             // Status can be in different places depending on API response structure
-            $status = $responseData['status'] 
-                ?? $responseData['Data']['status'] 
+            $operation = $responseData['Data']['Operation'][0] ?? null;
+            $status = $responseData['status']
+                ?? $responseData['Data']['status']
+                ?? ($operation['status'] ?? null)
                 ?? $responseData['operationStatus']
                 ?? $responseData['Data']['operationStatus']
                 ?? null;
