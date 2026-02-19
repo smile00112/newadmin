@@ -161,6 +161,11 @@
                     default: false
                 },
 
+                excludeIngredients: {
+                    type: Boolean,
+                    default: false
+                },
+
                 queryParams: {
                     type: Object,
                     default: () => ({})
@@ -207,6 +212,7 @@
                     const params = {
                         ...{query: '', limit: 30},
                         ...(this.searchIngredients ? {type: 'ingredient'} : {}),
+                        ...(this.excludeIngredients ? {exclude_type: 'ingredient'} : {}),
                         ...this.queryParams
                     };
 
@@ -240,6 +246,7 @@
                     const params = {
                         ...{query: this.searchTerm},
                         ...(this.searchIngredients ? {type: 'ingredient'} : {}),
+                        ...(this.excludeIngredients ? {exclude_type: 'ingredient'} : {}),
                         ...this.queryParams
                     };
 

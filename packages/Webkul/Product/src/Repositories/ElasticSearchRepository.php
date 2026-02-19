@@ -48,6 +48,13 @@ class ElasticSearchRepository
             $filters['filter'][]['term']['type'] = $params['type'];
         }
 
+        if (! empty($params['exclude_type'])) {
+            $excludeTypes = is_array($params['exclude_type'])
+                ? $params['exclude_type']
+                : [$params['exclude_type']];
+            $filters['must_not'][]['terms']['type'] = $excludeTypes;
+        }
+
         $results = Elasticsearch::search([
             'index' => $params['index'] ?? $this->getIndexName(),
             'body'  => [
