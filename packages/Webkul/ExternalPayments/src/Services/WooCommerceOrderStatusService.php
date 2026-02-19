@@ -20,13 +20,11 @@ class WooCommerceOrderStatusService
      */
     public function updateOrderStatus(ExternalSystem $externalSystem, string $orderId, string $paymentStatus): bool
     {
-        if (empty($externalSystem->woocommerce_site_url) || 
-            empty($externalSystem->woocommerce_consumer_key) || 
-            empty($externalSystem->woocommerce_consumer_secret)) {
-            Log::warning('External Payments WooCommerce: Missing WooCommerce credentials', [
-                'external_system_id' => $externalSystem->id,
-                'order_id' => $orderId,
-            ]);
+        if (empty($externalSystem->woocommerce_site_url)) {
+            return false;
+        }
+
+        if (empty($externalSystem->woocommerce_consumer_key) || empty($externalSystem->woocommerce_consumer_secret)) {
             return false;
         }
 
