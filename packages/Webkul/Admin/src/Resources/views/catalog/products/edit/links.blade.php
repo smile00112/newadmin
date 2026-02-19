@@ -254,6 +254,7 @@
             <x-admin::products.search
                 ref="productSearch"
                 ::added-product-ids="addedProductIds"
+                ::exclude-ingredients="true"
                 @onProductAdded="addSelected($event)"
             />
         </div>

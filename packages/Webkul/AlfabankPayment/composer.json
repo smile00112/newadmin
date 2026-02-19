@@ -1,0 +1,24 @@
+{
+    "name": "bagisto/laravel-alfabank-payment",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Webkul",
+            "email": "support@webkul.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Webkul\\AlfabankPayment\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\AlfabankPayment\\Providers\\AlfabankPaymentServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev"
+}

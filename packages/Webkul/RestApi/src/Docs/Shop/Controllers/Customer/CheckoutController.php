@@ -230,7 +230,7 @@ class CheckoutController
      *      operationId="saveCheckoutPayment",
      *      tags={"Checkout"},
      *      summary="Save payment method at the checkout",
-     *      description="Save payment method at the checkout",
+     *      description="Save payment method at the checkout. Payment can be a string (method code) or an object with method and optional saved_card_id for Alfabank. When method is alfabank and saved_card_id is provided, the saved card (from GET /api/v1/customer/saved-cards) will be used for payment. bindingId and clientId are then passed to the bank when the order is paid.",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\RequestBody(
@@ -239,19 +239,20 @@ class CheckoutController
      *              mediaType="application/json",
      *
      *              @OA\Schema(
-     *
-     *                  @OA\Property(
-     *                      property="payment",
-     *                      type="array",
-     *                      example={
-     *                          "method": "cashondelivery"
-     *                      },
-     *
-     *                      @OA\Items(
-     *
-     *                          @OA\Property(property="method", type="string")
+     *                  oneOf={
+     *                      @OA\Schema(
+     *                          @OA\Property(property="payment", type="string", example="cashondelivery", description="Payment method code (short form)")
+     *                      ),
+     *                      @OA\Schema(
+     *                          @OA\Property(
+     *                              property="payment",
+     *                              type="object",
+     *                              description="Payment object with method and optional saved card for Alfabank",
+     *                              @OA\Property(property="method", type="string", example="alfabank", description="Payment method code"),
+     *                              @OA\Property(property="saved_card_id", type="integer", example=1, nullable=true, description="ID of saved card from GET /api/v1/customer/saved-cards. Only for method=alfabank.")
+     *                          )
      *                      )
-     *                  ),
+     *                  },
      *                  required={"payment"}
      *              )
      *          )

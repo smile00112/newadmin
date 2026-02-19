@@ -100,7 +100,8 @@
             "Webkul\\User\\": "packages/Webkul/User/src",
             "Webkul\\RestApi\\": "packages/Webkul/RestApi/src",
             "Webkul\\MobileApp\\": "packages/Webkul/MobileApp/src",
-            "Webkul\\Bonus\\": "packages/Webkul/Bonus/src"
+            "Webkul\\Bonus\\": "packages/Webkul/Bonus/src",
+            "Webkul\\AlfabankPayment\\": "packages/Webkul/AlfabankPayment/src"
         }
     },
     "autoload-dev": {

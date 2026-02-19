@@ -217,10 +217,10 @@
                                         <div v-else>
                                             <p
                                                 class="text-xs text-gray-600 dark:text-gray-300 sm:text-sm"
-                                                v-if="record.quantity > 0"
+                                                v-if="record.quantity > 0 || !record.manage_stock"
                                             >
                                                 <span class="text-green-600">
-                                                    @{{ "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', record.quantity) }}
+                                                    @{{ (record.quantity > 0 ? "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', record.quantity) : "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', '—')) }}
                                                 </span>
                                             </p>
 
@@ -332,10 +332,10 @@
                                 <div v-else>
                                     <p
                                         class="text-gray-600 dark:text-gray-300"
-                                        v-if="record.quantity > 0"
+                                        v-if="record.quantity > 0 || !record.manage_stock"
                                     >
                                         <span class="text-green-600">
-                                            @{{ "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', record.quantity) }}
+                                            @{{ (record.quantity > 0 ? "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', record.quantity) : "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', '—')) }}
                                         </span>
                                     </p>
 

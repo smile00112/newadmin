@@ -149,14 +149,23 @@ class CheckoutController extends CustomerController
     public function savePayment(Request $request): JsonResponse
     {
         try {
-            $validatedData = $this->validate($request, [
-                'payment' => 'required',
-            ]);
+            $paymentInput = $request->input('payment');
+            if (is_array($paymentInput)) {
+                $validatedData = $this->validate($request, [
+                    'payment'              => 'required',
+                    'payment.method'       => 'required',
+                    'payment.saved_card_id' => 'nullable|integer',
+                ]);
+                $payment = $validatedData['payment'];
+            } else {
+                $validatedData = $this->validate($request, ['payment' => 'required']);
+                $payment = ['method' => $validatedData['payment']];
+            }
 
             if (
                 Cart::hasError()
-                || ! $validatedData['payment']
-                || ! Cart::savePaymentMethod($validatedData['payment'])
+                || empty($payment['method'])
+                || ! Cart::savePaymentMethod($payment)
             ) {
                 return response()->json([
                     'errors' => Cart::getErrors(),
@@ -238,13 +247,15 @@ class CheckoutController extends CustomerController
 
             $cart = Cart::getCart();
 
-            $redirectUrl = Payment::getRedirectUrl($cart);
+            $paymentMethod = $cart->payment->method ?? null;
+            $redirectUrl = ($paymentMethod === 'alfabank') ? null : Payment::getRedirectUrl($cart);
 
-            $orderData = (new OrderTransformer($cart))->jsonSerialize();
+            // Full order data from cart (payment, items, addresses, etc.) — required by OrderRepository
+            $data = (new OrderTransformer($cart))->jsonSerialize();
 
             // Get and validate order labels from request
             $orderLabels = request()->input('order_labels', []);
-            if (is_array($orderLabels) && !empty($orderLabels)) {
+            if (is_array($orderLabels) && ! empty($orderLabels)) {
                 // Get available labels from config
                 $channelCode = $cart->channel->code ?? core()->getDefaultChannelCode();
                 $availableLabels = core()->getConfigData('sales.order_settings.order_labels.labels_list', $channelCode);
@@ -252,23 +263,23 @@ class CheckoutController extends CustomerController
                 if ($availableLabels) {
                     $availableLabelsArray = array_filter(
                         array_map('trim', explode("\n", $availableLabels)),
-                        fn($label) => !empty($label)
+                        fn ($label) => ! empty($label)
                     );
                 }
 
                 // Validate and filter order labels
                 $validatedLabels = array_filter(
                     array_map('trim', $orderLabels),
-                    fn($label) => !empty($label) && in_array($label, $availableLabelsArray)
+                    fn ($label) => ! empty($label) && in_array($label, $availableLabelsArray)
                 );
 
                 // Remove duplicates
-                $orderData['order_labels'] = array_values(array_unique($validatedLabels));
+                $data['order_labels'] = array_values(array_unique($validatedLabels));
             } else {
-                $orderData['order_labels'] = [];
+                $data['order_labels'] = [];
             }
 
-            $order = $orderRepository->create($orderData);
+            $order = $orderRepository->create($data);
 
             Cart::deActivateCart();
 
@@ -276,7 +287,9 @@ class CheckoutController extends CustomerController
                 'order' => new OrderResource($order),
             ];
 
-            if ($redirectUrl) {
+            if ($paymentMethod === 'alfabank') {
+                $responseData['payment_url'] = route('alfabank.payment.start', ['order_id' => $order->id]);
+            } elseif ($redirectUrl) {
                 $responseData['payment_url'] = $redirectUrl;
             }
 

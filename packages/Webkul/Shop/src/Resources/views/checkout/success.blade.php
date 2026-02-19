@@ -1,7 +1,7 @@
 <x-shop::layouts
-	:has-header="true"
+	:has-header="false"
 	:has-feature="false"
-	:has-footer="true"
+	:has-footer="false"
 >
     <!-- Page Title -->
     <x-slot:title>

@@ -3,6 +3,8 @@
 namespace Webkul\Checkout;
 
 use Illuminate\Support\Facades\Event;
+use Webkul\AlfabankPayment\Models\SavedCard;
+use Webkul\AlfabankPayment\Services\SavedCardsService;
 use Webkul\Checkout\Contracts\CartAddress as CartAddressContract;
 use Webkul\Checkout\Exceptions\BillingAddressNotFoundException;
 use Webkul\Checkout\Models\CartAddress;
@@ -591,11 +593,18 @@ class Cart
 
     /**
      * Save payment method for cart.
+     *
+     * @param  array|string  $params  Payment params: string (method code) or array with 'method' and optional 'saved_card_id' (for alfabank)
+     * @return bool|Contracts\CartPayment
      */
-    public function savePaymentMethod(array $params): bool|Contracts\CartPayment
+    public function savePaymentMethod(array|string $params): bool|Contracts\CartPayment
     {
         if (! $this->cart) {
             return false;
+        }
+
+        if (is_string($params)) {
+            $params = ['method' => $params];
         }
 
         if ($cartPayment = $this->cart->payment) {
@@ -607,6 +616,20 @@ class Cart
         $cartPayment->method = $params['method'];
         $cartPayment->method_title = core()->getConfigData('sales.payment_methods.'.$params['method'].'.title');
         $cartPayment->cart_id = $this->cart->id;
+
+        $additional = [];
+        if ($params['method'] === 'alfabank' && ! empty($params['saved_card_id'])) {
+            $customer = $this->cart->customer;
+            if ($customer && class_exists(SavedCard::class)) {
+                $card = SavedCard::forCustomer($customer->id)->active()->find($params['saved_card_id']);
+                if ($card) {
+                    $savedCardsService = app(SavedCardsService::class);
+                    $additional['alfabank_binding_id'] = $card->binding_id;
+                    $additional['alfabank_client_id'] = $card->client_id ?: $savedCardsService->generateClientId($customer->id, $customer->email ?? '');
+                }
+            }
+        }
+        $cartPayment->additional = $additional;
         $cartPayment->save();
 
         return $cartPayment;

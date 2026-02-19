@@ -45,6 +45,8 @@ class CartResource extends JsonResource
             'shipping_method'       => $this->shipping_method,
             'shipping_amount'       => $this->shipping_amount,
             'formatted_shipping_amount' => core()->formatPrice($this->shipping_amount, $this->cart_currency_code),
+            'payment_method'        => $this->payment?->method,
+            'payment_method_title'  => $this->payment ? core()->getConfigData('sales.payment_methods.'.$this->payment->method.'.title') : null,
             'auto_apply'            => $this->auto_apply ?? false,
             'bonus_amount'          => $this->bonus_amount ?? 0,
             'formatted_bonus_amount' => core()->formatPrice($this->bonus_amount ?? 0, $this->cart_currency_code),

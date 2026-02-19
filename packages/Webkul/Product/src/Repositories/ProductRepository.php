@@ -290,6 +290,13 @@ class ProductRepository extends Repository
                 }
             }
 
+            if (! empty($params['exclude_type'])) {
+                $excludeTypes = is_array($params['exclude_type'])
+                    ? $params['exclude_type']
+                    : [$params['exclude_type']];
+                $qb->whereNotIn('products.type', $excludeTypes);
+            }
+
             /**
              * Filter query by price.
              */

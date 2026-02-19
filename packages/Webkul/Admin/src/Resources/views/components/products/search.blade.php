@@ -161,6 +161,11 @@
                     default: false
                 },
 
+                excludeIngredients: {
+                    type: Boolean,
+                    default: false
+                },
+
                 queryParams: {
                     type: Object,
                     default: () => ({})
@@ -204,14 +209,15 @@
 
                     let self = this;
 
-                    @php
-                        $searchRoute = !$attributes->has(':search-ingredients') ? route('admin.catalog.products.search') : route('admin.catalog.products.search', ['type' => 'ingredient']);
-                    @endphp
-                    this.$axios.get("{{ $searchRoute }}", {
-                            params: {
-                                ...{query: '', limit: 30},
-                                ...this.queryParams
-                            }
+                    const params = {
+                        ...{query: '', limit: 30},
+                        ...(this.searchIngredients ? {type: 'ingredient'} : {}),
+                        ...(this.excludeIngredients ? {exclude_type: 'ingredient'} : {}),
+                        ...this.queryParams
+                    };
+
+                    this.$axios.get("{{ route('admin.catalog.products.search') }}", {
+                            params: params
                         })
                         .then(function(response) {
                             self.isSearching = false;
@@ -237,16 +243,15 @@
 
                     let self = this;
 
-                    @php
-                        $searchRoute = !$attributes->has(':search-ingredients') ? route('admin.catalog.products.search') : route('admin.catalog.products.search', ['type' => 'ingredient']);
+                    const params = {
+                        ...{query: this.searchTerm},
+                        ...(this.searchIngredients ? {type: 'ingredient'} : {}),
+                        ...(this.excludeIngredients ? {exclude_type: 'ingredient'} : {}),
+                        ...this.queryParams
+                    };
 
-                       // $searchRoute = route('admin.catalog.products.search');
-                    @endphp
-                    this.$axios.get("{{ $searchRoute }}", {
-                            params: {
-                                ...{query: this.searchTerm},
-                                ...this.queryParams
-                            }
+                    this.$axios.get("{{ route('admin.catalog.products.search') }}", {
+                            params: params
                         })
                         .then(function(response) {
                             self.isSearching = false;

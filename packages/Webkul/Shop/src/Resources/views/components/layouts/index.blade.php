@@ -106,9 +106,9 @@
             <x-shop::modal.confirm />
 
             <!-- Page Header Blade Component -->
-            @if ($hasHeader)
+            {{-- @if ($hasHeader)
                 <x-shop::layouts.header />
-            @endif
+            @endif --}}
 
             @if(
                 core()->getConfigData('general.gdpr.settings.enabled')
@@ -133,9 +133,9 @@
             @endif
 
             <!-- Page Footer Blade Component -->
-            @if ($hasFooter)
+            {{-- @if ($hasFooter)
                 <x-shop::layouts.footer />
-            @endif
+            @endif --}}
         </div>
 
         {!! view_render_event('bagisto.shop.layout.body.after') !!}
