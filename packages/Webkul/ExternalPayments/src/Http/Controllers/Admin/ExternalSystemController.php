@@ -99,14 +99,15 @@ final class ExternalSystemController extends Controller
         try {
             $available = $this->providerRegistry->getAvailableProviders();
             $validated = $request->validate([
-                'name'               => 'required|string|max:255',
-                'api_token'          => 'nullable|string|max:255',
-                'webhook_url'        => 'nullable|url|max:500',
-                'is_active'          => 'boolean',
-                'company_id'         => 'nullable|integer|exists:companies,id',
-                'payment_providers'  => 'required|array|min:1',
-                'payment_providers.*'=> 'string|in:'.implode(',', $available),
-                'default_provider'   => 'nullable|string|max:64|in:'.implode(',', $available),
+                'name'                   => 'required|string|max:255',
+                'api_token'              => 'nullable|string|max:255',
+                'webhook_url'            => 'nullable|url|max:500',
+                'woocommerce_site_url'   => 'nullable|url|max:500',
+                'is_active'              => 'boolean',
+                'company_id'             => 'nullable|integer|exists:companies,id',
+                'payment_providers'      => 'required|array|min:1',
+                'payment_providers.*'    => 'string|in:'.implode(',', $available),
+                'default_provider'       => 'nullable|string|max:64|in:'.implode(',', $available),
             ]);
 
             if (! empty($validated['default_provider']) && ! in_array($validated['default_provider'], $validated['payment_providers'], true)) {
@@ -125,11 +126,12 @@ final class ExternalSystemController extends Controller
             }
 
             $dataToCreate = [
-                'name'        => $validated['name'],
-                'api_token'   => $token,
-                'webhook_url' => $validated['webhook_url'] ?? null,
-                'is_active'   => $request->boolean('is_active', true),
-                'company_id'  => $companyId,
+                'name'                  => $validated['name'],
+                'api_token'             => $token,
+                'webhook_url'           => $validated['webhook_url'] ?? null,
+                'woocommerce_site_url'  => $validated['woocommerce_site_url'] ?? null,
+                'is_active'             => $request->boolean('is_active', true),
+                'company_id'            => $companyId,
             ];
 
             // Удаляем null значения для company_id, если оно не требуется
@@ -245,14 +247,15 @@ final class ExternalSystemController extends Controller
 
         $available = $this->providerRegistry->getAvailableProviders();
         $validated = $request->validate([
-            'name'               => 'required|string|max:255',
-            'api_token'          => 'nullable|string|max:255',
-            'webhook_url'        => 'nullable|url|max:500',
-            'is_active'          => 'boolean',
-            'company_id'         => 'nullable|integer|exists:companies,id',
-            'payment_providers'  => 'required|array|min:1',
-            'payment_providers.*'=> 'string|in:'.implode(',', $available),
-            'default_provider'   => 'nullable|string|max:64|in:'.implode(',', $available),
+            'name'                   => 'required|string|max:255',
+            'api_token'              => 'nullable|string|max:255',
+            'webhook_url'            => 'nullable|url|max:500',
+            'woocommerce_site_url'   => 'nullable|url|max:500',
+            'is_active'              => 'boolean',
+            'company_id'             => 'nullable|integer|exists:companies,id',
+            'payment_providers'      => 'required|array|min:1',
+            'payment_providers.*'    => 'string|in:'.implode(',', $available),
+            'default_provider'       => 'nullable|string|max:64|in:'.implode(',', $available),
         ]);
 
         if (! empty($validated['default_provider']) && ! in_array($validated['default_provider'], $validated['payment_providers'], true)) {
@@ -267,10 +270,11 @@ final class ExternalSystemController extends Controller
         }
 
         $data = [
-            'name'        => $validated['name'],
-            'webhook_url' => $validated['webhook_url'] ?? null,
-            'is_active'   => $request->boolean('is_active', true),
-            'company_id'  => $companyId,
+            'name'                  => $validated['name'],
+            'webhook_url'           => $validated['webhook_url'] ?? null,
+            'woocommerce_site_url'  => $validated['woocommerce_site_url'] ?? null,
+            'is_active'             => $request->boolean('is_active', true),
+            'company_id'            => $companyId,
         ];
 
         if (! empty($validated['api_token'])) {

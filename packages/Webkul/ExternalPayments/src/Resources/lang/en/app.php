@@ -30,6 +30,8 @@ return [
                 'api_token_help'  => 'Leave empty to auto-generate. Use this token in Authorization: Bearer header.',
                 'webhook_url'     => 'Webhook URL',
                 'webhook_url_help' => 'URL to receive payment success notifications (optional).',
+                'woocommerce_site_url'     => 'WooCommerce Site URL',
+                'woocommerce_site_url_help' => 'WooCommerce site URL for post-payment redirect (e.g. https://shop.example.com). Optional.',
                 'is_active'       => 'Active',
                 'payment_providers' => 'Payment providers',
                 'payment_providers_help' => 'Select at least one. Mark one as default for requests without payment_provider.',

@@ -8,7 +8,7 @@ return [
         'name'  => 'external-payments::app.admin.menu.external-payments',
         'route' => 'admin.external-payments.systems.index',
         'sort'  => 51,
-        'icon'  => 'icon-api',
+        'icon'  => 'icon-play',
     ],
     [
         'key'   => 'external-payments.systems',

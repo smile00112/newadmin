@@ -89,6 +89,20 @@
             </x-admin::form.control-group>
 
             <x-admin::form.control-group>
+                <x-admin::form.control-group.label>
+                    @lang('external-payments::app.admin.systems.create.woocommerce_site_url')
+                </x-admin::form.control-group.label>
+                <x-admin::form.control-group.control
+                    type="text"
+                    name="woocommerce_site_url"
+                    :value="old('woocommerce_site_url', $system->woocommerce_site_url ?? '')"
+                    :label="trans('external-payments::app.admin.systems.create.woocommerce_site_url')"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@lang('external-payments::app.admin.systems.create.woocommerce_site_url_help')</p>
+                <x-admin::form.control-group.error control-name="woocommerce_site_url" />
+            </x-admin::form.control-group>
+
+            <x-admin::form.control-group>
                 <label class="flex items-center gap-2">
                     <input type="hidden" name="is_active" value="0" />
                     <input type="checkbox" name="is_active" value="1" {{ old('is_active', $system->is_active) ? 'checked' : '' }} class="rounded border-gray-300" />

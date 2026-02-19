@@ -30,6 +30,8 @@ return [
                 'api_token_help'  => 'Оставьте пустым для автогенерации. Используйте в заголовке Authorization: Bearer.',
                 'webhook_url'     => 'URL webhook',
                 'webhook_url_help' => 'URL для уведомлений об успешной оплате (необязательно).',
+                'woocommerce_site_url'     => 'URL сайта WooCommerce',
+                'woocommerce_site_url_help' => 'URL сайта WooCommerce для редиректа после оплаты (например, https://shop.example.com). Необязательно.',
                 'is_active'       => 'Активна',
                 'payment_providers' => 'Платёжные модули',
                 'payment_providers_help' => 'Выберите хотя бы один. Отметьте один по умолчанию для запросов без payment_provider.',
