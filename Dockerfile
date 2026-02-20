@@ -1,4 +1,4 @@
-FROM php:8.2-cli-alpine AS base
+FROM php:8.3-cli-alpine AS base
 
 # Установка системных зависимостей
 RUN apk add --no-cache \
@@ -17,7 +17,7 @@ RUN apk add --no-cache \
     supervisor \
     netcat-openbsd
 
-# Установка PHP расширений
+# Установка PHP расширений (filter, hash, json, openssl, pcre, session, tokenizer — встроены в PHP)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     pdo \
@@ -34,14 +34,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     curl \
     xml \
     dom \
-    fileinfo \
-    filter \
-    hash \
-    json \
-    openssl \
-    pcre \
-    session \
-    tokenizer
+    fileinfo
 
 # Установка Redis расширения
 RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
