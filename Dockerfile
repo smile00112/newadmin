@@ -4,6 +4,7 @@ FROM php:8.2-cli-alpine AS base
 RUN apk add --no-cache \
     git \
     curl \
+    curl-dev \
     libpng-dev \
     libzip-dev \
     oniguruma-dev \
