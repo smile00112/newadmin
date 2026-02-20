@@ -18,6 +18,7 @@ use Webkul\TochkaPayment\Services\PaymentProcessor;
 use Webkul\TochkaPayment\Services\PaymentRequestBuilder;
 use Webkul\TochkaPayment\Services\PaymentStatusService;
 use Webkul\TochkaPayment\Services\SettingsService;
+use Webkul\TochkaPayment\Services\TochkaPaymentBuyerService;
 use Webkul\TochkaPayment\Services\WebhookService;
 
 class PaymentController
@@ -111,6 +112,17 @@ class PaymentController
                 'settings'   => $settings,
             ]);
 
+            // Ensure buyer exists before building request (for consumerId lookup)
+            if ($companyId && ! empty($data['client_email'])) {
+                $buyerService = app(TochkaPaymentBuyerService::class);
+                $buyerService->findOrCreate(
+                    (int) $companyId,
+                    $data['client_email'],
+                    $data['client_name'] ?? null,
+                    $data['client_phone'] ?? null
+                );
+            }
+
             // Build request parameters with payment ID (will be created after)
             // We need to create a temporary payment to get ID
             $tempPayment = $this->requestBuilder->createPaymentHistory(
@@ -168,6 +180,18 @@ class PaymentController
 
             $tempPayment->update($updateData);
             $payment = $tempPayment;
+
+            // Save consumerId to buyer when bank returns it
+            if ($consumerId && $companyId && ! empty($data['client_email'])) {
+                $buyerService = app(TochkaPaymentBuyerService::class);
+                $buyer = $buyerService->findOrCreate(
+                    (int) $companyId,
+                    $data['client_email'],
+                    $data['client_name'] ?? null,
+                    $data['client_phone'] ?? null
+                );
+                $buyerService->updateConsumerId($buyer, $consumerId);
+            }
 
             Log::info('Tochka Payment: Payment created', [
                 'payment_id' => $payment->id,

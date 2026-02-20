@@ -8,14 +8,17 @@ use Illuminate\Support\Facades\Log;
 use Webkul\ExternalPayments\Contracts\PaymentProviderAdapterInterface;
 use Webkul\TochkaPayment\Services\PaymentRequestBuilder;
 use Webkul\TochkaPayment\Services\SettingsService;
+use Webkul\TochkaPayment\Services\TochkaPaymentBuyerService;
 
 class TochkaPaymentAdapter implements PaymentProviderAdapterInterface
 {
     public function __construct(
         protected PaymentRequestBuilder $requestBuilder,
-        protected ?SettingsService $settingsService = null
+        protected ?SettingsService $settingsService = null,
+        protected ?TochkaPaymentBuyerService $buyerService = null
     ) {
         $this->settingsService = $this->settingsService ?? new SettingsService();
+        $this->buyerService = $this->buyerService ?? new TochkaPaymentBuyerService();
     }
 
     /**
@@ -28,6 +31,16 @@ class TochkaPaymentAdapter implements PaymentProviderAdapterInterface
         ]);
 
         $companyId = $data['company_id'] ?? null;
+
+        // Ensure buyer exists before building request (for consumerId lookup)
+        if ($companyId && ! empty($data['client_email'])) {
+            $this->buyerService->findOrCreate(
+                (int) $companyId,
+                $data['client_email'],
+                $data['client_name'] ?? null,
+                $data['client_phone'] ?? null
+            );
+        }
 
         $tempPayment = $this->requestBuilder->createPaymentHistory(
             $data,
@@ -78,6 +91,17 @@ class TochkaPaymentAdapter implements PaymentProviderAdapterInterface
         }
 
         $tempPayment->update($updateData);
+
+        // Save consumerId to buyer when bank returns it
+        if (! empty($paymentResponse['consumerId']) && $companyId && ! empty($data['client_email'])) {
+            $buyer = $this->buyerService->findOrCreate(
+                (int) $companyId,
+                $data['client_email'],
+                $data['client_name'] ?? null,
+                $data['client_phone'] ?? null
+            );
+            $this->buyerService->updateConsumerId($buyer, $paymentResponse['consumerId']);
+        }
 
         return [
             'payment_id'   => $tempPayment->id,

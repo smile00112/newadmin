@@ -243,6 +243,18 @@ class WebhookHandler
         $payment->update($updateData);
         $payment->refresh();
 
+        // Save consumerId to buyer when webhook provides it
+        if (isset($data['consumerId']) && $payment->company_id && ! empty($payment->client_email)) {
+            $buyerService = app(TochkaPaymentBuyerService::class);
+            $buyer = $buyerService->findOrCreate(
+                (int) $payment->company_id,
+                $payment->client_email,
+                $payment->client_name,
+                $payment->client_phone
+            );
+            $buyerService->updateConsumerId($buyer, $data['consumerId']);
+        }
+
         Log::info('Tochka Payment: Payment status updated from webhook', [
             'payment_id' => $payment->id,
             'operation_id' => $operationId,

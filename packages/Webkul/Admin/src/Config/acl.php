@@ -1223,10 +1223,20 @@ return [
         'route' => 'admin.tochka-payment.settings.index',
         'sort'  => 1,
     ], [
+        'key'   => 'tochka-payment.payment-history',
+        'name'  => 'tochka-payment::app.admin.menu.payment-history',
+        'route' => 'admin.tochka-payment.payment-history.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'tochka-payment.buyers',
+        'name'  => 'tochka-payment::app.admin.menu.buyers',
+        'route' => 'admin.tochka-payment.buyers.index',
+        'sort'  => 3,
+    ], [
         'key'   => 'tochka-payment.test-order',
         'name'  => 'tochka-payment::app.admin.menu.test-order',
         'route' => 'admin.tochka-payment.test-order.index',
-        'sort'  => 2,
+        'sort'  => 4,
     ],
 
     /*

@@ -12,6 +12,7 @@ return [
         'menu' => [
             'tochka-payment' => 'Tochka Payment',
             'payment-history' => 'Payment History',
+            'buyers' => 'Buyers',
             'settings' => 'Settings',
             'test-order' => 'Test Order',
         ],
@@ -102,6 +103,18 @@ return [
                 'paid' => 'Paid',
                 'failed' => 'Failed',
                 'cancelled' => 'Cancelled',
+            ],
+        ],
+        'buyers' => [
+            'index' => [
+                'title' => 'Tochka Payment Buyers',
+                'id' => 'ID',
+                'email' => 'Email',
+                'name' => 'Name',
+                'phone' => 'Phone',
+                'consumer_id' => 'Consumer ID',
+                'created_at' => 'Created At',
+                'empty' => 'No buyers found',
             ],
         ],
         'test-order' => [

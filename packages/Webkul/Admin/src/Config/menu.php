@@ -360,10 +360,16 @@ return [
         'sort'       => 2,
         'icon'       => '',
     ], [
+        'key'        => 'tochka-payment.buyers',
+        'name'       => 'tochka-payment::app.admin.menu.buyers',
+        'route'      => 'admin.tochka-payment.buyers.index',
+        'sort'       => 3,
+        'icon'       => '',
+    ], [
         'key'        => 'tochka-payment.test-order',
         'name'       => 'tochka-payment::app.admin.menu.test-order',
         'route'      => 'admin.tochka-payment.test-order.index',
-        'sort'       => 3,
+        'sort'       => 4,
         'icon'       => '',
     ],
 

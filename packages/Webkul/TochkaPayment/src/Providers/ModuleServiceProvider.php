@@ -21,6 +21,7 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
         \Webkul\TochkaPayment\Models\TochkaPaymentSettings::class,
         \Webkul\TochkaPayment\Models\TochkaPaymentHistory::class,
         \Webkul\TochkaPayment\Models\TochkaPaymentWebhook::class,
+        \Webkul\TochkaPayment\Models\TochkaPaymentBuyer::class,
     ];
 
     /**

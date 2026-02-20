@@ -24,15 +24,23 @@ class PaymentRequestBuilder
     protected $settingsService;
 
     /**
+     * Buyer service instance.
+     *
+     * @var \Webkul\TochkaPayment\Services\TochkaPaymentBuyerService
+     */
+    protected $buyerService;
+
+    /**
      * Create a new payment request builder instance.
      */
-    public function __construct(?SettingsService $settingsService = null)
+    public function __construct(?SettingsService $settingsService = null, ?TochkaPaymentBuyerService $buyerService = null)
     {
         $this->client = new Client([
             'timeout' => 30,
             'connect_timeout' => 10,
         ]);
         $this->settingsService = $settingsService ?? new SettingsService();
+        $this->buyerService = $buyerService ?? new TochkaPaymentBuyerService();
     }
 
     /**
@@ -70,21 +78,30 @@ class PaymentRequestBuilder
         $customerCode = $data['customer_code'] ?? $settings['customer_code'] ?? '';
         $merchantId = $settings['merchant_id'] ?? '';
 
-        $requestData = [
-            'Data' => [
-                'customerCode' => $customerCode,
-                'merchantId' => $merchantId,
-                'amount' => $amount,
-                'purpose' => $purpose,
-                'redirectUrl' => $successUrl,
-                'failRedirectUrl' => $failUrl,
-                'paymentMode' => $settings['payment_mode'],
-                'saveCard' => (bool) $settings['save_card'],
-                'consumerId' => $settings['consumer_id'],
-                'preAuthorization' => (bool) $settings['pre_authorization'],
-                'ttl' => (int) $settings['ttl'],
-            ],
+        // consumerId only from buyer (per-payer), never from settings
+        $consumerId = $this->buyerService->getConsumerIdForPayment(
+            $companyId,
+            $data['client_email'] ?? null
+        );
+
+        $dataPayload = [
+            'customerCode' => $customerCode,
+            'merchantId' => $merchantId,
+            'amount' => $amount,
+            'purpose' => $purpose,
+            'redirectUrl' => $successUrl,
+            'failRedirectUrl' => $failUrl,
+            'paymentMode' => $settings['payment_mode'],
+            'saveCard' => (bool) $settings['save_card'],
+            'preAuthorization' => (bool) $settings['pre_authorization'],
+            'ttl' => (int) $settings['ttl'],
         ];
+
+        if (! empty($consumerId)) {
+            $dataPayload['consumerId'] = $consumerId;
+        }
+
+        $requestData = ['Data' => $dataPayload];
 
         // Add paymentLinkId if provided
         if (!empty($data['payment_link_id'])) {
@@ -230,16 +247,11 @@ class PaymentRequestBuilder
                 $result['paymentLinkId'] = $responseData['Data']['paymentLinkId'];
             }
 
-            // Extract consumerId from response if available
+            // Extract consumerId from response if available (saved to buyer by adapter/webhook)
             if (isset($responseData['consumerId'])) {
                 $result['consumerId'] = $responseData['consumerId'];
             } elseif (isset($responseData['Data']['consumerId'])) {
                 $result['consumerId'] = $responseData['Data']['consumerId'];
-            }
-
-            // Save consumerId to settings if provided and company ID is available
-            if (isset($result['consumerId']) && $companyId) {
-                $this->settingsService->updateConsumerId($result['consumerId'], $companyId);
             }
 
             return $result;

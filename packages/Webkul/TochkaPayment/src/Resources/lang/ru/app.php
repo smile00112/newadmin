@@ -12,6 +12,7 @@ return [
         'menu' => [
             'tochka-payment' => 'Точка Банк — оплата',
             'payment-history' => 'История платежей',
+            'buyers' => 'Покупатели',
             'settings' => 'Настройки',
             'test-order' => 'Тестовый платёж',
         ],
@@ -112,6 +113,18 @@ return [
                 'paid' => 'Оплачен',
                 'failed' => 'Ошибка',
                 'cancelled' => 'Отменён',
+            ],
+        ],
+        'buyers' => [
+            'index' => [
+                'title' => 'Покупатели Точка Банк',
+                'id' => 'ID',
+                'email' => 'Email',
+                'name' => 'Имя',
+                'phone' => 'Телефон',
+                'consumer_id' => 'Consumer ID',
+                'created_at' => 'Дата создания',
+                'empty' => 'Покупатели не найдены',
             ],
         ],
         'test-order' => [

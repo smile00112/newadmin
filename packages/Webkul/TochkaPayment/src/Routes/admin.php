@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Webkul\TochkaPayment\Http\Controllers\Admin\BuyersController;
 use Webkul\TochkaPayment\Http\Controllers\Admin\PaymentHistoryController;
 use Webkul\TochkaPayment\Http\Controllers\Admin\SettingsController;
 use Webkul\TochkaPayment\Http\Controllers\Admin\TestOrderController;
@@ -19,6 +20,13 @@ Route::group(['prefix' => 'tochka-payment'], function () {
         Route::post('webhook/subscribe', 'subscribeWebhook')->name('admin.tochka-payment.settings.webhook.subscribe');
         Route::post('webhook/unsubscribe', 'unsubscribeWebhook')->name('admin.tochka-payment.settings.webhook.unsubscribe');
         Route::get('webhook/status', 'getWebhookStatus')->name('admin.tochka-payment.settings.webhook.status');
+    });
+
+    /**
+     * Buyers routes.
+     */
+    Route::controller(BuyersController::class)->prefix('buyers')->group(function () {
+        Route::get('', 'index')->name('admin.tochka-payment.buyers.index');
     });
 
     /**

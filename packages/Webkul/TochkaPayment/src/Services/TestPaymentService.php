@@ -75,6 +75,17 @@ class TestPaymentService
                 throw new \Exception("Amount must be at least {$minAmount}");
             }
 
+            // Ensure buyer exists before building request (for consumerId lookup)
+            if ($companyId && ! empty($data['email'])) {
+                $buyerService = app(TochkaPaymentBuyerService::class);
+                $buyerService->findOrCreate(
+                    (int) $companyId,
+                    $data['email'],
+                    $data['name'] ?? null,
+                    $data['phone'] ?? null
+                );
+            }
+
             // Prepare payment data (customerCode and merchantId are taken from settings in buildRequestParams)
             $paymentData = [
                 'amount' => $data['amount'],
@@ -141,6 +152,18 @@ class TestPaymentService
 
             $tempPayment->update($updateData);
             $payment = $tempPayment;
+
+            // Save consumerId to buyer when bank returns it
+            if ($consumerId && $companyId && ! empty($paymentData['client_email'])) {
+                $buyerService = app(TochkaPaymentBuyerService::class);
+                $buyer = $buyerService->findOrCreate(
+                    (int) $companyId,
+                    $paymentData['client_email'],
+                    $paymentData['client_name'] ?? null,
+                    $paymentData['client_phone'] ?? null
+                );
+                $buyerService->updateConsumerId($buyer, $consumerId);
+            }
 
             Log::info('Tochka Payment: Test payment created', [
                 'payment_id' => $payment->id,
