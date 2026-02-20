@@ -905,6 +905,16 @@ return [
         'name'  => 'admin::app.acl.import',
         'route' => 'admin.settings.data_transfer.imports.import',
         'sort'  => 4,
+    ], [
+        'key'   => 'settings.product_category_positions',
+        'name'  => 'admin::app.settings.product_category_positions.title',
+        'route' => 'admin.settings.product_category_positions.index',
+        'sort'  => 11,
+    ], [
+        'key'   => 'settings.product_category_positions.store',
+        'name'  => 'admin::app.acl.edit',
+        'route' => 'admin.settings.product_category_positions.store',
+        'sort'  => 1,
     ],
 
     /*

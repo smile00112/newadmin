@@ -397,6 +397,12 @@ return [
         'route'      => 'admin.settings.auth_channels.index',
         'sort'       => 11,
         'icon'       => '',
+    ], [
+        'key'        => 'settings.product_category_positions',
+        'name'       => 'admin::app.settings.product_category_positions.title',
+        'route'      => 'admin.settings.product_category_positions.index',
+        'sort'       => 12,
+        'icon'       => '',
     ],
 
     /**

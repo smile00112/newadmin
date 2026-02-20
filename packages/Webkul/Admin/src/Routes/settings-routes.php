@@ -11,6 +11,7 @@ use Webkul\Admin\Http\Controllers\Settings\PickupPointController;
 use Webkul\Admin\Http\Controllers\Settings\RoleController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxCategoryController;
 use Webkul\Admin\Http\Controllers\Settings\Tax\TaxRateController;
+use Webkul\Admin\Http\Controllers\Settings\ProductCategoryPositionsController;
 use Webkul\Admin\Http\Controllers\Settings\ThemeController;
 use Webkul\Admin\Http\Controllers\Settings\UserController;
 use Webkul\RestApi\Http\Controllers\Admin\AuthChannelSettingsController;
@@ -247,5 +248,13 @@ Route::prefix('settings')->group(function () {
         Route::post('', 'store')->name('admin.settings.auth_channels.store');
         Route::post('telegram/register-webhook', 'registerTelegramWebhook')->name('admin.settings.auth_channels.register_webhook');
         Route::get('telegram/webhook-info', 'getTelegramWebhookInfo')->name('admin.settings.auth_channels.webhook_info');
+    });
+
+    /**
+     * Product Category Positions routes.
+     */
+    Route::controller(ProductCategoryPositionsController::class)->prefix('product-category-positions')->group(function () {
+        Route::get('', 'index')->name('admin.settings.product_category_positions.index');
+        Route::post('', 'store')->name('admin.settings.product_category_positions.store');
     });
 });

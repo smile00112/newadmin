@@ -179,6 +179,27 @@ class MobileSettingsController
      *                      )
      *                  ),
      *                  @OA\Property(
+     *                      property="products_banners",
+     *                      type="array",
+     *                      description="Product banners from catalog.product_category_positions (product-category position mappings with product details)",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(
+     *                              property="product",
+     *                              type="object",
+     *                              description="Product resource with full product details (id, sku, name, images, price, etc.)",
+     *                              @OA\Property(property="id", type="integer", example=1),
+     *                              @OA\Property(property="sku", type="string", example="product-sku"),
+     *                              @OA\Property(property="name", type="string", example="Product Name"),
+     *                              @OA\Property(property="images", type="array", @OA\Items(type="object")),
+     *                              @OA\Property(property="price", type="number", example=99.99)
+     *                          ),
+     *                          @OA\Property(property="category_id", type="integer", example=5, description="Category ID"),
+     *                          @OA\Property(property="position_type", type="string", example="top", description="Position type: top, middle, bottom, numeric"),
+     *                          @OA\Property(property="position_value", type="integer", nullable=true, example=null, description="Numeric position value when position_type is numeric")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
      *                      property="contact_telegram",
      *                      type="string",
      *                      description="Telegram contact link",

@@ -3117,6 +3117,26 @@ return [
             ],
         ],
 
+        'product_category_positions' => [
+            'title'           => 'Product Category Positions',
+            'description'     => 'Link products to additional categories and set their display position (top, middle, bottom, or by number).',
+            'table-hint'      => 'Add product-category mappings with display position.',
+            'product'         => 'Product',
+            'category'        => 'Category',
+            'position_type'   => 'Position',
+            'position_value'  => 'Position Number',
+            'position_top'    => 'Top',
+            'position_middle' => 'Middle',
+            'position_bottom' => 'Bottom',
+            'position_numeric'=> 'By number',
+            'add'             => 'Add mapping',
+            'select_product'  => 'Select product',
+            'select_category' => 'Select category',
+            'change'          => 'Change',
+            'empty-title'     => 'No mappings',
+            'empty-info'      => 'Add product-category mappings to control display positions.',
+        ],
+
         'currencies' => [
             'index' => [
                 'create-btn' => 'Create Currency',
