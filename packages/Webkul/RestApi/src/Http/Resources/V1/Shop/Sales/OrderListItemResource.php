@@ -16,6 +16,15 @@ class OrderListItemResource extends JsonResource
     {
         $currencyCode = $this->order?->order_currency_code ?? config('app.currency');
 
+        $product = $this->product;
+        $baseImage = null;
+        $images = [];
+
+        if ($product) {
+            $baseImage = product_image()->getProductBaseImage($product);
+            $images = product_image()->getGalleryImages($product);
+        }
+
         return [
             'id'               => $this->id,
             'name'             => $this->name,
@@ -25,6 +34,8 @@ class OrderListItemResource extends JsonResource
             'formatted_price'  => core()->formatPrice($this->price, $currencyCode),
             'total'            => $this->total,
             'formatted_total'  => core()->formatPrice($this->total, $currencyCode),
+            'base_image'       => $baseImage,
+            'images'           => $images,
         ];
     }
 }

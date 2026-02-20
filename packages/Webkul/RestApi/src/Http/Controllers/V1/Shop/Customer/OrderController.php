@@ -73,6 +73,8 @@ class OrderController extends CustomerController
 
             $query->with([
                 'items.order',
+                'items.product.images',
+                'items.product.parent.images',
             ]);
 
             if (is_null($request->input('pagination')) || $request->input('pagination')) {
@@ -334,6 +336,8 @@ class OrderController extends CustomerController
 
             $query->with([
                 'items.order',
+                'items.product.images',
+                'items.product.parent.images',
             ]);
 
             $usePagination = is_null($request->input('pagination')) || $request->input('pagination');

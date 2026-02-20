@@ -71,7 +71,7 @@ services:
       - app
       - reverb
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"] || ["CMD", "nc", "-z", "localhost", "80"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || nc -z localhost 80"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -156,7 +156,7 @@ services:
       app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "8080"] || ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080"]
+      test: ["CMD-SHELL", "nc -z localhost 8080 || wget --quiet --tries=1 --spider http://localhost:8080"]
       interval: 30s
       timeout: 10s
       retries: 3
