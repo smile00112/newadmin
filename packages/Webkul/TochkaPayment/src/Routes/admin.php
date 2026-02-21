@@ -27,6 +27,7 @@ Route::group(['prefix' => 'tochka-payment'], function () {
      */
     Route::controller(BuyersController::class)->prefix('buyers')->group(function () {
         Route::get('', 'index')->name('admin.tochka-payment.buyers.index');
+        Route::post('{id}/create-owner', 'createOwner')->name('admin.tochka-payment.buyers.create-owner');
     });
 
     /**

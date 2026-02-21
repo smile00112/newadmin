@@ -124,7 +124,18 @@ return [
                 'phone' => 'Телефон',
                 'consumer_id' => 'Consumer ID',
                 'created_at' => 'Дата создания',
+                'actions' => 'Действия',
+                'create-owner' => 'Создать owner',
+                'owner-created' => 'Owner создан',
                 'empty' => 'Покупатели не найдены',
+            ],
+            'create-owner' => [
+                'success' => 'Аккаунт owner :email успешно создан.',
+                'failed' => 'Не удалось создать owner из покупателя.',
+                'already-linked' => 'Для этого покупателя owner уже создан.',
+                'invalid-email' => 'Email покупателя отсутствует или некорректен.',
+                'email-exists' => 'Администратор с таким email уже существует.',
+                'role-not-found' => 'Не найдена роль owner с полными правами.',
             ],
         ],
         'test-order' => [

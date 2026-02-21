@@ -114,7 +114,18 @@ return [
                 'phone' => 'Phone',
                 'consumer_id' => 'Consumer ID',
                 'created_at' => 'Created At',
+                'actions' => 'Actions',
+                'create-owner' => 'Create owner',
+                'owner-created' => 'Owner created',
                 'empty' => 'No buyers found',
+            ],
+            'create-owner' => [
+                'success' => 'Owner account :email has been created.',
+                'failed' => 'Failed to create owner from buyer.',
+                'already-linked' => 'Owner has already been created for this buyer.',
+                'invalid-email' => 'Buyer email is missing or invalid.',
+                'email-exists' => 'Admin with this buyer email already exists.',
+                'role-not-found' => 'Owner role with full permissions was not found.',
             ],
         ],
         'test-order' => [

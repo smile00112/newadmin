@@ -58,6 +58,9 @@
                     <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                         @lang('tochka-payment::app.admin.buyers.index.created_at')
                     </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                        @lang('tochka-payment::app.admin.buyers.index.actions')
+                    </th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
@@ -90,10 +93,28 @@
                         <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
                             {{ $buyer->created_at?->format('Y-m-d H:i') ?? '—' }}
                         </td>
+                        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
+                            @if ($buyer->owner_id)
+                                <span class="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    @lang('tochka-payment::app.admin.buyers.index.owner-created')
+                                </span>
+                            @else
+                                <form method="POST" action="{{ route('admin.tochka-payment.buyers.create-owner', $buyer->id) }}">
+                                    @csrf
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                                    >
+                                        @lang('tochka-payment::app.admin.buyers.index.create-owner')
+                                    </button>
+                                </form>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $isSuperAdmin ? 7 : 6 }}" class="px-6 py-12 text-center">
+                        <td colspan="{{ $isSuperAdmin ? 8 : 7 }}" class="px-6 py-12 text-center">
                             <p class="text-sm text-gray-500 dark:text-gray-400">
                                 @lang('tochka-payment::app.admin.buyers.index.empty')
                             </p>
