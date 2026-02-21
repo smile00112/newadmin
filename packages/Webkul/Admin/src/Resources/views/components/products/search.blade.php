@@ -221,7 +221,7 @@
                         })
                         .then(function(response) {
                             self.isSearching = false;
-                            self.searchedProducts = response.data.data;
+                            self.searchedProducts = (response.data.data || []).map(p => ({ ...p, selected: false }));
                         })
                         .catch(function (error) {
                             self.isSearching = false;
@@ -256,7 +256,7 @@
                         .then(function(response) {
                             self.isSearching = false;
 
-                            self.searchedProducts = response.data.data;
+                            self.searchedProducts = (response.data.data || []).map(p => ({ ...p, selected: false }));
                         })
                         .catch(function (error) {
                             self.isSearching = false;
@@ -274,9 +274,11 @@
                 totalQty(product) {
                     let qty = 0;
 
-                    product.inventories.forEach(function (inventory) {
-                        qty += inventory.qty;
-                    });
+                    if (product.inventories && Array.isArray(product.inventories)) {
+                        product.inventories.forEach(function (inventory) {
+                            qty += inventory.qty || 0;
+                        });
+                    }
 
                     return qty;
                 }

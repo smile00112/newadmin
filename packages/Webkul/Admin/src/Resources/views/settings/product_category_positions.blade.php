@@ -175,7 +175,7 @@
             <x-admin::products.search
                 ref="productSearchRef"
                 ::added-product-ids="[]"
-                @@onProductAdded="handleProductSelected"
+                @@onProductAdded="handleProductSelected($event)"
             />
         </div>
     </script>
