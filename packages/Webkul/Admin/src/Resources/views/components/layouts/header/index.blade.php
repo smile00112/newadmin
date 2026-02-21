@@ -1,5 +1,7 @@
 @php
     $admin = auth()->guard('admin')->user();
+    $impersonationData = session('newsletters_impersonation', []);
+    $isImpersonatingOwner = ! empty($impersonationData['original_admin_id']) && ! empty($impersonationData['owner_admin_id']);
     
     // Get account balance if user has company
     $accountBalance = null;
@@ -57,6 +59,20 @@
     </div>
 
     <div class="flex items-center gap-1 sm:gap-2.5">
+        @if($isImpersonatingOwner)
+            <form method="POST" action="{{ route('admin.newsletters.owners.stop-impersonation') }}">
+                @csrf
+
+                <button
+                    type="submit"
+                    class="rounded-md bg-amber-500 px-2.5 py-1.5 text-xs font-semibold text-white transition-all hover:bg-amber-600 sm:px-3 sm:text-sm"
+                    title="{{ __('newsletters::app.admin.owners.return-to-super-admin') }}"
+                >
+                    {{ __('newsletters::app.admin.owners.return-to-super-admin') }}
+                </button>
+            </form>
+        @endif
+
         <!-- Account Balance -->
         @if($accountBalance !== null)
             @if($isCompanyOwner)

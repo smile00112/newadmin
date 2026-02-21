@@ -403,6 +403,16 @@ return [
             'resend-email-confirm' => 'Вы уверены, что хотите отправить копию email уведомления о регистрации?',
             'email-resent-success' => 'Копия email уведомления о регистрации успешно отправлена.',
             'email-resent-failed' => 'Не удалось отправить копию email уведомления о регистрации.',
+            'login-as-owner' => 'Войти как владелец',
+            'login-as-owner-short' => 'Войти',
+            'impersonation-start-confirm' => 'Войти под этим владельцем?',
+            'impersonation-already-active' => 'Режим входа под другим пользователем уже активен.',
+            'cannot-impersonate-self' => 'Нельзя войти под своей собственной учетной записью.',
+            'impersonation-started' => 'Вы вошли под владельцем: :owner_name.',
+            'impersonation-not-active' => 'Режим входа под другим пользователем не активен.',
+            'impersonation-return-failed' => 'Не удалось вернуться к исходному суперадминистратору.',
+            'impersonation-stopped' => 'Вы вернулись к учетной записи суперадминистратора.',
+            'return-to-super-admin' => 'Вернуться к суперадминистратору',
         ],
 
         'account' => [

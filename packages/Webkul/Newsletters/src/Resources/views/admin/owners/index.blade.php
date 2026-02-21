@@ -3,6 +3,14 @@
         {{ __('newsletters::app.admin.owners.title') }}
     </x-slot:title>
 
+    @php
+        $currentAdmin = auth()->guard('admin')->user();
+        $canImpersonateOwners = $currentAdmin
+            && $currentAdmin->role
+            && $currentAdmin->role->permission_type === 'all'
+            && ! $currentAdmin->company_id;
+    @endphp
+
     <div class="flex items-center justify-between">
         <p class="text-xl font-bold text-gray-800 dark:text-white">
             {{ __('newsletters::app.admin.owners.title') }}
@@ -54,6 +62,18 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $owner->created_at->format('Y-m-d H:i') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex items-center gap-x-2.5">
+                            @if($canImpersonateOwners && (int) $owner->id !== (int) $currentAdmin->id)
+                                <form method="POST" action="{{ route('admin.newsletters.owners.impersonate', $owner->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.owners.impersonation-start-confirm') }}')" class="inline">
+                                    @csrf
+                                    <button type="submit"
+                                            class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                            title="{{ __('newsletters::app.admin.owners.login-as-owner') }}">
+                                        <span class="cursor-pointer rounded-md p-1.5 text-xs font-semibold transition-all hover:bg-gray-200 dark:hover:bg-gray-800">
+                                            {{ __('newsletters::app.admin.owners.login-as-owner-short') }}
+                                        </span>
+                                    </button>
+                                </form>
+                            @endif
                             <a href="{{ route('admin.newsletters.owners.edit', $owner->id) }}"
                                class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                                title="{{ __('admin::app.datagrid.edit') }}">

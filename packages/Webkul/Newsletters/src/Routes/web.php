@@ -49,6 +49,9 @@ Route::group([
     'prefix' => 'admin/newsletters',
     'middleware' => ['web', 'admin', 'newsletters.company']
 ], function () {
+    Route::controller(OwnersController::class)->prefix('owners')->group(function () {
+        Route::post('stop-impersonation', 'stopImpersonation')->name('admin.newsletters.owners.stop-impersonation');
+    });
 
     /**
      * Test route to verify module is working.
@@ -90,6 +93,9 @@ Route::group([
                 Route::middleware('newsletters.permission:newsletters.owners.create')->group(function () {
                     Route::get('create', 'create')->name('admin.newsletters.owners.create');
                     Route::post('create', 'store')->name('admin.newsletters.owners.store');
+                });
+                Route::middleware('newsletters.permission:newsletters.owners.view')->group(function () {
+                    Route::post('{id}/impersonate', 'impersonate')->name('admin.newsletters.owners.impersonate');
                 });
                 Route::middleware('newsletters.permission:newsletters.owners.edit')->group(function () {
                     Route::get('edit/{id}', 'edit')->name('admin.newsletters.owners.edit');

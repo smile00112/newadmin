@@ -389,6 +389,16 @@ return [
             'resend-email-confirm' => 'Are you sure you want to send a copy of the registration email notification?',
             'email-resent-success' => 'Copy of registration email notification sent successfully.',
             'email-resent-failed' => 'Failed to send copy of registration email notification.',
+            'login-as-owner' => 'Login as owner',
+            'login-as-owner-short' => 'Login',
+            'impersonation-start-confirm' => 'Login as this owner?',
+            'impersonation-already-active' => 'Impersonation mode is already active.',
+            'cannot-impersonate-self' => 'You cannot impersonate your own account.',
+            'impersonation-started' => 'You are now logged in as owner: :owner_name.',
+            'impersonation-not-active' => 'Impersonation mode is not active.',
+            'impersonation-return-failed' => 'Unable to return to the original super administrator.',
+            'impersonation-stopped' => 'You have returned to the super administrator account.',
+            'return-to-super-admin' => 'Return to super administrator',
         ],
 
         'account' => [

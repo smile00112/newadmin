@@ -407,6 +407,91 @@ class OwnersController extends Controller
     }
 
     /**
+     * Login as selected owner (super admin only).
+     */
+    public function impersonate(int $id)
+    {
+        $this->requireNewsletterPermission('newsletters.owners.view');
+
+        $currentAdmin = auth()->guard('admin')->user();
+
+        if (! $this->isSuperAdmin($currentAdmin)) {
+            abort(403, __('admin::app.error.403.message'));
+        }
+
+        if (session()->has('newsletters_impersonation.original_admin_id')) {
+            session()->flash('warning', trans('newsletters::app.admin.owners.impersonation-already-active'));
+
+            return redirect()->back();
+        }
+
+        $owner = $this->adminRepository->findOrFail($id);
+
+        if (! $this->isOwnerAdmin($owner)) {
+            abort(404, trans('newsletters::app.admin.owners.not-found'));
+        }
+
+        if ((int) $owner->id === (int) $currentAdmin->id) {
+            session()->flash('error', trans('newsletters::app.admin.owners.cannot-impersonate-self'));
+
+            return redirect()->back();
+        }
+
+        session()->put('newsletters_impersonation', [
+            'original_admin_id' => (int) $currentAdmin->id,
+            'owner_admin_id'    => (int) $owner->id,
+            'started_at'        => now()->toDateTimeString(),
+        ]);
+
+        auth()->guard('admin')->login($owner);
+
+        session()->flash('success', trans('newsletters::app.admin.owners.impersonation-started', ['owner_name' => $owner->name]));
+
+        return redirect()->route('admin.newsletters.mailing-lists.index');
+    }
+
+    /**
+     * Return back to original super admin from impersonation mode.
+     */
+    public function stopImpersonation()
+    {
+        $impersonationData = session('newsletters_impersonation');
+
+        if (! $impersonationData || empty($impersonationData['original_admin_id'])) {
+            session()->flash('warning', trans('newsletters::app.admin.owners.impersonation-not-active'));
+
+            return redirect()->back();
+        }
+
+        $currentAdmin = auth()->guard('admin')->user();
+
+        if (
+            ! empty($impersonationData['owner_admin_id'])
+            && (int) $impersonationData['owner_admin_id'] !== (int) $currentAdmin->id
+        ) {
+            abort(403, __('admin::app.error.403.message'));
+        }
+
+        $originalAdmin = $this->adminRepository
+            ->getModel()
+            ->find((int) $impersonationData['original_admin_id']);
+
+        if (! $originalAdmin || ! $this->isSuperAdmin($originalAdmin)) {
+            session()->forget('newsletters_impersonation');
+            session()->flash('error', trans('newsletters::app.admin.owners.impersonation-return-failed'));
+
+            return redirect()->route('admin.session.create');
+        }
+
+        auth()->guard('admin')->login($originalAdmin);
+        session()->forget('newsletters_impersonation');
+
+        session()->flash('success', trans('newsletters::app.admin.owners.impersonation-stopped'));
+
+        return redirect()->route('admin.newsletters.owners.index');
+    }
+
+    /**
      * Resend registration email notification to owner.
      */
     public function resendRegistrationEmail(int $id)
@@ -498,6 +583,28 @@ class OwnersController extends Controller
                 'message' => trans('newsletters::app.admin.owners.delete-failed'),
             ], 500);
         }
+    }
+
+    /**
+     * Determine whether admin is super admin.
+     */
+    protected function isSuperAdmin($admin): bool
+    {
+        return $admin
+            && $admin->role
+            && $admin->role->permission_type === 'all'
+            && ! $admin->company_id;
+    }
+
+    /**
+     * Determine whether admin is owner account.
+     */
+    protected function isOwnerAdmin($admin): bool
+    {
+        return $admin
+            && $admin->role
+            && $admin->role->permission_type === 'all'
+            && (bool) $admin->company_id;
     }
 }
 
