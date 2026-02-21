@@ -36,6 +36,10 @@
             :action="route('admin.newsletters.account.topup')"
             method="POST"
         >
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                @lang('newsletters::app.admin.account.topup-provider-hint')
+            </p>
+
             <x-admin::form.control-group>
                 <x-admin::form.control-group.label class="required">
                     @lang('newsletters::app.admin.account.amount')
@@ -98,6 +102,9 @@
                             @lang('newsletters::app.admin.account.admin')
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                            @lang('newsletters::app.admin.account.payment-status')
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                             @lang('newsletters::app.admin.account.notes')
                         </th>
                     </tr>
@@ -114,13 +121,27 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                 {{ $topup->admin ? $topup->admin->name : '-' }}
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                @php
+                                    $status = $topup->status ?? \Webkul\Newsletters\Models\AccountTopup::STATUS_PAID;
+                                    $statusClass = match($status) {
+                                        \Webkul\Newsletters\Models\AccountTopup::STATUS_PENDING => 'text-yellow-600 dark:text-yellow-400',
+                                        \Webkul\Newsletters\Models\AccountTopup::STATUS_FAILED => 'text-red-600 dark:text-red-400',
+                                        default => 'text-green-600 dark:text-green-400',
+                                    };
+                                @endphp
+
+                                <span class="{{ $statusClass }} font-semibold">
+                                    @lang('newsletters::app.admin.account.status-' . $status)
+                                </span>
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                                 {{ $topup->notes ?: '-' }}
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center">
+                            <td colspan="5" class="px-6 py-8 text-center">
                                 <p class="text-sm text-gray-500 dark:text-gray-400">
                                     @lang('newsletters::app.common.messages.no_data')
                                 </p>

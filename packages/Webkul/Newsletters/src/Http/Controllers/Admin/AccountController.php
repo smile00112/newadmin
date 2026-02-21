@@ -4,8 +4,10 @@ namespace Webkul\Newsletters\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use Webkul\Admin\Http\Controllers\Controller;
+use Webkul\Newsletters\Models\AccountTopup;
 use Webkul\Newsletters\Repositories\CompanyAccountRepository;
 use Webkul\Newsletters\Repositories\AccountTopupRepository;
+use Webkul\Newsletters\Services\TopupPaymentService;
 use Webkul\Newsletters\Traits\HasNewsletterRole;
 
 class AccountController extends Controller
@@ -17,7 +19,8 @@ class AccountController extends Controller
      */
     public function __construct(
         protected CompanyAccountRepository $accountRepository,
-        protected AccountTopupRepository $topupRepository
+        protected AccountTopupRepository $topupRepository,
+        protected TopupPaymentService $topupPaymentService
     ) {}
 
     /**
@@ -67,20 +70,42 @@ class AccountController extends Controller
 
         $account = $this->accountRepository->getOrCreateForCompany($admin->company_id);
 
-        // Create topup record
+        // Create pending topup record and redirect to provider payment page.
         $topup = $this->topupRepository->create([
             'account_id' => $account->id,
+            'type' => AccountTopup::TYPE_TOPUP,
             'amount' => $request->amount,
+            'status' => AccountTopup::STATUS_PENDING,
             'admin_id' => $admin->id,
             'notes' => $request->notes,
         ]);
 
-        // Add balance to account
-        $this->accountRepository->addBalance($account->id, $request->amount);
+        try {
+            $session = $this->topupPaymentService->createPaymentSession(
+                $topup,
+                $admin,
+                (int) $admin->company_id
+            );
 
-        session()->flash('success', trans('newsletters::app.admin.account.topup-success'));
+            $topup->update([
+                'provider_key' => $session['provider_key'],
+                'provider_payment_id' => $session['provider_payment_id'],
+                'payment_url' => $session['payment_url'],
+            ]);
+        } catch (\Throwable $exception) {
+            $topup->update([
+                'status' => AccountTopup::STATUS_FAILED,
+                'notes' => trim(($topup->notes ? $topup->notes . PHP_EOL : '') . $exception->getMessage()),
+            ]);
 
-        return redirect()->route('admin.newsletters.account.index');
+            session()->flash('error', trans('newsletters::app.admin.account.topup-create-failed'));
+
+            return redirect()->route('admin.newsletters.account.index');
+        }
+
+        session()->flash('success', trans('newsletters::app.admin.account.topup-redirecting'));
+
+        return redirect()->away($session['payment_url']);
     }
 }
 

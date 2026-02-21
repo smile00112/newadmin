@@ -17,6 +17,9 @@ class AccountTopup extends Model
      */
     const TYPE_TOPUP = 'topup';
     const TYPE_DEDUCTION = 'deduction';
+    const STATUS_PENDING = 'pending';
+    const STATUS_PAID = 'paid';
+    const STATUS_FAILED = 'failed';
 
     /**
      * The table associated with the model.
@@ -33,8 +36,13 @@ class AccountTopup extends Model
     protected $fillable = [
         'account_id',
         'type',
+        'provider_key',
+        'provider_payment_id',
+        'status',
         'amount',
         'transaction_date',
+        'paid_at',
+        'payment_url',
         'admin_id',
         'notes',
     ];
@@ -47,6 +55,7 @@ class AccountTopup extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'transaction_date' => 'datetime',
+        'paid_at' => 'datetime',
     ];
 
     /**
@@ -56,6 +65,7 @@ class AccountTopup extends Model
      */
     protected $attributes = [
         'type' => self::TYPE_TOPUP,
+        'status' => self::STATUS_PAID,
     ];
 
     /**

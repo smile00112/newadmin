@@ -3,13 +3,16 @@
 namespace Webkul\Newsletters\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Webkul\Newsletters\Listeners\TopupPaymentListener;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Models\Company;
 use Webkul\Newsletters\Observers\CustomerNumberObserver;
 use Webkul\Newsletters\Observers\CompanyObserver;
 use Webkul\Newsletters\Console\Commands\TestWebSocketBroadcast;
 use Webkul\Newsletters\Console\Commands\ResetBlockedInstances;
+use Webkul\TochkaPayment\Events\PaymentFailed;
 
 class ModuleServiceProvider extends ServiceProvider
 {
@@ -56,6 +59,16 @@ class ModuleServiceProvider extends ServiceProvider
         $router->aliasMiddleware(
             'newsletters.account.balance',
             \Webkul\Newsletters\Http\Middleware\CheckAccountBalance::class
+        );
+
+        Event::listen(
+            'external_payments.payment.success',
+            TopupPaymentListener::class.'@handlePaymentSuccess'
+        );
+
+        Event::listen(
+            PaymentFailed::class,
+            TopupPaymentListener::class.'@handlePaymentFailed'
         );
     }
 
