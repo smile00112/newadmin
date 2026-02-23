@@ -436,6 +436,12 @@ return [
                 'total-refund'                   => 'Total Refund',
                 'view'                           => 'View',
                 'write-your-comment'             => 'Write your comment',
+                'table-number'                 => 'Table Number',
+                'table-not-set'                => 'Not set',
+                'bind-table'                   => 'Bind',
+                'unbind-table'                 => 'Unbind',
+                'bind-table-success'           => 'Table number bound to order successfully.',
+                'unbind-table-success'         => 'Table number unbound from order successfully.',
             ],
         ],
 

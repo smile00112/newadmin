@@ -536,6 +536,19 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Table Number",
+     *     description="Table number assigned to the order",
+     *     example=5,
+     *     format="int32",
+     *     nullable=true
+     * )
+     *
+     * @var int|null
+     */
+    private $table_number;
+
+    /**
+     * @OA\Property(
      *     title="Order Labels",
      *     description="Custom labels attached to the order",
      *     type="array",

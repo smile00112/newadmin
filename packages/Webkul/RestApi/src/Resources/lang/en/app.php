@@ -4,7 +4,9 @@ return [
     'admin' => [
         'sales' => [
             'orders' => [
-                'cancel-success' => 'Order canceled successfully.',
+                'cancel-success'       => 'Order canceled successfully.',
+                'bind-table-success'   => 'Table number bound to order successfully.',
+                'unbind-table-success' => 'Table number unbound from order successfully.',
 
                 'error' => [
                     'cancel-error' => 'Order can not be canceled.',
@@ -468,6 +470,10 @@ return [
         ],
 
         'checkout' => [
+            'table' => [
+                'bind-success'   => 'Table number bound to cart successfully.',
+                'unbind-success' => 'Table number unbound from cart successfully.',
+            ],
             'billing-address-saved'   => 'Address saved successfully.',
             'check-billing-address'   => 'Please check billing address.',
             'check-shipping-address'  => 'Please check shipping address.',

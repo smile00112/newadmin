@@ -279,6 +279,8 @@ class CheckoutController extends CustomerController
                 $data['order_labels'] = [];
             }
 
+            $data['table_number'] = $cart->table_number ?? null;
+
             $order = $orderRepository->create($data);
 
             Cart::deActivateCart();

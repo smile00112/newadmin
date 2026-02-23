@@ -50,6 +50,10 @@ Route::prefix('sales')->group(function () {
 
         Route::post('update-status/{id}', 'updateStatus')->name('admin.sales.orders.update_status');
 
+        Route::post('bind-table/{id}', 'bindTable')->name('admin.sales.orders.bind_table');
+
+        Route::delete('bind-table/{id}', 'unbindTable')->name('admin.sales.orders.unbind_table');
+
         Route::get('search', 'search')->name('admin.sales.orders.search');
     });
 

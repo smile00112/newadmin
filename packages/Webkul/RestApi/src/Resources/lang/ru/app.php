@@ -4,7 +4,9 @@ return [
     'admin' => [
         'sales' => [
             'orders' => [
-                'cancel-success' => 'Заказ успешно отменен.',
+                'cancel-success'       => 'Заказ успешно отменен.',
+                'bind-table-success'   => 'Номер стола успешно привязан к заказу.',
+                'unbind-table-success' => 'Номер стола успешно отвязан от заказа.',
 
                 'error' => [
                     'cancel-error' => 'Заказ не может быть отменен.',
@@ -467,6 +469,10 @@ return [
         ],
 
         'checkout' => [
+            'table' => [
+                'bind-success'   => 'Номер стола успешно привязан к корзине.',
+                'unbind-success' => 'Номер стола успешно отвязан от корзины.',
+            ],
             'billing-address-saved'   => 'Адрес успешно сохранен.',
             'check-billing-address'   => 'Пожалуйста, проверьте платежный адрес.',
             'check-shipping-address'  => 'Пожалуйста, проверьте адрес доставки.',

@@ -168,7 +168,7 @@
                                         name="success_url"
                                         v-model="success_url"
                                         :label="'URL успешной оплаты'"
-                                        :placeholder="'Оставьте пустым для использования по умолчанию'"
+                                        :placeholder="'Напр.: https://example.com/checkout/success (order_id добавится автоматически). Пусто — страница по умолчанию'"
                                     />
                                     <x-admin::form.control-group.error control-name="success_url" />
                                 </x-admin::form.control-group>
@@ -182,7 +182,7 @@
                                         name="fail_url"
                                         v-model="fail_url"
                                         :label="'URL неуспешной оплаты'"
-                                        :placeholder="'Оставьте пустым для использования по умолчанию'"
+                                        :placeholder="'Напр.: https://example.com/checkout/fail (order_id добавится автоматически). Пусто — страница ошибки по умолчанию'"
                                     />
                                     <x-admin::form.control-group.error control-name="fail_url" />
                                 </x-admin::form.control-group>

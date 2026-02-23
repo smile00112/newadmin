@@ -358,6 +358,19 @@ class Cart
 
     /**
      * @OA\Property(
+     *     title="Table Number",
+     *     description="Table number assigned to the cart (for dine-in orders)",
+     *     example=5,
+     *     format="int32",
+     *     nullable=true
+     * )
+     *
+     * @var int|null
+     */
+    private $table_number;
+
+    /**
+     * @OA\Property(
      *     title="Order's Customer",
      *     description="Order's Customer"
      * )

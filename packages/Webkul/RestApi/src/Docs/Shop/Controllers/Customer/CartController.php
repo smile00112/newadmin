@@ -826,6 +826,94 @@ class CartController
     public function disableAutoApplyBonus() {}
 
     /**
+     * @OA\Post(
+     *      path="/api/v1/checkout/table/bind",
+     *      operationId="bindTable",
+     *      tags={"Checkout"},
+     *      summary="Привязать номер стола к корзине",
+     *      description="Bind table number to the current customer's cart. Requires authenticated customer with active cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"table_number"},
+     *              @OA\Property(
+     *                  property="table_number",
+     *                  type="integer",
+     *                  format="int32",
+     *                  minimum=1,
+     *                  description="Table number to bind to the cart",
+     *                  example=5
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number bound to cart successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad request (empty cart or validation error)"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
+     * )
+     */
+    public function bindTable() {}
+
+    /**
+     * @OA\Delete(
+     *      path="/api/v1/checkout/table/bind",
+     *      operationId="unbindTable",
+     *      tags={"Checkout"},
+     *      summary="Отвязать номер стола от корзины",
+     *      description="Unbind table number from the current customer's cart. Requires authenticated customer with active cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number unbound from cart successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad request (empty cart)"
+     *      )
+     * )
+     */
+    public function unbindTable() {}
+
+    /**
      * @OA\Delete(
      *      path="/api/v1/customer/cart/coupon",
      *      operationId="removeCartCoupon",

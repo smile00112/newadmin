@@ -379,15 +379,21 @@ class CheckoutController
      *              ),
      *              @OA\Property(
      *                  property="data",
-     *                  type="array",
+     *                  type="object",
+     *                  description="Response data",
      *
-     *                  @OA\Items(
-     *
-     *                      @OA\Property(
-     *                          property="order",
-     *                          type="object",
-     *                          ref="#/components/schemas/Order"
-     *                      )
+     *                  @OA\Property(
+     *                      property="order",
+     *                      type="object",
+     *                      ref="#/components/schemas/Order",
+     *                      description="Created order"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="payment_url",
+     *                      type="string",
+     *                      nullable=true,
+     *                      description="URL for redirect payment (Alfabank etc.). Present only when payment method requires redirect. Client should redirect user to this URL to complete payment.",
+     *                      example="https://example.com/alfabank/payment/start?order_id=123"
      *                  )
      *              )
      *          )
@@ -400,4 +406,113 @@ class CheckoutController
      * )
      */
     public function saveOrder() {}
+
+    /**
+     * @OA\Post(
+     *      path="/api/v1/admin/sales/orders/bind-table",
+     *      operationId="bindOrderTable",
+     *      tags={"Checkout"},
+     *      summary="Привязать номер стола к заказу",
+     *      description="Bind table number to the order. Admin API - requires admin authentication.",
+     *      security={ {"sanctum_admin": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"order_id", "table_number"},
+     *              @OA\Property(
+     *                  property="order_id",
+     *                  type="integer",
+     *                  format="int64",
+     *                  description="Order ID",
+     *                  example=1
+     *              ),
+     *              @OA\Property(
+     *                  property="table_number",
+     *                  type="integer",
+     *                  format="int32",
+     *                  minimum=1,
+     *                  description="Table number to bind to the order",
+     *                  example=5
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Order"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number bound to order successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
+     * )
+     */
+    public function bindTable() {}
+
+    /**
+     * @OA\Delete(
+     *      path="/api/v1/admin/sales/orders/bind-table",
+     *      operationId="unbindOrderTable",
+     *      tags={"Checkout"},
+     *      summary="Отвязать номер стола от заказа",
+     *      description="Unbind table number from the order. Admin API - requires admin authentication.",
+     *      security={ {"sanctum_admin": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"order_id"},
+     *              @OA\Property(
+     *                  property="order_id",
+     *                  type="integer",
+     *                  format="int64",
+     *                  description="Order ID",
+     *                  example=1
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Order"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number unbound from order successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found"
+     *      )
+     * )
+     */
+    public function unbindTable() {}
 }

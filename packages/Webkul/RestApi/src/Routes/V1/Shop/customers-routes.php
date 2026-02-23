@@ -218,6 +218,14 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
     });
 
     /**
+     * Checkout table routes.
+     */
+    Route::controller(CartController::class)->prefix('checkout/table')->group(function () {
+        Route::post('bind', 'bindTable');
+        Route::delete('bind', 'unbindTable');
+    });
+
+    /**
      * GDPR.
      */
     Route::controller(GDPRController::class)->prefix('customer/gdpr')->group(function () {

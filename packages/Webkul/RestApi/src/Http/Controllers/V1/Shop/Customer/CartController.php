@@ -360,6 +360,62 @@ class CartController extends CustomerController
     }
 
     /**
+     * Bind table number to cart.
+     */
+    public function bindTable(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        $validatedData = $request->validate([
+            'table_number' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $cart->update(['table_number' => $validatedData['table_number']]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        request()->merge(['minimal' => true]);
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => trans('rest-api::app.shop.checkout.table.bind-success'),
+        ]);
+    }
+
+    /**
+     * Unbind table number from cart.
+     */
+    public function unbindTable(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        $cart->update(['table_number' => null]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        request()->merge(['minimal' => true]);
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => trans('rest-api::app.shop.checkout.table.unbind-success'),
+        ]);
+    }
+
+    /**
      * Move cart item to wishlist.
      */
     public function moveToWishlist(int $cartItemId): Response

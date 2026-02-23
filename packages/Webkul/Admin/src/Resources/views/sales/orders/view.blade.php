@@ -812,6 +812,52 @@
                                     {!! view_render_event('bagisto.admin.sales.order.rating.after', ['order' => $order]) !!}
                                 </div>
                             </div>
+
+                            <!-- Order Table Number Row -->
+                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
+                                <p class="text-gray-600 dark:text-gray-300">
+                                    @lang('admin::app.sales.orders.view.table-number')
+                                </p>
+                                <div class="flex items-center gap-2">
+                                    @if($order->table_number)
+                                        <p class="text-gray-800 dark:text-white font-semibold">
+                                            {{ $order->table_number }}
+                                        </p>
+                                        <x-admin::form action="{{ route('admin.sales.orders.unbind_table', $order->id) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button
+                                                type="submit"
+                                                class="secondary-button text-xs"
+                                            >
+                                                @lang('admin::app.sales.orders.view.unbind-table')
+                                            </button>
+                                        </x-admin::form>
+                                    @else
+                                        <p class="text-gray-500 dark:text-gray-400">
+                                            @lang('admin::app.sales.orders.view.table-not-set')
+                                        </p>
+                                        <x-admin::form action="{{ route('admin.sales.orders.bind_table', $order->id) }}" method="POST" class="flex items-center gap-2">
+                                            @csrf
+                                            <x-admin::form.control-group.control
+                                                type="number"
+                                                name="table_number"
+                                                :value="null"
+                                                rules="required|integer|min:1"
+                                                min="1"
+                                                class="w-20"
+                                                placeholder="№"
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="secondary-button text-xs"
+                                            >
+                                                @lang('admin::app.sales.orders.view.bind-table')
+                                            </button>
+                                        </x-admin::form>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </x-slot>
                 </x-admin::accordion>
