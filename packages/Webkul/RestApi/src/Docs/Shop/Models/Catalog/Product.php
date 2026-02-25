@@ -196,6 +196,83 @@ class Product
 
     /**
      * @OA\Property(
+     *     title="Is Half Portion",
+     *     description="Является ли товар половинкой порции (для ингредиентов)",
+     *     type="boolean",
+     *     example=false
+     * )
+     *
+     * @var bool
+     */
+    public $is_half_portion;
+
+    /**
+     * @OA\Property(
+     *     title="Half Portion Pair Product ID",
+     *     description="ID связанного товара-пары (полная порция для половинки или наоборот)",
+     *     type="integer",
+     *     nullable=true,
+     *     example=null
+     * )
+     *
+     * @var int|null
+     */
+    public $half_portion_pair_product_id;
+
+    /**
+     * @OA\Property(
+     *     title="Half Portion Pair Product",
+     *     description="Данные связанного товара-половинки (при загрузке связи)",
+     *     type="object",
+     *     nullable=true,
+     *     example={
+     *         "id": 27,
+     *         "sku": "ingredient-half",
+     *         "name": "Половинка ингредиента",
+     *         "base_image": {
+     *             "small_image_url": "http://localhost/cache/small/product/27/image.webp",
+     *             "medium_image_url": "http://localhost/cache/medium/product/27/image.webp",
+     *             "large_image_url": "http://localhost/cache/large/product/27/image.webp",
+     *             "original_image_url": "http://localhost/storage/product/27/image.webp"
+     *         },
+     *         "nutrition": {
+     *             "calories": 125.0,
+     *             "proteins": 7.5,
+     *             "fats": 4.2,
+     *             "carbs": 15.0
+     *         }
+     *     },
+     *
+     *     @OA\Property(property="id", type="integer", description="Product ID"),
+     *     @OA\Property(property="sku", type="string", description="Product SKU"),
+     *     @OA\Property(property="name", type="string", description="Product name"),
+     *     @OA\Property(
+     *         property="base_image",
+     *         type="object",
+     *         description="Product base image",
+     *         @OA\Property(property="small_image_url", type="string"),
+     *         @OA\Property(property="medium_image_url", type="string"),
+     *         @OA\Property(property="large_image_url", type="string"),
+     *         @OA\Property(property="original_image_url", type="string")
+     *     ),
+     *     @OA\Property(
+     *         property="nutrition",
+     *         type="object",
+     *         nullable=true,
+     *         description="Nutrition information (КЖБУ)",
+     *         @OA\Property(property="calories", type="float", nullable=true),
+     *         @OA\Property(property="proteins", type="float", nullable=true),
+     *         @OA\Property(property="fats", type="float", nullable=true),
+     *         @OA\Property(property="carbs", type="float", nullable=true)
+     *     )
+     * )
+     *
+     * @var object|null
+     */
+    public $half_portion_pair_product;
+
+    /**
+     * @OA\Property(
      *     title="Created at",
      *     description="Created at",
      *     example="2020-01-27 17:50:45",
@@ -567,7 +644,10 @@ class Product
      *                     "proteins": 15.2,
      *                     "fats": 8.5,
      *                     "carbs": 30.0
-     *                 }
+     *                 },
+     *                 "is_half_portion": false,
+     *                 "half_portion_pair_product_id": null,
+     *                 "half_portion_pair_product": null
      *             }, {
      *                 "id": 26,
      *                 "sku": "ingredient-2",
@@ -584,7 +664,16 @@ class Product
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
      *                 },
      *                 "description": null,
-     *                 "nutrition": null
+     *                 "nutrition": null,
+     *                 "is_half_portion": true,
+     *                 "half_portion_pair_product_id": 25,
+     *                 "half_portion_pair_product": {
+     *                     "id": 25,
+     *                     "sku": "ingredient-1",
+     *                     "name": "Ingredient Name",
+     *                     "base_image": {},
+     *                     "nutrition": {"calories": 250.5, "proteins": 15.2, "fats": 8.5, "carbs": 30.0}
+     *                 }
      *             }}
      *         }}
      *     }},
@@ -694,6 +783,27 @@ class Product
      *                              @OA\Property(property="proteins", type="float", nullable=true, description="Proteins (г)"),
      *                              @OA\Property(property="fats", type="float", nullable=true, description="Fats (г)"),
      *                              @OA\Property(property="carbs", type="float", nullable=true, description="Carbohydrates (г)")
+     *                          ),
+     *                          @OA\Property(property="is_half_portion", type="boolean", description="Является ли ингредиент половинкой порции"),
+     *                          @OA\Property(property="half_portion_pair_product_id", type="integer", nullable=true, description="ID связанного товара-пары (половинка/полная порция)"),
+     *                          @OA\Property(
+     *                              property="half_portion_pair_product",
+     *                              type="object",
+     *                              nullable=true,
+     *                              description="Данные связанного товара-половинки (id, sku, name, base_image, nutrition)",
+     *                              @OA\Property(property="id", type="integer"),
+     *                              @OA\Property(property="sku", type="string"),
+     *                              @OA\Property(property="name", type="string"),
+     *                              @OA\Property(property="base_image", type="object"),
+     *                              @OA\Property(
+     *                                  property="nutrition",
+     *                                  type="object",
+     *                                  nullable=true,
+     *                                  @OA\Property(property="calories", type="float", nullable=true),
+     *                                  @OA\Property(property="proteins", type="float", nullable=true),
+     *                                  @OA\Property(property="fats", type="float", nullable=true),
+     *                                  @OA\Property(property="carbs", type="float", nullable=true)
+     *                              )
      *                          )
      *                      )
      *                  )

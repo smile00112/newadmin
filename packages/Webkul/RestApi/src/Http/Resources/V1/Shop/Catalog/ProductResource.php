@@ -422,6 +422,7 @@ class ProductResource extends JsonResource
             'sku'        => $product->sku,
             'name'       => $product->name,
             'base_image' => ProductImage::getProductBaseImage($product),
+            'nutrition'  => $this->getNutritionData($product),
         ];
     }
 

@@ -8924,6 +8924,101 @@
                         "type": "boolean",
                         "example": false
                     },
+                    "is_half_portion": {
+                        "title": "Is Half Portion",
+                        "description": "Является ли товар половинкой порции (для ингредиентов)",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "half_portion_pair_product_id": {
+                        "title": "Half Portion Pair Product ID",
+                        "description": "ID связанного товара-пары (полная порция для половинки или наоборот)",
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "half_portion_pair_product": {
+                        "title": "Half Portion Pair Product",
+                        "description": "Данные связанного товара-половинки (при загрузке связи)",
+                        "properties": {
+                            "id": {
+                                "description": "Product ID",
+                                "type": "integer"
+                            },
+                            "sku": {
+                                "description": "Product SKU",
+                                "type": "string"
+                            },
+                            "name": {
+                                "description": "Product name",
+                                "type": "string"
+                            },
+                            "base_image": {
+                                "description": "Product base image",
+                                "properties": {
+                                    "small_image_url": {
+                                        "type": "string"
+                                    },
+                                    "medium_image_url": {
+                                        "type": "string"
+                                    },
+                                    "large_image_url": {
+                                        "type": "string"
+                                    },
+                                    "original_image_url": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "nutrition": {
+                                "description": "Nutrition information (КЖБУ)",
+                                "properties": {
+                                    "calories": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "proteins": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "fats": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "carbs": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object",
+                        "example": {
+                            "id": 27,
+                            "sku": "ingredient-half",
+                            "name": "Половинка ингредиента",
+                            "base_image": {
+                                "small_image_url": "http://localhost/cache/small/product/27/image.webp",
+                                "medium_image_url": "http://localhost/cache/medium/product/27/image.webp",
+                                "large_image_url": "http://localhost/cache/large/product/27/image.webp",
+                                "original_image_url": "http://localhost/storage/product/27/image.webp"
+                            },
+                            "nutrition": {
+                                "calories": 125,
+                                "proteins": 7.5,
+                                "fats": 4.2,
+                                "carbs": 15
+                            }
+                        },
+                        "nullable": true
+                    },
                     "created_at": {
                         "title": "Created at",
                         "description": "Created at",
@@ -9445,6 +9540,60 @@
                                                             },
                                                             "type": "object",
                                                             "nullable": true
+                                                        },
+                                                        "is_half_portion": {
+                                                            "description": "Является ли ингредиент половинкой порции",
+                                                            "type": "boolean"
+                                                        },
+                                                        "half_portion_pair_product_id": {
+                                                            "description": "ID связанного товара-пары (половинка/полная порция)",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "half_portion_pair_product": {
+                                                            "description": "Данные связанного товара-половинки (id, sku, name, base_image, nutrition)",
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "sku": {
+                                                                    "type": "string"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string"
+                                                                },
+                                                                "base_image": {
+                                                                    "type": "object"
+                                                                },
+                                                                "nutrition": {
+                                                                    "properties": {
+                                                                        "calories": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "proteins": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "fats": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "carbs": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
                                                         }
                                                     },
                                                     "type": "object"
@@ -9506,7 +9655,10 @@
                                                     "proteins": 15.2,
                                                     "fats": 8.5,
                                                     "carbs": 30
-                                                }
+                                                },
+                                                "is_half_portion": false,
+                                                "half_portion_pair_product_id": null,
+                                                "half_portion_pair_product": null
                                             },
                                             {
                                                 "id": 26,
@@ -9524,7 +9676,21 @@
                                                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
                                                 },
                                                 "description": null,
-                                                "nutrition": null
+                                                "nutrition": null,
+                                                "is_half_portion": true,
+                                                "half_portion_pair_product_id": 25,
+                                                "half_portion_pair_product": {
+                                                    "id": 25,
+                                                    "sku": "ingredient-1",
+                                                    "name": "Ingredient Name",
+                                                    "base_image": [],
+                                                    "nutrition": {
+                                                        "calories": 250.5,
+                                                        "proteins": 15.2,
+                                                        "fats": 8.5,
+                                                        "carbs": 30
+                                                    }
+                                                }
                                             }
                                         ]
                                     }
