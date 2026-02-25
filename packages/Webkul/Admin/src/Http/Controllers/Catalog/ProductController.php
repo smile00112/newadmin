@@ -3,6 +3,7 @@
 namespace Webkul\Admin\Http\Controllers\Catalog;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -490,6 +491,49 @@ class ProductController extends Controller
     {
         $query = trim(request('query'));
         $limit = request('limit', 30);
+
+        if (request('type') === 'ingredient') {
+            $locale = app()->getLocale();
+            $channel = core()->getCurrentChannelCode();
+
+            $queryBuilder = DB::table('product_flat')
+                ->join('products', 'product_flat.product_id', '=', 'products.id')
+                ->where('products.type', 'ingredient')
+                ->where('product_flat.locale', $locale)
+                ->where('product_flat.channel', $channel);
+
+            if (! empty($query)) {
+                $queryBuilder->where(function ($q) use ($query) {
+                    $q->where('product_flat.name', 'like', '%'.$query.'%')
+                        ->orWhere('products.sku', 'like', '%'.$query.'%');
+                });
+            }
+
+            $productIds = $queryBuilder
+                ->select('products.id')
+                ->orderBy('product_flat.name')
+                ->limit($limit)
+                ->pluck('id');
+
+            if ($productIds->isEmpty()) {
+                return ProductResource::collection(collect());
+            }
+
+            $products = $this->productRepository
+                ->with([
+                    'attribute_family',
+                    'images',
+                    'attribute_values',
+                    'price_indices',
+                    'inventory_indices',
+                    'inventories',
+                ])
+                ->whereIn('id', $productIds)
+                ->orderByRaw('FIELD(id, '.$productIds->implode(',').')')
+                ->get();
+
+            return ProductResource::collection($products);
+        }
 
         $searchEngine = 'database';
 

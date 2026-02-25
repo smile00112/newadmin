@@ -69,10 +69,11 @@ class CatalogCategoryController extends CatalogController
                         $query->with([
                             'images',
                             'videos',
+                            'half_portion_pair_product',
                             'attribute_family.attribute_groups.custom_attributes.options',
                             'super_attributes',
                             'constructor.groups.products' => function ($query) {
-                                $query->with('images');
+                                $query->with(['images', 'half_portion_pair_product']);
                             },
                             'grouped_products.associated_product',
                             'variants',

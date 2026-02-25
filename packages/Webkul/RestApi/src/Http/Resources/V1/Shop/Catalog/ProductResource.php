@@ -40,6 +40,16 @@ class ProductResource extends JsonResource
             'category_image'     => $this->getCategoryImage($product),
             'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
 
+            /* half portion (половинка) - для ингредиентов */
+            'is_half_portion'            => (bool) ($product->is_half_portion ?? false),
+            'half_portion_pair_product_id' => $product->half_portion_pair_product_id,
+            'half_portion_pair_product'  => $this->when(
+                $product->half_portion_pair_product_id
+                && $product->relationLoaded('half_portion_pair_product')
+                && $product->half_portion_pair_product,
+                $this->getHalfPortionPairSummary($product->half_portion_pair_product)
+            ),
+
             /* product's checks */
             'in_stock'              => $product->haveSufficientQuantity(1),
             'is_saved'              => false,
@@ -365,17 +375,24 @@ class ProductResource extends JsonResource
                             $productTypeInstance = $groupProduct->getTypeInstance();
 
                             return [
-                                'id'             => $groupProduct->id,
-                                'sku'            => $groupProduct->sku,
-                                'name'           => $groupProduct->name,
-                                'price'          => core()->convertPrice($productTypeInstance->getMinimalPrice()),
-                                'formatted_price' => core()->currency($productTypeInstance->getMinimalPrice()),
-                                'in_stock'       => $groupProduct->haveSufficientQuantity(1),
-                                'sort'           => $groupProduct->pivot->sort ?? 0,
-                                'default'        => (bool) ($groupProduct->pivot->default ?? false),
-                                'base_image'     => ProductImage::getProductBaseImage($groupProduct),
-                                'description'    => $this->cleanHtmlDescription($groupProduct->description),
-                                'nutrition'      => $this->getNutritionData($groupProduct),
+                                'id'                         => $groupProduct->id,
+                                'sku'                        => $groupProduct->sku,
+                                'name'                       => $groupProduct->name,
+                                'price'                      => core()->convertPrice($productTypeInstance->getMinimalPrice()),
+                                'formatted_price'            => core()->currency($productTypeInstance->getMinimalPrice()),
+                                'in_stock'                   => $groupProduct->haveSufficientQuantity(1),
+                                'sort'                       => $groupProduct->pivot->sort ?? 0,
+                                'default'                    => (bool) ($groupProduct->pivot->default ?? false),
+                                'base_image'                 => ProductImage::getProductBaseImage($groupProduct),
+                                'description'                => $this->cleanHtmlDescription($groupProduct->description),
+                                'nutrition'                  => $this->getNutritionData($groupProduct),
+                                'is_half_portion'            => (bool) ($groupProduct->is_half_portion ?? false),
+                                'half_portion_pair_product_id' => $groupProduct->half_portion_pair_product_id,
+                                'half_portion_pair_product'  => $groupProduct->half_portion_pair_product_id
+                                    && $groupProduct->relationLoaded('half_portion_pair_product')
+                                    && $groupProduct->half_portion_pair_product
+                                    ? $this->getHalfPortionPairSummary($groupProduct->half_portion_pair_product)
+                                    : null,
                             ];
                         })->sortBy('sort')->values(),
                     ];
@@ -385,6 +402,26 @@ class ProductResource extends JsonResource
 
         return [
             'constructor_options' => $constructorOptions,
+        ];
+    }
+
+    /**
+     * Get summary of half portion pair product (половинка).
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array|null
+     */
+    private function getHalfPortionPairSummary($product)
+    {
+        if (!$product) {
+            return null;
+        }
+
+        return [
+            'id'         => $product->id,
+            'sku'        => $product->sku,
+            'name'       => $product->name,
+            'base_image' => ProductImage::getProductBaseImage($product),
         ];
     }
 
