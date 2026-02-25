@@ -154,6 +154,16 @@ abstract class AbstractType
     {
         $product = $this->productRepository->find($id);
 
+        if ($product->type !== 'ingredient') {
+            unset($data['is_half_portion'], $data['half_portion_pair_product_id']);
+        } else {
+            // Convert empty or invalid half_portion_pair_product_id to null to avoid foreign key constraint violation
+            $pairId = $data['half_portion_pair_product_id'] ?? null;
+            if ($pairId === '' || $pairId === '0' || (is_numeric($pairId) && (int) $pairId === 0)) {
+                $data['half_portion_pair_product_id'] = null;
+            }
+        }
+
         $product->update($data);
 
         /**

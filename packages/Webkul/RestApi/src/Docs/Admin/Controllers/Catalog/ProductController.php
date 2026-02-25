@@ -555,6 +555,19 @@ class ProductController
      *
      *                      @OA\Items(type="integer", example=1)
      *                  ),
+     *                  @OA\Property(
+     *                      property="is_half_portion",
+     *                      description="Ingredient is half portion (ingredient type only)",
+     *                      type="boolean",
+     *                      example=false
+     *                  ),
+     *                  @OA\Property(
+     *                      property="half_portion_pair_product_id",
+     *                      description="Linked ingredient product ID for half portion pair (ingredient type only)",
+     *                      type="integer",
+     *                      example=null,
+     *                      nullable=true
+     *                  ),
      *                  required={"sku", "name", "url_key", "short_description", "description"}
      *              )
      *          )

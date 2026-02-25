@@ -31,6 +31,9 @@ class ProductResource extends JsonResource
 
             'sku' => $this->resource->sku,
 
+            'is_half_portion'            => (bool) ($this->resource->is_half_portion ?? false),
+            'half_portion_pair_product_id' => $this->resource->half_portion_pair_product_id,
+
             /**
              * Additional attributes.
              */

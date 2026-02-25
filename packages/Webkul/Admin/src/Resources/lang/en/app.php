@@ -927,6 +927,20 @@ return [
                         'default-label' => 'Set as default',
                     ],
 
+                    'ingredients_incompatibility' => [
+                        'empty-info' => 'Add incompatible ingredients.',
+                        'info'       => 'Ingredients that are incompatible with each other (e.g. fish and milk).',
+                        'title'      => 'Incompatible Ingredients',
+                    ],
+
+                    'half_portion' => [
+                        'title'  => 'Half Portion',
+                        'info'   => 'Ingredient is a half portion and linked to another ingredient.',
+                        'toggle' => 'Half portion',
+                        'select' => 'Linked ingredient',
+                        'empty'  => 'Select the linked ingredient (half portion pair).',
+                    ],
+
                     'add-btn'           => 'Add Product',
                     'delete'            => 'Delete',
                     'empty-info'        => 'To add :type products on a go.',

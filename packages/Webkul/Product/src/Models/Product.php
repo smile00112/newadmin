@@ -36,13 +36,16 @@ class Product extends Model implements ProductContract
         'sku',
         'parent_id',
         'category_image',
+        'is_half_portion',
+        'half_portion_pair_product_id',
     ];
 
     /**
      * The attributes that should be cast.
      */
     protected $casts = [
-        'additional' => 'array',
+        'additional'                 => 'array',
+        'is_half_portion'            => 'boolean',
     ];
 
     /**
@@ -295,11 +298,19 @@ class Product extends Model implements ProductContract
     }
 
     /**
-     * The cross sells that belong to the product.
+     * The ingredients incompatibility that belong to the product.
      */
     public function ingredients_incompatibility(): BelongsToMany
     {
         return $this->belongsToMany(static::class, 'product_ingredients_incompatibility', 'parent_id', 'child_id');
+    }
+
+    /**
+     * The half portion pair product (for ingredients).
+     */
+    public function half_portion_pair_product(): BelongsTo
+    {
+        return $this->belongsTo(static::class, 'half_portion_pair_product_id');
     }
     /**
      * The cross sells that belong to the product.

@@ -294,7 +294,7 @@
                             @include('admin::catalog.products.edit.links')
                         @else
                             <!-- Incompatibility Ingredients View Blade File -->
-{{--                            @include('admin::catalog.products.edit.links_incompatibility_ingredients')--}}
+                          @include('admin::catalog.products.edit.links_incompatibility_ingredients')
                         @endif
 
                         <!-- Include Product Type Additional Blade Files If Any -->
