@@ -45,7 +45,16 @@ class AccountTopup extends Model
         'payment_url',
         'admin_id',
         'notes',
+        'is_registration',
     ];
+
+    /**
+     * Scope a query to only include registration topups.
+     */
+    public function scopeRegistration(Builder $query): Builder
+    {
+        return $query->where('is_registration', true);
+    }
 
     /**
      * The attributes that should be cast.

@@ -2,21 +2,20 @@
 
 namespace Webkul\Newsletters\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Webkul\User\Repositories\AdminRepository;
 use Webkul\User\Repositories\RoleRepository;
 use Webkul\Newsletters\Repositories\CompanyRepository;
-use Webkul\Newsletters\Mail\WelcomeAdminNotification;
-use Webkul\Newsletters\Mail\NewUserNotification;
 use Webkul\Newsletters\Models\RegistrationRequest;
+use Webkul\Newsletters\Services\RegistrationPaymentService;
 use Webkul\CMS\Repositories\PageRepository;
-use Webkul\Core\Models\CoreConfig;
 
 class LandingPageController
 {
@@ -29,7 +28,8 @@ class LandingPageController
         protected AdminRepository $adminRepository,
         protected RoleRepository $roleRepository,
         protected CompanyRepository $companyRepository,
-        protected PageRepository $pageRepository
+        protected PageRepository $pageRepository,
+        protected RegistrationPaymentService $registrationPaymentService
     ) {}
 
     /**
@@ -202,7 +202,7 @@ class LandingPageController
                 'is_active' => true,
             ]);
 
-            // Создаем admin аккаунт с ролью owner
+            // Создаем admin аккаунт с ролью owner (письмо с данными для входа отправится после оплаты)
             $admin = $this->adminRepository->create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -213,109 +213,15 @@ class LandingPageController
                 'api_token' => Str::random(80),
             ]);
 
-            // Отправляем приветственное письмо с данными для входа
-            // Получаем адреса из настроек
-            $config = CoreConfig::where('code', 'registration.notifications.emails')
-                ->whereNull('channel_code')
-                ->whereNull('locale_code')
-                ->first();
-            
-            $notificationEmails = [];
-            
-            // Добавляем адреса из настроек
-            if ($config && !empty($config->value)) {
-                $emailsFromConfig = array_map('trim', explode(',', $config->value));
-                $emailsFromConfig = array_filter($emailsFromConfig, function($email) {
-                    return filter_var($email, FILTER_VALIDATE_EMAIL);
-                });
-                $notificationEmails = array_merge($notificationEmails, $emailsFromConfig);
-            }
-            
-            // Добавляем email самого пользователя
-            if (!in_array($admin->email, $notificationEmails)) {
-                $notificationEmails[] = $admin->email;
-            }
-            
-            // Удаляем дубликаты
-            $notificationEmails = array_unique($notificationEmails);
-            
-            Log::info('Preparing to send welcome email notifications', [
-                'total_recipients' => count($notificationEmails),
-                'recipients' => $notificationEmails,
+            session(['registration_pending' => [
                 'admin_id' => $admin->id,
-                'admin_email' => $admin->email,
-            ]);
-            
-            foreach ($notificationEmails as $email) {
-                try {
-                    Log::info('Sending welcome email notification', [
-                        'recipient' => $email,
-                        'admin_id' => $admin->id,
-                        'admin_name' => $admin->name,
-                        'company_id' => $company->id,
-                        'company_name' => $company->name,
-                        'plan' => $request->plan ?? 'N/A',
-                    ]);
-
-                    Mail::to($email)
-                        ->sendNow(new WelcomeAdminNotification($admin, $password));
-
-                    Log::info('Welcome email notification sent successfully', [
-                        'recipient' => $email,
-                        'admin_id' => $admin->id,
-                        'admin_email' => $admin->email,
-                        'company_name' => $company->name,
-                    ]);
-                } catch (\Exception $mailException) {
-                    Log::error('Failed to send welcome email notification', [
-                        'recipient' => $email,
-                        'error' => $mailException->getMessage(),
-                        'trace' => $mailException->getTraceAsString(),
-                        'admin_id' => $admin->id,
-                        'admin_email' => $admin->email,
-                        'company_id' => $company->id,
-                        'company_name' => $company->name,
-                    ]);
-                    // Продолжаем выполнение, даже если письмо не отправилось
-                }
-            }
-
-            // Отправляем уведомление администраторам о новом пользователе
-//            try {
-//                // Получаем всех супер-администраторов (с permission_type 'all' и без company_id)
-//                $superAdmins = $this->adminRepository
-//                    ->getModel()
-//                    ->leftJoin('roles', 'admins.role_id', '=', 'roles.id')
-//                    ->where('roles.permission_type', 'all')
-//                    ->whereNull('admins.company_id')
-//                    ->where('admins.status', 1)
-//                    ->select('admins.*')
-//                    ->get();
-//
-//                foreach ($superAdmins as $superAdmin) {
-//                    try {
-//                        Mail::to($superAdmin->email)->send(new NewUserNotification($admin, $company->name, $request->plan ?? '', $password));
-//                        Log::info('New user notification sent to admin: ' . $superAdmin->email);
-//                    } catch (\Exception $notificationException) {
-//                        Log::error('Failed to send new user notification to admin: ' . $superAdmin->email, [
-//                            'trace' => $notificationException->getTraceAsString(),
-//                            'admin_id' => $superAdmin->id,
-//                            'new_user_id' => $admin->id
-//                        ]);
-//                        // Продолжаем отправку остальным администраторам
-//                    }
-//                }
-//            } catch (\Exception $notificationException) {
-//                Log::error('Failed to send new user notifications: ' . $notificationException->getMessage(), [
-//                    'trace' => $notificationException->getTraceAsString(),
-//                    'new_user_id' => $admin->id
-//                ]);
-//                // Продолжаем выполнение, даже если уведомления не отправились
-//            }
+                'created_at' => time(),
+            ]]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Спасибо за регистрацию! Ваш аккаунт создан. Вы можете войти в админ панель используя ваш email и пароль, который был отправлен на вашу почту.'
+                'message' => 'Регистрация успешна. Пополните счёт для начала работы.',
+                'redirect_url' => route('newsletters.landing.register-payment'),
             ]);
         } catch (\Exception $e) {
             Log::error('Registration error: ' . $e->getMessage(), [
@@ -329,6 +235,84 @@ class LandingPageController
                 'message' => 'Произошла ошибка при отправке заявки. Пожалуйста, попробуйте позже.'
             ], 500);
         }
+    }
+
+    /**
+     * Display registration payment page (topup to start).
+     */
+    public function registerPayment(): View|RedirectResponse
+    {
+        $pending = session('registration_pending');
+        if (! $pending || empty($pending['admin_id'])) {
+            return redirect()->route('newsletters.landing.index');
+        }
+
+        $ttl = 30 * 60;
+        if (isset($pending['created_at']) && (time() - $pending['created_at']) > $ttl) {
+            session()->forget('registration_pending');
+            return redirect()->route('newsletters.landing.index')
+                ->with('info', 'Время сессии истекло. Пожалуйста, зарегистрируйтесь снова.');
+        }
+
+        return view('newsletters::landing.register-payment');
+    }
+
+    /**
+     * Create payment and redirect to bank.
+     */
+    public function createRegistrationPayment(Request $request): RedirectResponse
+    {
+        $pending = session('registration_pending');
+        if (! $pending || empty($pending['admin_id'])) {
+            return redirect()->route('newsletters.landing.index')
+                ->with('error', 'Сессия истекла. Пожалуйста, зарегистрируйтесь снова.');
+        }
+
+        $minAmount = (float) config('tochka-payment.min_amount', 1);
+        $validator = Validator::make($request->all(), [
+            'amount' => ['required', 'numeric', 'min:' . $minAmount],
+        ], [
+            'amount.required' => 'Введите сумму пополнения.',
+            'amount.min' => sprintf('Минимальная сумма: %s ₽', number_format($minAmount, 0, ',', ' ')),
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('newsletters.landing.register-payment')
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        $admin = $this->adminRepository->find($pending['admin_id']);
+        if (! $admin) {
+            session()->forget('registration_pending');
+            return redirect()->route('newsletters.landing.index')
+                ->with('error', 'Ошибка: пользователь не найден.');
+        }
+
+        try {
+            $result = $this->registrationPaymentService->createPayment(
+                $admin,
+                (float) $request->input('amount')
+            );
+            return redirect()->away($result['payment_url']);
+        } catch (\Throwable $e) {
+            Log::error('Registration payment creation failed', [
+                'admin_id' => $admin->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->route('newsletters.landing.register-payment')
+                ->with('error', 'Не удалось создать платёж. Попробуйте позже.')
+                ->withInput();
+        }
+    }
+
+    /**
+     * Display success page after payment.
+     */
+    public function registerPaymentSuccess(): View
+    {
+        return view('newsletters::landing.register-payment-success');
     }
 
     /**

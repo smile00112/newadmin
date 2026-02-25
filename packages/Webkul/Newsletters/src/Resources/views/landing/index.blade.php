@@ -802,11 +802,15 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showAlert(result.message, 'success');
-                    setTimeout(() => {
-                        form.reset();
-                        closeModal();
-                    }, 3000);
+                    if (result.redirect_url) {
+                        window.location.href = result.redirect_url;
+                    } else {
+                        showAlert(result.message, 'success');
+                        setTimeout(() => {
+                            form.reset();
+                            closeModal();
+                        }, 3000);
+                    }
                 } else {
                     enableSubmitButton();
                     if (result.errors) {

@@ -24,6 +24,9 @@ Route::group(['prefix' => 'mailing-service'], function () {
     Route::controller(LandingPageController::class)->group(function () {
         Route::get('', 'index')->name('newsletters.landing.index');
         Route::post('register', 'store')->name('newsletters.landing.register');
+        Route::get('register/payment', 'registerPayment')->name('newsletters.landing.register-payment');
+        Route::post('register/payment', 'createRegistrationPayment')->name('newsletters.landing.create-registration-payment');
+        Route::get('register/payment/success', 'registerPaymentSuccess')->name('newsletters.landing.register-payment-success');
         Route::get('payment-terms', 'paymentTerms')->name('newsletters.landing.payment-terms');
         Route::get('privacy-policy', 'privacyPolicy')->name('newsletters.landing.privacy-policy');
         Route::get('oferta', 'oferta')->name('newsletters.landing.oferta');

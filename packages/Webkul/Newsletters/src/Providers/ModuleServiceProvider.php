@@ -5,6 +5,7 @@ namespace Webkul\Newsletters\Providers;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Webkul\Newsletters\Listeners\RegistrationPaymentListener;
 use Webkul\Newsletters\Listeners\TopupPaymentListener;
 use Webkul\Newsletters\Models\CustomerNumber;
 use Webkul\Newsletters\Models\Company;
@@ -64,6 +65,11 @@ class ModuleServiceProvider extends ServiceProvider
         Event::listen(
             'external_payments.payment.success',
             TopupPaymentListener::class.'@handlePaymentSuccess'
+        );
+
+        Event::listen(
+            'external_payments.payment.success',
+            RegistrationPaymentListener::class.'@handlePaymentSuccess'
         );
 
         Event::listen(
