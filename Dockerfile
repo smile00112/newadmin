@@ -17,7 +17,8 @@ RUN apk add --no-cache \
     supervisor \
     netcat-openbsd \
     linux-headers \
-    # Добавляем репозиторий community для php83-pecl-redis
+    # Добавляем репозиторий для PHP 8.3 пакетов
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/main/ \
     --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
 
 # Установка PHP расширений
@@ -38,11 +39,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     dom \
     fileinfo
 
-# Установка Redis через Alpine пакет (совместим с PHP 8.3)
+# Установка Redis через Alpine пакет
 RUN apk add --no-cache \
     --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
     php83-pecl-redis \
-    && docker-php-ext-enable redis
+    php83-pecl-igbinary \
+    php83-pecl-msgpack
+
+# Создаем символическую ссылку для redis.so
+RUN ln -s /usr/lib/php83/modules/redis.so /usr/local/lib/php/extensions/no-debug-non-zts-20220829/redis.so \
+    && echo "extension=redis.so" > /usr/local/etc/php/conf.d/docker-php-ext-redis.ini
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
