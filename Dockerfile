@@ -17,11 +17,8 @@ RUN apk add --no-cache \
     supervisor \
     netcat-openbsd \
     linux-headers \
-    # Для Redis
-    autoconf \
-    g++ \
-    make \
-    pcre-dev
+    # Добавляем репозиторий community для php83-pecl-redis
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
 
 # Установка PHP расширений
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -41,39 +38,29 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     dom \
     fileinfo
 
-# Установка Redis расширения (альтернативный способ)
-RUN mkdir -p /usr/src/php/ext/redis \
-    && curl -fsSL https://pecl.php.net/get/redis -o redis.tar.gz \
-    && tar -xf redis.tar.gz -C /usr/src/php/ext/redis --strip-components=1 \
-    && rm redis.tar.gz \
-    && docker-php-ext-install redis \
+# Установка Redis через Alpine пакет (совместим с PHP 8.3)
+RUN apk add --no-cache \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
+    php83-pecl-redis \
     && docker-php-ext-enable redis
-
-# Или более простой способ - через пакетный менеджер Alpine
-# RUN apk add --no-cache php83-pecl-redis
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Настройка рабочей директории
 WORKDIR /var/www/html
 
-# Копирование файлов проекта
 COPY . .
 
-# Установка зависимостей Composer (без скриптов)
-RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
+# Установка зависимостей Composer
+RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist \
+    && composer dump-autoload --optimize
 
-# Генерация автозагрузчика
-RUN composer dump-autoload --optimize
-
-# Настройка прав доступа
+# Настройка прав
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Копирование entrypoint скрипта
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
