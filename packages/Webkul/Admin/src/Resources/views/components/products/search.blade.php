@@ -197,7 +197,7 @@
             methods: {
                 openDrawer() {
                     this.$refs.searchProductDrawer.open();
-                    
+
                     // Load initial products if search is empty
                     if (this.searchTerm.length === 0 && this.searchedProducts.length === 0) {
                         this.loadInitialProducts();

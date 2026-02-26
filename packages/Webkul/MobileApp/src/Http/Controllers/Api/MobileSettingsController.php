@@ -11,6 +11,7 @@ use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Payment;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductReviewResource;
 use Webkul\Sales\Models\Order;
 use Webkul\Shipping\Shipping;
 
@@ -125,10 +126,10 @@ class MobileSettingsController extends Controller
         $privacyPolicyId = $settings['privacy_policy'] ?? null;
 
         $settings['documents'] = [
-            'user_agreement' => $userAgreementId 
+            'user_agreement' => $userAgreementId
                 ? url('/api/v1/cms/' . $userAgreementId . '/html')
                 : '',
-            'privacy_policy' => $privacyPolicyId 
+            'privacy_policy' => $privacyPolicyId
                 ? url('/api/v1/cms/' . $privacyPolicyId . '/html')
                 : '',
         ];
@@ -313,7 +314,7 @@ class MobileSettingsController extends Controller
             }
 
             $result[] = [
-                'product'        => ProductResource::make($product)->resolve(),
+                'product'        => ProductReviewResource::make($product)->resolve(),
                 'category_id'    => $categoryId,
                 'position_type'  => $row['position_type'] ?? 'middle',
                 'position_value' => isset($row['position_value']) ? (int) $row['position_value'] : null,

@@ -1,20 +1,20 @@
 @pushOnce('scripts')
     <script type="text/x-template" id="v-product-category-positions-template">
         <div>
-            {{--        <div class="mb-4 flex justify-between gap-5">--}}
-            {{--            <div class="flex flex-col gap-2">--}}
-            {{--                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">--}}
-            {{--                    @lang('admin::app.settings.product_category_positions.table-hint')--}}
-            {{--                </p>--}}
-            {{--            </div>--}}
-            {{--            <button--}}
-            {{--                type="button"--}}
-            {{--                class="secondary-button"--}}
-            {{--                @click="addRow"--}}
-            {{--            >--}}
-            {{--                @lang('admin::app.settings.product_category_positions.add')--}}
-            {{--            </button>--}}
-            {{--        </div>--}}
+                    <div class="mb-4 flex justify-between gap-5">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
+                                @lang('admin::app.settings.product_category_positions.table-hint')
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="secondary-button"
+                            @click="addRow"
+                        >
+                            @lang('admin::app.settings.product_category_positions.add')
+                        </button>
+                    </div>
             <div
                 v-if="mappings.length"
                 class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700"
@@ -116,6 +116,7 @@
                             </select>
                         </td>
                         <td class="px-6 py-4">
+
                             <input
                                 v-if="mapping.position_type === 'numeric'"
                                 type="number"
@@ -130,7 +131,7 @@
                                 :name="'mappings[' + index + '][position_value]'"
                                 value=""
                             />
-                            <span v-if="mapping.position_type !== 'numeric'" class="text-sm text-gray-400">\u2014</span>
+                            <span v-if="mapping.position_type !== 'numeric'" class="text-sm text-gray-400">-</span>
                         </td>
                         <td class="px-6 py-4 text-right">
                             <button
@@ -175,7 +176,7 @@
             <x-admin::products.search
                 ref="productSearchRef"
                 ::added-product-ids="[]"
-                @@onProductAdded="handleProductSelected($event)"
+                @onProductAdded="handleProductSelected($event)"
             />
         </div>
     </script>

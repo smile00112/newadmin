@@ -135,11 +135,11 @@
                                 <div class="flex gap-2.5">
                                     @php
                                         $imageUrl = null;
-                                        
+
                                         // Сначала проверяем category_image
                                         if ($item?->product?->category_image) {
                                             $imageUrl = Storage::url($item->product->category_image);
-                                        } 
+                                        }
                                         // Если нет category_image, используем base_image_url
                                         elseif ($item?->product?->base_image_url) {
                                             $imageUrl = $item->product->base_image_url;

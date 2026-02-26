@@ -187,12 +187,25 @@ class MobileSettingsController
      *                          @OA\Property(
      *                              property="product",
      *                              type="object",
-     *                              description="Product resource with full product details (id, sku, name, images, price, etc.)",
-     *                              @OA\Property(property="id", type="integer", example=1),
-     *                              @OA\Property(property="sku", type="string", example="product-sku"),
-     *                              @OA\Property(property="name", type="string", example="Product Name"),
-     *                              @OA\Property(property="images", type="array", @OA\Items(type="object")),
-     *                              @OA\Property(property="price", type="number", example=99.99)
+     *                              description="ProductReviewResource structure (id, title, comment, name, status, product, customer, created_at, updated_at)",
+     *                              @OA\Property(property="id", type="integer", example=1, description="ID"),
+     *                              @OA\Property(property="title", type="string", example="Great product", nullable=true, description="Title"),
+     *                              @OA\Property(property="comment", type="string", example="Nice quality", nullable=true, description="Comment"),
+     *                              @OA\Property(property="name", type="string", example="Customer Name", description="Name"),
+     *                              @OA\Property(property="status", type="string", example="approved", description="Status"),
+     *                              @OA\Property(
+     *                                  property="product",
+     *                                  type="object",
+     *                                  description="Product details (ProductResource)",
+     *                                  @OA\Property(property="id", type="integer", example=1),
+     *                                  @OA\Property(property="sku", type="string", example="product-sku"),
+     *                                  @OA\Property(property="name", type="string", example="Product Name"),
+     *                                  @OA\Property(property="images", type="array", @OA\Items(type="object")),
+     *                                  @OA\Property(property="price", type="number", example=99.99)
+     *                              ),
+     *                              @OA\Property(property="customer", type="object", nullable=true, description="Customer resource when customer_id is set"),
+     *                              @OA\Property(property="created_at", type="string", format="date-time", example="2025-01-15T10:30:00.000000Z"),
+     *                              @OA\Property(property="updated_at", type="string", format="date-time", example="2025-01-15T10:30:00.000000Z")
      *                          ),
      *                          @OA\Property(property="category_id", type="integer", example=5, description="Category ID"),
      *                          @OA\Property(property="position_type", type="string", example="top", description="Position type: top, middle, bottom, numeric"),
