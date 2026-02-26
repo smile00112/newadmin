@@ -53,4 +53,16 @@ return [
     |
     */
     'min_amount' => 1.00,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Registration
+    |--------------------------------------------------------------------------
+    |
+    | Settings for admin user creation when payment succeeds via ExternalPayments.
+    |
+    */
+    'registration' => [
+        'manager_role_id' => env('EXTERNAL_PAYMENTS_REGISTRATION_MANAGER_ROLE_ID', 4),
+    ],
 ];

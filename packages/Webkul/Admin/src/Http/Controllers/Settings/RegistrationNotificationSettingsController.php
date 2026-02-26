@@ -31,15 +31,20 @@ class RegistrationNotificationSettingsController extends Controller
      */
     public function index(): View
     {
-        // Get emails directly from database to ensure we get the correct record
-        $config = CoreConfig::where('code', 'registration.notifications.emails')
+        $emails = $this->getConfigValue('registration.notifications.emails');
+        $newRegistrationEmails = $this->getConfigValue('registration.notifications.new_registration_emails');
+
+        return view('admin::settings.registration-notifications.index', compact('emails', 'newRegistrationEmails'));
+    }
+
+    protected function getConfigValue(string $code): string
+    {
+        $config = CoreConfig::where('code', $code)
             ->whereNull('channel_code')
             ->whereNull('locale_code')
             ->first();
 
-        $emails = $config ? $config->value : '';
-
-        return view('admin::settings.registration-notifications.index', compact('emails'));
+        return $config ? (string) $config->value : '';
     }
 
     /**
@@ -49,49 +54,75 @@ class RegistrationNotificationSettingsController extends Controller
     {
         $request->validate([
             'emails' => 'nullable|string',
+            'new_registration_emails' => 'nullable|string',
         ]);
 
-        $emails = $request->input('emails', '');
-
-        // Validate email addresses if provided
-        if (!empty($emails)) {
-            $emailArray = array_map('trim', explode(',', $emails));
-            $emailArray = array_filter($emailArray);
-
-            foreach ($emailArray as $email) {
-                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    return new JsonResponse([
-                        'message' => trans('admin::app.settings.registration-notifications.invalid-email', ['email' => $email]),
-                    ], 422);
-                }
-            }
-
-            $emails = implode(',', $emailArray);
+        $emailsResult = $this->validateAndNormalizeEmails($request->input('emails', ''));
+        if ($emailsResult['invalid'] !== null) {
+            return new JsonResponse([
+                'message' => trans('admin::app.settings.registration-notifications.invalid-email', [
+                    'email' => $emailsResult['invalid'],
+                ]),
+            ], 422);
         }
 
-        // Save to core_config using model directly
-        $existingConfig = CoreConfig::where('code', 'registration.notifications.emails')
+        $newResult = $this->validateAndNormalizeEmails($request->input('new_registration_emails', ''));
+        if ($newResult['invalid'] !== null) {
+            return new JsonResponse([
+                'message' => trans('admin::app.settings.registration-notifications.invalid-email', [
+                    'email' => $newResult['invalid'],
+                ]),
+            ], 422);
+        }
+
+        $this->saveConfig('registration.notifications.emails', $emailsResult['value']);
+        $this->saveConfig('registration.notifications.new_registration_emails', $newResult['value']);
+
+        return new JsonResponse([
+            'message' => trans('admin::app.settings.registration-notifications.update-success'),
+            'emails' => $emailsResult['value'],
+            'new_registration_emails' => $newResult['value'],
+        ]);
+    }
+
+    /**
+     * @return array{value: string, invalid: string|null}
+     */
+    protected function validateAndNormalizeEmails(?string $value): array
+    {
+        $value = $value ?? '';
+        if ($value === '') {
+            return ['value' => '', 'invalid' => null];
+        }
+
+        $emailArray = array_map('trim', explode(',', $value));
+        $emailArray = array_filter($emailArray);
+
+        foreach ($emailArray as $email) {
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return ['value' => '', 'invalid' => $email];
+            }
+        }
+
+        return ['value' => implode(',', $emailArray), 'invalid' => null];
+    }
+
+    protected function saveConfig(string $code, string $value): void
+    {
+        $existing = CoreConfig::where('code', $code)
             ->whereNull('channel_code')
             ->whereNull('locale_code')
             ->first();
 
-        if ($existingConfig) {
-            $existingConfig->update([
-                'value' => $emails,
-            ]);
-            $config = $existingConfig->fresh();
+        if ($existing) {
+            $existing->update(['value' => $value]);
         } else {
-            $config = CoreConfig::create([
-                'code' => 'registration.notifications.emails',
-                'value' => $emails,
+            CoreConfig::create([
+                'code' => $code,
+                'value' => $value,
                 'channel_code' => null,
                 'locale_code' => null,
             ]);
         }
-
-        return new JsonResponse([
-            'message' => trans('admin::app.settings.registration-notifications.update-success'),
-            'emails' => $config->value,
-        ]);
     }
 }

@@ -3457,6 +3457,9 @@ return [
                 'emails-label'     => 'Email-адреса',
                 'emails-placeholder' => 'Введите email-адреса через запятую (например, admin@example.com, support@example.com)',
                 'emails-help'      => 'Введите один или несколько email-адресов через запятую. На эти адреса будут приходить уведомления при подаче новых заявок на регистрацию.',
+                'new-registration-emails-label'     => 'Email-адреса для оповещения о завершённой регистрации',
+                'new-registration-emails-placeholder' => 'Введите email-адреса через запятую (например, notify@example.com)',
+                'new-registration-emails-help'      => 'На эти адреса будет отправляться оповещение о новой регистрации после успешной оплаты через внешнюю систему.',
                 'save-btn'         => 'Сохранить настройки',
                 'invalid-email'     => 'Email-адрес :email неверен.',
 
