@@ -1,10 +1,6 @@
 FROM php:8.3-cli-alpine AS base
 
-# Сначала настраиваем DNS для решения проблем с сетью
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-
-# Установка системных зависимостей
+# Установка системных зависимостей (БЕЗ изменения /etc/resolv.conf)
 RUN apk add --no-cache \
     git \
     curl \
@@ -44,13 +40,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     dom \
     fileinfo
 
-# Установка Redis через PECL с повторными попытками
-RUN for i in 1 2 3; do \
-    pecl channel-update pecl.php.net && \
-    pecl install redis && \
-    docker-php-ext-enable redis && \
-    break || sleep 5; \
-done
+# Установка Redis через PECL с использованием curl (более надежно)
+RUN curl -sSL https://pecl.php.net/get/redis -o /tmp/redis.tar.gz \
+    && tar xzf /tmp/redis.tar.gz -C /tmp \
+    && cd /tmp/redis-* \
+    && phpize \
+    && ./configure \
+    && make \
+    && make install \
+    && docker-php-ext-enable redis \
+    && rm -rf /tmp/redis*
 
 # Очистка
 RUN apk del autoconf g++ make pcre-dev
@@ -62,9 +61,13 @@ WORKDIR /var/www/html
 
 COPY . .
 
-RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist \
-    && composer dump-autoload --optimize
+# Установка зависимостей Composer (без скриптов)
+RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
 
+# Генерация автозагрузчика
+RUN composer dump-autoload --optimize
+
+# Настройка прав
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
