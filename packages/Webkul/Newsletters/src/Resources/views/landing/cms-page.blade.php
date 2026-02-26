@@ -14,6 +14,9 @@
     <meta name="keywords" content="{{ $page->meta_keywords }}">
     @endif
 
+    <link type="image/x-icon" href="https://dolinger_new_admin.test/themes/admin/default/build/assets/favicon-CiQV8jiw.ico" rel="shortcut icon" sizes="16x16">
+
+
     <style>
         /* Bagisto Shop Icon Font 33333333333*/
         @font-face {
@@ -689,11 +692,15 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showAlert(result.message, 'success');
-                    setTimeout(() => {
-                        form.reset();
-                        closeModal();
-                    }, 3000);
+                    if (result.redirect_url) {
+                        window.location.href = result.redirect_url;
+                    } else {
+                        showAlert(result.message, 'success');
+                        setTimeout(() => {
+                            form.reset();
+                            closeModal();
+                        }, 3000);
+                    }
                 } else {
                     enableSubmitButton();
                     if (result.errors) {

@@ -125,6 +125,12 @@ class LandingPageController
      */
     public function store(Request $request): JsonResponse
     {
+        Log::channel('single')->info('[Registration] Step 1: Form received', [
+            'email' => $request->email,
+            'name' => $request->name,
+            'plan' => $request->plan ?? null,
+        ]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -137,6 +143,10 @@ class LandingPageController
         ]);
 
         if ($validator->fails()) {
+            Log::channel('single')->info('[Registration] Step 2: Validation failed', [
+                'email' => $request->email,
+                'errors' => $validator->errors()->toArray(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Пожалуйста, заполните все обязательные поля корректно.',
@@ -152,12 +162,21 @@ class LandingPageController
         $existingAdmin = $this->adminRepository->findOneByField('email', $request->email);
 
         if ($emailExistsInRequests || $existingAdmin) {
+            Log::channel('single')->info('[Registration] Step 3: Email already exists', [
+                'email' => $request->email,
+                'exists_in_requests' => $emailExistsInRequests,
+                'exists_in_admins' => (bool) $existingAdmin,
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Пользователь с таким email уже зарегистрирован или подал заявку на регистрацию.',
                 'errors' => ['email' => ['Пользователь с таким email уже зарегистрирован или подал заявку на регистрацию.']]
             ], 422);
         }
+
+        Log::channel('single')->info('[Registration] Step 4: Creating company and admin...', [
+            'email' => $request->email,
+        ]);
 
         try {
             // Сохраняем заявку на регистрацию
@@ -218,17 +237,26 @@ class LandingPageController
                 'created_at' => time(),
             ]]);
 
+            $redirectUrl = route('newsletters.landing.register-payment');
+
+            Log::channel('single')->info('[Registration] Step 5: Registration success, redirect to payment', [
+                'admin_id' => $admin->id,
+                'company_id' => $company->id,
+                'redirect_url' => $redirectUrl,
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Регистрация успешна. Пополните счёт для начала работы.',
-                'redirect_url' => route('newsletters.landing.register-payment'),
+                'redirect_url' => $redirectUrl,
             ]);
         } catch (\Exception $e) {
-            Log::error('Registration error: ' . $e->getMessage(), [
+            Log::channel('single')->error('[Registration] Step 5 FAILED: Exception', [
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'request_data' => $request->except(['password'])
+                'request_data' => $request->except(['password']),
             ]);
             return response()->json([
                 'success' => false,
@@ -242,17 +270,31 @@ class LandingPageController
      */
     public function registerPayment(): View|RedirectResponse
     {
+        Log::channel('single')->info('[Registration Payment] Step 6: Page view requested', [
+            'has_session' => session()->has('registration_pending'),
+            'session_data' => session('registration_pending'),
+        ]);
+
         $pending = session('registration_pending');
         if (! $pending || empty($pending['admin_id'])) {
+            Log::channel('single')->info('[Registration Payment] Step 6 FAILED: No pending session, redirect to index');
             return redirect()->route('newsletters.landing.index');
         }
 
         $ttl = 30 * 60;
         if (isset($pending['created_at']) && (time() - $pending['created_at']) > $ttl) {
+            Log::channel('single')->info('[Registration Payment] Step 6 FAILED: Session expired', [
+                'admin_id' => $pending['admin_id'] ?? null,
+                'age_sec' => isset($pending['created_at']) ? time() - $pending['created_at'] : null,
+            ]);
             session()->forget('registration_pending');
             return redirect()->route('newsletters.landing.index')
                 ->with('info', 'Время сессии истекло. Пожалуйста, зарегистрируйтесь снова.');
         }
+
+        Log::channel('single')->info('[Registration Payment] Step 6 OK: Showing payment form', [
+            'admin_id' => $pending['admin_id'],
+        ]);
 
         return view('newsletters::landing.register-payment');
     }
@@ -262,8 +304,14 @@ class LandingPageController
      */
     public function createRegistrationPayment(Request $request): RedirectResponse
     {
+        Log::channel('single')->info('[Registration Payment] Step 7: Create payment form submitted', [
+            'amount' => $request->input('amount'),
+            'has_session' => session()->has('registration_pending'),
+        ]);
+
         $pending = session('registration_pending');
         if (! $pending || empty($pending['admin_id'])) {
+            Log::channel('single')->info('[Registration Payment] Step 7 FAILED: No pending session');
             return redirect()->route('newsletters.landing.index')
                 ->with('error', 'Сессия истекла. Пожалуйста, зарегистрируйтесь снова.');
         }
@@ -277,6 +325,10 @@ class LandingPageController
         ]);
 
         if ($validator->fails()) {
+            Log::channel('single')->info('[Registration Payment] Step 7: Validation failed', [
+                'admin_id' => $pending['admin_id'],
+                'errors' => $validator->errors()->toArray(),
+            ]);
             return redirect()->route('newsletters.landing.register-payment')
                 ->withErrors($validator)
                 ->withInput();
@@ -284,19 +336,33 @@ class LandingPageController
 
         $admin = $this->adminRepository->find($pending['admin_id']);
         if (! $admin) {
+            Log::channel('single')->error('[Registration Payment] Step 7 FAILED: Admin not found', [
+                'admin_id' => $pending['admin_id'],
+            ]);
             session()->forget('registration_pending');
             return redirect()->route('newsletters.landing.index')
                 ->with('error', 'Ошибка: пользователь не найден.');
         }
+
+        Log::channel('single')->info('[Registration Payment] Step 8: Creating payment via Tochka...', [
+            'admin_id' => $admin->id,
+            'amount' => (float) $request->input('amount'),
+        ]);
 
         try {
             $result = $this->registrationPaymentService->createPayment(
                 $admin,
                 (float) $request->input('amount')
             );
+
+            Log::channel('single')->info('[Registration Payment] Step 9: Redirect to bank', [
+                'admin_id' => $admin->id,
+                'payment_url_length' => strlen($result['payment_url'] ?? ''),
+            ]);
+
             return redirect()->away($result['payment_url']);
         } catch (\Throwable $e) {
-            Log::error('Registration payment creation failed', [
+            Log::channel('single')->error('[Registration Payment] Step 8 FAILED: Payment creation failed', [
                 'admin_id' => $admin->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -312,6 +378,8 @@ class LandingPageController
      */
     public function registerPaymentSuccess(): View
     {
+        Log::channel('single')->info('[Registration Payment] Step 10: Payment success page displayed');
+
         return view('newsletters::landing.register-payment-success');
     }
 

@@ -27,8 +27,18 @@ final class RegistrationPaymentService
      */
     public function createPayment(Admin $admin, float $amount): array
     {
+        Log::channel('single')->info('[Registration Payment] Step 8a: createPayment started', [
+            'admin_id' => $admin->id,
+            'amount' => $amount,
+        ]);
+
         $companyId = (int) $admin->company_id;
         $account = $this->accountRepository->getOrCreateForCompany($companyId);
+
+        Log::channel('single')->info('[Registration Payment] Step 8b: Account resolved', [
+            'admin_id' => $admin->id,
+            'account_id' => $account->id,
+        ]);
 
         $topup = $this->topupRepository->create([
             'account_id' => $account->id,
@@ -38,6 +48,11 @@ final class RegistrationPaymentService
             'admin_id' => $admin->id,
             'notes' => 'Пополнение при регистрации',
             'is_registration' => true,
+        ]);
+
+        Log::channel('single')->info('[Registration Payment] Step 8c: Topup created', [
+            'topup_id' => $topup->id,
+            'account_id' => $account->id,
         ]);
 
         $basePath = '/mailing-service/register/payment/success';
@@ -55,6 +70,11 @@ final class RegistrationPaymentService
             'fail_redirect_path' => $failPath,
         ];
 
+        Log::channel('single')->info('[Registration Payment] Step 8d: Calling Tochka API', [
+            'topup_id' => $topup->id,
+            'external_order_id' => $paymentData['external_order_id'],
+        ]);
+
         try {
             $result = $this->tochkaAdapter->createPayment($paymentData);
 
@@ -62,7 +82,7 @@ final class RegistrationPaymentService
             $paymentUrl = (string) ($result['payment_url'] ?? '');
 
             if ($providerPaymentId === '' || $paymentUrl === '') {
-                Log::error('Registration payment: provider response missing required fields', [
+                Log::channel('single')->error('[Registration Payment] Step 8e FAILED: Provider response missing required fields', [
                     'topup_id' => $topup->id,
                     'response' => $result,
                 ]);
@@ -73,6 +93,11 @@ final class RegistrationPaymentService
                 'provider_key' => 'tochka',
                 'provider_payment_id' => $providerPaymentId,
                 'payment_url' => $paymentUrl,
+            ]);
+
+            Log::channel('single')->info('[Registration Payment] Step 8e: Payment created successfully', [
+                'topup_id' => $topup->id,
+                'provider_payment_id' => $providerPaymentId,
             ]);
 
             return [
