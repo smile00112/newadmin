@@ -1,5 +1,9 @@
 FROM php:8.3-cli-alpine AS base
 
+# Сначала настраиваем DNS для решения проблем с сетью
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
 # Установка системных зависимостей
 RUN apk add --no-cache \
     git \
@@ -17,9 +21,10 @@ RUN apk add --no-cache \
     supervisor \
     netcat-openbsd \
     linux-headers \
-    # Добавляем репозиторий для PHP 8.3 пакетов
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/main/ \
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/
+    autoconf \
+    g++ \
+    make \
+    pcre-dev
 
 # Установка PHP расширений
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -39,16 +44,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     dom \
     fileinfo
 
-# Установка Redis через Alpine пакет
-RUN apk add --no-cache \
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community/ \
-    php83-pecl-redis \
-    php83-pecl-igbinary \
-    php83-pecl-msgpack
+# Установка Redis через PECL с повторными попытками
+RUN for i in 1 2 3; do \
+    pecl channel-update pecl.php.net && \
+    pecl install redis && \
+    docker-php-ext-enable redis && \
+    break || sleep 5; \
+done
 
-# Создаем символическую ссылку для redis.so
-RUN ln -s /usr/lib/php83/modules/redis.so /usr/local/lib/php/extensions/no-debug-non-zts-20220829/redis.so \
-    && echo "extension=redis.so" > /usr/local/etc/php/conf.d/docker-php-ext-redis.ini
+# Очистка
+RUN apk del autoconf g++ make pcre-dev
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -57,11 +62,9 @@ WORKDIR /var/www/html
 
 COPY . .
 
-# Установка зависимостей Composer
 RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist \
     && composer dump-autoload --optimize
 
-# Настройка прав
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
