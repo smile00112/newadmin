@@ -17,9 +17,13 @@ RUN apk add --no-cache \
     supervisor \
     netcat-openbsd \
     linux-headers \
-    $PHPIZE_DEPS
+    # Для Redis
+    autoconf \
+    g++ \
+    make \
+    pcre-dev
 
-# Установка PHP расширений (только те, которые действительно нужно устанавливать)
+# Установка PHP расширений
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     pdo \
@@ -37,9 +41,16 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     dom \
     fileinfo
 
-# Установка Redis расширения через PECL
-RUN pecl install redis \
+# Установка Redis расширения (альтернативный способ)
+RUN mkdir -p /usr/src/php/ext/redis \
+    && curl -fsSL https://pecl.php.net/get/redis -o redis.tar.gz \
+    && tar -xf redis.tar.gz -C /usr/src/php/ext/redis --strip-components=1 \
+    && rm redis.tar.gz \
+    && docker-php-ext-install redis \
     && docker-php-ext-enable redis
+
+# Или более простой способ - через пакетный менеджер Alpine
+# RUN apk add --no-cache php83-pecl-redis
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -50,8 +61,11 @@ WORKDIR /var/www/html
 # Копирование файлов проекта
 COPY . .
 
-# Установка зависимостей Composer (с dev зависимостями для установки RoadRunner)
-RUN composer install --optimize-autoloader --no-interaction --prefer-dist
+# Установка зависимостей Composer (без скриптов)
+RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
+
+# Генерация автозагрузчика
+RUN composer dump-autoload --optimize
 
 # Настройка прав доступа
 RUN chown -R www-data:www-data /var/www/html \
@@ -59,24 +73,14 @@ RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Копирование PHP конфигурации (если есть)
-# COPY docker/php/php.ini /usr/local/etc/php/php.ini
-# COPY docker/php/php-cli.ini /usr/local/etc/php/php-cli.ini
-
-# Копирование конфигурации RoadRunner (если есть)
-# COPY .rr.yaml /var/www/html/.rr.yaml
-
-# Создание entrypoint скрипта
+# Копирование entrypoint скрипта
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Expose порт для RoadRunner
 EXPOSE 8000
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD php artisan octane:status || wget --quiet --tries=1 --spider http://localhost:8000 || exit 1
 
-# Запуск RoadRunner через Octane
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php", "artisan", "octane:start", "--server=roadrunner", "--host=0.0.0.0", "--port=8000"]
