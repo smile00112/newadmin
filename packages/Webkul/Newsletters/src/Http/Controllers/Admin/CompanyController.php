@@ -167,5 +167,58 @@ class CompanyController extends Controller
             return redirect()->route('admin.newsletters.companies.index');
         }
     }
+
+    /**
+     * Remove selected companies from storage.
+     */
+    public function massDestroy(Request $request)
+    {
+        $this->requireNewsletterPermission('newsletters.companies.delete');
+
+        $admin = auth()->guard('admin')->user();
+
+        if (! $this->isSuperAdmin($admin)) {
+            abort(403, __('admin::app.error.403.message'));
+        }
+
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:companies,id',
+        ]);
+
+        $deletedCount = 0;
+
+        foreach (array_unique($validated['ids']) as $companyId) {
+            try {
+                $this->companyRepository->delete((int) $companyId);
+                $deletedCount++;
+            } catch (\Exception $exception) {
+                // Continue to delete other selected companies.
+            }
+        }
+
+        if ($deletedCount === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.companies.mass-delete-failed'),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => trans('newsletters::app.admin.companies.mass-delete-success', ['count' => $deletedCount]),
+        ]);
+    }
+
+    /**
+     * Determine whether admin is super admin.
+     */
+    protected function isSuperAdmin($admin): bool
+    {
+        return $admin
+            && $admin->role
+            && $admin->role->permission_type === 'all'
+            && ! $admin->company_id;
+    }
 }
 

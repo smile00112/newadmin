@@ -16,6 +16,17 @@
             {{ __('newsletters::app.admin.owners.title') }}
         </p>
         <div class="flex items-center gap-x-2.5">
+            @if($canImpersonateOwners)
+                <button
+                    type="button"
+                    id="deleteSelectedOwnersBtn"
+                    onclick="deleteSelectedOwners()"
+                    class="secondary-button"
+                    disabled
+                >
+                    {{ __('newsletters::app.admin.owners.delete-selected') }}
+                </button>
+            @endif
             <a href="{{ route('admin.newsletters.owners.create') }}" class="primary-button">
                 {{ __('newsletters::app.admin.owners.create-button') }}
             </a>
@@ -26,6 +37,16 @@
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
+                @if($canImpersonateOwners)
+                    <th class="px-6 py-3 text-left">
+                        <input
+                            type="checkbox"
+                            id="selectAllOwners"
+                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            onchange="toggleSelectAllOwners(this)"
+                        >
+                    </th>
+                @endif
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.owners.name') }}</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{{ __('newsletters::app.admin.owners.email') }}</th>
@@ -39,6 +60,18 @@
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             @forelse($owners as $owner)
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    @if($canImpersonateOwners)
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            @if((int) $owner->id !== (int) $currentAdmin->id)
+                                <input
+                                    type="checkbox"
+                                    class="owner-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    value="{{ $owner->id }}"
+                                    onchange="updateOwnersDeleteButton()"
+                                >
+                            @endif
+                        </td>
+                    @endif
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $owner->id }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $owner->name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ $owner->email }}</td>
@@ -103,21 +136,20 @@
                                     <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-money"></span>
                                 </button>
                             @endif
-                            <form method="POST" action="{{ route('admin.newsletters.owners.delete', $owner->id) }}" onsubmit="return confirm('{{ __('newsletters::app.admin.owners.delete-confirm') }}')" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                        title="{{ __('admin::app.datagrid.delete') }}">
-                                    <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-trash"></span>
-                                </button>
-                            </form>
+                            <button
+                                type="button"
+                                onclick="deleteOwner({{ $owner->id }})"
+                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                title="{{ __('admin::app.datagrid.delete') }}"
+                            >
+                                <span class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 icon-trash"></span>
+                            </button>
                         </div>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="px-6 py-12 text-center">
+                    <td colspan="{{ $canImpersonateOwners ? 9 : 8 }}" class="px-6 py-12 text-center">
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('newsletters::app.admin.owners.no-owners') }}</p>
                     </td>
                 </tr>
@@ -187,6 +219,96 @@
     </div>
 
     <script>
+        function getSelectedOwnerIds() {
+            return Array.from(document.querySelectorAll('.owner-checkbox:checked')).map((checkbox) => checkbox.value);
+        }
+
+        function toggleSelectAllOwners(masterCheckbox) {
+            document.querySelectorAll('.owner-checkbox').forEach((checkbox) => {
+                checkbox.checked = masterCheckbox.checked;
+            });
+
+            updateOwnersDeleteButton();
+        }
+
+        function updateOwnersDeleteButton() {
+            const selectedIds = getSelectedOwnerIds();
+            const deleteButton = document.getElementById('deleteSelectedOwnersBtn');
+            const selectAll = document.getElementById('selectAllOwners');
+            const allCheckboxes = document.querySelectorAll('.owner-checkbox');
+
+            if (deleteButton) {
+                deleteButton.disabled = selectedIds.length === 0;
+            }
+
+            if (selectAll) {
+                selectAll.checked = allCheckboxes.length > 0 && selectedIds.length === allCheckboxes.length;
+            }
+        }
+
+        function deleteOwner(ownerId) {
+            if (!confirm('{{ __('newsletters::app.admin.owners.delete-confirm') }}')) {
+                return;
+            }
+
+            fetch('{{ route("admin.newsletters.owners.delete", ":id") }}'.replace(':id', ownerId), {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                        return;
+                    }
+
+                    alert(data.message || '{{ __('newsletters::app.admin.owners.delete-failed') }}');
+                })
+                .catch(() => {
+                    alert('{{ __('newsletters::app.admin.owners.delete-failed') }}');
+                });
+        }
+
+        function deleteSelectedOwners() {
+            const selectedIds = getSelectedOwnerIds();
+
+            if (selectedIds.length === 0) {
+                return;
+            }
+
+            if (!confirm('{{ __('newsletters::app.admin.owners.mass-delete-confirm') }}')) {
+                return;
+            }
+
+            fetch('{{ route('admin.newsletters.owners.mass-destroy') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({
+                    ids: selectedIds,
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                        return;
+                    }
+
+                    alert(data.message || '{{ __('newsletters::app.admin.owners.mass-delete-failed') }}');
+                })
+                .catch(() => {
+                    alert('{{ __('newsletters::app.admin.owners.mass-delete-failed') }}');
+                });
+        }
+
         function toggleStatus(ownerId) {
             if (!confirm('{{ __('newsletters::app.admin.owners.delete-confirm') }}')) {
                 return;

@@ -569,9 +569,7 @@ class OwnersController extends Controller
         }
 
         try {
-            // Вместо удаления отключаем owner
-            $owner->status = 0;
-            $owner->save();
+            $this->adminRepository->delete($id);
 
             return response()->json([
                 'success' => true,
@@ -583,6 +581,58 @@ class OwnersController extends Controller
                 'message' => trans('newsletters::app.admin.owners.delete-failed'),
             ], 500);
         }
+    }
+
+    /**
+     * Remove selected owners from storage.
+     */
+    public function massDestroy(Request $request)
+    {
+        $this->requireNewsletterPermission('newsletters.owners.delete');
+
+        $currentAdmin = auth()->guard('admin')->user();
+
+        if (! $this->isSuperAdmin($currentAdmin)) {
+            abort(403, __('admin::app.error.403.message'));
+        }
+
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:admins,id',
+        ]);
+
+        $deletedCount = 0;
+
+        foreach (array_unique($validated['ids']) as $ownerId) {
+            if ((int) $ownerId === (int) $currentAdmin->id) {
+                continue;
+            }
+
+            $owner = $this->adminRepository->find($ownerId);
+
+            if (! $this->isOwnerAdmin($owner)) {
+                continue;
+            }
+
+            try {
+                $this->adminRepository->delete((int) $ownerId);
+                $deletedCount++;
+            } catch (\Exception $exception) {
+                // Continue to delete other selected owners.
+            }
+        }
+
+        if ($deletedCount === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => trans('newsletters::app.admin.owners.mass-delete-failed'),
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => trans('newsletters::app.admin.owners.mass-delete-success', ['count' => $deletedCount]),
+        ]);
     }
 
     /**

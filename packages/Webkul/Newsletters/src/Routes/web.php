@@ -82,6 +82,7 @@ Route::group([
                     Route::put('edit/{id}', 'update')->name('admin.newsletters.companies.update');
                 });
                 Route::middleware('newsletters.permission:newsletters.companies.delete')->group(function () {
+                    Route::post('mass-destroy', 'massDestroy')->name('admin.newsletters.companies.mass-destroy');
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.companies.destroy');
                 });
             });
@@ -115,6 +116,7 @@ Route::group([
                     Route::post('{id}/clear-history', 'clearHistory')->name('admin.newsletters.owners.clear-history');
                 });
                 Route::middleware('newsletters.permission:newsletters.owners.delete')->group(function () {
+                    Route::post('mass-destroy', 'massDestroy')->name('admin.newsletters.owners.mass-destroy');
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.owners.delete');
                 });
             });

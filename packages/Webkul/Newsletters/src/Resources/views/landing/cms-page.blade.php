@@ -546,7 +546,7 @@
     <div id="registrationModal" class="modal">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">&times;</button>
-            <h2 class="modal-title">Заявка на регистрацию</h2>
+            <h2 class="modal-title">Заявка на регистрацию ..</h2>
             <p class="modal-subtitle">Заполните форму, и мы свяжемся с вами в ближайшее время</p>
 
             <div id="alertContainer"></div>
