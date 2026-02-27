@@ -37,6 +37,8 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
         'double_portions',
         'half_portions',
         'ingredients_incompatibilities_id',
+        'sale_by_sizes',
+        'portion_sizes',
     ];
 
     /**
@@ -56,6 +58,8 @@ class ProductConstructorGroup extends Model implements ProductConstructorGroupCo
         'parent_id' => 'integer',
         'double_portions' => 'boolean',
         'half_portions' => 'boolean',
+        'sale_by_sizes' => 'boolean',
+        'portion_sizes' => 'array',
 
     ];
 

@@ -371,6 +371,8 @@ class ProductResource extends JsonResource
                         'double_portions'             => $group->double_portions,
                         'half_portions'               => $group->half_portions,
                         'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
+                        'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
+                        'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
                         'products'                    => $group->products->map(function ($groupProduct) {
                             $productTypeInstance = $groupProduct->getTypeInstance();
 
@@ -403,6 +405,32 @@ class ProductResource extends JsonResource
         return [
             'constructor_options' => $constructorOptions,
         ];
+    }
+
+    /**
+     * Normalize portion sizes for constructor group response.
+     *
+     * @param  mixed  $portionSizes
+     * @return array
+     */
+    private function normalizePortionSizes($portionSizes): array
+    {
+        if (! is_array($portionSizes)) {
+            return [];
+        }
+
+        return collect($portionSizes)
+            ->filter(fn ($size) => is_array($size))
+            ->map(function ($size) {
+                return [
+                    'name'     => (string) ($size['name'] ?? ''),
+                    'quantity' => (int) ($size['quantity'] ?? 0),
+                    'weight'   => (int) ($size['weight'] ?? 0),
+                ];
+            })
+            ->filter(fn ($size) => $size['name'] !== '')
+            ->values()
+            ->all();
     }
 
     /**

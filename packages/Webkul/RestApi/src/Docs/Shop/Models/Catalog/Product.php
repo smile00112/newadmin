@@ -623,6 +623,17 @@ class Product
      *             "sort": 1,
      *             "double_portions": false,
      *             "half_portions": false,
+ *             "ingredients_incompatibilities_id": null,
+ *             "sale_by_sizes": true,
+ *             "portion_sizes": {{
+ *                 "name": "Маленькая",
+ *                 "quantity": 1,
+ *                 "weight": 250
+ *             }, {
+ *                 "name": "Большая",
+ *                 "quantity": 2,
+ *                 "weight": 500
+ *             }},
      *             "products": {{
      *                 "id": 25,
      *                 "sku": "ingredient-1",
@@ -749,6 +760,19 @@ class Product
      *                  @OA\Property(property="sort", type="integer", description="Sort order"),
      *                  @OA\Property(property="double_portions", type="boolean", description="Double portions available"),
      *                  @OA\Property(property="half_portions", type="boolean", description="Half portions available"),
+ *                  @OA\Property(property="ingredients_incompatibilities_id", type="integer", nullable=true, description="Incompatibility template ID"),
+ *                  @OA\Property(property="sale_by_sizes", type="boolean", description="Enable selling by portion sizes"),
+ *                  @OA\Property(
+ *                      property="portion_sizes",
+ *                      type="array",
+ *                      description="List of portion sizes",
+ *
+ *                      @OA\Items(
+ *                          @OA\Property(property="name", type="string", description="Portion size name"),
+ *                          @OA\Property(property="quantity", type="integer", description="Portion quantity"),
+ *                          @OA\Property(property="weight", type="integer", description="Portion weight")
+ *                      )
+ *                  ),
      *                  @OA\Property(
      *                      property="products",
      *                      type="array",
