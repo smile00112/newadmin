@@ -4789,6 +4789,8 @@ return [
                 'payment-methods' => [
                     'accepted-currencies'            => 'Accepted currencies',
                     'accepted-currencies-info'       => 'Add currency code comma separated e.g. USD,INR,...',
+                    'alfabank'                       => 'Alfabank',
+                    'alfabank-info'                  => 'Card payments through the Alfabank payment gateway.',
                     'business-account'               => 'Business Account',
                     'cash-on-delivery'               => 'Cash On Delivery',
                     'cash-on-delivery-info'          => 'Payment method where customers pay in cash upon receiving goods or services at their doorstep.',
