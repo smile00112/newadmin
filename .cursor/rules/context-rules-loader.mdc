@@ -38,6 +38,20 @@ When coupon mentions are detected in the request, always read and use informatio
 **Instruction:**
 When product mentions are detected in the request, always read and use information from `products.mdc` to understand the product system architecture, product types, database structure, attributes system, and logic.
 
+### Shop Products (Shop Catalog & Nomenclature)
+
+**When to load:**
+- If the request mentions: shop products, shop catalog, nomenclature, catalog category API, catalog cache, nomenclature cache
+- If the user asks about Shop-side product listing/filtering/availability behavior
+- If classes are mentioned: `ProductObserver`, `NomenclatureController`, `CatalogCategoryController`, `ProductController` (Shop REST)
+- If paths are mentioned under: `packages/Webkul/Product`, `packages/Webkul/RestApi/src/Http/Controllers/V1/Shop/Catalog`
+
+**File to load:**
+`.cursor/rules/shop/product/shop-product-rules.mdc`
+
+**Instruction:**
+When Shop product context is detected, always read and use `shop-product-rules.mdc` for type-driven logic, indexing side effects, cache invalidation, and Shop API integration points.
+
 ---
 
 ## How to Use This File

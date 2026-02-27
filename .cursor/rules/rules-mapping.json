@@ -78,5 +78,46 @@
       "Important Points When Working with Products"
     ],
     "description": "Product catalog system specification"
+  },
+  "shop-product-rules.mdc": {
+    "related_files": [
+      "packages/Webkul/Product/src/Models/*.php",
+      "packages/Webkul/Product/src/Repositories/*.php",
+      "packages/Webkul/Product/src/Type/*.php",
+      "packages/Webkul/Product/src/Listeners/*.php",
+      "packages/Webkul/Product/src/Observers/*.php",
+      "packages/Webkul/Product/src/Helpers/Indexers/*.php",
+      "packages/Webkul/Product/src/Helpers/Indexers/**/*.php",
+      "packages/Webkul/Product/src/Jobs/*.php",
+      "packages/Webkul/Product/src/Jobs/**/*.php",
+      "packages/Webkul/Product/src/Providers/*.php",
+      "packages/Webkul/Product/src/Config/product_types.php",
+      "packages/Webkul/RestApi/src/Routes/V1/Shop/catalog-routes.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/V1/Shop/Catalog/*.php",
+      "packages/Webkul/Admin/src/Routes/catalog-routes.php",
+      "packages/Webkul/Admin/src/Http/Controllers/Catalog/ProductController.php",
+      "packages/Webkul/RestApi/src/Http/Controllers/V1/Admin/Catalog/ProductController.php"
+    ],
+    "related_tables": [
+      "products",
+      "product_flat",
+      "product_attribute_values",
+      "product_price_indices",
+      "product_inventory_indices",
+      "product_constructor",
+      "product_constructor_group",
+      "product_constructor_group_products",
+      "product_ingredients_incompatibility"
+    ],
+    "critical_sections": [
+      "Scope",
+      "Architecture Guardrails",
+      "Shop Integration Points (Read Before Editing)",
+      "Critical Product Flows",
+      "Indexing and Async Side Effects",
+      "Cache Invalidation",
+      "Change Checklist for AI Agent"
+    ],
+    "description": "Shop product context specification"
   }
 }
