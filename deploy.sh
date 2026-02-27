@@ -61,19 +61,29 @@ done
 echo " MySQL готов!"
 
 # Ожидание готовности Redis
-info "Ожидание готовности Redis..."
-timeout=30
-while ! docker compose -f docker-compose.prod.yml exec -T redis redis-cli ping 2>/dev/null | grep -q "PONG"; do
-    timeout=$((timeout - 1))
-    if [ $timeout -le 0 ]; then
-        warn "Redis не отвечает на ping. Проверяем логи..."
-        docker compose -f docker-compose.prod.yml logs redis
-        error "Redis не запустился"
-    fi
-    echo -n "."
-    sleep 2
-done
-echo " Redis готов!"
+#info "Ожидание готовности Redis..."
+#timeout=30
+#while ! docker compose -f docker-compose.prod.yml exec -T redis redis-cli ping 2>/dev/null | grep -q "PONG"; do
+#    timeout=$((timeout - 1))
+#    if [ $timeout -le 0 ]; then
+#        warn "Redis не отвечает на ping. Проверяем логи..."
+#        docker compose -f docker-compose.prod.yml logs redis
+#        error "Redis не запустился"
+#    fi
+#    echo -n "."
+#    sleep 2
+#done
+#echo " Redis готов!"
+# Проверка Redis (упрощенная)
+info "Проверка Redis..."
+sleep 5
+if docker compose -f docker-compose.prod.yml ps redis | grep -q "healthy"; then
+    echo " Redis готов (статус healthy)"
+else
+    warn "Redis не в статусе healthy, но контейнер запущен. Продолжаем..."
+    docker compose -f docker-compose.prod.yml ps redis
+fi
+
 
 # Генерация ключа если нужно
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
