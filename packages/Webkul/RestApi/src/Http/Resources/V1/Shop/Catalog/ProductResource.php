@@ -39,6 +39,8 @@ class ProductResource extends JsonResource
             'base_image'         => ProductImage::getProductBaseImage($product),
             'category_image'     => $this->getCategoryImage($product),
             'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
+            'up_sells'            => $this->getRelationIds($product, 'up_sells'),
+            'cross_sells'         => $this->getRelationIds($product, 'cross_sells'),
 
             /* half portion (половинка) - для ингредиентов */
             'is_half_portion'            => (bool) ($product->is_half_portion ?? false),
@@ -132,6 +134,24 @@ class ProductResource extends JsonResource
         }
 
         return $attributes;
+    }
+
+    /**
+     * Get related product IDs by relation name.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     */
+    private function getRelationIds($product, string $relation): array
+    {
+        if (! $product->relationLoaded($relation)) {
+            $product->load($relation);
+        }
+
+        return $product->{$relation}
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
     }
 
     /**

@@ -81,6 +81,8 @@ class CatalogCategoryController extends CatalogController
                             'downloadable_samples',
                             'booking_products',
                             'bundle_options',
+                            'up_sells',
+                            'cross_sells',
                             'drinks' => function ($query) {
                                 $query->with('images')
                                     ->orderByPivot('sort', 'asc');
