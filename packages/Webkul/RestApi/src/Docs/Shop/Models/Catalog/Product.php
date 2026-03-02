@@ -196,6 +196,34 @@ class Product
 
     /**
      * @OA\Property(
+     *     title="Up Sells",
+     *     description="List of up-sell product IDs",
+     *     type="array",
+     *     example={12, 25, 31},
+     *
+     *     @OA\Items(type="integer")
+     * )
+     *
+     * @var int[]
+     */
+    public $up_sells;
+
+    /**
+     * @OA\Property(
+     *     title="Cross Sells",
+     *     description="List of cross-sell product IDs",
+     *     type="array",
+     *     example={4, 7, 8},
+     *
+     *     @OA\Items(type="integer")
+     * )
+     *
+     * @var int[]
+     */
+    public $cross_sells;
+
+    /**
+     * @OA\Property(
      *     title="Is Half Portion",
      *     description="Является ли товар половинкой порции (для ингредиентов)",
      *     type="boolean",
