@@ -13,6 +13,17 @@ return [
     ],
 
     /**
+     * Application Errors.
+     */
+    [
+        'key'        => 'application_errors',
+        'name'       => 'admin::app.components.layouts.sidebar.application-errors',
+        'route'      => 'admin.application_errors.index',
+        'sort'       => 999,
+        'icon'       => 'icon-report',
+    ],
+
+    /**
      * Sales.
      */
     [
@@ -385,6 +396,12 @@ return [
         'name'       => 'rest-api::app.auth_channels.settings.title',
         'route'      => 'admin.settings.auth_channels.index',
         'sort'       => 11,
+        'icon'       => '',
+    ], [
+        'key'        => 'settings.product_category_positions',
+        'name'       => 'admin::app.settings.product_category_positions.title',
+        'route'      => 'admin.settings.product_category_positions.index',
+        'sort'       => 12,
         'icon'       => '',
     ],
 

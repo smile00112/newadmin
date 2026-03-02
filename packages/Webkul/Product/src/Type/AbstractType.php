@@ -154,6 +154,16 @@ abstract class AbstractType
     {
         $product = $this->productRepository->find($id);
 
+        if ($product->type !== 'ingredient') {
+            unset($data['is_half_portion'], $data['half_portion_pair_product_id']);
+        } else {
+            // Convert empty or invalid half_portion_pair_product_id to null to avoid foreign key constraint violation
+            $pairId = $data['half_portion_pair_product_id'] ?? null;
+            if ($pairId === '' || $pairId === '0' || (is_numeric($pairId) && (int) $pairId === 0)) {
+                $data['half_portion_pair_product_id'] = null;
+            }
+        }
+
         $product->update($data);
 
         /**
@@ -188,6 +198,38 @@ abstract class AbstractType
         $product->related_products()->sync($data['related_products'] ?? []);
 
         $product->ingredients_incompatibility()->sync($data['ingredients_incompatibility'] ?? []);
+
+        // Обработка drinks с pivot данными (sort, default)
+        if (isset($data['drinks']) && is_array($data['drinks'])) {
+            $drinksData = [];
+            foreach ($data['drinks'] as $key => $drink) {
+                // Обработка формата drinks[product_id][id], drinks[product_id][sort], drinks[product_id][default]
+                if (is_array($drink) && isset($drink['id'])) {
+                    $productId = $drink['id'];
+                    $drinksData[$productId] = [
+                        'sort' => isset($drink['sort']) ? (int) $drink['sort'] : 0,
+                        'default' => !empty($drink['default']) ? 1 : 0,
+                    ];
+                }
+                // Обработка формата drinks[] = product_id (простой массив ID)
+                elseif (is_numeric($drink) && $drink > 0) {
+                    $drinksData[$drink] = [
+                        'sort' => 0,
+                        'default' => false,
+                    ];
+                }
+                // Обработка формата drinks[product_id] = product_id (ключ = значение)
+                elseif (is_numeric($key) && $key > 0 && is_numeric($drink) && $drink > 0) {
+                    $drinksData[$drink] = [
+                        'sort' => 0,
+                        'default' => false,
+                    ];
+                }
+            }
+            $product->drinks()->sync($drinksData);
+        } else {
+            $product->drinks()->sync([]);
+        }
 
         $this->productInventoryRepository->saveInventories($data, $product);
 

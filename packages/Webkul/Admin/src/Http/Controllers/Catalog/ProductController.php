@@ -3,7 +3,9 @@
 namespace Webkul\Admin\Http\Controllers\Catalog;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Admin\DataGrids\Catalog\ProductDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -23,6 +25,7 @@ use Webkul\Product\Repositories\ProductDownloadableLinkRepository;
 use Webkul\Product\Repositories\ProductDownloadableSampleRepository;
 use Webkul\Product\Repositories\ProductInventoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 
 class ProductController extends Controller
 {
@@ -178,6 +181,18 @@ class ProductController extends Controller
 
         Event::dispatch('catalog.product.update.after', $product);
 
+        // Clear catalog API cache after product update
+        try {
+            Log::info('Clearing catalog cache after product update', ['product_id' => $product->id]);
+            CatalogCategoryController::clearCatalogCache();
+            Log::info('Catalog cache cleared successfully', ['product_id' => $product->id]);
+        } catch (\Exception $e) {
+            Log::error('Failed to clear catalog cache after product update', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
         session()->flash('success', trans('admin::app.catalog.products.update-success'));
 
         //dd('save');
@@ -203,6 +218,9 @@ class ProductController extends Controller
         $this->productInventoryRepository->saveInventories(request()->all(), $product);
 
         Event::dispatch('catalog.product.update.after', $product);
+
+        // Clear catalog cache after inventory update
+        CatalogCategoryController::clearCatalogCache();
 
         return response()->json([
             'message'      => __('admin::app.catalog.products.saved-inventory-message'),
@@ -523,6 +541,49 @@ class ProductController extends Controller
         $query = trim(request('query'));
         $limit = request('limit', 30);
 
+        if (request('type') === 'ingredient') {
+            $locale = app()->getLocale();
+            $channel = core()->getCurrentChannelCode();
+
+            $queryBuilder = DB::table('product_flat')
+                ->join('products', 'product_flat.product_id', '=', 'products.id')
+                ->where('products.type', 'ingredient')
+                ->where('product_flat.locale', $locale)
+                ->where('product_flat.channel', $channel);
+
+            if (! empty($query)) {
+                $queryBuilder->where(function ($q) use ($query) {
+                    $q->where('product_flat.name', 'like', '%'.$query.'%')
+                        ->orWhere('products.sku', 'like', '%'.$query.'%');
+                });
+            }
+
+            $productIds = $queryBuilder
+                ->select('products.id')
+                ->orderBy('product_flat.name')
+                ->limit($limit)
+                ->pluck('id');
+
+            if ($productIds->isEmpty()) {
+                return ProductResource::collection(collect());
+            }
+
+            $products = $this->productRepository
+                ->with([
+                    'attribute_family',
+                    'images',
+                    'attribute_values',
+                    'price_indices',
+                    'inventory_indices',
+                    'inventories',
+                ])
+                ->whereIn('id', $productIds)
+                ->orderByRaw('FIELD(id, '.$productIds->implode(',').')')
+                ->get();
+
+            return ProductResource::collection($products);
+        }
+
         $searchEngine = 'database';
 
         if (
@@ -553,6 +614,10 @@ class ProductController extends Controller
 
         if (request()->has('exclude_customizable_products')) {
             $params['exclude_customizable_products'] = request('exclude_customizable_products');
+        }
+
+        if (request()->has('exclude_type')) {
+            $params['exclude_type'] = request('exclude_type');
         }
 
         $products = $this->productRepository

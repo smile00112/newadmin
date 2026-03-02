@@ -18,4 +18,13 @@ return [
         'active'      => true,
         'sort'        => 2,
     ],
+
+    'alfabank' => [
+        'code'        => 'alfabank',
+        'title'       => 'Альфа-Банк',
+        'description' => 'Оплата картой через Альфа-Банк',
+        'class'       => 'Webkul\AlfabankPayment\Payment\AlfabankPayment',
+        'active'      => true,
+        'sort'        => 3,
+    ],
 ];

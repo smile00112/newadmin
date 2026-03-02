@@ -58,6 +58,18 @@ class Category
 
     /**
      * @OA\Property(
+     *     title="Product Display Type",
+     *     description="Category's product listing layout: standard grid/list, enlarged first product at top, or variant #2",
+     *     example="standard",
+     *     enum={"standard", "enlarged_top", "variant_2"}
+     * )
+     *
+     * @var string
+     */
+    public $product_display_type;
+
+    /**
+     * @OA\Property(
      *     title="Description",
      *     description="Category's description",
      *     example="Lorem Ipsum is simply dummy text of the printing and typesetting industry."

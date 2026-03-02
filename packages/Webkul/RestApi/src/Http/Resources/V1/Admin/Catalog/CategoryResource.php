@@ -19,18 +19,35 @@ class CategoryResource extends JsonResource
             'name'                  => $this->name,
             'slug'                  => $this->slug,
             'display_mode'          => $this->display_mode,
-            'description'           => $this->description,
-            'meta_title'            => $this->meta_title,
-            'meta_description'      => $this->meta_description,
-            'meta_keywords'         => $this->meta_keywords,
+            'product_display_type'  => $this->product_display_type ?? 'standard',
+            'description'           => $this->cleanHtmlDescription($this->description),
             'status'                => $this->status,
             'banner_url'            => $this->banner_url,
             'logo_url'              => $this->logo_url,
-            'translations'          => $this->translations,
             'position'              => $this->position,
             'additional'            => $this->additional,
-            'created_at'            => $this->created_at,
-            'updated_at'            => $this->updated_at,
         ];
+    }
+
+    /**
+     * Clean HTML tags from description text.
+     *
+     * @param  string|null  $description
+     * @return string|null
+     */
+    private function cleanHtmlDescription($description)
+    {
+        if (empty($description)) {
+            return null;
+        }
+
+        // Remove HTML tags and decode HTML entities
+        $cleaned = strip_tags($description);
+        $cleaned = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Trim whitespace
+        $cleaned = trim($cleaned);
+
+        return !empty($cleaned) ? $cleaned : null;
     }
 }

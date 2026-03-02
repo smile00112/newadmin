@@ -22,6 +22,13 @@ class BonusManageController extends Controller
     public const COUNT = 10;
 
     /**
+     * Recent accruals per page.
+     *
+     * @var int
+     */
+    public const RECENT_ACCRUALS_PER_PAGE = 20;
+
+    /**
      * Create a new controller instance.
      */
     public function __construct(
@@ -61,6 +68,50 @@ class BonusManageController extends Controller
         return new JsonResponse([
             'data' => $customers->items(),
             'total' => $customers->total(),
+        ]);
+    }
+
+    /**
+     * Get recent bonus accruals with pagination.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getRecentAccruals(): JsonResponse
+    {
+        $page = (int) request()->input('page', 1);
+        $perPage = self::RECENT_ACCRUALS_PER_PAGE;
+
+        $paginator = BonusTransaction::query()
+            ->accruals()
+            ->with(['customer', 'order'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $data = $paginator->getCollection()->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'customer_id' => $item->customer_id,
+                'customer_name' => $item->customer
+                    ? trim($item->customer->first_name . ' ' . $item->customer->last_name)
+                    : '—',
+                'order_id' => $item->order_id,
+                'order_increment_id' => $item->order ? $item->order->increment_id : '—',
+                'amount' => round($item->amount, 2),
+                'amount_formatted' => core()->formatPrice($item->amount, $item->currency_code),
+                'currency_code' => $item->currency_code,
+                'description' => $item->description ?? '—',
+                'created_at' => $item->created_at->format('d.m.Y H:i'),
+            ];
+        });
+
+        return new JsonResponse([
+            'data' => $data->values()->all(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
         ]);
     }
 

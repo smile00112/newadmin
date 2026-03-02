@@ -15,6 +15,16 @@ return [
         'name'  => 'admin::app.acl.dashboard',
         'route' => 'admin.dashboard.index',
         'sort'  => 1,
+    ], [
+        'key'   => 'application_errors',
+        'name'  => 'admin::app.acl.application-errors',
+        'route' => 'admin.application_errors.index',
+        'sort'  => 2,
+    ], [
+        'key'   => 'application_errors.view',
+        'name'  => 'admin::app.acl.view',
+        'route' => 'admin.application_errors.show',
+        'sort'  => 1,
     ],
 
     /*
@@ -895,6 +905,16 @@ return [
         'name'  => 'admin::app.acl.import',
         'route' => 'admin.settings.data_transfer.imports.import',
         'sort'  => 4,
+    ], [
+        'key'   => 'settings.product_category_positions',
+        'name'  => 'admin::app.settings.product_category_positions.title',
+        'route' => 'admin.settings.product_category_positions.index',
+        'sort'  => 11,
+    ], [
+        'key'   => 'settings.product_category_positions.store',
+        'name'  => 'admin::app.acl.edit',
+        'route' => 'admin.settings.product_category_positions.store',
+        'sort'  => 1,
     ],
 
     /*

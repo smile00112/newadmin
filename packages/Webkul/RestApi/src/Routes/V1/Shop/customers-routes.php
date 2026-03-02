@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AddressController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AuthController;
@@ -11,6 +13,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\InvoiceController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\MultiChannelAuthController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\NewsLetterController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\OrderController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\SavedCardController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\ShipmentController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\TransactionController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\WishlistController;
@@ -57,6 +60,13 @@ Route::post('telegram/webhook', [TelegramWebhookController::class, 'handleWebhoo
  * Customer authorized routes.
  */
 Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function () {
+    /**
+     * Broadcasting authorization route for private channels.
+     */
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return Broadcast::auth($request);
+    });
+
     /**
      * Customer auth routes.
      */
@@ -141,6 +151,14 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
     });
 
     /**
+     * Customer saved cards routes.
+     */
+    Route::controller(SavedCardController::class)->prefix('customer/saved-cards')->group(function () {
+        Route::get('', 'index');
+        Route::delete('{id}', 'destroy');
+    });
+
+    /**
      * Customer wishlist routes.
      */
     Route::controller(WishlistController::class)->prefix('customer/wishlist')->group(function () {
@@ -189,6 +207,22 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('check-minimum-order', 'checkMinimumOrder');
 
         Route::post('save-order', 'saveOrder');
+    });
+
+    /**
+     * Checkout bonus routes.
+     */
+    Route::controller(CartController::class)->prefix('checkout/bonus')->group(function () {
+        Route::post('auto-apply', 'autoApplyBonus');
+        Route::delete('auto-apply', 'disableAutoApplyBonus');
+    });
+
+    /**
+     * Checkout table routes.
+     */
+    Route::controller(CartController::class)->prefix('checkout/table')->group(function () {
+        Route::post('bind', 'bindTable');
+        Route::delete('bind', 'unbindTable');
     });
 
     /**

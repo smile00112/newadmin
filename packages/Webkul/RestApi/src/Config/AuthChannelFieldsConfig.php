@@ -68,6 +68,13 @@ class AuthChannelFieldsConfig
                 'description' => 'rest-api::app.auth_channels.settings.sms.auth_message_text-info',
             ],
             [
+                'key'         => 'code_length',
+                'title'       => 'rest-api::app.auth_channels.settings.sms.code_length',
+                'type'        => 'number',
+                'default'     => 6,
+                'description' => 'rest-api::app.auth_channels.settings.sms.code_length-info',
+            ],
+            [
                 'key'         => 'test_phone_numbers',
                 'title'       => 'rest-api::app.auth_channels.settings.sms.test_phone_numbers',
                 'type'        => 'textarea',
@@ -116,6 +123,13 @@ class AuthChannelFieldsConfig
                 'description' => 'rest-api::app.auth_channels.settings.telegram.start_message-info',
             ],
             [
+                'key'         => 'code_length',
+                'title'       => 'rest-api::app.auth_channels.settings.telegram.code_length',
+                'type'        => 'number',
+                'default'     => 6,
+                'description' => 'rest-api::app.auth_channels.settings.telegram.code_length-info',
+            ],
+            [
                 'key'         => 'test_phone_numbers',
                 'title'       => 'rest-api::app.auth_channels.settings.telegram.test_phone_numbers',
                 'type'        => 'textarea',
@@ -156,6 +170,13 @@ class AuthChannelFieldsConfig
                 'type'        => 'text',
                 'default'     => 'https://api.green-api.com',
                 'description' => 'rest-api::app.auth_channels.settings.whatsapp.url-info',
+            ],
+            [
+                'key'         => 'code_length',
+                'title'       => 'rest-api::app.auth_channels.settings.whatsapp.code_length',
+                'type'        => 'number',
+                'default'     => 6,
+                'description' => 'rest-api::app.auth_channels.settings.whatsapp.code_length-info',
             ],
             [
                 'key'         => 'test_phone_numbers',

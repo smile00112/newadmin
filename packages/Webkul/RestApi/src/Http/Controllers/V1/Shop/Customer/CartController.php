@@ -2,9 +2,11 @@
 
 namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
+use App\Services\BonusPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
+use Webkul\Bonus\Services\BonusService;
 use Webkul\CartRule\Repositories\CartRuleCouponRepository;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\WishlistRepository;
@@ -22,7 +24,9 @@ class CartController extends CustomerController
     public function __construct(
         protected WishlistRepository $wishlistRepository,
         protected ProductRepository $productRepository,
-        protected CartRuleCouponRepository $cartRuleCouponRepository
+        protected CartRuleCouponRepository $cartRuleCouponRepository,
+        protected BonusPaymentService $bonusPaymentService,
+        protected BonusService $bonusService
     ) {}
 
     /**
@@ -38,14 +42,23 @@ class CartController extends CustomerController
     /**
      * Get the customer cart.
      */
-    public function index(): Response
+    public function index(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         Cart::collectTotals();
 
-        return response([
-            'data' => ($cart = Cart::getCart()) ? app()->make($this->resource(), ['resource' => $cart]) : null,
+        $cart = Cart::getCart();
+
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
+        $data = [
+            'data'      => $cart ? app()->make($this->resource(), ['resource' => $cart])->resolve(request()) : null,
             'cross_sell' => [],//$this->getCrossSellProducts(),
-        ]);
+        ];
+
+        $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return api_stream_json($jsonResponse, 'cart.json');
     }
 
     /**
@@ -91,6 +104,9 @@ class CartController extends CustomerController
                 if (request()->get('is_buy_now')) {
                     Event::dispatch('shop.item.buy-now', $productId);
                 }
+
+                // Устанавливаем параметр minimal для упрощенной сериализации
+                request()->merge(['minimal' => true]);
 
                 return response([
                     'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
@@ -142,6 +158,9 @@ class CartController extends CustomerController
         try {
             Cart::updateItems(request()->input());
 
+            // Устанавливаем параметр minimal для упрощенной сериализации
+            request()->merge(['minimal' => true]);
+
             return response([
                 'data'       => app()->make($this->resource(), ['resource' => Cart::getCart()]),
                 'cross_sell' => [],//$this->getCrossSellProducts(),
@@ -184,6 +203,9 @@ class CartController extends CustomerController
 
         $cart = Cart::getCart();
 
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
         return response([
             'data'       => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'cross_sell' => [],//$this->getCrossSellProducts(),
@@ -222,6 +244,9 @@ class CartController extends CustomerController
 
                     $cart = Cart::getCart();
 
+                    // Устанавливаем параметр minimal для упрощенной сериализации
+                    request()->merge(['minimal' => true]);
+
                     return response([
                         'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
                         'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
@@ -247,9 +272,146 @@ class CartController extends CustomerController
 
         $cart = Cart::getCart();
 
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
         return response([
             'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
             'message' => trans('rest-api::app.shop.checkout.cart.coupon.success-remove'),
+        ]);
+    }
+
+    /**
+     * Auto-apply maximum possible bonus amount to cart.
+     * Uses order total and max_usage_percent to compute amount; no body required.
+     */
+    public function autoApplyBonus(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        if (! $this->bonusService->isEnabled()) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.coupon.invalid'),
+            ], 400);
+        }
+
+        $maxAmount = $this->bonusService->getMaxUsableBonuses($cart, (int) $cart->customer_id);
+
+        try {
+            $this->bonusPaymentService->applyBonusToCart($cart, $maxAmount);
+        } catch (\Exception $e) {
+            report($e);
+
+            return response([
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+
+        // Set auto_apply to true
+        $cart->update(['auto_apply' => true]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => trans('rest-api::app.shop.checkout.cart.coupon.success'),
+        ]);
+    }
+
+    /**
+     * Disable auto-apply bonus for cart.
+     */
+    public function disableAutoApplyBonus(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        // Remove bonus from cart
+        $this->bonusPaymentService->removeBonusFromCart($cart);
+
+        // Set auto_apply to false
+        $cart->update(['auto_apply' => false]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        // Устанавливаем параметр minimal для упрощенной сериализации
+        request()->merge(['minimal' => true]);
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => 'Auto-apply bonus disabled successfully',
+        ]);
+    }
+
+    /**
+     * Bind table number to cart.
+     */
+    public function bindTable(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        $validatedData = $request->validate([
+            'table_number' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $cart->update(['table_number' => $validatedData['table_number']]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        request()->merge(['minimal' => true]);
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => trans('rest-api::app.shop.checkout.table.bind-success'),
+        ]);
+    }
+
+    /**
+     * Unbind table number from cart.
+     */
+    public function unbindTable(Request $request): Response
+    {
+        $cart = Cart::getCart();
+
+        if (! $cart || ! $cart->customer_id) {
+            return response([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        $cart->update(['table_number' => null]);
+
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
+        request()->merge(['minimal' => true]);
+
+        return response([
+            'data'    => $cart ? app()->make($this->resource(), ['resource' => $cart]) : null,
+            'message' => trans('rest-api::app.shop.checkout.table.unbind-success'),
         ]);
     }
 

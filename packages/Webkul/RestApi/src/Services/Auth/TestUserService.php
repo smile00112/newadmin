@@ -49,11 +49,26 @@ class TestUserService
     /**
      * Get fixed verification code for test users.
      *
+     * @param int $codeLength Desired code length
      * @return string
      */
-    public function getFixedCode(): string
+    public function getFixedCode(int $codeLength = 6): string
     {
-        return self::FIXED_CODE;
+        // Ensure code length is within valid range (4-10)
+        $codeLength = max(4, min(10, $codeLength));
+        
+        // If requested length is less than or equal to FIXED_CODE length, return substring
+        if ($codeLength <= strlen(self::FIXED_CODE)) {
+            return substr(self::FIXED_CODE, 0, $codeLength);
+        }
+        
+        // If requested length is longer than FIXED_CODE, repeat the pattern
+        $result = self::FIXED_CODE;
+        while (strlen($result) < $codeLength) {
+            $result .= self::FIXED_CODE;
+        }
+        
+        return substr($result, 0, $codeLength);
     }
 
     /**

@@ -17,8 +17,8 @@ jobs:
           script: |
             cd ~ # Укажите абсолютный путь к папке с вашим сайтом
             git pull origin main
-            php8.2 artisan migrate
-            php8.2 artisan optimize
+            php8.3 artisan migrate
+            php8.3 artisan optimize
 
             # Добавьте команды для перезапуска служб, установки зависимостей и т.д.
             # npm install

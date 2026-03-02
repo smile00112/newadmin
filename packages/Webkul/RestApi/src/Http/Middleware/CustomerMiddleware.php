@@ -16,8 +16,22 @@ class CustomerMiddleware
      */
     public function handle(Request $request, Closure $next, $guard = null)
     {
+        // Проверяем, есть ли токен Bearer в заголовке
+        $hasBearerToken = $request->bearerToken() !== null;
+
+        // Если есть токен Bearer, всегда используем токеновую аутентификацию
+        if ($hasBearerToken) {
+            if ($request->user()?->tokenCan('role:customer')) {
+                return $next($request);
+            }
+
+            return response([
+                'message' => __('rest-api::app.common-response.error.not-authorized'),
+            ], 401);
+        }
+
         /**
-         * This is for session based authentication.
+         * This is for session based authentication (только если нет токена Bearer).
          */
         if (EnsureFrontendRequestsAreStateful::fromFrontend($request)) {
             if (! auth('customer')->user()) {

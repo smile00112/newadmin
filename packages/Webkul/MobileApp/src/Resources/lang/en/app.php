@@ -19,6 +19,16 @@ return [
                 'title' => 'Custom Settings',
                 'info'  => 'Custom configuration data',
             ],
+
+            'contact-us' => [
+                'title' => 'Contact Us',
+                'info'  => 'Contact information for mobile app',
+            ],
+
+            'documents' => [
+                'title' => 'Document Links',
+                'info'  => 'Links to documents for mobile app',
+            ],
         ],
 
         'fields' => [
@@ -45,6 +55,18 @@ return [
             'shipping-methods-info'    => 'Available shipping methods in mobile app',
             'home-filters'             => 'Home Screen Filters',
             'home-filters-info'        => 'Select attributes to use as filters on home screen',
+            'contact-telegram'         => 'Telegram Contact',
+            'contact-telegram-info'    => 'Telegram contact link',
+            'contact-whatsapp'         => 'WhatsApp Contact',
+            'contact-whatsapp-info'    => 'WhatsApp contact link',
+            'contact-email'            => 'Email',
+            'contact-email-info'       => 'Email address',
+            'contact-max'              => 'Max Messenger Contact',
+            'contact-max-info'         => 'Max Messenger contact link',
+            'user-agreement'            => 'User Agreement',
+            'user-agreement-info'       => 'Select CMS page for user agreement',
+            'privacy-policy'            => 'Privacy Policy',
+            'privacy-policy-info'       => 'Select CMS page for privacy policy',
         ],
     ],
 

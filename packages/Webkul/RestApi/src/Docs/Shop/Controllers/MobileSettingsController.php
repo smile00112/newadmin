@@ -10,7 +10,7 @@ class MobileSettingsController
      *      operationId="getMobileAppSettings",
      *      tags={"Mobile App"},
      *      summary="Get mobile app settings",
-     *      description="Returns mobile app configuration settings including app info, filters, and custom data",
+     *      description="Returns mobile app configuration settings including app info, filters, custom data, and contact information",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\Parameter(
@@ -176,6 +176,120 @@ class MobileSettingsController
      *                          @OA\Property(property="in_stock", type="boolean", example=true, description="Product availability"),
      *                          @OA\Property(property="is_saleable", type="boolean", example=true, description="Whether product can be sold"),
      *                          @OA\Property(property="url_key", type="string", example="product-url-key", description="Product URL key")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="products_banners",
+     *                      type="array",
+     *                      description="Product banners from catalog.product_category_positions (product-category position mappings with product details)",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(
+     *                              property="product",
+     *                              type="object",
+     *                              description="ProductReviewResource structure (id, title, comment, name, status, product, customer, created_at, updated_at)",
+     *                              @OA\Property(property="id", type="integer", example=1, description="ID"),
+     *                              @OA\Property(property="title", type="string", example="Great product", nullable=true, description="Title"),
+     *                              @OA\Property(property="comment", type="string", example="Nice quality", nullable=true, description="Comment"),
+     *                              @OA\Property(property="name", type="string", example="Customer Name", description="Name"),
+     *                              @OA\Property(property="status", type="string", example="approved", description="Status"),
+     *                              @OA\Property(
+     *                                  property="product",
+     *                                  type="object",
+     *                                  description="Product details (ProductResource)",
+     *                                  @OA\Property(property="id", type="integer", example=1),
+     *                                  @OA\Property(property="sku", type="string", example="product-sku"),
+     *                                  @OA\Property(property="name", type="string", example="Product Name"),
+     *                                  @OA\Property(property="images", type="array", @OA\Items(type="object")),
+     *                                  @OA\Property(property="price", type="number", example=99.99)
+     *                              ),
+     *                              @OA\Property(property="customer", type="object", nullable=true, description="Customer resource when customer_id is set"),
+     *                              @OA\Property(property="created_at", type="string", format="date-time", example="2025-01-15T10:30:00.000000Z"),
+     *                              @OA\Property(property="updated_at", type="string", format="date-time", example="2025-01-15T10:30:00.000000Z")
+     *                          ),
+     *                          @OA\Property(property="category_id", type="integer", example=5, description="Category ID"),
+     *                          @OA\Property(property="position_type", type="string", example="top", description="Position type: top, middle, bottom, numeric"),
+     *                          @OA\Property(property="position_value", type="integer", nullable=true, example=null, description="Numeric position value when position_type is numeric")
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_telegram",
+     *                      type="string",
+     *                      description="Telegram contact link",
+     *                      example="https://t.me/your_contact",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_whatsapp",
+     *                      type="string",
+     *                      description="WhatsApp contact link",
+     *                      example="https://wa.me/1234567890",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_email",
+     *                      type="string",
+     *                      description="Email address",
+     *                      example="support@example.com",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_max",
+     *                      type="string",
+     *                      description="Max Messenger contact link",
+     *                      example="https://max.me/your_contact",
+     *                      nullable=true
+     *                  ),
+     *                  @OA\Property(
+     *                      property="contact_us",
+     *                      type="object",
+     *                      description="Contact information in structured format",
+     *                      @OA\Property(
+     *                          property="telegram",
+     *                          type="string",
+     *                          description="Telegram contact link",
+     *                          example="https://t.me/your_contact",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="whatsapp",
+     *                          type="string",
+     *                          description="WhatsApp contact link",
+     *                          example="https://wa.me/1234567890",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="email",
+     *                          type="string",
+     *                          description="Email address",
+     *                          example="support@example.com",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="max",
+     *                          type="string",
+     *                          description="Max Messenger contact link",
+     *                          example="https://max.me/your_contact",
+     *                          nullable=true
+     *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="documents",
+     *                      type="object",
+     *                      description="Document links for mobile app",
+     *                      @OA\Property(
+     *                          property="user_agreement",
+     *                          type="string",
+     *                          description="URL to get HTML content of user agreement page",
+     *                          example="http://example.com/api/v1/cms/1/html",
+     *                          nullable=true
+     *                      ),
+     *                      @OA\Property(
+     *                          property="privacy_policy",
+     *                          type="string",
+     *                          description="URL to get HTML content of privacy policy page",
+     *                          example="http://example.com/api/v1/cms/2/html",
+     *                          nullable=true
      *                      )
      *                  )
      *              )

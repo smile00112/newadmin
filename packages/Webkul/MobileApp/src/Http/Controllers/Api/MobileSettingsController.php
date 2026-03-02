@@ -6,10 +6,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Webkul\Attribute\Repositories\AttributeRepository;
+use Webkul\Core\Models\CoreConfig;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Payment;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductReviewResource;
 use Webkul\Sales\Models\Order;
 use Webkul\Shipping\Shipping;
 
@@ -24,6 +26,11 @@ class MobileSettingsController extends Controller
      * Cache key prefix.
      */
     protected const CACHE_PREFIX = 'mobile_settings_response';
+
+    /**
+     * Config code for product category positions (product banners).
+     */
+    private const PRODUCT_CATEGORY_POSITIONS_CONFIG = 'catalog.product_category_positions';
 
     /**
      * Create a new controller instance.
@@ -102,6 +109,30 @@ class MobileSettingsController extends Controller
 
         // Add cart cross-sell products
         $settings['cart_cross_sell_products'] = $this->getCartCrossSellProducts();
+
+        // Add product banners from catalog.product_category_positions
+        $settings['products_banners'] = $this->getProductsBanners();
+
+        // Add contact us information in structured format
+        $settings['contact_us'] = [
+            'telegram' => $settings['contact_telegram'] ?? '',
+            'whatsapp' => $settings['contact_whatsapp'] ?? '',
+            'email'    => $settings['contact_email'] ?? '',
+            'max'      => $settings['contact_max'] ?? '',
+        ];
+
+        // Add document links
+        $userAgreementId = $settings['user_agreement'] ?? null;
+        $privacyPolicyId = $settings['privacy_policy'] ?? null;
+
+        $settings['documents'] = [
+            'user_agreement' => $userAgreementId
+                ? url('/api/v1/cms/' . $userAgreementId . '/html')
+                : '',
+            'privacy_policy' => $privacyPolicyId
+                ? url('/api/v1/cms/' . $privacyPolicyId . '/html')
+                : '',
+        ];
 
         return $settings;
     }
@@ -230,6 +261,67 @@ class MobileSettingsController extends Controller
         // Если отдельный список не включен, возвращаем пустой массив
         // так как кросс-сейлы зависят от товаров в корзине пользователя
         return [];
+    }
+
+    /**
+     * Get product banners from catalog.product_category_positions config.
+     *
+     * @return array<int, array{product: array, category_id: int, position_type: string, position_value: int|null}>
+     */
+    protected function getProductsBanners(): array
+    {
+        $config = CoreConfig::where('code', self::PRODUCT_CATEGORY_POSITIONS_CONFIG)
+            ->whereNull('channel_code')
+            ->whereNull('locale_code')
+            ->first();
+
+        if (! $config || empty($config->value)) {
+            return [];
+        }
+
+        $mappings = json_decode($config->value, true);
+
+        if (! is_array($mappings)) {
+            return [];
+        }
+
+        $productIds = array_unique(array_filter(array_column($mappings, 'product_id')));
+
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $products = $this->productRepository
+            ->whereIn('id', $productIds)
+            ->with('images')
+            ->get()
+            ->keyBy('id');
+
+        $result = [];
+
+        foreach ($mappings as $row) {
+            $productId = (int) ($row['product_id'] ?? 0);
+            $categoryId = (int) ($row['category_id'] ?? 0);
+
+            if ($productId <= 0 || $categoryId <= 0) {
+                continue;
+            }
+
+            $product = $products->get($productId);
+
+            if (! $product) {
+                continue;
+            }
+
+            $result[] = [
+                'product'        => ProductReviewResource::make($product)->resolve(),
+                'category_id'    => $categoryId,
+                'position_type'  => $row['position_type'] ?? 'middle',
+                'position_value' => isset($row['position_value']) ? (int) $row['position_value'] : null,
+            ];
+        }
+
+        return $result;
     }
 }
 

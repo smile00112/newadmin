@@ -591,7 +591,7 @@
 
                         <!-- Group Options -->
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 hidden">
                                 <input
                                     type="checkbox"
                                     id="show_title"
@@ -603,7 +603,7 @@
                                 </label>
                             </div>
 
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 hidden">
                                 <input
                                     type="checkbox"
                                     id="opened_by_default"
@@ -642,7 +642,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 hidden">
                             <input
                                 type="checkbox"
                                 id="hidden"
@@ -694,6 +694,72 @@
                                     <option value="{{ $template->id }}">{{ $template->name }}</option>
                                 @endforeach
                             </select>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="sale_by_sizes"
+                                v-model="groupForm.sale_by_sizes"
+                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <label for="sale_by_sizes" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                @lang('admin::app.catalog.products.edit.types.constructor.sale-by-sizes')
+                            </label>
+                        </div>
+
+                        <div v-if="groupForm.sale_by_sizes">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    @lang('admin::app.catalog.products.edit.types.constructor.portion-sizes')
+                                </label>
+
+                                <button
+                                    type="button"
+                                    class="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-700 dark:hover:bg-blue-800"
+                                    @click.prevent="openPortionSizeModal()"
+                                >
+                                    @lang('admin::app.catalog.products.edit.types.constructor.add-portion-size')
+                                </button>
+                            </div>
+
+                            <div v-if="groupForm.portion_sizes && groupForm.portion_sizes.length" class="space-y-2">
+                                <div
+                                    v-for="(size, sizeIndex) in groupForm.portion_sizes"
+                                    :key="sizeIndex"
+                                    class="flex items-center justify-between p-3 border border-gray-200 rounded-lg dark:border-gray-700"
+                                >
+                                    <div class="text-sm text-gray-700 dark:text-gray-300">
+                                        <p class="font-medium text-gray-800 dark:text-white">@{{ size.name }}</p>
+                                        <p>
+                                            @lang('admin::app.catalog.products.edit.types.constructor.portion-quantity'): @{{ size.quantity }}
+                                            ·
+                                            @lang('admin::app.catalog.products.edit.types.constructor.portion-weight'): @{{ size.weight }}
+                                        </p>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                            @click="editPortionSize(sizeIndex)"
+                                        >
+                                            @lang('admin::app.catalog.products.edit.types.constructor.edit-size')
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                            @click="removePortionSize(sizeIndex)"
+                                        >
+                                            @lang('admin::app.catalog.products.edit.types.constructor.delete-size')
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-else class="text-center py-4 text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 rounded-lg dark:border-gray-700">
+                                <p class="text-sm">@lang('admin::app.catalog.products.edit.types.constructor.no-portion-sizes')</p>
+                            </div>
                         </div>
 
                         <!-- Sort Order -->
@@ -827,6 +893,73 @@
                 </x-slot:footer>
             </x-admin::modal>
 
+            <x-admin::modal ref="portionSizeModal">
+                <x-slot:header>
+                    <p class="text-lg font-bold text-gray-800 dark:text-white">
+                        @{{ isEditPortionSizeMode ? '@lang('admin::app.catalog.products.edit.types.constructor.edit-portion-size')' : '@lang('admin::app.catalog.products.edit.types.constructor.add-portion-size')' }}
+                    </p>
+                </x-slot:header>
+
+                <x-slot:content>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                @lang('admin::app.catalog.products.edit.types.constructor.portion-name')
+                            </label>
+                            <input
+                                type="text"
+                                v-model="portionSizeForm.name"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    @lang('admin::app.catalog.products.edit.types.constructor.portion-quantity')
+                                </label>
+                                <input
+                                    type="number"
+                                    v-model="portionSizeForm.quantity"
+                                    min="0"
+                                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    @lang('admin::app.catalog.products.edit.types.constructor.portion-weight')
+                                </label>
+                                <input
+                                    type="number"
+                                    v-model="portionSizeForm.weight"
+                                    min="0"
+                                    class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </x-slot:content>
+
+                <x-slot:footer>
+                    <div class="flex items-center justify-end w-full gap-x-2.5">
+                        <x-admin::button
+                            button-type="button"
+                            class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                            :title="trans('admin::app.catalog.products.edit.types.constructor.cancel-btn')"
+                            @click.prevent="$refs.portionSizeModal.close()"
+                        />
+
+                        <x-admin::button
+                            button-type="button"
+                            class="primary-button"
+                            :title="trans('admin::app.catalog.products.edit.types.constructor.save-size-btn')"
+                            @click.prevent="savePortionSize()"
+                        />
+                    </div>
+                </x-slot:footer>
+            </x-admin::modal>
+
             <!-- Product Search Modal -->
             <x-admin::products.search
                 ref="productSearchModal"
@@ -852,6 +985,8 @@
                     editingIndex: null,
                     isEditGroupMode: false,
                     editingGroupIndex: null,
+                    isEditPortionSizeMode: false,
+                    editingPortionSizeIndex: null,
                     selectedTemplateId: '',
                     form: {
                         visible: true,
@@ -878,8 +1013,15 @@
                         double_portions: false,
                         half_portions: false,
                         ingredients_incompatibilities_id: null,
+                        sale_by_sizes: false,
+                        portion_sizes: [],
                         sort: 0,
                         products: []
+                    },
+                    portionSizeForm: {
+                        name: '',
+                        quantity: 0,
+                        weight: 0
                     }
                 }
             },
@@ -965,7 +1107,11 @@
 
                 editGroup(groupIndex) {
                     const group = this.form.groups[groupIndex];
-                    this.groupForm = { ...group };
+                    this.groupForm = {
+                        ...group,
+                        sale_by_sizes: group.sale_by_sizes || false,
+                        portion_sizes: this.normalizePortionSizes(group.portion_sizes || [])
+                    };
 
                     // Ensure products have proper default and sort values
                     if (this.groupForm.products && Array.isArray(this.groupForm.products)) {
@@ -984,6 +1130,7 @@
                 saveGroup() {
                     // Ensure products array is properly formatted
                     const groupData = { ...this.groupForm };
+                    groupData.portion_sizes = this.normalizePortionSizes(groupData.portion_sizes || []);
 
                     // Filter out any products with invalid IDs
                     if (groupData.products && Array.isArray(groupData.products)) {
@@ -1025,11 +1172,92 @@
                         double_portions: false,
                         half_portions: false,
                         ingredients_incompatibilities_id: null,
+                        sale_by_sizes: false,
+                        portion_sizes: [],
                         sort: 0,
                         products: []
                     };
                     this.isEditGroupMode = false;
                     this.editingGroupIndex = null;
+                },
+
+                openPortionSizeModal() {
+                    this.resetPortionSizeForm();
+                    this.isEditPortionSizeMode = false;
+                    this.editingPortionSizeIndex = null;
+                    this.$refs.portionSizeModal.open();
+                },
+
+                editPortionSize(sizeIndex) {
+                    const size = this.groupForm.portion_sizes[sizeIndex];
+                    this.portionSizeForm = {
+                        name: size.name || '',
+                        quantity: Number(size.quantity) || 0,
+                        weight: Number(size.weight) || 0
+                    };
+                    this.isEditPortionSizeMode = true;
+                    this.editingPortionSizeIndex = sizeIndex;
+                    this.$refs.portionSizeModal.open();
+                },
+
+                savePortionSize() {
+                    const sizeData = {
+                        name: (this.portionSizeForm.name || '').trim(),
+                        quantity: Number(this.portionSizeForm.quantity) || 0,
+                        weight: Number(this.portionSizeForm.weight) || 0
+                    };
+
+                    if (!sizeData.name) {
+                        this.$emitter.emit('add-flash', {
+                            type: 'warning',
+                            message: '@lang('admin::app.catalog.products.edit.types.constructor.portion-name-required')'
+                        });
+
+                        return;
+                    }
+
+                    if (!Array.isArray(this.groupForm.portion_sizes)) {
+                        this.groupForm.portion_sizes = [];
+                    }
+
+                    if (this.isEditPortionSizeMode) {
+                        this.groupForm.portion_sizes[this.editingPortionSizeIndex] = sizeData;
+                    } else {
+                        this.groupForm.portion_sizes.push(sizeData);
+                    }
+
+                    this.$refs.portionSizeModal.close();
+                    this.resetPortionSizeForm();
+                },
+
+                removePortionSize(sizeIndex) {
+                    this.groupForm.portion_sizes.splice(sizeIndex, 1);
+                },
+
+                resetPortionSizeForm() {
+                    this.portionSizeForm = {
+                        name: '',
+                        quantity: 0,
+                        weight: 0
+                    };
+
+                    this.isEditPortionSizeMode = false;
+                    this.editingPortionSizeIndex = null;
+                },
+
+                normalizePortionSizes(portionSizes) {
+                    if (!Array.isArray(portionSizes)) {
+                        return [];
+                    }
+
+                    return portionSizes
+                        .filter(size => size && typeof size === 'object')
+                        .map(size => ({
+                            name: (size.name || '').toString().trim(),
+                            quantity: Number(size.quantity) || 0,
+                            weight: Number(size.weight) || 0
+                        }))
+                        .filter(size => size.name !== '');
                 },
 
                 openProductSearch() {
@@ -1110,6 +1338,8 @@
                             double_portions: templateData.double_portions || false,
                             half_portions: templateData.half_portions || false,
                             ingredients_incompatibilities_id: templateData.ingredients_incompatibilities_id || null,
+                            sale_by_sizes: templateData.sale_by_sizes || false,
+                            portion_sizes: this.normalizePortionSizes(templateData.portion_sizes || []),
                             sort: templateData.sort || 0,
                             products: templateData.products || []
                         };

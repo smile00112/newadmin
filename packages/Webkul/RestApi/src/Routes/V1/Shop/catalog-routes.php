@@ -5,8 +5,14 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\AttributeController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\AttributeFamilyController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CategoryController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\ProductController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\ProductReviewController;
+
+/**
+ * Nomenclature route (products + ingredients, cached).
+ */
+Route::get('nomenclature', [NomenclatureController::class, 'index']);
 
 /**
  * Product routes.
@@ -71,8 +77,10 @@ Route::controller(AttributeFamilyController::class)->prefix('attribute-families'
 /**
  * Catalog routes (categories with products).
  */
-Route::controller(CatalogCategoryController::class)->prefix('catalog')->group(function () {
-    Route::get('', 'allResources');
+Route::controller(CatalogCategoryController::class)
+    ->prefix('catalog')
+    ->group(function () {
+        Route::get('', 'allResources');
 
-    Route::get('{id}', 'getResource');
-});
+        Route::get('{id}', 'getResource');
+    });

@@ -184,6 +184,95 @@ class Product
 
     /**
      * @OA\Property(
+     *     title="Show as Big in Category",
+     *     description="Whether to show product as big item in category listing",
+     *     type="boolean",
+     *     example=false
+     * )
+     *
+     * @var bool
+     */
+    public $show_as_big_in_category;
+
+    /**
+     * @OA\Property(
+     *     title="Is Half Portion",
+     *     description="Является ли товар половинкой порции (для ингредиентов)",
+     *     type="boolean",
+     *     example=false
+     * )
+     *
+     * @var bool
+     */
+    public $is_half_portion;
+
+    /**
+     * @OA\Property(
+     *     title="Half Portion Pair Product ID",
+     *     description="ID связанного товара-пары (полная порция для половинки или наоборот)",
+     *     type="integer",
+     *     nullable=true,
+     *     example=null
+     * )
+     *
+     * @var int|null
+     */
+    public $half_portion_pair_product_id;
+
+    /**
+     * @OA\Property(
+     *     title="Half Portion Pair Product",
+     *     description="Данные связанного товара-половинки (при загрузке связи)",
+     *     type="object",
+     *     nullable=true,
+     *     example={
+     *         "id": 27,
+     *         "sku": "ingredient-half",
+     *         "name": "Половинка ингредиента",
+     *         "base_image": {
+     *             "small_image_url": "http://localhost/cache/small/product/27/image.webp",
+     *             "medium_image_url": "http://localhost/cache/medium/product/27/image.webp",
+     *             "large_image_url": "http://localhost/cache/large/product/27/image.webp",
+     *             "original_image_url": "http://localhost/storage/product/27/image.webp"
+     *         },
+     *         "nutrition": {
+     *             "calories": 125.0,
+     *             "proteins": 7.5,
+     *             "fats": 4.2,
+     *             "carbs": 15.0
+     *         }
+     *     },
+     *
+     *     @OA\Property(property="id", type="integer", description="Product ID"),
+     *     @OA\Property(property="sku", type="string", description="Product SKU"),
+     *     @OA\Property(property="name", type="string", description="Product name"),
+     *     @OA\Property(
+     *         property="base_image",
+     *         type="object",
+     *         description="Product base image",
+     *         @OA\Property(property="small_image_url", type="string"),
+     *         @OA\Property(property="medium_image_url", type="string"),
+     *         @OA\Property(property="large_image_url", type="string"),
+     *         @OA\Property(property="original_image_url", type="string")
+     *     ),
+     *     @OA\Property(
+     *         property="nutrition",
+     *         type="object",
+     *         nullable=true,
+     *         description="Nutrition information (КЖБУ)",
+     *         @OA\Property(property="calories", type="float", nullable=true),
+     *         @OA\Property(property="proteins", type="float", nullable=true),
+     *         @OA\Property(property="fats", type="float", nullable=true),
+     *         @OA\Property(property="carbs", type="float", nullable=true)
+     *     )
+     * )
+     *
+     * @var object|null
+     */
+    public $half_portion_pair_product;
+
+    /**
+     * @OA\Property(
      *     title="Created at",
      *     description="Created at",
      *     example="2020-01-27 17:50:45",
@@ -534,6 +623,17 @@ class Product
      *             "sort": 1,
      *             "double_portions": false,
      *             "half_portions": false,
+ *             "ingredients_incompatibilities_id": null,
+ *             "sale_by_sizes": true,
+ *             "portion_sizes": {{
+ *                 "name": "Маленькая",
+ *                 "quantity": 1,
+ *                 "weight": 250
+ *             }, {
+ *                 "name": "Большая",
+ *                 "quantity": 2,
+ *                 "weight": 500
+ *             }},
      *             "products": {{
      *                 "id": 25,
      *                 "sku": "ingredient-1",
@@ -549,12 +649,16 @@ class Product
      *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
      *                 },
+     *                 "description": "Ingredient description text without HTML tags",
      *                 "nutrition": {
      *                     "calories": 250.5,
      *                     "proteins": 15.2,
      *                     "fats": 8.5,
      *                     "carbs": 30.0
-     *                 }
+     *                 },
+     *                 "is_half_portion": false,
+     *                 "half_portion_pair_product_id": null,
+     *                 "half_portion_pair_product": null
      *             }, {
      *                 "id": 26,
      *                 "sku": "ingredient-2",
@@ -570,7 +674,17 @@ class Product
      *                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
      *                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
      *                 },
-     *                 "nutrition": null
+     *                 "description": null,
+     *                 "nutrition": null,
+     *                 "is_half_portion": true,
+     *                 "half_portion_pair_product_id": 25,
+     *                 "half_portion_pair_product": {
+     *                     "id": 25,
+     *                     "sku": "ingredient-1",
+     *                     "name": "Ingredient Name",
+     *                     "base_image": {},
+     *                     "nutrition": {"calories": 250.5, "proteins": 15.2, "fats": 8.5, "carbs": 30.0}
+     *                 }
      *             }}
      *         }}
      *     }},
@@ -646,6 +760,19 @@ class Product
      *                  @OA\Property(property="sort", type="integer", description="Sort order"),
      *                  @OA\Property(property="double_portions", type="boolean", description="Double portions available"),
      *                  @OA\Property(property="half_portions", type="boolean", description="Half portions available"),
+ *                  @OA\Property(property="ingredients_incompatibilities_id", type="integer", nullable=true, description="Incompatibility template ID"),
+ *                  @OA\Property(property="sale_by_sizes", type="boolean", description="Enable selling by portion sizes"),
+ *                  @OA\Property(
+ *                      property="portion_sizes",
+ *                      type="array",
+ *                      description="List of portion sizes",
+ *
+ *                      @OA\Items(
+ *                          @OA\Property(property="name", type="string", description="Portion size name"),
+ *                          @OA\Property(property="quantity", type="integer", description="Portion quantity"),
+ *                          @OA\Property(property="weight", type="integer", description="Portion weight")
+ *                      )
+ *                  ),
      *                  @OA\Property(
      *                      property="products",
      *                      type="array",
@@ -670,6 +797,7 @@ class Product
      *                              @OA\Property(property="large_image_url", type="string"),
      *                              @OA\Property(property="original_image_url", type="string")
      *                          ),
+     *                          @OA\Property(property="description", type="string", nullable=true, description="Product description without HTML tags"),
      *                          @OA\Property(
      *                              property="nutrition",
      *                              type="object",
@@ -679,6 +807,27 @@ class Product
      *                              @OA\Property(property="proteins", type="float", nullable=true, description="Proteins (г)"),
      *                              @OA\Property(property="fats", type="float", nullable=true, description="Fats (г)"),
      *                              @OA\Property(property="carbs", type="float", nullable=true, description="Carbohydrates (г)")
+     *                          ),
+     *                          @OA\Property(property="is_half_portion", type="boolean", description="Является ли ингредиент половинкой порции"),
+     *                          @OA\Property(property="half_portion_pair_product_id", type="integer", nullable=true, description="ID связанного товара-пары (половинка/полная порция)"),
+     *                          @OA\Property(
+     *                              property="half_portion_pair_product",
+     *                              type="object",
+     *                              nullable=true,
+     *                              description="Данные связанного товара-половинки (id, sku, name, base_image, nutrition)",
+     *                              @OA\Property(property="id", type="integer"),
+     *                              @OA\Property(property="sku", type="string"),
+     *                              @OA\Property(property="name", type="string"),
+     *                              @OA\Property(property="base_image", type="object"),
+     *                              @OA\Property(
+     *                                  property="nutrition",
+     *                                  type="object",
+     *                                  nullable=true,
+     *                                  @OA\Property(property="calories", type="float", nullable=true),
+     *                                  @OA\Property(property="proteins", type="float", nullable=true),
+     *                                  @OA\Property(property="fats", type="float", nullable=true),
+     *                                  @OA\Property(property="carbs", type="float", nullable=true)
+     *                              )
      *                          )
      *                      )
      *                  )
@@ -690,6 +839,97 @@ class Product
      * @var array
      */
     public $constructor_options;
+
+    /**
+     * @OA\Property(
+     *     title="Drinks",
+     *     description="Info: this property will only use with simple, constructor, configurable, grouped, and bundle type products.",
+     *     type="array",
+     *     example={{
+     *         "id": 27,
+     *         "sku": "drink-1",
+     *         "name": "Coca Cola",
+     *         "price": 2.50,
+     *         "formatted_price": "$2.50",
+     *         "in_stock": true,
+     *         "sort": 1,
+     *         "default": true,
+     *         "base_image": {
+     *             "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+     *             "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+     *             "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+     *             "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *         },
+     *         "images": {},
+     *         "description": "Drink description text without HTML tags",
+     *         "nutrition": {
+     *             "calories": 150.0,
+     *             "proteins": 0.0,
+     *             "fats": 0.0,
+     *             "carbs": 39.0
+     *         }
+     *     }, {
+     *         "id": 28,
+     *         "sku": "drink-2",
+     *         "name": "Pepsi",
+     *         "price": 2.50,
+     *         "formatted_price": "$2.50",
+     *         "in_stock": true,
+     *         "sort": 2,
+     *         "default": false,
+     *         "base_image": {
+     *             "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+     *             "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+     *             "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+     *             "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+     *         },
+     *         "images": {},
+     *         "description": null,
+     *         "nutrition": null
+     *     }},
+     *
+     *     @OA\Items(
+     *
+     *          @OA\Property(property="id", type="integer", description="Drink product ID"),
+     *          @OA\Property(property="sku", type="string", description="Drink product SKU"),
+     *          @OA\Property(property="name", type="string", description="Drink product name"),
+     *          @OA\Property(property="price", type="float", description="Drink product price"),
+     *          @OA\Property(property="formatted_price", type="string", description="Formatted price"),
+     *          @OA\Property(property="in_stock", type="boolean", description="In stock"),
+     *          @OA\Property(property="sort", type="integer", description="Sort order"),
+     *          @OA\Property(property="default", type="boolean", description="Is default drink"),
+     *          @OA\Property(
+     *              property="base_image",
+     *              type="object",
+     *              description="Drink product base image with different sizes",
+     *              @OA\Property(property="small_image_url", type="string"),
+     *              @OA\Property(property="medium_image_url", type="string"),
+     *              @OA\Property(property="large_image_url", type="string"),
+     *              @OA\Property(property="original_image_url", type="string")
+     *          ),
+     *          @OA\Property(
+     *              property="images",
+     *              type="array",
+     *              description="Drink product images",
+     *              @OA\Items(type="object")
+     *          ),
+     *          @OA\Property(property="description", type="string", nullable=true, description="Drink description without HTML tags"),
+     *          @OA\Property(
+     *              property="nutrition",
+     *              type="object",
+     *              nullable=true,
+     *              description="Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+     *              @OA\Property(property="calories", type="float", nullable=true, description="Calories (ккал)"),
+     *              @OA\Property(property="proteins", type="float", nullable=true, description="Proteins (г)"),
+     *              @OA\Property(property="fats", type="float", nullable=true, description="Fats (г)"),
+     *              @OA\Property(property="carbs", type="float", nullable=true, description="Carbohydrates (г)")
+     *          )
+     *     )
+     * )
+     *
+     * @var array
+     */
+    public $drinks;
 
     /**
      * @OA\Property(

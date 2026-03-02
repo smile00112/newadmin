@@ -68,6 +68,30 @@ class Cart
 
     /**
      * @OA\Property(
+     *     title="Payment Method",
+     *     description="Selected payment method code for the current cart",
+     *     example="cashondelivery",
+     *     nullable=true
+     * )
+     *
+     * @var string|null
+     */
+    private $payment_method;
+
+    /**
+     * @OA\Property(
+     *     title="Payment Method Title",
+     *     description="Human-readable payment method title from config",
+     *     example="Cash On Delivery",
+     *     nullable=true
+     * )
+     *
+     * @var string|null
+     */
+    private $payment_method_title;
+
+    /**
+     * @OA\Property(
      *     title="Coupon Code",
      *     description="Applied coupon code to the cart",
      *     example="FLAT10%"
@@ -331,6 +355,19 @@ class Cart
      * @var bool
      */
     private $is_active;
+
+    /**
+     * @OA\Property(
+     *     title="Table Number",
+     *     description="Table number assigned to the cart (for dine-in orders)",
+     *     example=5,
+     *     format="int32",
+     *     nullable=true
+     * )
+     *
+     * @var int|null
+     */
+    private $table_number;
 
     /**
      * @OA\Property(

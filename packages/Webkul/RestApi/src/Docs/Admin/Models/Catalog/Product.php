@@ -107,6 +107,31 @@ class Product
 
     /**
      * @OA\Property(
+     *     title="Is Half Portion",
+     *     description="Ingredient is half portion (ingredient type only)",
+     *     example=false,
+     *     type="boolean"
+     * )
+     *
+     * @var bool
+     */
+    private $is_half_portion;
+
+    /**
+     * @OA\Property(
+     *     title="Half Portion Pair Product ID",
+     *     description="Linked ingredient product ID for half portion pair (ingredient type only)",
+     *     example=null,
+     *     type="integer",
+     *     nullable=true
+     * )
+     *
+     * @var int|null
+     */
+    private $half_portion_pair_product_id;
+
+    /**
+     * @OA\Property(
      *     title="Attribute Values",
      *     description="Product's attribute values",
      *     type="object",

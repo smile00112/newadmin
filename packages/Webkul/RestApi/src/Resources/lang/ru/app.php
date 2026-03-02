@@ -4,7 +4,9 @@ return [
     'admin' => [
         'sales' => [
             'orders' => [
-                'cancel-success' => 'Заказ успешно отменен.',
+                'cancel-success'       => 'Заказ успешно отменен.',
+                'bind-table-success'   => 'Номер стола успешно привязан к заказу.',
+                'unbind-table-success' => 'Номер стола успешно отвязан от заказа.',
 
                 'error' => [
                     'cancel-error' => 'Заказ не может быть отменен.',
@@ -428,19 +430,28 @@ return [
     ],
 
     'shop' => [
+        'errors' => [
+            'report-success' => 'Ошибка успешно сохранена.',
+        ],
+
         'customer' => [
             'addresses' => [
-                'create-success' => 'Seu endereço foi criado com sucesso.',
-                'delete-success' => 'Seu endereço foi excluído com sucesso.',
-                'update-success' => 'Seu endereço foi atualizado com sucesso.',
+                'create-success' => 'Ваш адрес успешно создан.',
+                'delete-success' => 'Ваш адрес был успешно удален.',
+                'update-success' => 'Ваш адрес был успешно обновлен.',
+            ],
+
+            'saved-cards' => [
+                'delete-success' => 'Карта успешно удалена.',
+                'not-found'      => 'Сохранённая карта не найдена.',
             ],
 
             'accounts' => [
-                'create-success'     => 'Sua conta foi criada com sucesso.',
-                'delete-success'     => 'Sua conta foi excluída com sucesso.',
-                'logged-in-success'  => 'Logado com sucesso.',
-                'logged-out-success' => 'Deslogado com sucesso.',
-                'update-success'     => 'Sua conta foi atualizada com sucesso.',
+                'create-success'     => 'Ваша учетная запись была успешно создана.',
+                'delete-success'     => 'Ваша учетная запись была успешно удалена.',
+                'logged-in-success'  => 'Успешно вошел в систему.',
+                'logged-out-success' => 'Успешно вытеснен.',
+                'update-success'     => 'Ваша учетная запись была успешно обновлена.',
 
                 'error' => [
                     'credential-error'  => 'Предоставленные учетные данные неверны.',
@@ -458,6 +469,10 @@ return [
         ],
 
         'checkout' => [
+            'table' => [
+                'bind-success'   => 'Номер стола успешно привязан к корзине.',
+                'unbind-success' => 'Номер стола успешно отвязан от корзины.',
+            ],
             'billing-address-saved'   => 'Адрес успешно сохранен.',
             'check-billing-address'   => 'Пожалуйста, проверьте платежный адрес.',
             'check-shipping-address'  => 'Пожалуйста, проверьте адрес доставки.',
@@ -516,6 +531,14 @@ return [
             'orders' => [
                 'cancel' => 'Заказ успешно отменен.',
                 'rate-success' => 'Заказ успешно оценен.',
+
+                'saved-card' => [
+                    'add-success'    => 'Сохранённая карта успешно добавлена к заказу.',
+                    'remove-success' => 'Сохранённая карта успешно удалена из заказа.',
+                    'not-found'      => 'Сохранённая карта не найдена.',
+                    'invalid-order'  => 'Заказ не позволяет добавлять или удалять сохранённую карту.',
+                    'card-not-found' => 'Сохранённая карта не найдена.',
+                ],
 
                 'error' => [
                     'cancel-error'                    => 'Заказ не может быть отменен.',
@@ -604,6 +627,8 @@ return [
                 'from-info'  => 'Имя отправителя SMS (должно быть зарегистрировано в REDSMS)',
                 'auth_message_text' => 'Текст сообщения авторизации',
                 'auth_message_text-info' => 'Текст, который будет добавлен перед кодом авторизации в SMS сообщении',
+                'code_length' => 'Длина кода подтверждения',
+                'code_length-info' => 'Количество цифр в коде подтверждения (4-10, по умолчанию: 6)',
                 'test_phone_numbers' => 'Тестовые номера телефонов',
                 'test_phone_numbers-info' => 'Список номеров телефонов-исключений (по одному на строку). Для этих номеров SMS не отправляется, а код авторизации всегда 123456',
             ],
@@ -620,6 +645,8 @@ return [
                 'app_link-info' => 'Ссылка на приложение в Telegram (например, https://t.me/your_app)',
                 'start_message' => 'Приветственное сообщение',
                 'start_message-info' => 'Сообщение которое показывается при первом запуске бота с кнопкой "Поделиться контактом"',
+                'code_length' => 'Длина кода подтверждения',
+                'code_length-info' => 'Количество цифр в коде подтверждения (4-10, по умолчанию: 6)',
                 'test_phone_numbers' => 'Тестовые номера телефонов',
                 'test_phone_numbers-info' => 'Список номеров телефонов-исключений (по одному на строку). Для этих номеров сообщение не отправляется, а код авторизации всегда 123456',
             ],
@@ -634,6 +661,8 @@ return [
                 'api_token_instance-info' => 'Токен API для доступа к Green API',
                 'url'        => 'URL API',
                 'url-info'   => 'URL API Green API (по умолчанию: https://api.green-api.com)',
+                'code_length' => 'Длина кода подтверждения',
+                'code_length-info' => 'Количество цифр в коде подтверждения (4-10, по умолчанию: 6)',
                 'test_phone_numbers' => 'Тестовые номера телефонов',
                 'test_phone_numbers-info' => 'Список номеров телефонов-исключений (по одному на строку). Для этих номеров сообщение не отправляется, а код авторизации всегда 123456',
             ],

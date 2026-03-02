@@ -309,6 +309,40 @@ class OrderController extends Controller
     }
 
     /**
+     * Bind table number to the order.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function bindTable(int $id)
+    {
+        $validatedData = $this->validate(request(), [
+            'table_number' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $order = $this->orderRepository->findOrFail($id);
+        $order->update(['table_number' => $validatedData['table_number']]);
+
+        session()->flash('success', trans('admin::app.sales.orders.view.bind-table-success'));
+
+        return redirect()->route('admin.sales.orders.view', $id);
+    }
+
+    /**
+     * Unbind table number from the order.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function unbindTable(int $id)
+    {
+        $order = $this->orderRepository->findOrFail($id);
+        $order->update(['table_number' => null]);
+
+        session()->flash('success', trans('admin::app.sales.orders.view.unbind-table-success'));
+
+        return redirect()->route('admin.sales.orders.view', $id);
+    }
+
+    /**
      * Result of search product.
      *
      * @return \Illuminate\Http\JsonResponse

@@ -10,7 +10,84 @@
         id="v-product-links-template"
     >
         <div class="grid gap-2.5">
-            <!-- Panel -->
+            <!-- Half Portion Panel -->
+            <div class="box-shadow relative rounded bg-white dark:bg-gray-900">
+                <input type="hidden" name="half_portion_pair_product_id" :value="(isHalfPortion && halfPortionPair) ? halfPortionPair.id : ''" />
+                <div class="mb-2.5 flex justify-between gap-5 p-4">
+                    <div class="flex flex-col gap-2">
+                        <p class="text-base font-semibold text-gray-800 dark:text-white">
+                            @lang('admin::app.catalog.products.edit.links.half_portion.title')
+                        </p>
+
+                        <p class="text-xs font-medium text-gray-500 dark:text-gray-300">
+                            @lang('admin::app.catalog.products.edit.links.half_portion.info')
+                        </p>
+                    </div>
+
+                    <label class="flex cursor-pointer items-center gap-2">
+                        <input
+                            type="hidden"
+                            name="is_half_portion"
+                            :value="isHalfPortion ? 1 : 0"
+                        />
+                        <input
+                            type="checkbox"
+                            v-model="isHalfPortion"
+                            class="custom-input cursor-pointer rounded border-gray-300"
+                        />
+                        <span class="text-sm text-gray-700 dark:text-gray-300">@lang('admin::app.catalog.products.edit.links.half_portion.toggle')</span>
+                    </label>
+                </div>
+
+                <div v-if="isHalfPortion" class="border-t border-slate-300 p-4 dark:border-gray-800">
+                    <div class="mb-3 flex items-center justify-between">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            @lang('admin::app.catalog.products.edit.links.half_portion.select')
+                        </p>
+                        <div
+                            class="secondary-button"
+                            @click="selectedType = 'half_portion_pair'; $refs.productSearch.openDrawer()"
+                        >
+                            @lang('admin::app.catalog.products.edit.links.add-btn')
+                        </div>
+                    </div>
+
+                    <div v-if="halfPortionPair" class="flex justify-between gap-2.5 rounded border border-slate-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+                        <div class="flex gap-2.5">
+                            <div
+                                class="relative h-[60px] max-h-[60px] w-full max-w-[60px] overflow-hidden rounded"
+                                :class="{'border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert': ! halfPortionPair.images || ! halfPortionPair.images.length}"
+                            >
+                                <template v-if="! halfPortionPair.images || ! halfPortionPair.images.length">
+                                    <img src="{{ bagisto_asset('images/product-placeholders/front.svg') }}">
+                                    <p class="absolute bottom-1.5 w-full text-center text-[6px] font-semibold text-gray-400">
+                                        @lang('admin::app.catalog.products.edit.links.image-placeholder')
+                                    </p>
+                                </template>
+                                <template v-else>
+                                    <img :src="halfPortionPair.images[0].url">
+                                </template>
+                            </div>
+                            <div class="grid place-content-start gap-1.5">
+                                <p class="text-base font-semibold text-gray-800 dark:text-white">@{{ halfPortionPair.name }}</p>
+                                <p class="text-gray-600 dark:text-gray-300">@{{ "@lang('admin::app.catalog.products.edit.links.sku')".replace(':sku', halfPortionPair.sku) }}</p>
+                            </div>
+                        </div>
+                        <p
+                            class="cursor-pointer text-red-600 transition-all hover:underline"
+                            @click="removeHalfPortionPair"
+                        >
+                            @lang('admin::app.catalog.products.edit.links.delete')
+                        </p>
+                    </div>
+
+                    <div v-else class="grid justify-center justify-items-center gap-2 py-6 text-center">
+                        <p class="text-sm text-gray-400">@lang('admin::app.catalog.products.edit.links.half_portion.empty')</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incompatibility Panel -->
             <div
                 class="box-shadow relative rounded bg-white dark:bg-gray-900"
                 v-for="type in types"
@@ -146,6 +223,10 @@
 
                     selectedType: 'ingredients_incompatibility',
 
+                    isHalfPortion: @json((bool) ($product->is_half_portion ?? false)),
+
+                    halfPortionPair: @json($product->half_portion_pair_product?->load('images')),
+
                     types: [
                         {
                             key: 'ingredients_incompatibility',
@@ -163,17 +244,37 @@
 
             computed: {
                 addedProductIds() {
+                    if (this.selectedType === 'half_portion_pair') {
+                        let ids = [this.currentProduct.id];
+                        if (this.halfPortionPair) {
+                            ids.push(this.halfPortionPair.id);
+                        }
+                        return ids;
+                    }
+
                     let productIds = this.addedProducts[this.selectedType].map(product => product.id);
-
                     productIds.push(this.currentProduct.id);
-
                     return productIds;
                 }
             },
 
             methods: {
                 addSelected(selectedProducts) {
+                    if (this.selectedType === 'half_portion_pair') {
+                        if (selectedProducts.length > 0) {
+                            this.halfPortionPair = selectedProducts[0];
+                        }
+                        return;
+                    }
                     this.addedProducts[this.selectedType] = [...this.addedProducts[this.selectedType], ...selectedProducts];
+                },
+
+                removeHalfPortionPair() {
+                    this.$emitter.emit('open-confirm-modal', {
+                        agree: () => {
+                            this.halfPortionPair = null;
+                        },
+                    });
                 },
 
                 remove(type, product) {

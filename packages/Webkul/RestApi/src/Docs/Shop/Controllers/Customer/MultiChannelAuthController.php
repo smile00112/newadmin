@@ -216,7 +216,7 @@ class MultiChannelAuthController
      *                      property="verification_code",
      *                      type="string",
      *                      example="123456",
-     *                      description="6-digit verification code"
+     *                      description="Numeric verification code (length configured per channel, default: 6 digits, range: 4-10)"
      *                  ),
      *                  @OA\Property(
      *                      property="verification_token",
@@ -329,7 +329,7 @@ class MultiChannelAuthController
      *                      property="verification_code",
      *                      type="string",
      *                      example="123456",
-     *                      description="6-digit verification code"
+     *                      description="Numeric verification code (length configured per channel, default: 6 digits, range: 4-10)"
      *                  ),
      *                  @OA\Property(
      *                      property="verification_token",

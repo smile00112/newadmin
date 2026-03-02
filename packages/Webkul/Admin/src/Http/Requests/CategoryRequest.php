@@ -27,13 +27,14 @@ class CategoryRequest extends FormRequest
         $locale = core()->getRequestedLocaleCode();
 
         $rules = [
-            'position'      => 'required|integer',
-            'logo_path'     => 'array',
-            'logo_path.*'   => 'mimes:bmp,jpeg,jpg,png,webp',
-            'banner_path'   => 'array',
-            'banner_path.*' => 'mimes:bmp,jpeg,jpg,png,webp',
-            'attributes'    => 'required|array',
-            'attributes.*'  => 'required',
+            'position'            => 'required|integer',
+            'product_display_type' => 'nullable|in:standard,enlarged_top,variant_2',
+            'logo_path'           => 'array',
+            'logo_path.*'         => 'mimes:bmp,jpeg,jpg,png,webp',
+            'banner_path'         => 'array',
+            'banner_path.*'       => 'mimes:bmp,jpeg,jpg,png,webp',
+            'attributes'          => 'required|array',
+            'attributes.*'        => 'required',
         ];
 
         if ($id = $this->id) {

@@ -330,6 +330,36 @@
                             <x-admin::form.control-group.error control-name="display_mode" />
                         </x-admin::form.control-group>
 
+                        <!-- Product Display Type -->
+                        <x-admin::form.control-group>
+                            <x-admin::form.control-group.label class="font-medium text-gray-800 dark:text-white">
+                                @lang('admin::app.catalog.categories.create.product-display-type')
+                            </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="select"
+                                id="product_display_type"
+                                class="cursor-pointer"
+                                name="product_display_type"
+                                value="standard"
+                                :label="trans('admin::app.catalog.categories.create.product-display-type')"
+                            >
+                                <option value="standard">
+                                    @lang('admin::app.catalog.categories.create.product-display-type-standard')
+                                </option>
+
+                                <option value="enlarged_top">
+                                    @lang('admin::app.catalog.categories.create.product-display-type-enlarged-top')
+                                </option>
+
+                                <option value="variant_2">
+                                    @lang('admin::app.catalog.categories.create.product-display-type-variant-2')
+                                </option>
+                            </x-admin::form.control-group.control>
+
+                            <x-admin::form.control-group.error control-name="product_display_type" />
+                        </x-admin::form.control-group>
+
                         <!-- Visible in menu -->
                         <x-admin::form.control-group>
                             <x-admin::form.control-group.label class="font-medium text-gray-800 dark:text-white">

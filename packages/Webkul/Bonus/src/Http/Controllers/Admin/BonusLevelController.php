@@ -41,8 +41,8 @@ class BonusLevelController extends Controller
     {
         $validatedData = $this->validate(request(), [
             'name' => 'required|string|max:255',
-            'cashback_percent' => 'required|numeric|min:0|max:100',
-            'threshold_value' => 'required|numeric|min:0',
+            'cashback_percent' => 'required|integer|min:0|max:100',
+            'threshold_value' => 'required|integer|min:0',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',
         ]);
@@ -71,8 +71,8 @@ class BonusLevelController extends Controller
     {
         $validatedData = $this->validate(request(), [
             'name' => 'required|string|max:255',
-            'cashback_percent' => 'required|numeric|min:0|max:100',
-            'threshold_value' => 'required|numeric|min:0',
+            'cashback_percent' => 'required|integer|min:0|max:100',
+            'threshold_value' => 'required|integer|min:0',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',
         ]);

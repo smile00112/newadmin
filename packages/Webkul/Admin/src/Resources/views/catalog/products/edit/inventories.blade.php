@@ -2,7 +2,7 @@
     $inventorySources = app(\Webkul\Inventory\Repositories\InventorySourceRepository::class)->findWhere(['status' => 1]);
     $productInventories = [];
     foreach ($inventorySources as $source) {
-        $qty = old('inventories.' . $source->id) 
+        $qty = old('inventories.' . $source->id)
             ?: ($product->inventories->where('inventory_source_id', $source->id)->pluck('qty')->first() ?? 0);
         $productInventories[$source->id] = [
             'id' => $source->id,
@@ -10,13 +10,13 @@
             'qty' => (int)$qty
         ];
     }
-    
+
     // Calculate total quantity
     $totalQty = $product->inventories->sum('qty');
-    
+
     // Get manage_stock value
     $manageStock = old('manage_stock') ?? ($product->manage_stock ?? false);
-    
+
     // Determine in_stock based on inventory qty (товар в наличии если qty > 0)
     $inStock = $totalQty > 0;
 @endphp
@@ -52,9 +52,9 @@
                         'relative rounded-full cursor-pointer transition-all duration-200',
                         isToggling ? 'bg-gray-400' : (inStock ? 'bg-green-500 shadow-lg shadow-green-500/30' : 'bg-gray-300')
                     ]" style="width: 52px; height: 28px;">
-                        <span 
+                        <span
                             class="absolute bg-white rounded-full shadow-md group-hover:scale-105 group-active:scale-95"
-                            :style="{ 
+                            :style="{
                                 width: '22px',
                                 height: '22px',
                                 top: '3px',
@@ -89,9 +89,9 @@
                         'relative rounded-full cursor-pointer transition-all duration-200',
                         manageStock ? 'bg-blue-500 shadow-lg shadow-blue-500/30' : 'bg-gray-300'
                     ]" style="width: 52px; height: 28px;">
-                        <span 
+                        <span
                             class="absolute bg-white rounded-full shadow-md group-hover:scale-105 group-active:scale-95"
-                            :style="{ 
+                            :style="{
                                 width: '22px',
                                 height: '22px',
                                 top: '3px',
@@ -120,7 +120,7 @@
                         </svg>
                         <span>Укажите количество товара на каждом складе</span>
                     </div>
-                    
+
                     <div v-for="source in inventorySources" :key="source.id" class="relative">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             @{{ source.name }}
@@ -138,7 +138,7 @@
                             <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">шт.</span>
                         </div>
                     </div>
-                    
+
                     <!-- Total -->
                     <div class="flex items-center justify-between pt-4 border-t border-gray-100">
                         <span class="text-sm font-medium text-gray-600">Всего на складах:</span>
@@ -154,8 +154,8 @@
 
             <!-- Hidden fields for inventories when manageStock is false -->
             <template v-if="!manageStock">
-                <input 
-                    v-for="source in inventorySources" 
+                <input
+                    v-for="source in inventorySources"
                     :key="'hidden-' + source.id"
                     type="hidden"
                     :name="'inventories[' + source.id + ']'"
@@ -208,30 +208,30 @@
         methods: {
             async toggleStock() {
                 if (this.isToggling) return;
-                
+
                 // Оптимистичное обновление UI - сразу меняем состояние
                 const previousInStock = this.inStock;
                 const newInStock = !this.inStock;
                 const newQty = newInStock ? 1 : 0;
-                
+
                 this.inStock = newInStock;
                 this.isToggling = true;
-                
+
                 // Сразу обновляем локальные данные
                 const firstSourceId = Object.keys(this.inventories)[0];
                 if (firstSourceId) {
                     this.inventories[firstSourceId] = newQty;
                 }
-                
+
                 // Сразу обновляем header
                 this.updateHeaderDisplay(newQty);
-                
+
                 const productId = {{ $product->id }};
                 const url = `{{ url('admin/catalog/products') }}/${productId}/toggle-stock`;
-                
+
                 try {
                     const response = await this.$axios.post(url);
-                    
+
                     if (!response.data.success) {
                         // Откатываем при ошибке
                         this.inStock = previousInStock;
@@ -247,30 +247,30 @@
                         this.inventories[firstSourceId] = previousInStock ? 1 : 0;
                     }
                     this.updateHeaderDisplay(previousInStock ? 1 : 0);
-                    this.$emitter.emit('add-flash', { 
-                        type: 'error', 
-                        message: 'Ошибка при изменении наличия' 
+                    this.$emitter.emit('add-flash', {
+                        type: 'error',
+                        message: 'Ошибка при изменении наличия'
                     });
                 } finally {
                     this.isToggling = false;
                 }
             },
-            
+
             updateHeaderDisplay(quantity) {
                 // Update the header availability badge
                 const headerAvailability = document.querySelector('[data-header-availability]');
                 const headerWrapper = document.querySelector('[data-header-availability-wrapper]');
-                
+
                 if (headerAvailability) {
                     const isInStock = quantity > 0;
                     const dot = headerAvailability.querySelector('span:first-child');
                     const text = headerAvailability.querySelector('[data-availability-text]');
-                    
+
                     // Update wrapper's manage-stock attribute
                     if (headerWrapper) {
                         headerWrapper.setAttribute('data-manage-stock', this.manageStock ? 'true' : 'false');
                     }
-                    
+
                     if (isInStock) {
                         headerAvailability.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/30 backdrop-blur-sm rounded-full text-sm font-medium';
                         headerAvailability.setAttribute('data-in-stock', 'true');
@@ -293,7 +293,7 @@
                     }
                 }
             },
-            
+
             onQuantityChange() {
                 this.updateStockStatus();
                 // Update header with new total quantity
@@ -301,7 +301,7 @@
                     this.updateHeaderDisplay(this.totalQuantity);
                 });
             },
-            
+
             updateStockStatus() {
                 if (this.manageStock) {
                     this.inStock = this.totalQuantity > 0;

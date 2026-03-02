@@ -6,6 +6,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Attribute\Repositories\AttributeFamilyRepository;
+use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Core\Facades\ElasticSearch;
 use Webkul\DataGrid\DataGrid;
 use Webkul\Product\Helpers\Product;
@@ -24,7 +25,10 @@ class ProductDataGrid extends DataGrid
      *
      * @return void
      */
-    public function __construct(protected AttributeFamilyRepository $attributeFamilyRepository) {}
+    public function __construct(
+        protected AttributeFamilyRepository $attributeFamilyRepository,
+        protected AttributeRepository $attributeRepository
+    ) {}
 
     /**
      * Prepare query builder.
@@ -34,6 +38,8 @@ class ProductDataGrid extends DataGrid
     public function prepareQueryBuilder()
     {
         $tablePrefix = DB::getTablePrefix();
+        $manageStockAttribute = $this->attributeRepository->findOneByField('code', 'manage_stock');
+        $manageStockAttributeId = $manageStockAttribute?->id;
 
         /**
          * Query Builder to fetch records from `product_flat` table
@@ -50,8 +56,17 @@ class ProductDataGrid extends DataGrid
                     ->where('ct.locale', app()->getLocale());
             })
             // join для связи с товарами-ингредиентами
-            ->leftJoin('product_flat as ingredient_flat', 'product_constructor_group_products.product_id', '=', 'ingredient_flat.product_id')
-            ->select(
+            ->leftJoin('product_flat as ingredient_flat', 'product_constructor_group_products.product_id', '=', 'ingredient_flat.product_id');
+
+        if ($manageStockAttributeId) {
+            $queryBuilder->leftJoin('product_attribute_values as pav_manage_stock', function ($join) use ($manageStockAttributeId) {
+                $join->on('product_flat.product_id', '=', 'pav_manage_stock.product_id')
+                    ->on('pav_manage_stock.channel', '=', 'product_flat.channel')
+                    ->where('pav_manage_stock.attribute_id', '=', $manageStockAttributeId);
+            });
+        }
+
+        $queryBuilder->select(
                 'product_flat.locale',
                 'product_flat.channel',
                 'product_images.path as base_image',
@@ -70,7 +85,12 @@ class ProductDataGrid extends DataGrid
             ->addSelect(DB::raw('SUM(DISTINCT '.$tablePrefix.'product_inventories.qty) as quantity'))
             ->addSelect(DB::raw('COUNT(DISTINCT '.$tablePrefix.'product_images.id) as images_count'))
             // select для суммы цен ингредиентов
-            ->addSelect(DB::raw('COALESCE(SUM('.$tablePrefix.'ingredient_flat.price), 0) as selected_ingredients_sum'))
+            ->addSelect(DB::raw('COALESCE(SUM(ingredient_flat.price), 0) as selected_ingredients_sum'))
+            ->addSelect(
+                $manageStockAttributeId
+                    ? DB::raw('COALESCE(MAX('.$tablePrefix.'pav_manage_stock.boolean_value), 0) as manage_stock')
+                    : DB::raw('0 as manage_stock')
+            )
             ->where('product_flat.locale', app()->getLocale())
             ->groupBy('product_flat.product_id');
 

@@ -98,5 +98,13 @@ namespace Webkul\RestApi\Docs\Shop\Controllers;
  *     name="Wishlists",
  *     description="API Endpoints for Wishlists"
  * )
+ * @OA\Tag(
+ *     name="Multi-Channel Authentication",
+ *     description="API endpoints for SMS, WhatsApp, and Telegram authentication"
+ * )
+ * @OA\Tag(
+ *     name="WebSocket Notifications",
+ *     description="WebSocket Real-time Notifications API - Real-time events via Laravel Reverb"
+ * )
  */
 class Controller {}

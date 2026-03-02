@@ -18,6 +18,10 @@ Route::group([
     Route::controller(OrderController::class)->prefix('orders')->group(function () {
         Route::get('', 'allResources');
 
+        Route::post('bind-table', 'bindTable');
+
+        Route::delete('bind-table', 'unbindTable');
+
         Route::get('{id}', 'getResource');
 
         Route::post('{id}/cancel', 'cancel');

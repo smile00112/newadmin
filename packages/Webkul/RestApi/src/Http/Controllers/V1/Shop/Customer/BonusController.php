@@ -232,12 +232,12 @@ class BonusController extends CustomerController
         })->toArray();
 
         $data = [
-            'points_balance' => (float) $pointsBalance,
-            'balance' => (float) $totalBalance,
-            'spent_sum' => (float) $spentSum,
+            'points_balance' => (float) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN ),
+            'balance' => (float) round($totalBalance, 0, PHP_ROUND_HALF_DOWN ),
+            'spent_sum' => (float) round($spentSum),
             'orders_count' => (int) $ordersCount,
             'remaining' => (int) $remaining,
-            'percent_max' => (float) $maxUsagePercent,
+            'percent_max' => (int) $maxUsagePercent,
             'show_levels_info' => $showLevelsInfo,
             'level' => $currentLevel ? $currentLevel->id : null,
             'type' => $calculationType,

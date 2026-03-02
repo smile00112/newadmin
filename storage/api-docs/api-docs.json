@@ -15,6 +15,44 @@
         }
     ],
     "paths": {
+        "/api/v1/cms/{id}/html": {
+            "get": {
+                "tags": [
+                    "CMS Pages"
+                ],
+                "summary": "Get CMS page HTML content",
+                "description": "Returns HTML content of a CMS page by ID. The page must be available for the current channel.",
+                "operationId": "getCmsPageHtml",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "CMS Page ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "text/html": {
+                                "schema": {
+                                    "description": "HTML content of the CMS page",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Page not found or not available for current channel"
+                    }
+                }
+            }
+        },
         "/api/v1/attributes": {
             "get": {
                 "tags": [
@@ -600,6 +638,42 @@
                     },
                     "404": {
                         "description": "Resource Not Found"
+                    }
+                }
+            }
+        },
+        "/api/v1/nomenclature": {
+            "get": {
+                "tags": [
+                    "Catalog"
+                ],
+                "summary": "Get nomenclature (products and ingredients)",
+                "description": "Returns products and ingredients in a single cached response. Channel and locale are determined by request headers. Response is streamed as JSON.",
+                "operationId": "getNomenclature",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "products": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NomenclatureProduct"
+                                            }
+                                        },
+                                        "ingredients": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NomenclatureIngredient"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2967,8 +3041,7 @@
                                                         "example": "Bronze"
                                                     },
                                                     "cashback_percent": {
-                                                        "type": "number",
-                                                        "format": "float",
+                                                        "type": "integer",
                                                         "example": 2
                                                     },
                                                     "description_top": {
@@ -3120,8 +3193,7 @@
                                                         "example": "1 грейд"
                                                     },
                                                     "cashback_percent": {
-                                                        "type": "number",
-                                                        "format": "float",
+                                                        "type": "integer",
                                                         "example": 2
                                                     },
                                                     "description_top": {
@@ -4132,6 +4204,147 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "delete": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Disable auto-apply bonus for cart",
+                "description": "Disables automatic bonus recalculation for the current customer's cart. Sets auto_apply to false. Requires authenticated customer with active cart.",
+                "operationId": "disableAutoApplyBonus",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Auto-apply bonus disabled successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart or customer not authenticated)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/checkout/table/bind": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Привязать номер стола к корзине",
+                "description": "Bind table number to the current customer's cart. Requires authenticated customer with active cart.",
+                "operationId": "bindTable",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "table_number"
+                                ],
+                                "properties": {
+                                    "table_number": {
+                                        "description": "Table number to bind to the cart",
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": 1,
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number bound to cart successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart or validation error)"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Отвязать номер стола от корзины",
+                "description": "Unbind table number from the current customer's cart. Requires authenticated customer with active cart.",
+                "operationId": "unbindTable",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number unbound from cart successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart)"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/customer/cart/cross-sell": {
@@ -4468,7 +4681,7 @@
                     "Checkout"
                 ],
                 "summary": "Save payment method at the checkout",
-                "description": "Save payment method at the checkout",
+                "description": "Save payment method at the checkout. Payment can be a string (method code) or an object with method and optional saved_card_id for Alfabank. When method is alfabank and saved_card_id is provided, the saved card (from GET /api/v1/customer/saved-cards) will be used for payment. bindingId and clientId are then passed to the bank when the order is paid.",
                 "operationId": "saveCheckoutPayment",
                 "requestBody": {
                     "content": {
@@ -4477,23 +4690,40 @@
                                 "required": [
                                     "payment"
                                 ],
-                                "properties": {
-                                    "payment": {
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "method": {
-                                                    "type": "string"
-                                                }
-                                            },
-                                            "type": "object"
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "payment": {
+                                                "description": "Payment method code (short form)",
+                                                "type": "string",
+                                                "example": "cashondelivery"
+                                            }
                                         },
-                                        "example": {
-                                            "method": "cashondelivery"
-                                        }
+                                        "type": "object"
+                                    },
+                                    {
+                                        "properties": {
+                                            "payment": {
+                                                "description": "Payment object with method and optional saved card for Alfabank",
+                                                "properties": {
+                                                    "method": {
+                                                        "description": "Payment method code",
+                                                        "type": "string",
+                                                        "example": "alfabank"
+                                                    },
+                                                    "saved_card_id": {
+                                                        "description": "ID of saved card from GET /api/v1/customer/saved-cards. Only for method=alfabank.",
+                                                        "type": "integer",
+                                                        "example": 1,
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "type": "object"
                                     }
-                                },
-                                "type": "object"
+                                ]
                             }
                         }
                     }
@@ -4632,15 +4862,19 @@
                                             "example": "Order saved successfully."
                                         },
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "order": {
-                                                        "$ref": "#/components/schemas/Order"
-                                                    }
+                                            "description": "Response data",
+                                            "properties": {
+                                                "order": {
+                                                    "$ref": "#/components/schemas/Order"
                                                 },
-                                                "type": "object"
-                                            }
+                                                "payment_url": {
+                                                    "description": "URL for redirect payment (Alfabank etc.). Present only when payment method requires redirect. Client should redirect user to this URL to complete payment.",
+                                                    "type": "string",
+                                                    "example": "https://example.com/alfabank/payment/start?order_id=123",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -4655,6 +4889,135 @@
                 "security": [
                     {
                         "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/sales/orders/bind-table": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Привязать номер стола к заказу",
+                "description": "Bind table number to the order. Admin API - requires admin authentication.",
+                "operationId": "bindOrderTable",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id",
+                                    "table_number"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "description": "Order ID",
+                                        "type": "integer",
+                                        "format": "int64",
+                                        "example": 1
+                                    },
+                                    "table_number": {
+                                        "description": "Table number to bind to the order",
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": 1,
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Order"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number bound to order successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum_admin": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Отвязать номер стола от заказа",
+                "description": "Unbind table number from the order. Admin API - requires admin authentication.",
+                "operationId": "unbindOrderTable",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "description": "Order ID",
+                                        "type": "integer",
+                                        "format": "int64",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Order"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number unbound from order successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum_admin": []
                     }
                 ]
             }
@@ -5347,7 +5710,7 @@
                                 ],
                                 "properties": {
                                     "verification_code": {
-                                        "description": "6-digit verification code",
+                                        "description": "Numeric verification code (length configured per channel, default: 6 digits, range: 4-10)",
                                         "type": "string",
                                         "example": "123456"
                                     },
@@ -5506,7 +5869,7 @@
                                 ],
                                 "properties": {
                                     "verification_code": {
-                                        "description": "6-digit verification code",
+                                        "description": "Numeric verification code (length configured per channel, default: 6 digits, range: 4-10)",
                                         "type": "string",
                                         "example": "123456"
                                     },
@@ -5813,6 +6176,12 @@
                                         "description": "Order rating (true = Нравится, false = Не нравится)",
                                         "type": "boolean",
                                         "example": true
+                                    },
+                                    "rating_comment": {
+                                        "description": "Optional comment for the rating",
+                                        "type": "string",
+                                        "example": "Отличное обслуживание, все быстро и качественно!",
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -6235,6 +6604,110 @@
                                         },
                                         "meta": {
                                             "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/saved-cards": {
+            "get": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get customer's saved cards",
+                "description": "Returns customer's saved payment cards from Alfabank, sorted by id in descending order",
+                "operationId": "getCustomerSavedCards",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/SavedCard"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/saved-cards/{id}": {
+            "delete": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Delete customer's saved card",
+                "description": "Unbinds the card at Alfa-Bank and removes it from the saved cards list",
+                "operationId": "deleteCustomerSavedCard",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Saved card ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Card removed successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Saved card not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Saved card not found."
                                         }
                                     },
                                     "type": "object"
@@ -6687,13 +7160,125 @@
                 ]
             }
         },
+        "/api/v1/errors": {
+            "post": {
+                "tags": [
+                    "Application Errors"
+                ],
+                "summary": "Report application error",
+                "description": "Submit an error report from the application (e.g. mobile, web). No authentication required. The error is stored and visible in the admin panel.",
+                "operationId": "reportApplicationError",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "message"
+                                ],
+                                "properties": {
+                                    "message": {
+                                        "description": "Error message (required)",
+                                        "type": "string",
+                                        "example": "Undefined array key 'id'"
+                                    },
+                                    "code": {
+                                        "description": "Error code or exception class",
+                                        "type": "string",
+                                        "example": "ErrorException",
+                                        "nullable": true
+                                    },
+                                    "file": {
+                                        "description": "File path where error occurred",
+                                        "type": "string",
+                                        "example": "/app/Http/Controllers/ExampleController.php",
+                                        "nullable": true
+                                    },
+                                    "line": {
+                                        "description": "Line number",
+                                        "type": "integer",
+                                        "example": 42,
+                                        "nullable": true
+                                    },
+                                    "trace": {
+                                        "description": "Stack trace (string or JSON string)",
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "context": {
+                                        "description": "Additional context (user_id, device, url, etc.)",
+                                        "type": "object",
+                                        "nullable": true
+                                    },
+                                    "source": {
+                                        "description": "Source identifier (e.g. mobile, web, api)",
+                                        "type": "string",
+                                        "example": "mobile",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Error report saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Error report has been saved successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Created error record ID",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The message field is required."
+                                        },
+                                        "errors": {
+                                            "description": "Validation errors by field",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/mobile-settings": {
             "get": {
                 "tags": [
                     "Mobile App"
                 ],
                 "summary": "Get mobile app settings",
-                "description": "Returns mobile app configuration settings including app info, filters, and custom data",
+                "description": "Returns mobile app configuration settings including app info, filters, custom data, and contact information",
                 "operationId": "getMobileAppSettings",
                 "parameters": [
                     {
@@ -6946,6 +7531,131 @@
                                                         },
                                                         "type": "object"
                                                     }
+                                                },
+                                                "products_banners": {
+                                                    "description": "Product banners from catalog.product_category_positions (product-category position mappings with product details)",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "product": {
+                                                                "description": "Product resource with full product details (id, sku, name, images, price, etc.)",
+                                                                "properties": {
+                                                                    "id": {
+                                                                        "type": "integer",
+                                                                        "example": 1
+                                                                    },
+                                                                    "sku": {
+                                                                        "type": "string",
+                                                                        "example": "product-sku"
+                                                                    },
+                                                                    "name": {
+                                                                        "type": "string",
+                                                                        "example": "Product Name"
+                                                                    },
+                                                                    "images": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "object"
+                                                                        }
+                                                                    },
+                                                                    "price": {
+                                                                        "type": "number",
+                                                                        "example": 99.99
+                                                                    }
+                                                                },
+                                                                "type": "object"
+                                                            },
+                                                            "category_id": {
+                                                                "description": "Category ID",
+                                                                "type": "integer",
+                                                                "example": 5
+                                                            },
+                                                            "position_type": {
+                                                                "description": "Position type: top, middle, bottom, numeric",
+                                                                "type": "string",
+                                                                "example": "top"
+                                                            },
+                                                            "position_value": {
+                                                                "description": "Numeric position value when position_type is numeric",
+                                                                "type": "integer",
+                                                                "example": null,
+                                                                "nullable": true
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "contact_telegram": {
+                                                    "description": "Telegram contact link",
+                                                    "type": "string",
+                                                    "example": "https://t.me/your_contact",
+                                                    "nullable": true
+                                                },
+                                                "contact_whatsapp": {
+                                                    "description": "WhatsApp contact link",
+                                                    "type": "string",
+                                                    "example": "https://wa.me/1234567890",
+                                                    "nullable": true
+                                                },
+                                                "contact_email": {
+                                                    "description": "Email address",
+                                                    "type": "string",
+                                                    "example": "support@example.com",
+                                                    "nullable": true
+                                                },
+                                                "contact_max": {
+                                                    "description": "Max Messenger contact link",
+                                                    "type": "string",
+                                                    "example": "https://max.me/your_contact",
+                                                    "nullable": true
+                                                },
+                                                "contact_us": {
+                                                    "description": "Contact information in structured format",
+                                                    "properties": {
+                                                        "telegram": {
+                                                            "description": "Telegram contact link",
+                                                            "type": "string",
+                                                            "example": "https://t.me/your_contact",
+                                                            "nullable": true
+                                                        },
+                                                        "whatsapp": {
+                                                            "description": "WhatsApp contact link",
+                                                            "type": "string",
+                                                            "example": "https://wa.me/1234567890",
+                                                            "nullable": true
+                                                        },
+                                                        "email": {
+                                                            "description": "Email address",
+                                                            "type": "string",
+                                                            "example": "support@example.com",
+                                                            "nullable": true
+                                                        },
+                                                        "max": {
+                                                            "description": "Max Messenger contact link",
+                                                            "type": "string",
+                                                            "example": "https://max.me/your_contact",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "documents": {
+                                                    "description": "Document links for mobile app",
+                                                    "properties": {
+                                                        "user_agreement": {
+                                                            "description": "URL to get HTML content of user agreement page",
+                                                            "type": "string",
+                                                            "example": "http://example.com/api/v1/cms/1/html",
+                                                            "nullable": true
+                                                        },
+                                                        "privacy_policy": {
+                                                            "description": "URL to get HTML content of privacy policy page",
+                                                            "type": "string",
+                                                            "example": "http://example.com/api/v1/cms/2/html",
+                                                            "nullable": true
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -6958,6 +7668,385 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/websocket/info": {
+            "get": {
+                "tags": [
+                    "WebSocket Notifications"
+                ],
+                "summary": "Get WebSocket connection information",
+                "description": "Returns WebSocket server connection details, available channels and events for real-time notifications.\r\n *      \r\n *      ## WebSocket Connection\r\n *      \r\n *      The API supports real-time notifications via WebSocket using Laravel Reverb (Pusher-compatible protocol).\r\n *      \r\n *      ### Connection Details\r\n *      - **Protocol**: Pusher-compatible WebSocket\r\n *      - **Server**: Laravel Reverb\r\n *      - **Channels**: Public and Private channels available\r\n *      \r\n *      ### Channel Types\r\n *      \r\n *      #### Public Channels\r\n *      - **notification**: Public channel for general notifications (no authentication required)\r\n *      \r\n *      #### Private Channels (Authentication Required)\r\n *      - **order.{orderId}**: Private channel for specific order updates (e.g., `order.123`)\r\n *      - **customer.{customerId}.orders**: Private channel for all orders of a specific customer (e.g., `customer.456.orders`)\r\n *      \r\n *      ### Available Events\r\n *      - **create-notification**: Fired when a new order is created (public channel)\r\n *      - **update-notification**: Fired when an order status is updated (private channels)\r\n *      - **product-status-changed**: Fired when a product becomes out of stock (public channel)\r\n *      - **product-price-changed**: Fired when a product price changes (public channel)\r\n *      \r\n *      ### Authentication for Private Channels\r\n *      \r\n *      Private channels require authentication. The authorization endpoint is:\r\n *      - **POST** `/api/v1/customer/broadcasting/auth`\r\n *      \r\n *      This endpoint requires authentication token in the Authorization header.\r\n *      \r\n *      ### Example Connection (JavaScript)\r\n *      ```javascript\r\n *      import Echo from 'laravel-echo';\r\n *      import Pusher from 'pusher-js';\r\n *      \r\n *      window.Echo = new Echo({\r\n *          broadcaster: 'pusher',\r\n *          key: process.env.VITE_REVERB_APP_KEY,\r\n *          wsHost: process.env.VITE_REVERB_HOST,\r\n *          wsPort: process.env.VITE_REVERB_PORT ?? 80,\r\n *          wssPort: process.env.VITE_REVERB_PORT ?? 443,\r\n *          wsPath: '/app',\r\n *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',\r\n *          enabledTransports: ['ws', 'wss'],\r\n *          authEndpoint: '/api/v1/customer/broadcasting/auth',\r\n *          auth: {\r\n *              headers: {\r\n *                  Authorization: 'Bearer ' + yourAuthToken\r\n *              }\r\n *          }\r\n *      });\r\n *      \r\n *      // Public channel - no authentication required\r\n *      Echo.channel('notification')\r\n *          .listen('.product-status-changed', (e) => {\r\n *              console.log('Product out of stock:', e);\r\n *          })\r\n *          .listen('.product-price-changed', (e) => {\r\n *              console.log('Price changed:', e);\r\n *          })\r\n *          .listen('.create-notification', (e) => {\r\n *              console.log('New order created:', e);\r\n *          });\r\n *      \r\n *      // Private channel for specific order\r\n *      Echo.private('order.123')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order updated:', e);\r\n *          });\r\n *      \r\n *      // Private channel for all customer orders\r\n *      Echo.private('customer.456.orders')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order status changed:', e);\r\n *          });\r\n *      ```\r\n *      ",
+                "operationId": "getWebSocketInfo",
+                "responses": {
+                    "200": {
+                        "description": "WebSocket connection information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "server": {
+                                            "description": "WebSocket server configuration",
+                                            "properties": {
+                                                "url": {
+                                                    "description": "WebSocket server URL",
+                                                    "type": "string",
+                                                    "example": "wss://your-domain.com/app"
+                                                },
+                                                "protocol": {
+                                                    "description": "WebSocket protocol (Pusher-compatible)",
+                                                    "type": "string",
+                                                    "example": "pusher"
+                                                },
+                                                "key": {
+                                                    "description": "Application key (available in VITE_REVERB_APP_KEY)",
+                                                    "type": "string",
+                                                    "example": "your-app-key"
+                                                },
+                                                "host": {
+                                                    "description": "WebSocket host",
+                                                    "type": "string",
+                                                    "example": "your-domain.com"
+                                                },
+                                                "port": {
+                                                    "description": "WebSocket port (443 for HTTPS, 80 for HTTP)",
+                                                    "type": "integer",
+                                                    "example": 443
+                                                },
+                                                "path": {
+                                                    "description": "WebSocket path",
+                                                    "type": "string",
+                                                    "example": "/app"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "channels": {
+                                            "description": "Available WebSocket channels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "notification"
+                                                    },
+                                                    "type": {
+                                                        "description": "Channel type",
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "public",
+                                                            "private"
+                                                        ],
+                                                        "example": "public"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Main notification channel for all real-time updates"
+                                                    },
+                                                    "requires_auth": {
+                                                        "description": "Whether authentication is required",
+                                                        "type": "boolean",
+                                                        "example": false
+                                                    },
+                                                    "events": {
+                                                        "description": "Available events on this channel",
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "product-status-changed"
+                                                                },
+                                                                "description": {
+                                                                    "type": "string",
+                                                                    "example": "Fired when a product becomes out of stock"
+                                                                },
+                                                                "payload_schema": {
+                                                                    "type": "string",
+                                                                    "example": "#/components/schemas/ProductStatusChanged"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "private_channels": {
+                                            "description": "Available private WebSocket channels (require authentication)",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "pattern": {
+                                                        "description": "Channel name pattern",
+                                                        "type": "string",
+                                                        "example": "order.{orderId}"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Private channel for specific order updates"
+                                                    },
+                                                    "example": {
+                                                        "description": "Example channel name",
+                                                        "type": "string",
+                                                        "example": "order.123"
+                                                    },
+                                                    "events": {
+                                                        "description": "Available events on this channel",
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "update-notification"
+                                                                },
+                                                                "description": {
+                                                                    "type": "string",
+                                                                    "example": "Fired when order status is updated"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "auth_endpoint": {
+                                            "description": "Authorization endpoint for private channels",
+                                            "properties": {
+                                                "url": {
+                                                    "type": "string",
+                                                    "example": "/api/v1/customer/broadcasting/auth"
+                                                },
+                                                "method": {
+                                                    "type": "string",
+                                                    "example": "POST"
+                                                },
+                                                "requires_auth": {
+                                                    "description": "Requires Bearer token in Authorization header",
+                                                    "type": "boolean",
+                                                    "example": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "example_code": {
+                                            "description": "Example code snippets for connecting",
+                                            "properties": {
+                                                "javascript": {
+                                                    "type": "string",
+                                                    "example": "import Echo from 'laravel-echo';\\nimport Pusher from 'pusher-js';\\n\\nwindow.Echo = new Echo({\\n    broadcaster: 'pusher',\\n    key: 'your-app-key',\\n    wsHost: 'your-domain.com',\\n    wsPort: 443,\\n    wssPort: 443,\\n    wsPath: '/app',\\n    forceTLS: true,\\n    enabledTransports: ['ws', 'wss'],\\n});\\n\\nEcho.channel('notification')\\n    .listen('.product-status-changed', (e) => {\\n        console.log('Product out of stock:', e);\\n    })\\n    .listen('.product-price-changed', (e) => {\\n        console.log('Price changed:', e);\\n    });"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/websocket/events": {
+            "get": {
+                "tags": [
+                    "WebSocket Notifications"
+                ],
+                "summary": "Get list of available WebSocket events",
+                "description": "Returns detailed information about all available WebSocket events with their payload schemas",
+                "operationId": "getWebSocketEvents",
+                "responses": {
+                    "200": {
+                        "description": "List of WebSocket events",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "public_events": {
+                                            "description": "Events available on public channels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "channel": {
+                                                        "type": "string",
+                                                        "example": "notification"
+                                                    },
+                                                    "event_name": {
+                                                        "type": "string",
+                                                        "example": "product-status-changed"
+                                                    },
+                                                    "full_event_name": {
+                                                        "description": "Full event name to use in Echo.listen()",
+                                                        "type": "string",
+                                                        "example": ".product-status-changed"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Fired when a product becomes out of stock"
+                                                    },
+                                                    "payload": {
+                                                        "oneOf": [
+                                                            {
+                                                                "$ref": "#/components/schemas/ProductStatusChanged"
+                                                            },
+                                                            {
+                                                                "$ref": "#/components/schemas/ProductPriceChanged"
+                                                            },
+                                                            {
+                                                                "$ref": "#/components/schemas/OrderNotification"
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "private_events": {
+                                            "description": "Events available on private channels",
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "channel_pattern": {
+                                                        "type": "string",
+                                                        "example": "order.{orderId}"
+                                                    },
+                                                    "channel_example": {
+                                                        "type": "string",
+                                                        "example": "order.123"
+                                                    },
+                                                    "event_name": {
+                                                        "type": "string",
+                                                        "example": "update-notification"
+                                                    },
+                                                    "full_event_name": {
+                                                        "description": "Full event name to use in Echo.listen()",
+                                                        "type": "string",
+                                                        "example": ".update-notification"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Fired when order status is updated"
+                                                    },
+                                                    "requires_auth": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "payload": {
+                                                        "$ref": "#/components/schemas/OrderNotification"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/broadcasting/auth": {
+            "post": {
+                "tags": [
+                    "WebSocket Notifications"
+                ],
+                "summary": "Authorize private WebSocket channel",
+                "description": "Authorizes access to private WebSocket channels. This endpoint is called automatically by Laravel Echo when subscribing to private channels.\r\n *      \r\n *      ## Private Channels\r\n *      \r\n *      Private channels require authentication and authorization. When a client attempts to subscribe to a private channel, Laravel Echo automatically sends a POST request to this endpoint.\r\n *      \r\n *      ### Available Private Channels\r\n *      \r\n *      1. **order.{orderId}** - Private channel for specific order updates\r\n *         - Pattern: `order.{orderId}` (e.g., `order.123`)\r\n *         - Authorization: User must be the owner of the order\r\n *         - Events: `update-notification`\r\n *      \r\n *      2. **customer.{customerId}.orders** - Private channel for all customer orders\r\n *         - Pattern: `customer.{customerId}.orders` (e.g., `customer.456.orders`)\r\n *         - Authorization: User ID must match the customerId\r\n *         - Events: `update-notification`\r\n *      \r\n *      ### Authorization Logic\r\n *      \r\n *      - **order.{orderId}**: Checks if the authenticated user is the owner of the order\r\n *      - **customer.{customerId}.orders**: Checks if the authenticated user ID matches the customerId\r\n *      \r\n *      ### Usage\r\n *      \r\n *      This endpoint is called automatically by Laravel Echo. You don't need to call it manually.\r\n *      \r\n *      ```javascript\r\n *      // Laravel Echo automatically handles authorization\r\n *      Echo.private('order.123')\r\n *          .listen('.update-notification', (e) => {\r\n *              console.log('Order updated:', e);\r\n *          });\r\n *      ```\r\n *      ",
+                "operationId": "authorizeBroadcastingChannel",
+                "requestBody": {
+                    "description": "Channel authorization request",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "socket_id",
+                                    "channel_name"
+                                ],
+                                "properties": {
+                                    "socket_id": {
+                                        "description": "Socket ID from Pusher/Echo",
+                                        "type": "string",
+                                        "example": "123.456"
+                                    },
+                                    "channel_name": {
+                                        "description": "Channel name (prefixed with 'private-' for private channels)",
+                                        "type": "string",
+                                        "example": "private-order.123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Channel authorized successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "auth": {
+                                            "description": "Authorization signature",
+                                            "type": "string",
+                                            "example": "your-app-key:signature"
+                                        },
+                                        "channel_data": {
+                                            "description": "Channel data (for presence channels)",
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Channel authorization denied",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Access denied to channel"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -7336,6 +8425,17 @@
                         ],
                         "example": "products_and_description"
                     },
+                    "product_display_type": {
+                        "title": "Product Display Type",
+                        "description": "Category's product listing layout: standard grid/list, enlarged first product at top, or variant #2",
+                        "type": "string",
+                        "enum": [
+                            "standard",
+                            "enlarged_top",
+                            "variant_2"
+                        ],
+                        "example": "standard"
+                    },
                     "description": {
                         "title": "Description",
                         "description": "Category's description",
@@ -7447,6 +8547,17 @@
                         ],
                         "example": "products_and_description"
                     },
+                    "product_display_type": {
+                        "title": "Product Display Type",
+                        "description": "Category's product listing layout: standard grid/list, enlarged first product at top, or variant #2",
+                        "type": "string",
+                        "enum": [
+                            "standard",
+                            "enlarged_top",
+                            "variant_2"
+                        ],
+                        "example": "standard"
+                    },
                     "description": {
                         "title": "Description",
                         "description": "Category's description",
@@ -7512,6 +8623,154 @@
                         "type": "string",
                         "format": "datetime",
                         "example": "2020-01-27 17:50:45"
+                    }
+                },
+                "type": "object"
+            },
+            "NomenclatureIngredient": {
+                "title": "NomenclatureIngredient",
+                "description": "Ingredient in nomenclature response",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Ingredient ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Ingredient SKU",
+                        "type": "string",
+                        "example": "ingredient-1"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Ingredient name",
+                        "type": "string",
+                        "example": "Tomato"
+                    },
+                    "price": {
+                        "title": "Price",
+                        "description": "Ingredient price",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12.2
+                    },
+                    "formatted_price": {
+                        "title": "Formatted Price",
+                        "description": "Ingredient's formatted price",
+                        "type": "string",
+                        "example": "$12.20"
+                    },
+                    "base_image": {
+                        "title": "Base Image",
+                        "description": "Ingredient's base image",
+                        "type": "object",
+                        "example": {
+                            "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                            "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                            "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                            "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                        }
+                    },
+                    "in_stock": {
+                        "title": "In Stock",
+                        "description": "Whether ingredient is in stock",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "videos": {
+                        "title": "Videos",
+                        "description": "Ingredient's videos",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductVideo"
+                        }
+                    },
+                    "nutrition": {
+                        "title": "Nutrition",
+                        "description": "Nutrition information (calories, proteins, fats, carbs)",
+                        "type": "object",
+                        "example": {
+                            "calories": 25.5,
+                            "proteins": 1.2,
+                            "fats": 0.3,
+                            "carbs": 5
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "NomenclatureProduct": {
+                "title": "NomenclatureProduct",
+                "description": "Product in nomenclature response",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Product SKU",
+                        "type": "string",
+                        "example": "product-1"
+                    },
+                    "type": {
+                        "title": "Type",
+                        "description": "Product type",
+                        "type": "string",
+                        "enum": [
+                            "simple",
+                            "configurable",
+                            "virtual",
+                            "grouped",
+                            "downloadable",
+                            "bundle",
+                            "booking",
+                            "constructor",
+                            "ingredient"
+                        ]
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product name",
+                        "type": "string",
+                        "example": "Men T-Shirt"
+                    },
+                    "price": {
+                        "title": "Price",
+                        "description": "Product price",
+                        "type": "number",
+                        "format": "float",
+                        "example": 12.2
+                    },
+                    "formatted_price": {
+                        "title": "Formatted Price",
+                        "description": "Product's formatted price",
+                        "type": "string",
+                        "example": "$12.20"
+                    },
+                    "base_image": {
+                        "title": "Base Image",
+                        "description": "Product's base image",
+                        "type": "object",
+                        "example": {
+                            "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                            "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                            "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                            "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                        }
+                    },
+                    "in_stock": {
+                        "title": "In Stock",
+                        "description": "Whether product is in stock",
+                        "type": "boolean",
+                        "example": true
                     }
                 },
                 "type": "object"
@@ -7656,6 +8915,107 @@
                             "small_image_url": "http://localhost/cache/small/product/1/category_abc123.webp",
                             "medium_image_url": "http://localhost/cache/medium/product/1/category_abc123.webp",
                             "large_image_url": "http://localhost/cache/large/product/1/category_abc123.webp"
+                        },
+                        "nullable": true
+                    },
+                    "show_as_big_in_category": {
+                        "title": "Show as Big in Category",
+                        "description": "Whether to show product as big item in category listing",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_half_portion": {
+                        "title": "Is Half Portion",
+                        "description": "Является ли товар половинкой порции (для ингредиентов)",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "half_portion_pair_product_id": {
+                        "title": "Half Portion Pair Product ID",
+                        "description": "ID связанного товара-пары (полная порция для половинки или наоборот)",
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "half_portion_pair_product": {
+                        "title": "Half Portion Pair Product",
+                        "description": "Данные связанного товара-половинки (при загрузке связи)",
+                        "properties": {
+                            "id": {
+                                "description": "Product ID",
+                                "type": "integer"
+                            },
+                            "sku": {
+                                "description": "Product SKU",
+                                "type": "string"
+                            },
+                            "name": {
+                                "description": "Product name",
+                                "type": "string"
+                            },
+                            "base_image": {
+                                "description": "Product base image",
+                                "properties": {
+                                    "small_image_url": {
+                                        "type": "string"
+                                    },
+                                    "medium_image_url": {
+                                        "type": "string"
+                                    },
+                                    "large_image_url": {
+                                        "type": "string"
+                                    },
+                                    "original_image_url": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "nutrition": {
+                                "description": "Nutrition information (КЖБУ)",
+                                "properties": {
+                                    "calories": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "proteins": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "fats": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "carbs": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object",
+                        "example": {
+                            "id": 27,
+                            "sku": "ingredient-half",
+                            "name": "Половинка ингредиента",
+                            "base_image": {
+                                "small_image_url": "http://localhost/cache/small/product/27/image.webp",
+                                "medium_image_url": "http://localhost/cache/medium/product/27/image.webp",
+                                "large_image_url": "http://localhost/cache/large/product/27/image.webp",
+                                "original_image_url": "http://localhost/storage/product/27/image.webp"
+                            },
+                            "nutrition": {
+                                "calories": 125,
+                                "proteins": 7.5,
+                                "fats": 4.2,
+                                "carbs": 15
+                            }
                         },
                         "nullable": true
                     },
@@ -8145,6 +9505,11 @@
                                                             },
                                                             "type": "object"
                                                         },
+                                                        "description": {
+                                                            "description": "Product description without HTML tags",
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
                                                         "nutrition": {
                                                             "description": "Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
                                                             "properties": {
@@ -8170,6 +9535,60 @@
                                                                     "description": "Carbohydrates (г)",
                                                                     "type": "number",
                                                                     "format": "float",
+                                                                    "nullable": true
+                                                                }
+                                                            },
+                                                            "type": "object",
+                                                            "nullable": true
+                                                        },
+                                                        "is_half_portion": {
+                                                            "description": "Является ли ингредиент половинкой порции",
+                                                            "type": "boolean"
+                                                        },
+                                                        "half_portion_pair_product_id": {
+                                                            "description": "ID связанного товара-пары (половинка/полная порция)",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "half_portion_pair_product": {
+                                                            "description": "Данные связанного товара-половинки (id, sku, name, base_image, nutrition)",
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "sku": {
+                                                                    "type": "string"
+                                                                },
+                                                                "name": {
+                                                                    "type": "string"
+                                                                },
+                                                                "base_image": {
+                                                                    "type": "object"
+                                                                },
+                                                                "nutrition": {
+                                                                    "properties": {
+                                                                        "calories": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "proteins": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "fats": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        },
+                                                                        "carbs": {
+                                                                            "type": "number",
+                                                                            "format": "float",
+                                                                            "nullable": true
+                                                                        }
+                                                                    },
+                                                                    "type": "object",
                                                                     "nullable": true
                                                                 }
                                                             },
@@ -8230,12 +9649,16 @@
                                                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
                                                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
                                                 },
+                                                "description": "Ingredient description text without HTML tags",
                                                 "nutrition": {
                                                     "calories": 250.5,
                                                     "proteins": 15.2,
                                                     "fats": 8.5,
                                                     "carbs": 30
-                                                }
+                                                },
+                                                "is_half_portion": false,
+                                                "half_portion_pair_product_id": null,
+                                                "half_portion_pair_product": null
                                             },
                                             {
                                                 "id": 26,
@@ -8252,11 +9675,175 @@
                                                     "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
                                                     "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
                                                 },
-                                                "nutrition": null
+                                                "description": null,
+                                                "nutrition": null,
+                                                "is_half_portion": true,
+                                                "half_portion_pair_product_id": 25,
+                                                "half_portion_pair_product": {
+                                                    "id": 25,
+                                                    "sku": "ingredient-1",
+                                                    "name": "Ingredient Name",
+                                                    "base_image": [],
+                                                    "nutrition": {
+                                                        "calories": 250.5,
+                                                        "proteins": 15.2,
+                                                        "fats": 8.5,
+                                                        "carbs": 30
+                                                    }
+                                                }
                                             }
                                         ]
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    "drinks": {
+                        "title": "Drinks",
+                        "description": "Info: this property will only use with simple, constructor, configurable, grouped, and bundle type products.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Drink product ID",
+                                    "type": "integer"
+                                },
+                                "sku": {
+                                    "description": "Drink product SKU",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "description": "Drink product name",
+                                    "type": "string"
+                                },
+                                "price": {
+                                    "description": "Drink product price",
+                                    "type": "number",
+                                    "format": "float"
+                                },
+                                "formatted_price": {
+                                    "description": "Formatted price",
+                                    "type": "string"
+                                },
+                                "in_stock": {
+                                    "description": "In stock",
+                                    "type": "boolean"
+                                },
+                                "sort": {
+                                    "description": "Sort order",
+                                    "type": "integer"
+                                },
+                                "default": {
+                                    "description": "Is default drink",
+                                    "type": "boolean"
+                                },
+                                "base_image": {
+                                    "description": "Drink product base image with different sizes",
+                                    "properties": {
+                                        "small_image_url": {
+                                            "type": "string"
+                                        },
+                                        "medium_image_url": {
+                                            "type": "string"
+                                        },
+                                        "large_image_url": {
+                                            "type": "string"
+                                        },
+                                        "original_image_url": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                },
+                                "images": {
+                                    "description": "Drink product images",
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                },
+                                "description": {
+                                    "description": "Drink description without HTML tags",
+                                    "type": "string",
+                                    "nullable": true
+                                },
+                                "nutrition": {
+                                    "description": "Nutrition information (КЖБУ - Калории, Жиры, Белки, Углеводы)",
+                                    "properties": {
+                                        "calories": {
+                                            "description": "Calories (ккал)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        },
+                                        "proteins": {
+                                            "description": "Proteins (г)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        },
+                                        "fats": {
+                                            "description": "Fats (г)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        },
+                                        "carbs": {
+                                            "description": "Carbohydrates (г)",
+                                            "type": "number",
+                                            "format": "float",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "example": [
+                            {
+                                "id": 27,
+                                "sku": "drink-1",
+                                "name": "Coca Cola",
+                                "price": 2.5,
+                                "formatted_price": "$2.50",
+                                "in_stock": true,
+                                "sort": 1,
+                                "default": true,
+                                "base_image": {
+                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                },
+                                "images": [],
+                                "description": "Drink description text without HTML tags",
+                                "nutrition": {
+                                    "calories": 150,
+                                    "proteins": 0,
+                                    "fats": 0,
+                                    "carbs": 39
+                                }
+                            },
+                            {
+                                "id": 28,
+                                "sku": "drink-2",
+                                "name": "Pepsi",
+                                "price": 2.5,
+                                "formatted_price": "$2.50",
+                                "in_stock": true,
+                                "sort": 2,
+                                "default": false,
+                                "base_image": {
+                                    "small_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/small-product-placeholder.webp",
+                                    "medium_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp",
+                                    "large_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/large-product-placeholder.webp",
+                                    "original_image_url": "http://localhost/public/vendor/webkul/ui/assets/images/product/original-product-placeholder.webp"
+                                },
+                                "images": [],
+                                "description": null,
+                                "nutrition": null
                             }
                         ]
                     },
@@ -8433,15 +10020,11 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
-                        "type": "string",
-                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
-                        "type": "string",
-                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
@@ -11075,6 +12658,20 @@
                         "type": "string",
                         "example": "flatrate_flatrate"
                     },
+                    "payment_method": {
+                        "title": "Payment Method",
+                        "description": "Selected payment method code for the current cart",
+                        "type": "string",
+                        "example": "cashondelivery",
+                        "nullable": true
+                    },
+                    "payment_method_title": {
+                        "title": "Payment Method Title",
+                        "description": "Human-readable payment method title from config",
+                        "type": "string",
+                        "example": "Cash On Delivery",
+                        "nullable": true
+                    },
                     "coupon_code": {
                         "title": "Coupon Code",
                         "description": "Applied coupon code to the cart",
@@ -11232,6 +12829,14 @@
                         "description": "Cart status for active or inactive",
                         "type": "boolean",
                         "example": "true"
+                    },
+                    "table_number": {
+                        "title": "Table Number",
+                        "description": "Table number assigned to the cart (for dine-in orders)",
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 5,
+                        "nullable": true
                     },
                     "customer": {
                         "$ref": "#/components/schemas/Customer"
@@ -12174,6 +13779,14 @@
                     "items": {
                         "$ref": "#/components/schemas/OrderItem"
                     },
+                    "table_number": {
+                        "title": "Table Number",
+                        "description": "Table number assigned to the order",
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 5,
+                        "nullable": true
+                    },
                     "order_labels": {
                         "title": "Order Labels",
                         "description": "Custom labels attached to the order",
@@ -12199,6 +13812,13 @@
                         "description": "Human-readable rating label",
                         "type": "string",
                         "example": "Нравится",
+                        "nullable": true
+                    },
+                    "rating_comment": {
+                        "title": "Rating Comment",
+                        "description": "Comment for the order rating",
+                        "type": "string",
+                        "example": "Отличное обслуживание, все быстро и качественно!",
                         "nullable": true
                     },
                     "customer": {
@@ -12534,6 +14154,58 @@
                 },
                 "type": "object"
             },
+            "SavedCard": {
+                "title": "SavedCard",
+                "description": "Saved card model (Alfabank)",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Saved card ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "binding_id": {
+                        "title": "Binding ID",
+                        "description": "Bank binding identifier for payment",
+                        "type": "string",
+                        "example": "8ac7a4a8-1234-5678-90ab-cdef12345678"
+                    },
+                    "card_mask": {
+                        "title": "Card Mask",
+                        "description": "Masked card number",
+                        "type": "string",
+                        "example": "4276 **** **** 1234"
+                    },
+                    "card_type": {
+                        "title": "Card Type",
+                        "description": "Payment system (VISA, MasterCard, etc.)",
+                        "type": "string",
+                        "example": "VISA"
+                    },
+                    "is_active": {
+                        "title": "Is Active",
+                        "description": "Whether the card is active",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "title": "Created at",
+                        "description": "Created at",
+                        "type": "string",
+                        "format": "datetime",
+                        "example": "2026-02-19 12:00:00"
+                    },
+                    "updated_at": {
+                        "title": "Updated at",
+                        "description": "Updated at",
+                        "type": "string",
+                        "format": "datetime",
+                        "example": "2026-02-19 12:00:00"
+                    }
+                },
+                "type": "object"
+            },
             "Shipment": {
                 "title": "Shipment",
                 "description": "Shipment model",
@@ -12785,6 +14457,139 @@
                     }
                 },
                 "type": "object"
+            },
+            "OrderNotification": {
+                "title": "OrderNotification",
+                "description": "WebSocket event payload for order notifications (create/update)",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "Order ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "status": {
+                        "title": "Status",
+                        "description": "Order status (for update-notification event)",
+                        "type": "string",
+                        "example": "processing",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "ProductPriceChanged": {
+                "title": "ProductPriceChanged",
+                "description": "WebSocket event payload when product price changes",
+                "properties": {
+                    "product_id": {
+                        "title": "Product ID",
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Product SKU",
+                        "type": "string",
+                        "example": "PRODUCT-SKU-123"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product name",
+                        "type": "string",
+                        "example": "Product Name"
+                    },
+                    "previous_price": {
+                        "title": "Previous Price",
+                        "description": "Previous price before change",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1000
+                    },
+                    "current_price": {
+                        "title": "Current Price",
+                        "description": "Current price after change",
+                        "type": "number",
+                        "format": "float",
+                        "example": 1200
+                    },
+                    "price_change": {
+                        "title": "Price Change",
+                        "description": "Absolute price change amount",
+                        "type": "number",
+                        "format": "float",
+                        "example": 200
+                    },
+                    "price_change_percent": {
+                        "title": "Price Change Percent",
+                        "description": "Percentage change in price",
+                        "type": "number",
+                        "format": "float",
+                        "example": 20
+                    },
+                    "timestamp": {
+                        "title": "Timestamp",
+                        "description": "Event timestamp in ISO 8601 format",
+                        "type": "string",
+                        "example": "2025-01-15T10:30:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "ProductStatusChanged": {
+                "title": "ProductStatusChanged",
+                "description": "WebSocket event payload when product status changes to out of stock",
+                "properties": {
+                    "product_id": {
+                        "title": "Product ID",
+                        "description": "Product ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 123
+                    },
+                    "sku": {
+                        "title": "SKU",
+                        "description": "Product SKU",
+                        "type": "string",
+                        "example": "PRODUCT-SKU-123"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product name",
+                        "type": "string",
+                        "example": "Product Name"
+                    },
+                    "status": {
+                        "title": "Status",
+                        "description": "Product status",
+                        "type": "string",
+                        "example": "out_of_stock"
+                    },
+                    "previous_qty": {
+                        "title": "Previous Quantity",
+                        "description": "Previous quantity before change",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 10
+                    },
+                    "current_qty": {
+                        "title": "Current Quantity",
+                        "description": "Current quantity after change",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 0
+                    },
+                    "timestamp": {
+                        "title": "Timestamp",
+                        "description": "Event timestamp in ISO 8601 format",
+                        "type": "string",
+                        "example": "2025-01-15T10:30:00Z"
+                    }
+                },
+                "type": "object"
             }
         },
         "responses": {
@@ -12893,12 +14698,24 @@
             "description": "API endpoints for SMS, WhatsApp, and Telegram authentication"
         },
         {
+            "name": "WebSocket Notifications",
+            "description": "WebSocket Real-time Notifications API - Real-time events via Laravel Reverb"
+        },
+        {
+            "name": "CMS Pages",
+            "description": "CMS Pages"
+        },
+        {
             "name": "Catalog",
             "description": "Catalog"
         },
         {
             "name": "Bonuses",
             "description": "Bonuses"
+        },
+        {
+            "name": "Application Errors",
+            "description": "Application Errors"
         },
         {
             "name": "Mobile App",

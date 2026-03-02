@@ -4,7 +4,9 @@ return [
     'admin' => [
         'sales' => [
             'orders' => [
-                'cancel-success' => 'Order canceled successfully.',
+                'cancel-success'       => 'Order canceled successfully.',
+                'bind-table-success'   => 'Table number bound to order successfully.',
+                'unbind-table-success' => 'Table number unbound from order successfully.',
 
                 'error' => [
                     'cancel-error' => 'Order can not be canceled.',
@@ -428,11 +430,20 @@ return [
     ],
 
     'shop' => [
+        'errors' => [
+            'report-success' => 'Error report has been saved successfully.',
+        ],
+
         'customer' => [
             'addresses' => [
                 'create-success' => 'Your address has been created successfully.',
                 'delete-success' => 'Your address has been deleted successfully.',
                 'update-success' => 'Your address has been updated successfully.',
+            ],
+
+            'saved-cards' => [
+                'delete-success' => 'Card removed successfully.',
+                'not-found'      => 'Saved card not found.',
             ],
 
             'accounts' => [
@@ -459,6 +470,10 @@ return [
         ],
 
         'checkout' => [
+            'table' => [
+                'bind-success'   => 'Table number bound to cart successfully.',
+                'unbind-success' => 'Table number unbound from cart successfully.',
+            ],
             'billing-address-saved'   => 'Address saved successfully.',
             'check-billing-address'   => 'Please check billing address.',
             'check-shipping-address'  => 'Please check shipping address.',
@@ -518,6 +533,14 @@ return [
             'orders' => [
                 'cancel' => 'Order canceled successfully.',
                 'rate-success' => 'Order rated successfully.',
+
+                'saved-card' => [
+                    'add-success'    => 'Saved card has been added to the order successfully.',
+                    'remove-success' => 'Saved card has been removed from the order successfully.',
+                    'not-found'      => 'Saved card not found.',
+                    'invalid-order'  => 'Order does not allow adding or removing saved card.',
+                    'card-not-found' => 'Saved card not found.',
+                ],
 
                 'error' => [
                     'cancel-error'                    => 'Order can not be canceled.',
@@ -606,6 +629,8 @@ return [
                 'from-info'  => 'SMS sender name (must be registered in REDSMS)',
                 'auth_message_text' => 'Authorization Message Text',
                 'auth_message_text-info' => 'Text that will be added before the authorization code in SMS message',
+                'code_length' => 'Verification Code Length',
+                'code_length-info' => 'Number of digits in the verification code (4-10, default: 6)',
                 'test_phone_numbers' => 'Test Phone Numbers',
                 'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers SMS is not sent, and authorization code is always 123456',
             ],
@@ -622,6 +647,8 @@ return [
                 'app_link-info' => 'Link to application in Telegram (e.g., https://t.me/your_app)',
                 'start_message' => 'Welcome Message',
                 'start_message-info' => 'Message shown when bot is first started with "Share Contact" button',
+                'code_length' => 'Verification Code Length',
+                'code_length-info' => 'Number of digits in the verification code (4-10, default: 6)',
                 'test_phone_numbers' => 'Test Phone Numbers',
                 'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers message is not sent, and authorization code is always 123456',
             ],
@@ -636,6 +663,8 @@ return [
                 'api_token_instance-info' => 'API token for Green API access',
                 'url'        => 'API URL',
                 'url-info'   => 'Green API URL (default: https://api.green-api.com)',
+                'code_length' => 'Verification Code Length',
+                'code_length-info' => 'Number of digits in the verification code (4-10, default: 6)',
                 'test_phone_numbers' => 'Test Phone Numbers',
                 'test_phone_numbers-info' => 'List of exception phone numbers (one per line). For these numbers message is not sent, and authorization code is always 123456',
             ],

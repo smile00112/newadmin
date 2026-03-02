@@ -205,6 +205,13 @@ class OrderController
      *                  type="boolean",
      *                  description="Order rating (true = Нравится, false = Не нравится)",
      *                  example=true
+     *              ),
+     *              @OA\Property(
+     *                  property="rating_comment",
+     *                  type="string",
+     *                  description="Optional comment for the rating",
+     *                  example="Отличное обслуживание, все быстро и качественно!",
+     *                  nullable=true
      *              )
      *          )
      *      ),

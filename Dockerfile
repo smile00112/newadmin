@@ -1,9 +1,10 @@
-FROM php:8.2-cli-alpine AS base
+FROM php:8.3-cli-alpine AS base
 
-# Установка системных зависимостей
+# Установка системных зависимостей (БЕЗ изменения /etc/resolv.conf)
 RUN apk add --no-cache \
     git \
     curl \
+    curl-dev \
     libpng-dev \
     libzip-dev \
     oniguruma-dev \
@@ -14,7 +15,12 @@ RUN apk add --no-cache \
     unzip \
     bash \
     supervisor \
-    netcat-openbsd
+    netcat-openbsd \
+    linux-headers \
+    autoconf \
+    g++ \
+    make \
+    pcre-dev
 
 # Установка PHP расширений
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -30,67 +36,50 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     intl \
     opcache \
     calendar \
-    curl \
     xml \
     dom \
-    fileinfo \
-    filter \
-    hash \
-    json \
-    openssl \
-    pcre \
-    session \
-    tokenizer
+    fileinfo
 
-# Установка Redis расширения
-RUN apk add --no-cache pcre-dev $PHPIZE_DEPS \
-    && pecl install redis \
+# Установка Redis через PECL с использованием curl (более надежно)
+RUN curl -sSL https://pecl.php.net/get/redis -o /tmp/redis.tar.gz \
+    && tar xzf /tmp/redis.tar.gz -C /tmp \
+    && cd /tmp/redis-* \
+    && phpize \
+    && ./configure \
+    && make \
+    && make install \
     && docker-php-ext-enable redis \
-    && apk del pcre-dev $PHPIZE_DEPS
+    && rm -rf /tmp/redis*
+
+# Очистка
+RUN apk del autoconf g++ make pcre-dev
 
 # Установка Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Настройка рабочей директории
 WORKDIR /var/www/html
 
-# Копирование файлов проекта
 COPY . .
 
-# Установка зависимостей Composer
-# Устанавливаем с dev зависимостями, так как RoadRunner CLI нужен для установки binary
-RUN composer install --optimize-autoloader --no-interaction --prefer-dist
+# Установка зависимостей Composer (без скриптов)
+RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
 
-# RoadRunner будет установлен автоматически Octane при первом запуске
-# или можно установить вручную: php artisan octane:install --server=roadrunner
+# Генерация автозагрузчика
+RUN composer dump-autoload --optimize
 
-# Настройка прав доступа
+# Настройка прав
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Копирование PHP конфигурации
-COPY docker/php/php.ini /usr/local/etc/php/php.ini
-COPY docker/php/php-cli.ini /usr/local/etc/php/php-cli.ini
-
-# Копирование конфигурации RoadRunner
-COPY .rr.yaml /var/www/html/.rr.yaml
-
-# Оптимизация Laravel (будет выполнено при запуске контейнера)
-# config:cache, route:cache, view:cache выполняются в entrypoint
-
-# Создание entrypoint скрипта
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Expose порт для RoadRunner
 EXPOSE 8000
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD php artisan octane:status 2>/dev/null || wget --quiet --tries=1 --spider http://localhost:8000 || exit 1
+    CMD php artisan octane:status || wget --quiet --tries=1 --spider http://localhost:8000 || exit 1
 
-# Запуск RoadRunner через Octane
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php", "artisan", "octane:start", "--server=roadrunner", "--host=0.0.0.0", "--port=8000"]

@@ -1,0 +1,752 @@
+---
+alwaysApply: false
+description: "Product catalog system specification: product types, database structure, attributes system, API endpoints, product types logic"
+keywords: ["products", "товары", "product", "catalog", "товар", "Product", "ProductRepository", "ProductFlat", "product types", "simple", "configurable", "bundle", "grouped", "ingredient", "constructor", "product attributes", "product inventory", "product price"]
+---
+
+# Система каталога товаров (Products)
+
+**Ключевые слова для автоматической загрузки:** products, товары, product, catalog, товар, Product, ProductRepository, ProductFlat, ProductAttributeValue, ProductImage, ProductInventory, product types, simple, configurable, bundle, grouped, ingredient, constructor, product attributes, product inventory, product price, product management, catalog management
+
+## Архитектура системы
+
+Система каталога товаров построена на модульной архитектуре с поддержкой различных типов продуктов. Основные компоненты:
+
+1. **Product** (`Webkul\Product\Models\Product`) - основная модель товара
+2. **ProductFlat** (`Webkul\Product\Models\ProductFlat`) - денормализованная таблица для быстрого поиска
+3. **ProductAttributeValue** (`Webkul\Product\Models\ProductAttributeValue`) - значения атрибутов товаров
+4. **Система типов продуктов** - различные типы товаров с собственной логикой
+
+## Типы продуктов (Product Types)
+
+Система поддерживает 6 типов продуктов, определенных в `config/product_types.php`:
+
+### 1. `simple` - Простой товар
+- **Класс:** `Webkul\Product\Type\Simple`
+- **Описание:** Базовый тип товара без вариантов
+- **Особенности:**
+  - Может иметь настраиваемые опции (customizable options)
+  - Поддерживает управление складом (manage_stock)
+  - Может быть дочерним товаром для configurable, grouped или bundle
+  - Показывает поле количества (`showQuantityBox = true`)
+  - Может быть добавлен в корзину без опций (если нет обязательных customizable options)
+
+### 2. `configurable` - Конфигурируемый товар
+- **Класс:** `Webkul\Product\Type\Configurable`
+- **Описание:** Товар с вариантами (variants) на основе супер-атрибутов
+- **Особенности:**
+  - Имеет варианты (variants) - дочерние товары типа `simple`
+  - Использует супер-атрибуты (super_attributes) для создания вариантов
+  - Цена и склад управляются на уровне вариантов
+  - Не может быть добавлен в корзину без выбора варианта (`canBeAddedToCartWithoutOptions = false`)
+  - Композитный тип (`isComposite = true`)
+  - Имеет варианты (`hasVariants = true`)
+
+### 3. `grouped` - Группированный товар
+- **Класс:** `Webkul\Product\Type\Grouped`
+- **Описание:** Группа связанных товаров, которые можно покупать вместе
+- **Особенности:**
+  - Содержит связанные товары (grouped_products)
+  - Каждый связанный товар должен быть типа `simple`
+  - Цена рассчитывается на основе связанных товаров
+  - Композитный тип (`isComposite = true`)
+  - Не может быть добавлен в корзину без выбора товаров (`canBeAddedToCartWithoutOptions = false`)
+
+### 4. `bundle` - Комплект товаров
+- **Класс:** `Webkul\Product\Type\Bundle`
+- **Описание:** Набор товаров, продаваемых как единое целое
+- **Особенности:**
+  - Содержит опции комплекта (bundle_options)
+  - Каждая опция может содержать несколько товаров
+  - Цена рассчитывается на основе выбранных товаров (`isChildrenCalculated = true`)
+  - Композитный тип (`isComposite = true`)
+  - Не может быть добавлен в корзину без выбора опций (`canBeAddedToCartWithoutOptions = false`)
+
+### 5. `ingredient` - Ингредиент
+- **Класс:** `Webkul\Product\Type\Ingredient`
+- **Описание:** Специальный тип товара для ингредиентов
+- **Особенности:**
+  - Используется в системе конструктора товаров
+  - Может иметь несовместимости с другими ингредиентами
+
+### 6. `constructor` - Конструктор товара
+- **Класс:** `Webkul\Product\Type\Constructor`
+- **Описание:** Товар-конструктор с группами ингредиентов
+- **Особенности:**
+  - Содержит группы конструктора (constructor groups)
+  - Каждая группа может содержать ингредиенты
+  - Поддерживает настройки видимости, обязательности, комбо, скидки
+  - Используется для создания кастомных товаров (например, пицца с выбором ингредиентов)
+
+## Структура базы данных
+
+### Таблица `products`
+
+Основная таблица товаров:
+
+```php
+- id (primary key, auto increment)
+- sku (string, unique) - артикул товара
+- type (string) - тип продукта: simple, configurable, grouped, bundle, ingredient, constructor
+- parent_id (integer, nullable, foreign key -> products.id) - ID родительского товара (для вариантов)
+- attribute_family_id (integer, nullable, foreign key -> attribute_families.id) - ID семейства атрибутов
+- additional (json, nullable) - дополнительные данные
+- category_image (string, nullable) - изображение для категории
+- created_at, updated_at (timestamps)
+```
+
+**Связи:**
+- `parent_id` -> `products.id` (для вариантов configurable товаров)
+- `attribute_family_id` -> `attribute_families.id` (семейство атрибутов)
+
+### Таблица `product_flat`
+
+Денормализованная таблица для быстрого поиска товаров. Создается для каждой комбинации канала (channel) и локали (locale):
+
+```php
+- id (primary key)
+- sku (string)
+- type (string, nullable)
+- product_number (string, nullable)
+- name (string, nullable)
+- short_description (text, nullable)
+- description (text, nullable)
+- url_key (string, nullable) - URL ключ для SEO
+- new (boolean, nullable) - новый товар
+- featured (boolean, nullable) - рекомендуемый товар
+- status (boolean, nullable) - статус товара
+- meta_title, meta_keywords, meta_description (text, nullable) - SEO метаданные
+- price (decimal 12,4, nullable) - цена
+- special_price (decimal 12,4, nullable) - специальная цена
+- special_price_from, special_price_to (date, nullable) - период действия специальной цены
+- weight (decimal 12,4, nullable) - вес
+- locale (string, nullable) - локаль
+- channel (string, nullable) - канал
+- attribute_family_id (integer, nullable)
+- product_id (integer, unsigned, foreign key -> products.id)
+- parent_id (integer, nullable, foreign key -> product_flat.id) - для вариантов
+- visible_individually (boolean, nullable) - видимость отдельно
+- created_at, updated_at (datetime, nullable)
+
+Уникальный индекс: ['product_id', 'channel', 'locale']
+```
+
+**Назначение:**
+- Оптимизация поиска товаров
+- Хранение локализованных данных
+- Быстрый доступ к товарам по каналам и локалям
+- Поддержка вариантов через `parent_id`
+
+### Таблица `product_attribute_values`
+
+Значения атрибутов товаров. Поддерживает различные типы данных:
+
+```php
+- id (primary key)
+- locale (string, nullable) - локаль значения
+- channel (string, nullable) - канал значения
+- text_value (text, nullable) - текстовое значение
+- boolean_value (boolean, nullable) - булево значение
+- integer_value (integer, nullable) - целочисленное значение
+- float_value (decimal 12,4, nullable) - дробное значение
+- datetime_value (datetime, nullable) - дата и время
+- date_value (date, nullable) - дата
+- json_value (json, nullable) - JSON значение
+- product_id (integer, unsigned, foreign key -> products.id)
+- attribute_id (integer, unsigned, foreign key -> attributes.id)
+
+Уникальный индекс: ['channel', 'locale', 'attribute_id', 'product_id']
+```
+
+**Типы атрибутов и соответствующие поля:**
+- `text`, `textarea` -> `text_value`
+- `price` -> `float_value`
+- `boolean` -> `boolean_value`
+- `select` -> `integer_value`
+- `multiselect`, `checkbox` -> `text_value`
+- `datetime` -> `datetime_value`
+- `date` -> `date_value`
+- `file`, `image` -> `text_value`
+
+### Связующие таблицы
+
+#### `product_categories`
+Связь товаров с категориями:
+```php
+- product_id (foreign key -> products.id)
+- category_id (foreign key -> categories.id)
+```
+
+#### `product_channels`
+Связь товаров с каналами:
+```php
+- product_id (foreign key -> products.id)
+- channel_id (foreign key -> channels.id)
+```
+
+#### `product_super_attributes`
+Супер-атрибуты для configurable товаров:
+```php
+- product_id (foreign key -> products.id)
+- attribute_id (foreign key -> attributes.id)
+```
+
+#### `product_relations`
+Связанные товары:
+```php
+- parent_id (foreign key -> products.id)
+- child_id (foreign key -> products.id)
+```
+
+#### `product_up_sells`
+Товары для перекрестных продаж (up-sell):
+```php
+- parent_id (foreign key -> products.id)
+- child_id (foreign key -> products.id)
+```
+
+#### `product_cross_sells`
+Товары для дополнительных продаж (cross-sell):
+```php
+- parent_id (foreign key -> products.id)
+- child_id (foreign key -> products.id)
+```
+
+#### `product_drinks`
+Напитки, связанные с товаром:
+```php
+- parent_id (foreign key -> products.id)
+- child_id (foreign key -> products.id)
+- sort (integer) - порядок сортировки
+- default (boolean) - напиток по умолчанию
+```
+
+#### `product_ingredients_incompatibility`
+Несовместимость ингредиентов:
+```php
+- parent_id (foreign key -> products.id)
+- child_id (foreign key -> products.id)
+```
+
+### Дополнительные таблицы
+
+#### `product_images`
+Изображения товаров:
+```php
+- id (primary key)
+- product_id (foreign key -> products.id)
+- path (string) - путь к изображению
+- position (integer) - порядок отображения
+```
+
+#### `product_videos`
+Видео товаров:
+```php
+- id (primary key)
+- product_id (foreign key -> products.id)
+- type (string) - тип видео (youtube, vimeo, etc.)
+- path (string) - путь или URL
+- position (integer) - порядок отображения
+```
+
+#### `product_inventories`
+Складские остатки:
+```php
+- id (primary key)
+- product_id (foreign key -> products.id)
+- inventory_source_id (foreign key -> inventory_sources.id)
+- vendor_id (integer, nullable) - ID поставщика
+- qty (integer) - количество
+```
+
+#### `product_price_indices`
+Индексы цен для быстрого поиска:
+```php
+- id (primary key)
+- product_id (foreign key -> products.id)
+- customer_group_id (foreign key -> customer_groups.id)
+- channel_id (foreign key -> channels.id)
+- min_price (decimal) - минимальная цена
+- max_price (decimal) - максимальная цена
+```
+
+#### `product_reviews`
+Отзывы о товарах:
+```php
+- id (primary key)
+- product_id (foreign key -> products.id)
+- customer_id (foreign key -> customers.id, nullable)
+- title (string)
+- comment (text)
+- rating (integer) - рейтинг (1-5)
+- status (string) - статус: pending, approved, rejected
+```
+
+#### `product_constructor`
+Конструктор товара:
+```php
+- id (primary key)
+- parent_id (foreign key -> products.id)
+- visible (boolean) - видимость
+- required (boolean) - обязательность
+- combo (boolean) - комбо опция
+- discount (boolean) - есть скидка
+- design (string) - дизайн: line, category, table
+- discount_type (string, nullable) - тип скидки: null, percent, fixed
+- discount_value (tinyInteger, nullable) - величина скидки
+- min_selected_sum (tinyInteger, nullable) - минимальная сумма ингредиентов
+```
+
+#### `product_constructor_group`
+Группы конструктора:
+```php
+- id (primary key)
+- product_constructor_id (foreign key -> product_constructor.id)
+- name (string, 150, nullable)
+- sort_order (integer) - порядок сортировки
+- double_portions (boolean) - двойные порции
+- half_portions (boolean) - половинные порции
+```
+
+#### `product_constructor_group_products`
+Товары в группах конструктора:
+```php
+- id (primary key)
+- product_constructor_group_id (foreign key -> product_constructor_group.id)
+- product_id (foreign key -> products.id)
+- parent_id (integer, nullable) - для вложенных групп
+- sort_order (integer) - порядок сортировки
+```
+
+## Система атрибутов товаров
+
+### Получение значений атрибутов
+
+Модель `Product` использует динамическое получение атрибутов через метод `getAttribute()`:
+
+1. Проверяется наличие метода с именем атрибута
+2. Проверяется наличие в `$fillable` или `$attributes`
+3. Если не найдено, ищется в семействе атрибутов (`attribute_family`)
+4. Значение извлекается из `product_attribute_values` с учетом канала и локали
+
+### Поддержка каналов и локалей
+
+Атрибуты могут быть:
+- **По каналам** (`value_per_channel = true`) - разные значения для разных каналов
+- **По локалям** (`value_per_locale = true`) - разные значения для разных языков
+- **По каналам и локалям** - комбинация обоих
+
+При получении значения используется приоритет:
+1. Текущий канал + текущая локаль
+2. Текущий канал + локаль по умолчанию
+3. Канал по умолчанию + текущая локаль
+4. Канал по умолчанию + локаль по умолчанию
+
+## Логика типов продуктов
+
+### Базовый класс AbstractType
+
+Все типы продуктов наследуются от `Webkul\Product\Type\AbstractType`:
+
+**Основные свойства:**
+- `$isComposite` - композитный тип (содержит другие товары)
+- `$isStockable` - управляется складом
+- `$showQuantityBox` - показывать поле количества
+- `$haveSufficientQuantity` - есть достаточное количество
+- `$canBeMovedFromWishlistToCart` - можно переместить из wishlist в корзину
+- `$canBeAddedToCartWithoutOptions` - можно добавить в корзину без опций
+- `$canBeCopied` - можно копировать
+- `$hasVariants` - имеет варианты
+- `$isChildrenCalculated` - цена рассчитывается на основе дочерних товаров
+
+**Основные методы:**
+- `create(array $data)` - создание товара
+- `update(array $data, $id, $attributes = [])` - обновление товара
+- `isSaleable()` - можно ли продавать
+- `isStockable()` - управляется ли складом
+- `totalQuantity()` - общее количество на складе
+- `haveSufficientQuantity(int $qty)` - достаточно ли количества
+- `prepareForCart($data)` - подготовка для добавления в корзину
+- `validateCartItem(CartItem $item)` - валидация товара в корзине
+
+### Создание товара
+
+```php
+$product = ProductRepository::create([
+    'type' => 'simple',
+    'attribute_family_id' => 1,
+    'sku' => 'PRODUCT-001',
+    'name' => 'Product Name',
+    'price' => 100.00,
+    // ... другие атрибуты
+]);
+```
+
+### Обновление товара
+
+```php
+$product = ProductRepository::update([
+    'name' => 'Updated Name',
+    'price' => 120.00,
+    // ... другие атрибуты
+], $productId);
+```
+
+### Получение типа продукта
+
+```php
+$product = Product::find($id);
+$typeInstance = $product->getTypeInstance(); // Возвращает экземпляр типа (Simple, Configurable, etc.)
+```
+
+## API для работы с товарами
+
+### Shop API (для клиентов)
+
+#### Получить список товаров:
+```http
+GET /api/shop/products
+Query Parameters:
+  - page: номер страницы
+  - limit: количество на странице
+  - category_id: ID категории
+  - name: поиск по имени
+  - price: диапазон цен (min,max)
+  - sort: поле сортировки
+  - order: порядок (asc, desc)
+```
+
+#### Получить товар по ID:
+```http
+GET /api/shop/products/{id}
+```
+
+#### Получить дополнительную информацию о товаре:
+```http
+GET /api/shop/products/{id}/additional-information
+```
+
+#### Получить конфигурацию configurable товара:
+```http
+GET /api/shop/products/{id}/configurable-config
+```
+
+#### Получить отзывы о товаре:
+```http
+GET /api/shop/products/{id}/reviews
+```
+
+#### Создать отзыв (требует аутентификации):
+```http
+POST /api/shop/products/{product_id}/reviews
+Content-Type: application/json
+
+{
+    "title": "Great product",
+    "comment": "Very satisfied",
+    "rating": 5
+}
+```
+
+### Admin API (для администраторов)
+
+#### Получить список товаров:
+```http
+GET /api/v1/admin/catalog/products
+Query Parameters:
+  - page, limit, sort, order
+  - type: тип товара
+  - status: статус товара
+```
+
+#### Создать товар:
+```http
+POST /api/v1/admin/catalog/products
+Content-Type: application/json
+
+{
+    "type": "simple",
+    "attribute_family_id": 1,
+    "sku": "PRODUCT-001",
+    "name": "Product Name",
+    "price": 100.00,
+    // ... другие атрибуты
+}
+```
+
+#### Обновить товар:
+```http
+PUT /api/v1/admin/catalog/products/{id}
+Content-Type: application/json
+
+{
+    "name": "Updated Name",
+    "price": 120.00,
+    // ... другие атрибуты
+}
+```
+
+#### Обновить складские остатки:
+```http
+POST /api/v1/admin/catalog/products/{id}/inventories
+Content-Type: application/json
+
+{
+    "inventories": [
+        {
+            "inventory_source_id": 1,
+            "vendor_id": null,
+            "qty": 100
+        }
+    ]
+}
+```
+
+#### Удалить товар:
+```http
+DELETE /api/v1/admin/catalog/products/{id}
+```
+
+#### Массовое обновление:
+```http
+POST /api/v1/admin/catalog/products/mass-update
+Content-Type: application/json
+
+{
+    "indices": [1, 2, 3],
+    "value": {
+        "status": 1
+    }
+}
+```
+
+#### Массовое удаление:
+```http
+POST /api/v1/admin/catalog/products/mass-destroy
+Content-Type: application/json
+
+{
+    "indices": [1, 2, 3]
+}
+```
+
+## Основные классы и файлы
+
+### Модели:
+- `Webkul\Product\Models\Product` - основная модель товара
+- `Webkul\Product\Models\ProductFlat` - модель плоской таблицы
+- `Webkul\Product\Models\ProductAttributeValue` - значения атрибутов
+- `Webkul\Product\Models\ProductImage` - изображения товаров
+- `Webkul\Product\Models\ProductVideo` - видео товаров
+- `Webkul\Product\Models\ProductInventory` - складские остатки
+- `Webkul\Product\Models\ProductPriceIndex` - индексы цен
+- `Webkul\Product\Models\ProductReview` - отзывы
+- `Webkul\Product\Models\ProductConstructor` - конструктор товара
+- `Webkul\Product\Models\ProductConstructorGroup` - группы конструктора
+
+### Репозитории:
+- `Webkul\Product\Repositories\ProductRepository` - основной репозиторий товаров
+- `Webkul\Product\Repositories\ProductFlatRepository` - репозиторий плоской таблицы
+- `Webkul\Product\Repositories\ProductAttributeValueRepository` - репозиторий значений атрибутов
+- `Webkul\Product\Repositories\ProductImageRepository` - репозиторий изображений
+- `Webkul\Product\Repositories\ProductInventoryRepository` - репозиторий склада
+- `Webkul\Product\Repositories\ProductReviewRepository` - репозиторий отзывов
+
+### Типы продуктов:
+- `Webkul\Product\Type\AbstractType` - базовый класс типов
+- `Webkul\Product\Type\Simple` - простой товар
+- `Webkul\Product\Type\Configurable` - конфигурируемый товар
+- `Webkul\Product\Type\Grouped` - группированный товар
+- `Webkul\Product\Type\Bundle` - комплект товаров
+- `Webkul\Product\Type\Ingredient` - ингредиент
+- `Webkul\Product\Type\Constructor` - конструктор товара
+
+### Контроллеры:
+- `Webkul\Admin\Http\Controllers\Catalog\ProductController` - админ-панель
+- `Webkul\Shop\Http\Controllers\API\ProductController` - Shop API
+- `Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\ProductController` - REST API Shop
+- `Webkul\RestApi\Http\Controllers\V1\Admin\Catalog\ProductController` - REST API Admin
+
+### Хелперы:
+- `Webkul\Product\Helpers\ProductType` - работа с типами продуктов
+- `Webkul\Product\Helpers\Product` - общие хелперы
+- `Webkul\Product\Helpers\Indexers\Flat` - индексация плоской таблицы
+- `Webkul\Product\Helpers\Indexers\Price\*` - индексация цен по типам
+
+### Конфигурация:
+- `config/product_types.php` - конфигурация типов продуктов
+
+### Миграции:
+- `2018_07_27_065727_create_products_table.php` - создание таблицы products
+- `2018_12_06_185202_create_product_flat_table.php` - создание таблицы product_flat
+- `2018_07_27_070011_create_product_attribute_values_table.php` - создание таблицы значений атрибутов
+- И другие миграции для связанных таблиц
+
+## Важные моменты при работе с товарами
+
+1. **ProductFlat обновляется автоматически**
+   - При создании/обновлении товара создается/обновляется запись в `product_flat`
+   - Для каждой комбинации канала и локали создается отдельная запись
+   - Используется для оптимизации поиска и фильтрации
+
+2. **Атрибуты товаров хранятся в product_attribute_values**
+   - Значения атрибутов не хранятся напрямую в таблице `products`
+   - Доступ к атрибутам через динамические свойства модели `Product`
+   - Поддерживается кэширование через `checkInLoadedFamilyAttributes()`
+
+3. **Типы продуктов имеют разную логику**
+   - Каждый тип продукта имеет свой класс с собственной логикой
+   - Метод `getTypeInstance()` возвращает экземпляр типа продукта
+   - Типы продуктов определяются в конфигурации `product_types`
+
+4. **Варианты товаров (variants)**
+   - Configurable товары имеют варианты типа `simple`
+   - Варианты связаны через `parent_id` в таблице `products`
+   - Супер-атрибуты определяют, какие атрибуты используются для создания вариантов
+
+5. **Цены товаров**
+   - Цены хранятся в `product_attribute_values` (атрибут `price`)
+   - Индексы цен хранятся в `product_price_indices` для быстрого поиска
+   - Поддерживаются специальные цены (`special_price`) с периодом действия
+   - Цены могут различаться по группам клиентов (`product_customer_group_prices`)
+
+6. **Складские остатки**
+   - Хранятся в `product_inventories` по источникам склада
+   - Может быть несколько источников склада для одного товара
+   - Поддерживается управление складом через `manage_stock` атрибут
+
+7. **Поиск товаров**
+   - Поддерживается поиск через базу данных (`database`) и Elasticsearch (`elastic`)
+   - Поиск настраивается через конфигурацию `catalog.products.search.engine`
+   - ProductFlat используется для оптимизации поиска по базе данных
+
+8. **Связи товаров**
+   - `related_products` - связанные товары
+   - `up_sells` - товары для перекрестных продаж
+   - `cross_sells` - товары для дополнительных продаж
+   - `drinks` - напитки, связанные с товаром
+
+9. **Конструктор товаров**
+   - Используется для создания кастомных товаров (например, пицца)
+   - Состоит из групп (`product_constructor_group`)
+   - Каждая группа содержит ингредиенты (`product_constructor_group_products`)
+   - Поддерживает настройки видимости, обязательности, скидок
+
+10. **Валидация при добавлении в корзину**
+    - Каждый тип продукта имеет метод `prepareForCart()`
+    - Проверяется наличие обязательных опций
+    - Проверяется достаточность количества на складе
+    - Рассчитывается цена с учетом опций и скидок
+
+## Примеры использования
+
+### Создание простого товара:
+```php
+use Webkul\Product\Repositories\ProductRepository;
+
+$productRepository = app(ProductRepository::class);
+
+$product = $productRepository->create([
+    'type' => 'simple',
+    'attribute_family_id' => 1,
+    'sku' => 'PRODUCT-001',
+    'name' => 'Product Name',
+    'price' => 100.00,
+    'status' => 1,
+    'visible_individually' => 1,
+    'categories' => [1, 2],
+    'channels' => [1],
+]);
+```
+
+### Создание configurable товара с вариантами:
+```php
+$product = $productRepository->create([
+    'type' => 'configurable',
+    'attribute_family_id' => 1,
+    'sku' => 'CONFIG-001',
+    'name' => 'Configurable Product',
+    'super_attributes' => [
+        'color' => [1, 2, 3], // ID опций цвета
+        'size' => [4, 5, 6],  // ID опций размера
+    ],
+    'status' => 1,
+    'categories' => [1],
+    'channels' => [1],
+]);
+// Автоматически создаются варианты для всех комбинаций цветов и размеров
+```
+
+### Получение товара с атрибутами:
+```php
+$product = Product::with(['attribute_values', 'images', 'categories'])->find($id);
+
+// Доступ к атрибутам через динамические свойства
+$name = $product->name;
+$price = $product->price;
+$description = $product->description;
+```
+
+### Поиск товаров:
+```php
+$products = $productRepository->getAll([
+    'category_id' => 1,
+    'name' => 'search query',
+    'price' => '10,100',
+    'status' => 1,
+    'sort' => 'price',
+    'order' => 'asc',
+]);
+```
+
+### Обновление складских остатков:
+```php
+use Webkul\Product\Repositories\ProductInventoryRepository;
+
+$inventoryRepository = app(ProductInventoryRepository::class);
+
+$inventoryRepository->saveInventories([
+    'inventories' => [
+        [
+            'inventory_source_id' => 1,
+            'qty' => 100,
+        ],
+    ],
+], $product);
+```
+
+### Получение типа продукта:
+```php
+$product = Product::find($id);
+$typeInstance = $product->getTypeInstance();
+
+if ($typeInstance->isSaleable()) {
+    // Товар можно продавать
+}
+
+if ($typeInstance->haveSufficientQuantity(5)) {
+    // Достаточно количества для заказа 5 штук
+}
+```
+
+### Работа с ProductFlat:
+```php
+use Webkul\Product\Repositories\ProductFlatRepository;
+
+$flatRepository = app(ProductFlatRepository::class);
+
+// Получение товара из плоской таблицы
+$productFlat = $flatRepository->findWhere([
+    'product_id' => $productId,
+    'channel' => 'default',
+    'locale' => 'en',
+])->first();
+
+// Доступ к данным
+$name = $productFlat->name;
+$price = $productFlat->price;
+```
+
+---
+
+**Примечание:** Этот файл содержит спецификацию системы каталога товаров. При работе с товарами всегда обращайтесь к этому документу для понимания архитектуры и логики системы.

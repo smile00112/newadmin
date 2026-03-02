@@ -95,6 +95,9 @@
 
                 <!-- Top Customers -->
                 @include('admin::dashboard.top-customers')
+
+                <!-- Recent Application Errors -->
+                @include('admin::dashboard.recent-errors')
             </div>
 
             {!! view_render_event('bagisto.admin.dashboard.store_stats.after') !!}

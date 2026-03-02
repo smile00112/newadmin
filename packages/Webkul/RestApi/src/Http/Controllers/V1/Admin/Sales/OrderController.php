@@ -69,4 +69,45 @@ class OrderController extends SalesController
             'message' => trans('rest-api::app.admin.sales.orders.comments.create-success'),
         ]);
     }
+
+    /**
+     * Bind table number to the order.
+     */
+    public function bindTable(Request $request): Response
+    {
+        $validatedData = $request->validate([
+            'order_id'     => ['required', 'integer', 'exists:orders,id'],
+            'table_number' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $order = $this->getRepositoryInstance()->findOrFail($validatedData['order_id']);
+        $order->update(['table_number' => $validatedData['table_number']]);
+
+        $resourceClassName = $this->resource();
+
+        return response([
+            'data'    => new $resourceClassName($order->fresh()),
+            'message' => trans('rest-api::app.admin.sales.orders.bind-table-success'),
+        ]);
+    }
+
+    /**
+     * Unbind table number from the order.
+     */
+    public function unbindTable(Request $request): Response
+    {
+        $validatedData = $request->validate([
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
+        ]);
+
+        $order = $this->getRepositoryInstance()->findOrFail($validatedData['order_id']);
+        $order->update(['table_number' => null]);
+
+        $resourceClassName = $this->resource();
+
+        return response([
+            'data'    => new $resourceClassName($order->fresh()),
+            'message' => trans('rest-api::app.admin.sales.orders.unbind-table-success'),
+        ]);
+    }
 }

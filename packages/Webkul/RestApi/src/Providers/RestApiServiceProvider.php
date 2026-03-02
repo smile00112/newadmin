@@ -2,10 +2,13 @@
 
 namespace Webkul\RestApi\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Exceptions\Handler as BaseHandler;
 use Webkul\RestApi\Exceptions\Handler;
+use Webkul\RestApi\Listeners\InvalidateCustomerOrdersCache;
+use Webkul\Sales\Models\Order;
 
 class RestApiServiceProvider extends ServiceProvider
 {
@@ -39,6 +42,22 @@ class RestApiServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
         $this->app->bind(BaseHandler::class, Handler::class);
+
+        // Load helpers
+        require_once __DIR__.'/../Http/helpers.php';
+    }
+
+    /**
+     * Register event listeners for customer orders cache invalidation.
+     */
+    protected function registerOrderCacheInvalidation(): void
+    {
+        $listener = InvalidateCustomerOrdersCache::class;
+
+        Event::listen('checkout.order.save.after', [$listener, 'onOrderCreated']);
+        Event::listen('sales.order.update-status.after', [$listener, 'onOrderStatusUpdated']);
+        Event::listen('sales.order.cancel.after', [$listener, 'onOrderCanceled']);
+        Event::listen('eloquent.deleted: '.Order::class, [$listener, 'onOrderDeleted']);
     }
 
     /**

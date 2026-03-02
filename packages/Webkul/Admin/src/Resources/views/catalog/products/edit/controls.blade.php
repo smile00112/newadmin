@@ -22,19 +22,36 @@
 
         @break
     @case('price')
-        <x-admin::form.control-group.control
-            type="price"
-            :id="$attribute->code"
-            :class="($attribute->code == 'price' ? 'py-2.5 bg-gray-50 text-xl font-bold' : '')"
-            :name="$attribute->code"
-            ::rules="{{ $attribute->validations }}"
-            value="{{ old($attribute->code) ?: $product[$attribute->code] }}"
-            :label="$attribute->admin_name"
-        >
-            <x-slot:currency :class="'dark:text-gray-300 ' . ($attribute->code == 'price' ? 'bg-gray-50 dark:bg-gray-900 text-xl' : '')">
-                {{ core()->currencySymbol(core()->getBaseCurrencyCode()) }}
-            </x-slot>
-        </x-admin::form.control-group.control>
+        @php
+            // Список атрибутов КЖБУ, которые не должны иметь символ валюты
+            $nutritionAttributes = ['calories', 'proteins', 'fats', 'carbs'];
+            $isNutritionAttribute = in_array($attribute->code, $nutritionAttributes);
+        @endphp
+
+        @if ($isNutritionAttribute)
+            <x-admin::form.control-group.control
+                type="text"
+                :id="$attribute->code"
+                :name="$attribute->code"
+                ::rules="{{ $attribute->validations }}"
+                value="{{ old($attribute->code) ?: $product[$attribute->code] }}"
+                :label="$attribute->admin_name"
+            />
+        @else
+            <x-admin::form.control-group.control
+                type="price"
+                :id="$attribute->code"
+                :class="($attribute->code == 'price' ? 'py-2.5 bg-gray-50 text-xl font-bold' : '')"
+                :name="$attribute->code"
+                ::rules="{{ $attribute->validations }}"
+                value="{{ old($attribute->code) ?: $product[$attribute->code] }}"
+                :label="$attribute->admin_name"
+            >
+                <x-slot:currency :class="'dark:text-gray-300 ' . ($attribute->code == 'price' ? 'bg-gray-50 dark:bg-gray-900 text-xl' : '')">
+                    {{ core()->currencySymbol(core()->getBaseCurrencyCode()) }}
+                </x-slot>
+            </x-admin::form.control-group.control>
+        @endif
 
         @break
     @case('textarea')
@@ -104,6 +121,7 @@
     @case('multiselect')
         @php
             $selectedOption = old($attribute->code) ?: explode(',', $product[$attribute->code]);
+            $isPreferences = $attribute->code === 'preferences';
         @endphp
 
         <x-admin::form.control-group.control
@@ -122,6 +140,72 @@
                 </option>
             @endforeach
         </x-admin::form.control-group.control>
+
+        @if(1)
+{{--            $isPreferences--}}
+            @pushOnce('scripts')
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Функция для инициализации обработчиков
+                        function initMultiselectHandlers() {
+                            // Находим все multiselect поля атрибутов (имена заканчиваются на [])
+                            const selectElements = document.querySelectorAll('select[multiple][name$="[]"]');
+
+                            console.log('Found multiselect elements:', selectElements.length);
+
+                            selectElements.forEach(function(selectElement) {
+                                // Проверяем, не добавлен ли уже обработчик
+                                if (selectElement.dataset.multiselectHandler === 'true') {
+                                    return;
+                                }
+
+                                // Помечаем, что обработчик добавлен
+                                selectElement.dataset.multiselectHandler = 'true';
+
+                                // Перехватываем клик на опции для переключения выбора
+                                selectElement.addEventListener('mousedown', function(e) {
+                                    const option = e.target;
+
+                                         if (option.tagName === 'OPTION') {
+                                        e.preventDefault();
+
+                                        // Сохраняем текущее состояние
+                                        const wasSelected = option.selected;
+
+                                        // Переключаем выбор опции
+                                        option.selected = !wasSelected;
+
+                                        // Триггерим события для обновления формы и Vue.js
+                                        const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                                        selectElement.dispatchEvent(changeEvent);
+
+                                        const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                                        selectElement.dispatchEvent(inputEvent);
+                                    }
+                                });
+                            });
+                        }
+
+                        // Инициализируем сразу
+                        initMultiselectHandlers();
+
+                        // Также инициализируем после небольшой задержки (для Vue компонентов)
+                        setTimeout(initMultiselectHandlers, 100);
+                        setTimeout(initMultiselectHandlers, 500);
+
+                        // Используем MutationObserver для отслеживания появления новых элементов
+                        const observer = new MutationObserver(function(mutations) {
+                            initMultiselectHandlers();
+                        });
+
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
+                    });
+                </script>
+            @endpushOnce
+        @endif
 
         @break
     @case('checkbox')

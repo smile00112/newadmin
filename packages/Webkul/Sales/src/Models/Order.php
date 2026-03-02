@@ -77,6 +77,11 @@ class Order extends Model implements OrderContract
     public const STATUS_FRAUD = 'fraud';
 
     /**
+     * Failed state.
+     */
+    public const STATUS_FAILED = 'failed';
+
+    /**
      * Preparing state.
      */
     public const STATUS_PREPARING = 'preparing';
@@ -118,6 +123,7 @@ class Order extends Model implements OrderContract
         self::STATUS_CANCELED        => 'Отмена',
         self::STATUS_CLOSED          => 'Закрыт',
         self::STATUS_FRAUD           => 'Мошенничество',
+        self::STATUS_FAILED          => 'Неудачный',
     ];
 
     /**

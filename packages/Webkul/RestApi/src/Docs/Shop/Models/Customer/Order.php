@@ -166,6 +166,19 @@ class Order
 
     /**
      * @OA\Property(
+     *     title="Table Number",
+     *     description="Table number assigned to the order",
+     *     example=5,
+     *     format="int32",
+     *     nullable=true
+     * )
+     *
+     * @var int|null
+     */
+    private $table_number;
+
+    /**
+     * @OA\Property(
      *     title="Order Labels",
      *     description="Custom labels attached to the order",
      *     type="array",
@@ -203,6 +216,18 @@ class Order
      * @var string|null
      */
     private $rating_label;
+
+    /**
+     * @OA\Property(
+     *     title="Rating Comment",
+     *     description="Comment for the order rating",
+     *     example="Отличное обслуживание, все быстро и качественно!",
+     *     nullable=true
+     * )
+     *
+     * @var string|null
+     */
+    private $rating_comment;
 
     /**
      * @OA\Property(

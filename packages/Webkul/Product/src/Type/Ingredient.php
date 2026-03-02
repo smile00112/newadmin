@@ -83,6 +83,9 @@ class Ingredient extends AbstractType
      */
     public function update(array $data, $id, $attributes = [])
     {
+        $product = $this->productRepository->find($id);
+        $oldPairProductId = $product->half_portion_pair_product_id;
+
         $product = parent::update($data, $id, $attributes);
 
         if (! empty($attributes)) {
@@ -90,6 +93,24 @@ class Ingredient extends AbstractType
         }
 
         $this->productCustomizableOptionRepository->saveCustomizableOptions($data, $product);
+
+        $newPairProductId = isset($data['half_portion_pair_product_id']) && $data['half_portion_pair_product_id'] !== ''
+            ? (int) $data['half_portion_pair_product_id']
+            : null;
+
+        if ($oldPairProductId && $oldPairProductId != $newPairProductId) {
+            $this->productRepository->getModel()->where('id', $oldPairProductId)->update([
+                'is_half_portion'              => false,
+                'half_portion_pair_product_id' => null,
+            ]);
+        }
+
+        if ($newPairProductId && $newPairProductId != $product->id) {
+            $this->productRepository->getModel()->where('id', $newPairProductId)->update([
+                'is_half_portion'              => true,
+                'half_portion_pair_product_id' => $product->id,
+            ]);
+        }
 
         return $product;
     }

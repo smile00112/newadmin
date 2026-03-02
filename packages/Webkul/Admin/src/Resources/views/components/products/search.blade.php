@@ -161,6 +161,11 @@
                     default: false
                 },
 
+                excludeIngredients: {
+                    type: Boolean,
+                    default: false
+                },
+
                 queryParams: {
                     type: Object,
                     default: () => ({})
@@ -197,7 +202,7 @@
             methods: {
                 openDrawer() {
                     this.$refs.searchProductDrawer.open();
-                    
+
                     // Load initial products if search is empty
                     if (this.searchTerm.length === 0 && this.searchedProducts.length === 0) {
                         this.loadInitialProducts();
@@ -209,18 +214,19 @@
 
                     let self = this;
 
-                    @php
-                        $searchRoute = !$attributes->has(':search-ingredients') ? route('admin.catalog.products.search') : route('admin.catalog.products.search', ['type' => 'ingredient']);
-                    @endphp
-                    this.$axios.get("{{ $searchRoute }}", {
-                            params: {
-                                ...{query: '', limit: 30},
-                                ...this.queryParams
-                            }
+                    const params = {
+                        ...{query: '', limit: 30},
+                        ...(this.searchIngredients ? {type: 'ingredient'} : {}),
+                        ...(this.excludeIngredients ? {exclude_type: 'ingredient'} : {}),
+                        ...this.queryParams
+                    };
+
+                    this.$axios.get("{{ route('admin.catalog.products.search') }}", {
+                            params: params
                         })
                         .then(function(response) {
                             self.isSearching = false;
-                            self.searchedProducts = response.data.data;
+                            self.searchedProducts = (response.data.data || []).map(p => ({ ...p, selected: false }));
                         })
                         .catch(function (error) {
                             self.isSearching = false;
@@ -242,21 +248,20 @@
 
                     let self = this;
 
-                    @php
-                        $searchRoute = !$attributes->has(':search-ingredients') ? route('admin.catalog.products.search') : route('admin.catalog.products.search', ['type' => 'ingredient']);
+                    const params = {
+                        ...{query: this.searchTerm},
+                        ...(this.searchIngredients ? {type: 'ingredient'} : {}),
+                        ...(this.excludeIngredients ? {exclude_type: 'ingredient'} : {}),
+                        ...this.queryParams
+                    };
 
-                       // $searchRoute = route('admin.catalog.products.search');
-                    @endphp
-                    this.$axios.get("{{ $searchRoute }}", {
-                            params: {
-                                ...{query: this.searchTerm},
-                                ...this.queryParams
-                            }
+                    this.$axios.get("{{ route('admin.catalog.products.search') }}", {
+                            params: params
                         })
                         .then(function(response) {
                             self.isSearching = false;
 
-                            self.searchedProducts = response.data.data;
+                            self.searchedProducts = (response.data.data || []).map(p => ({ ...p, selected: false }));
                         })
                         .catch(function (error) {
                             self.isSearching = false;
@@ -274,9 +279,11 @@
                 totalQty(product) {
                     let qty = 0;
 
-                    product.inventories.forEach(function (inventory) {
-                        qty += inventory.qty;
-                    });
+                    if (product.inventories && Array.isArray(product.inventories)) {
+                        product.inventories.forEach(function (inventory) {
+                            qty += inventory.qty || 0;
+                        });
+                    }
 
                     return qty;
                 }

@@ -4,7 +4,6 @@ namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
-use Webkul\Checkout\Facades\Cart;
 use Webkul\Product\Facades\ProductImage;
 use Webkul\Product\Helpers\BundleOption;
 
@@ -21,11 +20,8 @@ class ProductResource extends JsonResource
         /* assign product */
         $product = $this->product ?? $this;
 
-        /* get type instance */
+        /* get type instance - cache it to avoid multiple calls */
         $productTypeInstance = $product->getTypeInstance();
-
-        /* Get review helper */
-        $reviewHelper = app(\Webkul\Product\Helpers\Review::class);
 
         /* generating resource */
         return [
@@ -34,33 +30,32 @@ class ProductResource extends JsonResource
             'sku'                => $product->sku,
             'type'               => $product->type,
             'name'               => $product->name,
-            'url_key'            => $product->url_key,
             'price'              => core()->convertPrice($productTypeInstance->getMinimalPrice()),
             'formatted_price'    => core()->currency($productTypeInstance->getMinimalPrice()),
-            'short_description'  => $product->short_description,
-            'description'        => $product->description,
+            'short_description'  => $this->cleanHtmlDescription($product->short_description),
+            'description'        => $this->cleanHtmlDescription($product->description),
             'images'             => ProductImageResource::collection($product->images),
             'videos'             => ProductVideoResource::collection($product->videos),
             'base_image'         => ProductImage::getProductBaseImage($product),
             'category_image'     => $this->getCategoryImage($product),
-            'created_at'         => $product->created_at,
-            'updated_at'         => $product->updated_at,
+            'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
 
-            /* product's reviews */
-            'reviews' => [
-                'total'          => $total = $reviewHelper->getTotalReviews($product),
-                'total_rating'   => $total ? $reviewHelper->getTotalRating($product) : 0,
-                'average_rating' => $total ? $reviewHelper->getAverageRating($product) : 0,
-                'percentage'     => $total ? json_encode($reviewHelper->getPercentageRating($product)) : [],
-            ],
+            /* half portion (половинка) - для ингредиентов */
+            'is_half_portion'            => (bool) ($product->is_half_portion ?? false),
+            'half_portion_pair_product_id' => $product->half_portion_pair_product_id,
+            'half_portion_pair_product'  => $this->when(
+                $product->half_portion_pair_product_id
+                && $product->relationLoaded('half_portion_pair_product')
+                && $product->half_portion_pair_product,
+                $this->getHalfPortionPairSummary($product->half_portion_pair_product)
+            ),
 
             /* product's checks */
             'in_stock'              => $product->haveSufficientQuantity(1),
             'is_saved'              => false,
-            'is_item_in_cart'       => Cart::getCart(),
             'show_quantity_changer' => $this->when(
                 $product->type !== 'grouped',
-                $product->getTypeInstance()->showQuantityBox()
+                $productTypeInstance->showQuantityBox()
             ),
 
             /* product attributes with their options */
@@ -70,15 +65,21 @@ class ProductResource extends JsonResource
             'nutrition' => $this->getNutritionData($product),
 
             /* product's extra information */
-            $this->merge($this->allProductExtraInfo()),
+            $this->merge($this->allProductExtraInfo($product, $productTypeInstance)),
 
             /* special price cases */
-            $this->merge($this->specialPriceInfo()),
+            $this->merge($this->specialPriceInfo($product, $productTypeInstance)),
 
             /* super attributes */
             $this->mergeWhen($productTypeInstance->isComposite(), [
                 'super_attributes' => AttributeResource::collection($product->super_attributes),
             ]),
+
+            /* drinks for product */
+            $this->mergeWhen(
+                in_array($product->type, ['simple', 'constructor', 'configurable', 'grouped', 'bundle']),
+                $this->getDrinksInfo($product)
+            ),
         ];
     }
 
@@ -136,13 +137,14 @@ class ProductResource extends JsonResource
     /**
      * Get special price information.
      *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
      * @return array
      */
-    private function specialPriceInfo()
+    private function specialPriceInfo($product = null, $productTypeInstance = null)
     {
-        $product = $this->product ?? $this;
-
-        $productTypeInstance = $product->getTypeInstance();
+        $product = $product ?? $this->product ?? $this;
+        $productTypeInstance = $productTypeInstance ?? $product->getTypeInstance();
 
         return [
             'special_price'           => $this->when(
@@ -167,13 +169,14 @@ class ProductResource extends JsonResource
     /**
      * Get all product's extra information.
      *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
      * @return array
      */
-    private function allProductExtraInfo()
+    private function allProductExtraInfo($product = null, $productTypeInstance = null)
     {
-        $product = $this->product ?? $this;
-
-        $productTypeInstance = $product->getTypeInstance();
+        $product = $product ?? $this->product ?? $this;
+        $productTypeInstance = $productTypeInstance ?? $product->getTypeInstance();
 
         return [
             /* grouped product */
@@ -327,8 +330,11 @@ class ProductResource extends JsonResource
      */
     private function getConstructorProductInfo($product)
     {
-        // Load constructor data with relationships
-        $product->load('constructor.groups.products.images');
+        // Check if constructor is already loaded (via eager loading)
+        if (!$product->relationLoaded('constructor')) {
+            // Only load if not already loaded
+            $product->load('constructor.groups.products.images');
+        }
 
         // Return empty array if no constructor exists
         if ($product->constructor->isEmpty()) {
@@ -365,20 +371,30 @@ class ProductResource extends JsonResource
                         'double_portions'             => $group->double_portions,
                         'half_portions'               => $group->half_portions,
                         'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
+                        'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
+                        'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
                         'products'                    => $group->products->map(function ($groupProduct) {
                             $productTypeInstance = $groupProduct->getTypeInstance();
 
                             return [
-                                'id'             => $groupProduct->id,
-                                'sku'            => $groupProduct->sku,
-                                'name'           => $groupProduct->name,
-                                'price'          => core()->convertPrice($productTypeInstance->getMinimalPrice()),
-                                'formatted_price' => core()->currency($productTypeInstance->getMinimalPrice()),
-                                'in_stock'       => $groupProduct->haveSufficientQuantity(1),
-                                'sort'           => $groupProduct->pivot->sort ?? 0,
-                                'default'        => (bool) ($groupProduct->pivot->default ?? false),
-                                'base_image'     => ProductImage::getProductBaseImage($groupProduct),
-                                'nutrition'      => $this->getNutritionData($groupProduct),
+                                'id'                         => $groupProduct->id,
+                                'sku'                        => $groupProduct->sku,
+                                'name'                       => $groupProduct->name,
+                                'price'                      => core()->convertPrice($productTypeInstance->getMinimalPrice()),
+                                'formatted_price'            => core()->currency($productTypeInstance->getMinimalPrice()),
+                                'in_stock'                   => $groupProduct->haveSufficientQuantity(1),
+                                'sort'                       => $groupProduct->pivot->sort ?? 0,
+                                'default'                    => (bool) ($groupProduct->pivot->default ?? false),
+                                'base_image'                 => ProductImage::getProductBaseImage($groupProduct),
+                                'description'                => $this->cleanHtmlDescription($groupProduct->description),
+                                'nutrition'                  => $this->getNutritionData($groupProduct),
+                                'is_half_portion'            => (bool) ($groupProduct->is_half_portion ?? false),
+                                'half_portion_pair_product_id' => $groupProduct->half_portion_pair_product_id,
+                                'half_portion_pair_product'  => $groupProduct->half_portion_pair_product_id
+                                    && $groupProduct->relationLoaded('half_portion_pair_product')
+                                    && $groupProduct->half_portion_pair_product
+                                    ? $this->getHalfPortionPairSummary($groupProduct->half_portion_pair_product)
+                                    : null,
                             ];
                         })->sortBy('sort')->values(),
                     ];
@@ -388,6 +404,53 @@ class ProductResource extends JsonResource
 
         return [
             'constructor_options' => $constructorOptions,
+        ];
+    }
+
+    /**
+     * Normalize portion sizes for constructor group response.
+     *
+     * @param  mixed  $portionSizes
+     * @return array
+     */
+    private function normalizePortionSizes($portionSizes): array
+    {
+        if (! is_array($portionSizes)) {
+            return [];
+        }
+
+        return collect($portionSizes)
+            ->filter(fn ($size) => is_array($size))
+            ->map(function ($size) {
+                return [
+                    'name'     => (string) ($size['name'] ?? ''),
+                    'quantity' => (int) ($size['quantity'] ?? 0),
+                    'weight'   => (int) ($size['weight'] ?? 0),
+                ];
+            })
+            ->filter(fn ($size) => $size['name'] !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Get summary of half portion pair product (половинка).
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array|null
+     */
+    private function getHalfPortionPairSummary($product)
+    {
+        if (!$product) {
+            return null;
+        }
+
+        return [
+            'id'         => $product->id,
+            'sku'        => $product->sku,
+            'name'       => $product->name,
+            'base_image' => ProductImage::getProductBaseImage($product),
+            'nutrition'  => $this->getNutritionData($product),
         ];
     }
 
@@ -416,6 +479,54 @@ class ProductResource extends JsonResource
     }
 
     /**
+     * Get drinks information for the product.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getDrinksInfo($product)
+    {
+        // Check if drinks are already loaded (via eager loading)
+        if (!$product->relationLoaded('drinks')) {
+            // Only load if not already loaded
+            $product->load(['drinks' => function ($query) {
+                $query->with('images')
+                    ->orderByPivot('sort', 'asc');
+            }]);
+        }
+
+        // Return empty array if no drinks exist
+        if ($product->drinks->isEmpty()) {
+            return [
+                'drinks' => [],
+            ];
+        }
+
+        $drinks = $product->drinks->map(function ($drink) {
+            $drinkTypeInstance = $drink->getTypeInstance();
+
+            return [
+                'id'                 => $drink->id,
+                'sku'                => $drink->sku,
+                'name'               => $drink->name,
+                'price'              => core()->convertPrice($drinkTypeInstance->getMinimalPrice()),
+                'formatted_price'    => core()->currency($drinkTypeInstance->getMinimalPrice()),
+                'in_stock'           => $drink->haveSufficientQuantity(1),
+                'sort'               => $drink->pivot->sort ?? 0,
+                'default'            => (bool) ($drink->pivot->default ?? false),
+                'base_image'         => ProductImage::getProductBaseImage($drink),
+                'images'             => ProductImageResource::collection($drink->images),
+                'description'        => $this->cleanHtmlDescription($drink->description),
+                'nutrition'          => $this->getNutritionData($drink),
+            ];
+        });
+
+        return [
+            'drinks' => $drinks->values()->all(),
+        ];
+    }
+
+    /**
      * Get nutrition information (КЖБУ).
      *
      * @param  \Webkul\Product\Models\Product  $product
@@ -432,10 +543,10 @@ class ProductResource extends JsonResource
 
         // Получаем значения КЖБУ из атрибутов товара
         $nutritionCodes = ['calories', 'proteins', 'fats', 'carbs'];
-        
+
         foreach ($nutritionCodes as $code) {
             $value = $product->{$code};
-            
+
             if ($value !== null && $value !== '') {
                 // Преобразуем в число, если это строка
                 $nutrition[$code] = is_numeric($value) ? (float) $value : $value;
@@ -448,5 +559,27 @@ class ProductResource extends JsonResource
         }
 
         return $nutrition;
+    }
+
+    /**
+     * Clean HTML tags from description text.
+     *
+     * @param  string|null  $description
+     * @return string|null
+     */
+    private function cleanHtmlDescription($description)
+    {
+        if (empty($description)) {
+            return null;
+        }
+
+        // Remove HTML tags and decode HTML entities
+        $cleaned = strip_tags($description);
+        $cleaned = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Trim whitespace
+        $cleaned = trim($cleaned);
+
+        return !empty($cleaned) ? $cleaned : null;
     }
 }

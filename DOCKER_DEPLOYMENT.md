@@ -9,13 +9,14 @@
 3. [Настройка переменных окружения](#настройка-переменных-окружения)
 4. [Первоначальное развертывание](#первоначальное-развертывание)
 5. [Настройка RoadRunner](#настройка-roadrunner)
-6. [Настройка домена и DNS](#настройка-домена-и-dns)
-7. [Получение SSL сертификата](#получение-ssl-сертификата)
-8. [Обновление проекта из Git](#обновление-проекта-из-git)
-9. [Управление сервисами](#управление-сервисами)
-10. [Мониторинг RoadRunner](#мониторинг-roadrunner)
-11. [Резервное копирование](#резервное-копирование)
-12. [Troubleshooting](#troubleshooting)
+6. [Настройка Laravel Reverb](#настройка-laravel-reverb)
+7. [Настройка домена и DNS](#настройка-домена-и-dns)
+8. [Получение SSL сертификата](#получение-ssl-сертификата)
+9. [Обновление проекта из Git](#обновление-проекта-из-git)
+10. [Управление сервисами](#управление-сервисами)
+11. [Мониторинг RoadRunner](#мониторинг-roadrunner)
+12. [Резервное копирование](#резервное-копирование)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -111,6 +112,21 @@ QUEUE_CONNECTION=redis
 # Octane (RoadRunner)
 OCTANE_SERVER=roadrunner
 
+# Laravel Reverb (WebSocket сервер)
+BROADCAST_DRIVER=reverb
+REVERB_APP_ID=my-app-id
+REVERB_APP_KEY=my-app-key
+REVERB_APP_SECRET=my-app-secret
+REVERB_HOST=0.0.0.0
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+# Для мобильного приложения (публичные настройки)
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="your-domain.com"
+VITE_REVERB_PORT="443"
+VITE_REVERB_SCHEME="https"
+
 # Домен для SSL
 DOMAIN=your-domain.com
 ```
@@ -164,15 +180,19 @@ sleep 30
 # 6. Генерация APP_KEY
 docker compose -f docker-compose.prod.yml run --rm app php artisan key:generate
 
-# 7. Запуск миграций
+# 7. Установка Laravel Reverb (если еще не установлен)
+docker compose -f docker-compose.prod.yml run --rm app composer require laravel/reverb
+docker compose -f docker-compose.prod.yml run --rm app php artisan reverb:install
+
+# 8. Запуск миграций
 docker compose -f docker-compose.prod.yml run --rm -e RUN_MIGRATIONS=true app php artisan migrate --force
 
-# 8. Оптимизация Laravel
+# 9. Оптимизация Laravel
 docker compose -f docker-compose.prod.yml run --rm app php artisan config:cache
 docker compose -f docker-compose.prod.yml run --rm app php artisan route:cache
 docker compose -f docker-compose.prod.yml run --rm app php artisan view:cache
 
-# 9. Запуск всех сервисов
+# 10. Запуск всех сервисов
 docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -209,6 +229,209 @@ docker compose -f docker-compose.prod.yml exec app php artisan octane:reload
 ```bash
 docker compose -f docker-compose.prod.yml exec app php artisan octane:stop
 ```
+
+---
+
+## Настройка Laravel Reverb
+
+Laravel Reverb - это официальный WebSocket сервер от Laravel для трансляции событий в реальном времени. Он используется для отправки уведомлений в мобильные приложения и веб-интерфейсы.
+
+### Установка Reverb:
+
+Reverb должен быть установлен перед первым запуском. Если он еще не установлен, выполните:
+
+```bash
+# Установка пакета
+docker compose -f docker-compose.prod.yml run --rm app composer require laravel/reverb
+
+# Установка конфигурации
+docker compose -f docker-compose.prod.yml run --rm app php artisan reverb:install
+```
+
+**Примечание**: После установки Reverb убедитесь, что файл `config/reverb.php` создан и содержит правильные настройки.
+
+### Конфигурация Reverb:
+
+Reverb уже настроен в `docker-compose.prod.yml` и запускается автоматически. Основные параметры:
+
+- **Порт**: 8080 (внутри Docker сети)
+- **Доступ**: через Nginx proxy на `/app/`
+- **Протокол**: WebSocket (ws://) или Secure WebSocket (wss://)
+
+### Настройка переменных окружения:
+
+В файле `.env` настройте следующие переменные:
+
+```env
+BROADCAST_DRIVER=reverb
+REVERB_APP_ID=my-app-id
+REVERB_APP_KEY=my-app-key
+REVERB_APP_SECRET=my-app-secret
+REVERB_HOST=0.0.0.0
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+# Публичные настройки для клиентов (мобильное приложение)
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="your-domain.com"
+VITE_REVERB_PORT="443"
+VITE_REVERB_SCHEME="https"
+```
+
+**Важно**: 
+- `REVERB_APP_ID`, `REVERB_APP_KEY` и `REVERB_APP_SECRET` должны быть уникальными и безопасными
+- Для production используйте HTTPS (`REVERB_SCHEME=https`, `VITE_REVERB_SCHEME=https`)
+- `VITE_REVERB_HOST` должен указывать на ваш домен
+
+### Проверка статуса Reverb:
+
+```bash
+# Проверка статуса контейнера
+docker compose -f docker-compose.prod.yml ps reverb
+
+# Проверка доступности порта
+docker compose -f docker-compose.prod.yml exec reverb nc -z localhost 8080
+```
+
+### Просмотр логов Reverb:
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f reverb
+```
+
+### Перезапуск Reverb:
+
+```bash
+docker compose -f docker-compose.prod.yml restart reverb
+```
+
+### Адреса подключения для клиентов:
+
+#### Для веб-приложения (через Nginx):
+
+```javascript
+wsHost: 'your-domain.com'
+wsPort: 443
+wssPort: 443
+wsPath: '/app'
+```
+
+Полный URL: `wss://your-domain.com/app/`
+
+#### Для мобильного приложения:
+
+**React Native / Flutter:**
+```javascript
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js/react-native';
+
+const echo = new Echo({
+  broadcaster: 'pusher',
+  key: 'my-app-key',  // REVERB_APP_KEY из .env
+  wsHost: 'your-domain.com',
+  wsPort: 443,
+  wssPort: 443,
+  wsPath: '/app',
+  forceTLS: true,
+  enabledTransports: ['ws', 'wss'],
+});
+
+// Подписка на канал уведомлений
+echo.channel('notification')
+  .listen('.create-notification', (e) => {
+    console.log('New order created:', e);
+  })
+  .listen('.update-notification', (e) => {
+    console.log('Order updated:', e);
+  });
+```
+
+**Нативный iOS (Swift):**
+```swift
+import PusherSwift
+
+let options = PusherClientOptions(
+    host: .host("your-domain.com"),
+    port: 443,
+    encrypted: true,
+    authMethod: .endpoint(authEndpoint: "https://your-domain.com/broadcasting/auth")
+)
+
+let pusher = Pusher(
+    key: "my-app-key",
+    options: options
+)
+
+pusher.connect()
+
+let channel = pusher.subscribe("notification")
+channel.bind(eventName: "create-notification") { (event: PusherEvent) in
+    print("New order: \(event.data ?? "")")
+}
+```
+
+**Нативный Android (Kotlin):**
+```kotlin
+val options = PusherOptions()
+options.setHost("your-domain.com")
+options.setPort(443)
+options.setEncrypted(true)
+
+val pusher = Pusher("my-app-key", options)
+pusher.connect()
+
+val channel = pusher.subscribe("notification")
+channel.bind("create-notification") { event ->
+    Log.d("Notification", "New order: ${event.data}")
+}
+```
+
+### Настройка Nginx:
+
+Nginx уже настроен для проксирования WebSocket соединений к Reverb через путь `/app/`. Конфигурация находится в `docker/nginx/default.conf`.
+
+### Проверка работы Reverb:
+
+1. **Проверьте статус контейнера:**
+```bash
+docker compose -f docker-compose.prod.yml ps reverb
+```
+
+2. **Проверьте логи:**
+```bash
+docker compose -f docker-compose.prod.yml logs reverb
+```
+
+3. **Проверьте подключение через браузер:**
+Откройте DevTools → Network → WS и попробуйте подключиться к `wss://your-domain.com/app/`
+
+### Troubleshooting Reverb:
+
+**Проблема: Reverb не запускается**
+
+```bash
+# Проверьте логи
+docker compose -f docker-compose.prod.yml logs reverb
+
+# Проверьте переменные окружения
+docker compose -f docker-compose.prod.yml exec reverb env | grep REVERB
+
+# Перезапустите Reverb
+docker compose -f docker-compose.prod.yml restart reverb
+```
+
+**Проблема: WebSocket соединение не устанавливается**
+
+- Убедитесь, что Nginx правильно проксирует запросы к Reverb
+- Проверьте, что используется HTTPS (wss://) для production
+- Проверьте файрвол и убедитесь, что порты открыты
+- Проверьте логи Nginx: `docker compose -f docker-compose.prod.yml logs nginx`
+
+**Проблема: События не транслируются**
+
+- Убедитесь, что `BROADCAST_DRIVER=reverb` в `.env`
+- Проверьте, что очередь `broadcastable` обрабатывается: `docker compose -f docker-compose.prod.yml logs queue`
+- Убедитесь, что события реализуют интерфейс `ShouldBroadcast`
 
 ---
 
@@ -360,6 +583,9 @@ docker compose -f docker-compose.prod.yml exec app php artisan octane:reload
 
 # 7. Перезапуск queue worker
 docker compose -f docker-compose.prod.yml restart queue
+
+# 8. Перезапуск Reverb (если нужно)
+docker compose -f docker-compose.prod.yml restart reverb
 ```
 
 ---
@@ -384,6 +610,7 @@ docker compose -f docker-compose.prod.yml logs -f nginx
 docker compose -f docker-compose.prod.yml logs -f mysql
 docker compose -f docker-compose.prod.yml logs -f redis
 docker compose -f docker-compose.prod.yml logs -f queue
+docker compose -f docker-compose.prod.yml logs -f reverb
 ```
 
 ### Остановка сервисов:
@@ -559,11 +786,32 @@ docker compose -f docker-compose.prod.yml restart nginx
 - Проверьте оптимизацию Laravel (config:cache, route:cache)
 - Увеличьте количество воркеров RoadRunner
 
+### Проблема: Reverb не работает или события не транслируются
+
+**Решение:**
+```bash
+# Проверьте статус Reverb
+docker compose -f docker-compose.prod.yml ps reverb
+
+# Проверьте логи Reverb
+docker compose -f docker-compose.prod.yml logs reverb
+
+# Проверьте, что BROADCAST_DRIVER=reverb в .env
+docker compose -f docker-compose.prod.yml exec app env | grep BROADCAST_DRIVER
+
+# Проверьте очередь broadcastable
+docker compose -f docker-compose.prod.yml logs queue | grep broadcastable
+
+# Перезапустите Reverb
+docker compose -f docker-compose.prod.yml restart reverb
+```
+
 ---
 
 ## Дополнительные ресурсы
 
 - [Документация Laravel Octane](https://laravel.com/docs/octane)
+- [Документация Laravel Reverb](https://laravel.com/docs/reverb)
 - [Документация RoadRunner](https://roadrunner.dev/docs)
 - [Документация Docker](https://docs.docker.com/)
 - [Документация Nginx](https://nginx.org/en/docs/)

@@ -69,6 +69,42 @@ return [
             ],
         ],
     ],
+    [
+        'key'    => 'mobile_app.general.contact_us',
+        'name'   => 'mobile_app::app.settings.general.contact-us.title',
+        'info'   => 'mobile_app::app.settings.general.contact-us.info',
+        'sort'   => 3,
+        'fields' => [
+            [
+                'name'    => 'contact_telegram',
+                'title'   => 'mobile_app::app.settings.fields.contact-telegram',
+                'info'    => 'mobile_app::app.settings.fields.contact-telegram-info',
+                'type'    => 'text',
+                'default' => '',
+            ],
+            [
+                'name'    => 'contact_whatsapp',
+                'title'   => 'mobile_app::app.settings.fields.contact-whatsapp',
+                'info'    => 'mobile_app::app.settings.fields.contact-whatsapp-info',
+                'type'    => 'text',
+                'default' => '',
+            ],
+            [
+                'name'    => 'contact_email',
+                'title'   => 'mobile_app::app.settings.fields.contact-email',
+                'info'    => 'mobile_app::app.settings.fields.contact-email-info',
+                'type'    => 'text',
+                'default' => '',
+            ],
+            [
+                'name'    => 'contact_max',
+                'title'   => 'mobile_app::app.settings.fields.contact-max',
+                'info'    => 'mobile_app::app.settings.fields.contact-max-info',
+                'type'    => 'text',
+                'default' => '',
+            ],
+        ],
+    ],
 ];
 
 
