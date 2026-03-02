@@ -69,11 +69,10 @@ class CatalogCategoryController extends CatalogController
                         $query->with([
                             'images',
                             'videos',
-                            'half_portion_pair_product',
                             'attribute_family.attribute_groups.custom_attributes.options',
                             'super_attributes',
                             'constructor.groups.products' => function ($query) {
-                                $query->with(['images', 'half_portion_pair_product']);
+                                $query->with('images');
                             },
                             'grouped_products.associated_product',
                             'variants',
@@ -81,10 +80,6 @@ class CatalogCategoryController extends CatalogController
                             'downloadable_samples',
                             'booking_products',
                             'bundle_options',
-                            'drinks' => function ($query) {
-                                $query->with('images')
-                                    ->orderByPivot('sort', 'asc');
-                            },
                         ]);
                     },
                 ])
@@ -138,7 +133,7 @@ class CatalogCategoryController extends CatalogController
         try {
             $store = Cache::getStore();
             $storeClass = get_class($store);
-            
+
             // Log store type for debugging
             Log::debug('Cache store type: ' . $storeClass, [
                 'has_getRedis' => method_exists($store, 'getRedis'),
@@ -146,38 +141,38 @@ class CatalogCategoryController extends CatalogController
                 'is_RedisStore' => $store instanceof \Illuminate\Cache\RedisStore,
                 'is_FileStore' => $store instanceof \Illuminate\Cache\FileStore,
             ]);
-            
+
             // For Redis driver, check if store has getRedis() method (more reliable than instanceof)
             if (method_exists($store, 'getRedis')) {
                 try {
                     $redis = $store->getRedis();
-                
+
                 // Get the actual cache prefix from Laravel Cache store
                 // Laravel RedisStore uses getPrefix() method which returns the full prefix
-                $cachePrefix = method_exists($store, 'getPrefix') 
-                    ? $store->getPrefix() 
+                $cachePrefix = method_exists($store, 'getPrefix')
+                    ? $store->getPrefix()
                     : config('cache.prefix', 'laravel_cache');
-                
+
                 // Laravel Cache format: {prefix}:{key}
                 // The prefix from getPrefix() already includes the separator if needed
                 // But we need to ensure we have the right format
                 $basePrefix = rtrim($cachePrefix, ':');
                 $searchPattern = $basePrefix . ':' . self::CACHE_PREFIX . '*';
-                
+
                 // First, try to find keys using SCAN (more efficient)
                 $allKeys = [];
                 $cursor = 0;
-                
+
                 do {
                     $result = $redis->scan($cursor, ['match' => $searchPattern, 'count' => 100]);
                     $cursor = is_array($result) ? ($result[0] ?? 0) : 0;
                     $keys = is_array($result) ? ($result[1] ?? []) : [];
-                    
+
                     if (!empty($keys)) {
                         $allKeys = array_merge($allKeys, $keys);
                     }
                 } while ($cursor > 0);
-                
+
                 // If SCAN didn't find anything, try KEYS as fallback
                 if (empty($allKeys)) {
                     try {
@@ -190,7 +185,7 @@ class CatalogCategoryController extends CatalogController
                         Log::debug('KEYS command not available: ' . $e->getMessage());
                     }
                 }
-                
+
                 // Also try alternative pattern without prefix (in case prefix is handled differently)
                 if (empty($allKeys)) {
                     $altPattern = self::CACHE_PREFIX . '*';
@@ -208,10 +203,10 @@ class CatalogCategoryController extends CatalogController
                         }
                     } while ($cursor > 0);
                 }
-                
+
                 // Remove duplicates
                 $allKeys = array_unique($allKeys);
-                
+
                 if (!empty($allKeys)) {
                     // Delete keys in batches to avoid memory issues
                     $chunks = array_chunk($allKeys, 100);
@@ -246,13 +241,13 @@ class CatalogCategoryController extends CatalogController
             try {
                 $channels = \Webkul\Core\Facades\Core::getAllChannels();
                 $locales = \Webkul\Core\Facades\Core::getAllLocales();
-                
+
                 $clearedCount = 0;
-                
+
                 // Reasonable limits for pagination
                 $maxPages = 20; // Clear first 20 pages
                 $limits = [10, 20, 50, 100]; // Common limit values
-                
+
                 foreach ($channels as $channel) {
                     foreach ($locales as $locale) {
                         // Clear paginated versions
@@ -262,7 +257,7 @@ class CatalogCategoryController extends CatalogController
                                 $cacheKey = self::CACHE_PREFIX . ":{$channel->id}:{$locale->code}:page_{$page}:limit_{$limit}:paginated_1";
                                 Cache::forget($cacheKey);
                                 $clearedCount++;
-                                
+
                                 // Paginated = 0
                                 $cacheKey = self::CACHE_PREFIX . ":{$channel->id}:{$locale->code}:page_{$page}:limit_{$limit}:paginated_0";
                                 Cache::forget($cacheKey);
@@ -271,7 +266,7 @@ class CatalogCategoryController extends CatalogController
                         }
                     }
                 }
-                
+
                 Log::info('Cleared catalog cache entries using Cache::forget()', [
                     'driver' => 'file',
                     'attempted' => $clearedCount,
@@ -285,23 +280,23 @@ class CatalogCategoryController extends CatalogController
                     'exception' => get_class($e)
                 ]);
             }
-            
+
             return;
         }
-        
+
         // For database driver, delete entries matching pattern
         if ($store instanceof \Illuminate\Cache\DatabaseStore) {
             try {
                 $connection = $store->getConnection();
                 $table = $store->getTable();
                 $cachePrefix = config('cache.prefix', 'laravel_cache');
-                
+
                 // Delete cache entries where key starts with our prefix
                 $pattern = $cachePrefix . ':' . self::CACHE_PREFIX . '%';
                 $deleted = $connection->table($table)
                     ->where('key', 'like', $pattern)
                     ->delete();
-                
+
                 Log::info('Cleared ' . $deleted . ' catalog cache entries from database', [
                     'table' => $table,
                     'pattern' => $pattern,
@@ -313,10 +308,10 @@ class CatalogCategoryController extends CatalogController
                     'exception' => get_class($e)
                 ]);
             }
-            
+
             return;
         }
-        
+
         // For drivers that support tags, try to use tags if available
         if (method_exists($store, 'tags')) {
             try {
@@ -330,7 +325,7 @@ class CatalogCategoryController extends CatalogController
             }
             return;
         }
-        
+
         // Fallback: log warning if no specific clearing mechanism was found
         Log::warning('Catalog cache cannot be cleared automatically for this cache driver. Please clear cache manually.', [
             'store_class' => $storeClass

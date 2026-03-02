@@ -114,7 +114,7 @@ class Order extends Model implements OrderContract
      * @var array
      */
     protected $statusLabel = [
-        self::STATUS_PENDING         => 'Оплата',
+        self::STATUS_PENDING         => 'Новый',
         self::STATUS_PENDING_PAYMENT => 'Ожидание оплаты',
         self::STATUS_PROCESSING      => 'Обработка',
         self::STATUS_PREPARING       => 'Готовим',

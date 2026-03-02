@@ -50,7 +50,7 @@
                     <!-- Information Panel -->
                     <div class="ltr:pl-2.5 rtl:pr-2.5">
                         <p class="text-sm font-light text-gray-800 dark:text-white">
-                            @{{ "@lang('admin::app.components.datagrid.toolbar.results')".replace(':total', available.meta.total) }}
+                            @{{ translations.results.replace(':total', available.meta.total) }}
                         </p>
                     </div>
                 </div>
@@ -73,6 +73,10 @@
                 return {
                     filters: {
                         columns: [],
+                    },
+
+                    translations: {
+                        results: @json(__('admin::app.components.datagrid.toolbar.results')),
                     },
                 };
             },

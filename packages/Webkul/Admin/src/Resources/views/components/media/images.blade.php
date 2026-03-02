@@ -434,22 +434,22 @@
 
                     placeholders: [
                         {
-                            label: "@lang('admin::app.components.media.images.placeholders.front')",
+                            label: @json(__('admin::app.components.media.images.placeholders.front')),
                             image: "{{ bagisto_asset('images/product-placeholders/front.svg') }}"
                         }, {
-                            label: "@lang('admin::app.components.media.images.placeholders.next')",
+                            label: @json(__('admin::app.components.media.images.placeholders.next')),
                             image: "{{ bagisto_asset('images/product-placeholders/next-1.svg') }}"
                         }, {
-                            label: "@lang('admin::app.components.media.images.placeholders.next')",
+                            label: @json(__('admin::app.components.media.images.placeholders.next')),
                             image: "{{ bagisto_asset('images/product-placeholders/next-2.svg') }}"
                         }, {
-                            label: "@lang('admin::app.components.media.images.placeholders.zoom')",
+                            label: @json(__('admin::app.components.media.images.placeholders.zoom')),
                             image: "{{ bagisto_asset('images/product-placeholders/zoom.svg') }}"
                         }, {
-                            label: "@lang('admin::app.components.media.images.placeholders.use-cases')",
+                            label: @json(__('admin::app.components.media.images.placeholders.use-cases')),
                             image: "{{ bagisto_asset('images/product-placeholders/use-cases.svg') }}"
                         }, {
-                            label: "@lang('admin::app.components.media.images.placeholders.size')",
+                            label: @json(__('admin::app.components.media.images.placeholders.size')),
                             image: "{{ bagisto_asset('images/product-placeholders/size.svg') }}"
                         }
                     ],
@@ -497,7 +497,7 @@
                     if (! validFiles) {
                         this.$emitter.emit('add-flash', {
                             type: 'warning',
-                            message: "@lang('admin::app.components.media.images.not-allowed-error')"
+                            message: @json(__('admin::app.components.media.images.not-allowed-error'))
                         });
 
                         return;
@@ -612,7 +612,7 @@
                     if (! validFiles) {
                         this.$emitter.emit('add-flash', {
                             type: 'warning',
-                            message: "@lang('admin::app.components.media.images.not-allowed-error')"
+                            message: @json(__('admin::app.components.media.images.not-allowed-error'))
                         });
 
                         return;

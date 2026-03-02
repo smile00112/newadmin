@@ -4,13 +4,13 @@
     </x-slot>
 
     <!-- User Details Section -->
-    <div class="mb-5 flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <div class="grid gap-1.5">
-            <p class="text-xl font-bold !leading-normal text-gray-800 dark:text-white">
+    <div class="mb-8 flex items-center justify-between gap-4 max-sm:flex-wrap">
+        <div class="grid gap-2">
+            <h1 class="text-2xl font-bold !leading-normal bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent dark:from-violet-400 dark:via-purple-400 dark:to-indigo-400">
                 @lang('admin::app.dashboard.index.user-name', ['user_name' => auth()->guard('admin')->user()->name])
-            </p>
+            </h1>
 
-            <p class="!leading-normal text-gray-600 dark:text-gray-300">
+            <p class="!leading-normal text-gray-500 dark:text-gray-400">
                 @lang('admin::app.dashboard.index.user-info')
             </p>
         </div>
@@ -18,23 +18,23 @@
         <!-- Actions -->
         <v-dashboard-filters>
             <!-- Shimmer -->
-            <div class="flex gap-1.5">
-                <div class="shimmer h-[39px] w-[132px] rounded-md"></div>
-                <div class="shimmer h-[39px] w-[140px] rounded-md"></div>
-                <div class="shimmer h-[39px] w-[140px] rounded-md"></div>
+            <div class="flex gap-2">
+                <div class="shimmer h-[42px] w-[140px] rounded-xl"></div>
+                <div class="shimmer h-[42px] w-[150px] rounded-xl"></div>
+                <div class="shimmer h-[42px] w-[150px] rounded-xl"></div>
             </div>
         </v-dashboard-filters>
     </div>
 
     <!-- Body Component -->
-    <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
+    <div class="mt-4 flex gap-6 max-xl:flex-wrap">
         <!-- Left Section -->
         <div class="flex flex-1 flex-col gap-8 max-xl:flex-auto">
             {!! view_render_event('bagisto.admin.dashboard.overall_details.before') !!}
 
             <!-- Overall Details -->
-            <div class="flex flex-col gap-2">
-                <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
+            <div class="flex flex-col gap-3">
+                <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
                     @lang('admin::app.dashboard.index.overall-details')
                 </p>
 
@@ -47,8 +47,8 @@
             {!! view_render_event('bagisto.admin.dashboard.todays_details.before') !!}
 
             <!-- Todays Details -->
-            <div class="flex flex-col gap-2">
-                <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
+            <div class="flex flex-col gap-3">
+                <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
                     @lang('admin::app.dashboard.index.today-details')
                 </p>
 
@@ -61,8 +61,8 @@
             {!! view_render_event('bagisto.admin.dashboard.stock_threshold.before') !!}
 
             <!-- Stock Threshold -->
-            <div class="flex flex-col gap-2">
-                <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
+            <div class="flex flex-col gap-3">
+                <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
                     @lang('admin::app.dashboard.index.stock-threshold')
                 </p>
 
@@ -74,16 +74,16 @@
         </div>
 
         <!-- Right Section -->
-        <div class="flex w-[360px] max-w-full flex-col gap-2 max-sm:w-full">
+        <div class="flex w-[380px] max-w-full flex-col gap-3 max-sm:w-full">
             <!-- First Component -->
-            <p class="text-base font-semibold text-gray-600 dark:text-gray-300">
+            <p class="text-lg font-semibold text-gray-700 dark:text-gray-200">
                 @lang('admin::app.dashboard.index.store-stats')
             </p>
 
             {!! view_render_event('bagisto.admin.dashboard.store_stats.before') !!}
 
             <!-- Store Stats -->
-            <div class="box-shadow rounded bg-white dark:bg-gray-900">
+            <div class="rounded-2xl bg-white dark:bg-gray-900 overflow-hidden shadow-card border border-gray-100 dark:border-gray-800 transition-shadow duration-300 hover:shadow-card-hover">
                 <!-- Total Sales Details -->
                 @include('admin::dashboard.total-sales')
 
@@ -167,7 +167,7 @@
                     return {
                         channels: [
                             {
-                                name: "@lang('admin::app.dashboard.index.all-channels')",
+                                name: @json(__('admin::app.dashboard.index.all-channels')),
                                 code: ''
                             },
                             ...@json(core()->getAllChannels()),

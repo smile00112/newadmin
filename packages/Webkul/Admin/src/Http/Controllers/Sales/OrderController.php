@@ -45,7 +45,65 @@ class OrderController extends Controller
 
         $groups = $this->customerGroupRepository->findWhere([['code', '<>', 'guest']]);
 
-        return view('admin::sales.orders.index', compact('groups'));
+        // Get order statistics by status
+        $orderStats = $this->orderRepository
+            ->select('status', DB::raw('count(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $statusFilters = [
+            [
+                'key'   => Order::STATUS_PENDING,
+                'label' => 'Новый',
+                'count' => $orderStats[Order::STATUS_PENDING] ?? 0,
+                'icon'  => 'icon-time',
+            ],
+            [
+                'key'   => Order::STATUS_PENDING_PAYMENT,
+                'label' => 'Ожидание оплаты',
+                'count' => $orderStats[Order::STATUS_PENDING_PAYMENT] ?? 0,
+                'icon'  => 'icon-dollar',
+            ],
+            [
+                'key'   => Order::STATUS_PROCESSING,
+                'label' => 'В обработке',
+                'count' => $orderStats[Order::STATUS_PROCESSING] ?? 0,
+                'icon'  => 'icon-processing',
+            ],
+            [
+                'key'   => Order::STATUS_PREPARING,
+                'label' => 'Готовим',
+                'count' => $orderStats[Order::STATUS_PREPARING] ?? 0,
+                'icon'  => 'icon-product',
+            ],
+            [
+                'key'   => Order::STATUS_READY,
+                'label' => 'Готов',
+                'count' => $orderStats[Order::STATUS_READY] ?? 0,
+                'icon'  => 'icon-checkmark',
+            ],
+            [
+                'key'   => Order::STATUS_COMPLETED,
+                'label' => 'Выполнен',
+                'count' => $orderStats[Order::STATUS_COMPLETED] ?? 0,
+                'icon'  => 'icon-done',
+            ],
+            [
+                'key'   => Order::STATUS_CANCELED,
+                'label' => 'Отменён',
+                'count' => $orderStats[Order::STATUS_CANCELED] ?? 0,
+                'icon'  => 'icon-cancel',
+            ],
+            [
+                'key'   => Order::STATUS_CLOSED,
+                'label' => 'Закрыт',
+                'count' => $orderStats[Order::STATUS_CLOSED] ?? 0,
+                'icon'  => 'icon-cancel',
+            ],
+        ];
+
+        return view('admin::sales.orders.index', compact('groups', 'statusFilters'));
     }
 
     /**
@@ -350,5 +408,102 @@ class OrderController extends Controller
         if (! $cart->payment) {
             throw new \Exception(trans('admin::app.sales.orders.create.specify-payment-method'));
         }
+    }
+    
+    /**
+     * Mass update order statuses.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function massUpdateStatus()
+    {
+        $validatedData = $this->validate(request(), [
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'required|integer|exists:orders,id',
+            'status' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $validStatuses = [
+                        Order::STATUS_PENDING,
+                        Order::STATUS_PENDING_PAYMENT,
+                        Order::STATUS_PROCESSING,
+                        Order::STATUS_PREPARING,
+                        Order::STATUS_READY,
+                        Order::STATUS_COMPLETED,
+                        Order::STATUS_CANCELED,
+                        Order::STATUS_CLOSED,
+                        Order::STATUS_FRAUD,
+                    ];
+
+                    if (! in_array($value, $validStatuses)) {
+                        $fail('The selected status is invalid.');
+                    }
+                },
+            ],
+        ]);
+
+        $orderIds = $validatedData['order_ids'];
+        $newStatus = $validatedData['status'];
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($orderIds as $orderId) {
+            try {
+                $order = $this->orderRepository->findOrFail($orderId);
+                
+                if ($order->status !== $newStatus) {
+                    $this->orderRepository->updateOrderStatus($order, $newStatus);
+                    $successCount++;
+                }
+            } catch (\Exception $e) {
+                $errorCount++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Статус обновлен для {$successCount} заказов" . ($errorCount > 0 ? ", ошибок: {$errorCount}" : ''),
+            'updated_count' => $successCount,
+            'error_count' => $errorCount,
+        ]);
+    }
+
+    /**
+     * Get pending orders for notifications.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPendingOrders()
+    {
+        $pendingStatuses = [
+            Order::STATUS_PENDING,
+            Order::STATUS_PENDING_PAYMENT,
+        ];
+        
+        $orders = $this->orderRepository
+            ->whereIn('status', $pendingStatuses)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => $order->id,
+                    'increment_id' => $order->increment_id,
+                    'status' => $order->status,
+                    'customer_name' => $order->customer_first_name . ' ' . $order->customer_last_name,
+                    'customer_email' => $order->customer_email,
+                    'grand_total' => $order->grand_total,
+                    'formatted_grand_total' => core()->formatPrice($order->grand_total),
+                    'items_count' => $order->items->count(),
+                    'created_at' => $order->created_at->toISOString(),
+                ];
+            });
+        
+        return response()->json([
+            'success' => true,
+            'count' => $orders->count(),
+            'orders' => $orders,
+        ]);
     }
 }

@@ -37,7 +37,7 @@
 
                         <!-- Total Orders -->
                         <p class="text-right text-xs font-semibold text-gray-400 dark:text-white">
-                            @{{ "@lang('admin::app.dashboard.index.unique-visitors')".replace(':count', report.statistics.unique.current ?? 0) }}
+                            @{{ translations.uniqueVisitors.replace(':count', report.statistics.unique.current ?? 0) }}
                         </p>
                     </div>
                 </div>
@@ -61,6 +61,10 @@
                     report: [],
 
                     isLoading: true,
+
+                    translations: {
+                        uniqueVisitors: @json(__('admin::app.dashboard.index.unique-visitors')),
+                    },
                 }
             },
 

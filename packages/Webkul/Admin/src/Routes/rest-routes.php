@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Webkul\Admin\Http\Controllers\AIAssistantController;
 use Webkul\Admin\Http\Controllers\DashboardController;
 use Webkul\Admin\Http\Controllers\DataGrid\DataGridController;
 use Webkul\Admin\Http\Controllers\DataGrid\SavedFilterController;
@@ -47,6 +48,13 @@ Route::controller(MagicAIController::class)->prefix('magic-ai')->group(function 
     Route::post('content', 'content')->name('admin.magic_ai.content');
 
     Route::post('image', 'image')->name('admin.magic_ai.image');
+});
+
+/**
+ * AI Assistant Chat Routes
+ */
+Route::controller(AIAssistantController::class)->prefix('ai-assistant')->group(function () {
+    Route::post('chat', 'chat')->name('admin.ai_assistant.chat');
 });
 
 /**

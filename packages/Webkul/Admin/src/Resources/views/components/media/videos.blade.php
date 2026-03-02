@@ -198,7 +198,7 @@
                     if (! validFiles) {
                         this.$emitter.emit('add-flash', {
                             type: 'warning',
-                            message: "@lang('admin::app.components.media.videos.not-allowed-error')"
+                            message: @json(__('admin::app.components.media.videos.not-allowed-error'))
                         });
 
                         return;
@@ -253,7 +253,7 @@
                     if (! validFiles) {
                         this.$emitter.emit('add-flash', {
                             type: 'warning',
-                            message: "@lang('admin::app.components.media.videos.not-allowed-error')"
+                            message: @json(__('admin::app.components.media.videos.not-allowed-error'))
                         });
 
                         return;

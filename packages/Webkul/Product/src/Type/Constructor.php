@@ -265,7 +265,7 @@ class Constructor extends AbstractType
         $products[0]['base_price_incl_tax'] = $basePrice;
         $products[0]['price'] = core()->convertPrice($basePrice);
         $products[0]['price_incl_tax'] = $products[0]['price'];
-        
+
         // Recalculate totals for constructor base price
         $products[0]['base_total'] = $basePrice * $constructorQuantity;
         $products[0]['base_total_incl_tax'] = $basePrice * $constructorQuantity;
@@ -323,7 +323,7 @@ class Constructor extends AbstractType
                 $products[0]['weight'] += $cartProduct[0]['total_weight'];
             }
         }
-        
+
         // Recalculate per-unit prices after adding all ingredients
         // Price per unit = total / quantity
         if ($constructorQuantity > 0) {

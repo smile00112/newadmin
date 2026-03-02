@@ -116,6 +116,8 @@ Route::prefix('catalog')->group(function () {
 
         Route::post('mass-delete', 'massDestroy')->name('admin.catalog.products.mass_delete');
 
+        Route::post('{id}/toggle-stock', 'toggleStock')->name('admin.catalog.products.toggle_stock');
+
         Route::controller(SimpleController::class)->group(function () {
             Route::get('{id}/simple-customizable-options', 'customizableOptions')->name('admin.catalog.products.simple.customizable-options');
         });

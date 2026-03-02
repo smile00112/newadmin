@@ -2,7 +2,7 @@
     'isActive' => true,
 ])
 
-<div {{ $attributes->merge(['class' => 'box-shadow rounded bg-white dark:bg-gray-900']) }}>
+<div {{ $attributes->merge(['class' => 'box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden']) }}>
     <v-accordion
         is-active="{{ $isActive }}"
         {{ $attributes }}
@@ -11,14 +11,14 @@
 
         @isset($header)
             <template v-slot:header="{ toggle, isOpen }">
-                <div {{ $header->attributes->merge(['class' => 'flex items-center justify-between p-1.5']) }}>
+                <div {{ $header->attributes->merge(['class' => 'flex items-center justify-between p-4 bg-gradient-to-r from-gray-50/50 to-transparent dark:from-gray-800/30 border-b border-gray-100 dark:border-gray-800']) }}>
                     {{ $header }}
 
-                    <span
-                        class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950"
-                        :class="[isOpen ? 'icon-arrow-up' : 'icon-arrow-down']"
+                    <button
+                        class="flex items-center justify-center w-8 h-8 cursor-pointer rounded-xl text-xl transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+                        :class="[isOpen ? 'icon-arrow-up rotate-0' : 'icon-arrow-down']"
                         @click="toggle"
-                    ></span>
+                    ></button>
                 </div>
             </template>
         @endisset
@@ -26,7 +26,7 @@
         @isset($content)
             <template v-slot:content="{ isOpen }">
                 <div
-                    {{ $content->attributes->merge(['class' => 'px-4 pb-4']) }}
+                    {{ $content->attributes->merge(['class' => 'px-5 py-4 animate-fade-in']) }}
                     v-show="isOpen"
                 >
                     {{ $content }}

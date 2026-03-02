@@ -163,6 +163,9 @@
 
             mounted() {
                 this.boot();
+                
+                // Listen for external filter events
+                this.$emitter.on('datagrid:filter', this.filter);
             },
 
             methods: {

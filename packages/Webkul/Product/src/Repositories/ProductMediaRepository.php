@@ -44,6 +44,13 @@ class ProductMediaRepository extends Repository
      */
     public function upload($data, $product, string $uploadFileType): void
     {
+        \Log::info('ProductMediaRepository upload:', [
+            'uploadFileType' => $uploadFileType,
+            'has_files_key' => isset($data[$uploadFileType]['files']),
+            'data_keys' => isset($data[$uploadFileType]) ? array_keys($data[$uploadFileType]) : 'no uploadFileType key',
+            'files_count' => isset($data[$uploadFileType]['files']) ? count($data[$uploadFileType]['files']) : 0,
+        ]);
+        
         /**
          * Previous model ids for filtering.
          */
@@ -53,7 +60,28 @@ class ProductMediaRepository extends Repository
 
         if (! empty($data[$uploadFileType]['files'])) {
             foreach ($data[$uploadFileType]['files'] as $indexOrModelId => $file) {
+                // Skip empty values
+                if (empty($file) && !($file instanceof UploadedFile)) {
+                    // Just update position for existing file
+                    if (is_numeric($index = $previousIds->search($indexOrModelId))) {
+                        $previousIds->forget($index);
+                    }
+
+                    $this->update([
+                        'position' => ++$position,
+                    ], $indexOrModelId);
+                    continue;
+                }
+                
+                \Log::info('Processing file:', [
+                    'indexOrModelId' => $indexOrModelId,
+                    'file_type' => is_object($file) ? get_class($file) : gettype($file),
+                    'is_uploaded_file' => $file instanceof UploadedFile,
+                ]);
+                
                 if ($file instanceof UploadedFile) {
+                    \Log::info('File is UploadedFile, mime: ' . $file->getMimeType());
+                    
                     if (Str::contains($file->getMimeType(), 'image')) {
                         $manager = new ImageManager;
 
@@ -62,11 +90,13 @@ class ProductMediaRepository extends Repository
                         $path = $this->getProductDirectory($product).'/'.Str::random(40).'.webp';
 
                         Storage::put($path, $image);
+                        
+                        \Log::info('Image saved to: ' . $path);
                     } else {
                         $path = $file->store($this->getProductDirectory($product));
                     }
 
-                    $this->create([
+                    $created = $this->create([
                         'type'       => $uploadFileType,
                         'path'       => $path,
                         'product_id' => $product->id,

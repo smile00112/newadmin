@@ -48,11 +48,6 @@ class CartResource extends JsonResource
             'have_stockable_items'               => $this->haveStockableItems(),
             'payment_method'                     => $this->payment?->method,
             'payment_method_title'               => core()->getConfigData('sales.payment_methods.'.$this->payment?->method.'.title'),
-            'auto_apply'                         => $this->auto_apply ?? false,
-            'bonus_amount'                       => $this->bonus_amount ?? 0,
-            'formatted_bonus_amount'             => core()->formatPrice($this->bonus_amount ?? 0),
-            'base_bonus_amount'                  => $this->base_bonus_amount ?? 0,
-            'formatted_base_bonus_amount'        => core()->formatBasePrice($this->base_bonus_amount ?? 0),
         ];
     }
 }
