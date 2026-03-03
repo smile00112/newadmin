@@ -229,9 +229,14 @@ class Themes
         /**
          * If the namespace is null, it means the theming system is activated. We use the request URI to
          * detect the theme and provide Vite assets based on the current theme.
+         * When current theme is not set (e.g. API error page rendering), fallback to namespace from URL.
          */
         if (empty($namespace)) {
-            return $this->current()->url($url);
+            if ($this->current()) {
+                return $this->current()->url($url);
+            }
+
+            $namespace = Str::contains(request()->url(), config('app.admin_url').'/') ? 'admin' : 'shop';
         }
 
         /**
@@ -262,9 +267,14 @@ class Themes
         /**
          * If the namespace is null, it means the theming system is activated. We use the request URI to
          * detect the theme and provide Vite assets based on the current theme.
+         * When current theme is not set (e.g. API error page rendering), fallback to namespace from URL.
          */
         if (empty($namespace)) {
-            return $this->current()->setBagistoVite($entryPoints);
+            if ($this->current()) {
+                return $this->current()->setBagistoVite($entryPoints);
+            }
+
+            $namespace = Str::contains(request()->url(), config('app.admin_url').'/') ? 'admin' : 'shop';
         }
 
         /**
