@@ -48,10 +48,8 @@ class TaxRateController extends Controller
 
     /**
      * Create the tax rate.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function store(TaxRateRequest $request)
+    public function store(TaxRateRequest $request): JsonResponse
     {
         Event::dispatch('tax.rate.create.before');
 
@@ -68,29 +66,27 @@ class TaxRateController extends Controller
 
         Event::dispatch('tax.rate.create.after', $taxRate);
 
-        session()->flash('success', trans('admin::app.settings.taxes.rates.create-success'));
-
-        return redirect()->route('admin.settings.taxes.rates.index');
+        return new JsonResponse([
+            'message' => trans('admin::app.settings.taxes.rates.create-success'),
+        ]);
     }
 
     /**
      * Show the edit form for the previously created tax rates.
-     *
-     * @return \Illuminate\View\View
      */
-    public function edit(int $id)
+    public function edit(int $id): JsonResponse
     {
         $taxRate = $this->taxRateRepository->findOrFail($id);
 
-        return view('admin::settings.taxes.rates.edit')->with('taxRate', $taxRate);
+        return new JsonResponse([
+            'data' => $taxRate,
+        ]);
     }
 
     /**
      * Edit the previous tax rate.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function update(TaxRateRequest $request, int $id)
+    public function update(TaxRateRequest $request, int $id): JsonResponse
     {
         Event::dispatch('tax.rate.update.before', $id);
 
@@ -107,9 +103,9 @@ class TaxRateController extends Controller
 
         Event::dispatch('tax.rate.update.after', $taxRate);
 
-        session()->flash('success', trans('admin::app.settings.taxes.rates.update-success'));
-
-        return redirect()->route('admin.settings.taxes.rates.index');
+        return new JsonResponse([
+            'message' => trans('admin::app.settings.taxes.rates.update-success'),
+        ]);
     }
 
     /**
