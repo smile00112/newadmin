@@ -264,12 +264,22 @@ class PaymentController extends Controller
             ]);
 
             $paymentAdditional = $order->payment->additional ?? [];
+            $formUrl = $response['formUrl'] ?? null;
             $order->payment->update([
                 'additional' => array_merge($paymentAdditional, [
                     'alfabank_order_id' => $response['orderId'] ?? null,
-                    'alfabank_form_url' => $response['formUrl'] ?? null,
+                    'alfabank_form_url' => $formUrl,
                 ]),
             ]);
+
+            if (config('alfabank-payment.log_enabled', true)) {
+                $channel = config('alfabank-payment.log_channel', 'daily');
+                Log::channel($channel)->info('Alfabank: payment link saved to order', [
+                    'order_id'          => $order->id,
+                    'alfabank_order_id' => $response['orderId'] ?? null,
+                    'form_url'          => $formUrl,
+                ]);
+            }
 
             return redirect()->away($response['formUrl']);
         } catch (\Exception $e) {

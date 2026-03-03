@@ -282,6 +282,14 @@ class AlfabankApiService
 
         $this->logExchange($method, $url, $sanitizedRequest, $httpCode, $durationMs, $decoded, null);
 
+        if (config('alfabank-payment.log_enabled', true)) {
+            $channel = config('alfabank-payment.log_channel', 'daily');
+            Log::channel($channel)->info('Alfabank bank response', [
+                'method'   => $method,
+                'response' => $decoded,
+            ]);
+        }
+
         return $decoded;
     }
 
