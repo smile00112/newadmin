@@ -228,6 +228,11 @@ class PaymentController extends Controller
         }
 
         try {
+            $existingFormUrl = $order->payment?->additional['alfabank_form_url'] ?? null;
+            if (!empty($existingFormUrl)) {
+                return redirect()->away($existingFormUrl);
+            }
+
             $alfabankPayment = app(AlfabankPayment::class);
             $orderData = $alfabankPayment->buildOrderDataFromOrder($order);
             $response = $this->apiService->registerOrder($orderData);
@@ -255,6 +260,14 @@ class PaymentController extends Controller
             $order->update([
                 'additional' => array_merge($order->additional ?? [], [
                     'alfabank_order_id' => $response['orderId'] ?? null,
+                ]),
+            ]);
+
+            $paymentAdditional = $order->payment->additional ?? [];
+            $order->payment->update([
+                'additional' => array_merge($paymentAdditional, [
+                    'alfabank_order_id' => $response['orderId'] ?? null,
+                    'alfabank_form_url' => $response['formUrl'] ?? null,
                 ]),
             ]);
 
