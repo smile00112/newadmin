@@ -124,4 +124,95 @@ class NomenclatureIngredient
      * @var object|null
      */
     public $nutrition;
+
+    /**
+     * @OA\Property(
+     *     title="Short Description",
+     *     description="Ingredient short description without HTML",
+     *     example="What is Lorem Ipsum?"
+     * )
+     *
+     * @var string|null
+     */
+    public $short_description;
+
+    /**
+     * @OA\Property(
+     *     title="Description",
+     *     description="Ingredient description without HTML",
+     *     example="Lorem Ipsum is simply dummy text..."
+     * )
+     *
+     * @var string|null
+     */
+    public $description;
+
+    /**
+     * @OA\Property(
+     *     title="Images",
+     *     description="Ingredient images",
+     *     type="array",
+     *     @OA\Items(ref="#/components/schemas/ProductImage")
+     * )
+     *
+     * @var array
+     */
+    public $images;
+
+    /**
+     * @OA\Property(
+     *     title="Category Image",
+     *     description="Ingredient category image",
+     *     type="object",
+     *     nullable=true
+     * )
+     *
+     * @var object|null
+     */
+    public $category_image;
+
+    /**
+     * @OA\Property(
+     *     title="Show as Big in Category",
+     *     description="Whether to show as big item in category listing",
+     *     example=false
+     * )
+     *
+     * @var bool
+     */
+    public $show_as_big_in_category;
+
+    /**
+     * @OA\Property(
+     *     title="Is Half Portion",
+     *     description="Whether ingredient is half portion",
+     *     example=false
+     * )
+     *
+     * @var bool
+     */
+    public $is_half_portion;
+
+    /**
+     * @OA\Property(
+     *     title="Half Portion Pair Product ID",
+     *     description="ID of paired half/full portion product",
+     *     format="int64",
+     *     nullable=true
+     * )
+     *
+     * @var int|null
+     */
+    public $half_portion_pair_product_id;
+
+    /**
+     * @OA\Property(
+     *     title="Attributes",
+     *     description="Ingredient attributes with options",
+     *     type="array"
+     * )
+     *
+     * @var array
+     */
+    public $attributes;
 }

@@ -64,7 +64,11 @@ class NomenclatureController extends CatalogController
      */
     protected function getProducts(string $channelCode, string $locale)
     {
-        return Product::with(['images', 'attribute_family', 'price_indices', 'inventory_indices'])
+        return Product::with([
+            'images', 'attribute_family', 'price_indices', 'inventory_indices',
+            'up_sells:id', 'cross_sells:id', 'drinks:id',
+            'constructor.groups.products:id',
+        ])
             ->whereHas('product_flats', function ($query) use ($channelCode, $locale) {
                 $query->where('channel', $channelCode)
                     ->where('locale', $locale)
