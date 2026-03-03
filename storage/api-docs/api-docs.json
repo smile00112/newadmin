@@ -4246,107 +4246,6 @@
                 ]
             }
         },
-        "/api/v1/checkout/table/bind": {
-            "post": {
-                "tags": [
-                    "Checkout"
-                ],
-                "summary": "Привязать номер стола к корзине",
-                "description": "Bind table number to the current customer's cart. Requires authenticated customer with active cart.",
-                "operationId": "bindTable",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "table_number"
-                                ],
-                                "properties": {
-                                    "table_number": {
-                                        "description": "Table number to bind to the cart",
-                                        "type": "integer",
-                                        "format": "int32",
-                                        "minimum": 1,
-                                        "example": 5
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/Cart"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Table number bound to cart successfully."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request (empty cart or validation error)"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Checkout"
-                ],
-                "summary": "Отвязать номер стола от корзины",
-                "description": "Unbind table number from the current customer's cart. Requires authenticated customer with active cart.",
-                "operationId": "unbindTable",
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/Cart"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Table number unbound from cart successfully."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request (empty cart)"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
         "/api/v1/customer/cart/cross-sell": {
             "get": {
                 "tags": [
@@ -7538,29 +7437,77 @@
                                                     "items": {
                                                         "properties": {
                                                             "product": {
-                                                                "description": "Product resource with full product details (id, sku, name, images, price, etc.)",
+                                                                "description": "ProductReviewResource structure (id, title, comment, name, status, product, customer, created_at, updated_at)",
                                                                 "properties": {
                                                                     "id": {
+                                                                        "description": "ID",
                                                                         "type": "integer",
                                                                         "example": 1
                                                                     },
-                                                                    "sku": {
+                                                                    "title": {
+                                                                        "description": "Title",
                                                                         "type": "string",
-                                                                        "example": "product-sku"
+                                                                        "example": "Great product",
+                                                                        "nullable": true
+                                                                    },
+                                                                    "comment": {
+                                                                        "description": "Comment",
+                                                                        "type": "string",
+                                                                        "example": "Nice quality",
+                                                                        "nullable": true
                                                                     },
                                                                     "name": {
+                                                                        "description": "Name",
                                                                         "type": "string",
-                                                                        "example": "Product Name"
+                                                                        "example": "Customer Name"
                                                                     },
-                                                                    "images": {
-                                                                        "type": "array",
-                                                                        "items": {
-                                                                            "type": "object"
-                                                                        }
+                                                                    "status": {
+                                                                        "description": "Status",
+                                                                        "type": "string",
+                                                                        "example": "approved"
                                                                     },
-                                                                    "price": {
-                                                                        "type": "number",
-                                                                        "example": 99.99
+                                                                    "product": {
+                                                                        "description": "Product details (ProductResource)",
+                                                                        "properties": {
+                                                                            "id": {
+                                                                                "type": "integer",
+                                                                                "example": 1
+                                                                            },
+                                                                            "sku": {
+                                                                                "type": "string",
+                                                                                "example": "product-sku"
+                                                                            },
+                                                                            "name": {
+                                                                                "type": "string",
+                                                                                "example": "Product Name"
+                                                                            },
+                                                                            "images": {
+                                                                                "type": "array",
+                                                                                "items": {
+                                                                                    "type": "object"
+                                                                                }
+                                                                            },
+                                                                            "price": {
+                                                                                "type": "number",
+                                                                                "example": 99.99
+                                                                            }
+                                                                        },
+                                                                        "type": "object"
+                                                                    },
+                                                                    "customer": {
+                                                                        "description": "Customer resource when customer_id is set",
+                                                                        "type": "object",
+                                                                        "nullable": true
+                                                                    },
+                                                                    "created_at": {
+                                                                        "type": "string",
+                                                                        "format": "date-time",
+                                                                        "example": "2025-01-15T10:30:00.000000Z"
+                                                                    },
+                                                                    "updated_at": {
+                                                                        "type": "string",
+                                                                        "format": "date-time",
+                                                                        "example": "2025-01-15T10:30:00.000000Z"
                                                                     }
                                                                 },
                                                                 "type": "object"
@@ -8699,6 +8646,61 @@
                             "carbs": 5
                         },
                         "nullable": true
+                    },
+                    "short_description": {
+                        "title": "Short Description",
+                        "description": "Ingredient short description without HTML",
+                        "type": "string",
+                        "example": "What is Lorem Ipsum?",
+                        "nullable": true
+                    },
+                    "description": {
+                        "title": "Description",
+                        "description": "Ingredient description without HTML",
+                        "type": "string",
+                        "example": "Lorem Ipsum is simply dummy text...",
+                        "nullable": true
+                    },
+                    "images": {
+                        "title": "Images",
+                        "description": "Ingredient images",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductImage"
+                        }
+                    },
+                    "category_image": {
+                        "title": "Category Image",
+                        "description": "Ingredient category image",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "show_as_big_in_category": {
+                        "title": "Show as Big in Category",
+                        "description": "Whether to show as big item in category listing",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_half_portion": {
+                        "title": "Is Half Portion",
+                        "description": "Whether ingredient is half portion",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "half_portion_pair_product_id": {
+                        "title": "Half Portion Pair Product ID",
+                        "description": "ID of paired half/full portion product",
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "attributes": {
+                        "title": "Attributes",
+                        "description": "Ingredient attributes with options",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
                     }
                 },
                 "type": "object"
@@ -8771,6 +8773,135 @@
                         "description": "Whether product is in stock",
                         "type": "boolean",
                         "example": true
+                    },
+                    "short_description": {
+                        "title": "Short Description",
+                        "description": "Product short description without HTML",
+                        "type": "string",
+                        "example": "What is Lorem Ipsum?",
+                        "nullable": true
+                    },
+                    "description": {
+                        "title": "Description",
+                        "description": "Product description without HTML",
+                        "type": "string",
+                        "example": "Lorem Ipsum is simply dummy text...",
+                        "nullable": true
+                    },
+                    "images": {
+                        "title": "Images",
+                        "description": "Product images",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductImage"
+                        }
+                    },
+                    "videos": {
+                        "title": "Videos",
+                        "description": "Product videos",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductVideo"
+                        }
+                    },
+                    "category_image": {
+                        "title": "Category Image",
+                        "description": "Product category image",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "show_as_big_in_category": {
+                        "title": "Show as Big in Category",
+                        "description": "Whether to show product as big item in category listing",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_half_portion": {
+                        "title": "Is Half Portion",
+                        "description": "Whether product is half portion",
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "half_portion_pair_product_id": {
+                        "title": "Half Portion Pair Product ID",
+                        "description": "ID of paired half/full portion product",
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "show_quantity_changer": {
+                        "title": "Show Quantity Changer",
+                        "description": "Whether to show quantity selector",
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "attributes": {
+                        "title": "Attributes",
+                        "description": "Product attributes with options",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "nutrition": {
+                        "title": "Nutrition",
+                        "description": "Nutrition information",
+                        "type": "object",
+                        "example": {
+                            "calories": 25.5,
+                            "proteins": 1.2,
+                            "fats": 0.3,
+                            "carbs": 5
+                        },
+                        "nullable": true
+                    },
+                    "up_sells": {
+                        "title": "Up Sells",
+                        "description": "Array of product IDs for up-sell products",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "cross_sells": {
+                        "title": "Cross Sells",
+                        "description": "Array of product IDs for cross-sell products",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "example": [
+                            4,
+                            5
+                        ]
+                    },
+                    "drinks": {
+                        "title": "Drinks",
+                        "description": "Array of product IDs for linked drinks",
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "example": [
+                            27,
+                            28
+                        ]
+                    },
+                    "constructor_options": {
+                        "title": "Constructor Options",
+                        "description": "Constructor product options; each group has product_ids array instead of full product objects",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
                     }
                 },
                 "type": "object"
@@ -8923,6 +9054,32 @@
                         "description": "Whether to show product as big item in category listing",
                         "type": "boolean",
                         "example": false
+                    },
+                    "up_sells": {
+                        "title": "Up Sells",
+                        "description": "List of up-sell product IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            12,
+                            25,
+                            31
+                        ]
+                    },
+                    "cross_sells": {
+                        "title": "Cross Sells",
+                        "description": "List of cross-sell product IDs",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            4,
+                            7,
+                            8
+                        ]
                     },
                     "is_half_portion": {
                         "title": "Is Half Portion",
@@ -9449,6 +9606,36 @@
                                                 "description": "Half portions available",
                                                 "type": "boolean"
                                             },
+                                            "ingredients_incompatibilities_id": {
+                                                "description": "Incompatibility template ID",
+                                                "type": "integer",
+                                                "nullable": true
+                                            },
+                                            "sale_by_sizes": {
+                                                "description": "Enable selling by portion sizes",
+                                                "type": "boolean"
+                                            },
+                                            "portion_sizes": {
+                                                "description": "List of portion sizes",
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "name": {
+                                                            "description": "Portion size name",
+                                                            "type": "string"
+                                                        },
+                                                        "quantity": {
+                                                            "description": "Portion quantity",
+                                                            "type": "integer"
+                                                        },
+                                                        "weight": {
+                                                            "description": "Portion weight",
+                                                            "type": "integer"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
                                             "products": {
                                                 "description": "Products in group",
                                                 "type": "array",
@@ -9633,6 +9820,20 @@
                                         "sort": 1,
                                         "double_portions": false,
                                         "half_portions": false,
+                                        "ingredients_incompatibilities_id": null,
+                                        "sale_by_sizes": true,
+                                        "portion_sizes": [
+                                            {
+                                                "name": "Маленькая",
+                                                "quantity": 1,
+                                                "weight": 250
+                                            },
+                                            {
+                                                "name": "Большая",
+                                                "quantity": 2,
+                                                "weight": 500
+                                            }
+                                        ],
                                         "products": [
                                             {
                                                 "id": 25,
