@@ -6,9 +6,11 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Product\Facades\ProductImage;
 use Webkul\Product\Helpers\BundleOption;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\Concerns\ProductResourceFields;
 
 class ProductResource extends JsonResource
 {
+    use ProductResourceFields;
     /**
      * Transform the resource into an array.
      *
