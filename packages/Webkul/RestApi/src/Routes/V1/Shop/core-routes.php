@@ -8,6 +8,15 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Core\CountryStateController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Core\CurrencyController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Core\LocaleController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Core\ThemeController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\WebSocketController;
+
+/**
+ * WebSocket info routes.
+ */
+Route::controller(WebSocketController::class)->prefix('websocket')->group(function () {
+    Route::get('info', 'info');
+    Route::get('events', 'events');
+});
 
 /**
  * Core configs.
