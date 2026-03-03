@@ -4,6 +4,7 @@ namespace Webkul\Bonus\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Webkul\Bonus\Listeners\Order as BonusOrderListener;
 
 class BonusServiceProvider extends ServiceProvider
@@ -19,7 +20,8 @@ class BonusServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom(__DIR__ . '/../Resources/lang', 'bonus');
         $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'bonus');
 
-        $this->loadRoutesFrom(__DIR__ . '/../Routes/admin-routes.php');
+        Route::middleware(['web', \Webkul\Core\Http\Middleware\PreventRequestsDuringMaintenance::class])
+            ->group(__DIR__ . '/../Routes/admin-routes.php');
 
         $this->registerEvents();
     }

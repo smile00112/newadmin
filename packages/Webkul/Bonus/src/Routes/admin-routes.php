@@ -1,17 +1,17 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Webkul\Admin\Http\Controllers\ConfigurationController;
+use Webkul\Core\Http\Middleware\NoCacheMiddleware;
 use Webkul\Bonus\Http\Controllers\Admin\BonusLevelController;
 use Webkul\Bonus\Http\Controllers\Admin\BonusManageController;
 use Webkul\Bonus\Http\Controllers\Admin\BonusSettingController;
 use Webkul\Bonus\Http\Controllers\Admin\BonusTransactionController;
 
-Route::group( ['prefix' => config('app.admin_url')], function () {
-    Route::get('configuration/bonus/general', [ConfigurationController::class, 'index'])
-        ->defaults('slug', 'bonus')
-        ->defaults('slug2', 'general')
-        ->name('admin.bonus.settings.index');
+Route::group(['middleware' => ['admin', NoCacheMiddleware::class], 'prefix' => config('app.admin_url')], function () {
+    Route::controller(BonusSettingController::class)->prefix('bonus/settings')->group(function () {
+        Route::get('{tab?}', 'index')->name('admin.bonus.settings.index');
+        Route::post('{tab?}', 'store')->name('admin.bonus.settings.store');
+    });
 
     Route::prefix('bonus')->group(function () {
         Route::get('levels', [BonusLevelController::class, 'index'])->name('admin.bonus.levels.index');
