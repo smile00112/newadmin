@@ -42,6 +42,8 @@ Route::prefix('sales')->group(function () {
 
         Route::get('view/{id}', 'view')->name('admin.sales.orders.view');
 
+        Route::get('quick-view/{id}', 'quickView')->name('admin.sales.orders.quick_view');
+
         Route::post('cancel/{id}', 'cancel')->name('admin.sales.orders.cancel');
 
         Route::get('reorder/{id}', 'reorder')->name('admin.sales.orders.reorder');

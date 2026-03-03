@@ -201,14 +201,31 @@
                                 >
                                 </div>
 
-                                <a 
-                                    :href="`{{ route('admin.sales.orders.view', '') }}/${record.id}`"
-                                    class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center group-hover:bg-violet-100 dark:group-hover:bg-violet-900/30 transition-colors duration-200"
-                                >
-                                    <svg class="w-4 h-4 text-gray-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </a>
+                                <div class="flex items-center gap-2">
+                                    <!-- Quick View Button (>) -->
+                                    <a 
+                                        href="javascript:void(0)"
+                                        @click="$emitter.emit('open-order-quick-view', record)"
+                                        class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors duration-200"
+                                        title="Быстрый просмотр"
+                                    >
+                                        <svg class="w-4 h-4 text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </a>
+
+                                    <!-- Edit Button (pencil → navigate to full page) -->
+                                    <a 
+                                        :href="`{{ route('admin.sales.orders.view', '') }}/${record.id}`"
+                                        class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200"
+                                        title="Открыть заказ"
+                                    >
+                                        <svg class="w-4 h-4 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -217,9 +234,280 @@
         </template>
     </x-admin::datagrid>
 
+    <!-- Order Quick View Modal -->
+    <v-order-quick-view></v-order-quick-view>
+
     @include('admin::customers.customers.index.create')
 
     @pushOnce('scripts')
+        <!-- Order Quick View Component -->
+        <script type="text/x-template" id="v-order-quick-view-template">
+            <x-admin::modal ref="orderQuickViewModal">
+                <x-slot:header>
+                    <div class="flex items-center justify-between w-full">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
+                                <span class="text-white font-bold text-sm">#@{{ order.increment_id }}</span>
+                            </div>
+                            <div>
+                                <p class="text-lg font-bold text-gray-800 dark:text-white">
+                                    Заказ #@{{ order.increment_id }}
+                                </p>
+                                <p class="text-xs text-gray-500">@{{ order.created_at }}</p>
+                            </div>
+                        </div>
+                        <span 
+                            class="px-3 py-1 rounded-full text-xs font-semibold"
+                            :style="getStatusStyle(order.status)"
+                        >
+                            @{{ order.status_label }}
+                        </span>
+                    </div>
+                </x-slot>
+
+                <x-slot:content>
+                    <!-- Status Change -->
+                    <div v-if="!isLoading && order.id" class="flex items-center gap-2 mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">Статус:</label>
+                        <select
+                            v-model="selectedStatus"
+                            class="flex-1 px-3 py-1.5 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                        >
+                            <option value="pending">Новый</option>
+                            <option value="pending_payment">Ожидание оплаты</option>
+                            <option value="processing">В обработке</option>
+                            <option value="preparing">Готовится</option>
+                            <option value="ready">Готов</option>
+                            <option value="completed">Завершён</option>
+                            <option value="canceled">Отменён</option>
+                            <option value="closed">Закрыт</option>
+                        </select>
+                        <button
+                            @click="saveStatus"
+                            :disabled="isSavingStatus || selectedStatus === order.status"
+                            class="flex items-center gap-1.5 px-4 py-1.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-500 to-violet-600 rounded-lg hover:from-violet-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                        >
+                            <svg v-if="isSavingStatus" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span v-else>Сохранить</span>
+                        </button>
+                    </div>
+
+                    <!-- Loading -->
+                    <div v-if="isLoading" class="flex items-center justify-center py-20">
+                        <svg class="w-8 h-8 animate-spin text-violet-500" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+
+                    <div v-else class="space-y-5">
+                        <!-- Customer Info -->
+                        <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                                @{{ order.customer_name ? order.customer_name.charAt(0).toUpperCase() : '?' }}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">@{{ order.customer_name }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@{{ order.customer_email }}</p>
+                            </div>
+                            <div class="ml-auto text-right">
+                                <p class="text-xs text-gray-500">Оплата</p>
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">@{{ order.payment_method }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Order Items -->
+                        <div>
+                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                Товары (@{{ order.items ? order.items.length : 0 }})
+                            </p>
+                            <div class="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                                <div 
+                                    v-for="item in order.items" 
+                                    :key="item.id"
+                                    class="flex items-center gap-3 p-2.5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl"
+                                >
+                                    <div v-if="item.image_url" class="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden">
+                                        <img :src="item.image_url" class="w-full h-full object-cover" />
+                                    </div>
+                                    <div v-else class="flex-shrink-0 w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">@{{ item.name }}</p>
+                                        <p class="text-xs text-gray-500">@{{ item.qty }} × @{{ item.price }}</p>
+                                    </div>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">@{{ item.total }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Подитог</span>
+                                <span class="text-gray-700 dark:text-gray-300">@{{ order.sub_total }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Налог</span>
+                                <span class="text-gray-700 dark:text-gray-300">@{{ order.tax_amount }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Скидка</span>
+                                <span class="text-gray-700 dark:text-gray-300">@{{ order.discount }}</span>
+                            </div>
+                            <div class="flex justify-between text-base font-bold pt-2 border-t border-gray-100 dark:border-gray-800">
+                                <span class="text-gray-900 dark:text-white">Итого</span>
+                                <span class="text-violet-600 dark:text-violet-400">@{{ order.grand_total }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Оплачено</span>
+                                <span class="text-emerald-600">@{{ order.total_paid }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">К оплате</span>
+                                <span class="text-orange-600 font-medium">@{{ order.total_due }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Addresses -->
+                        <div v-if="order.shipping_address || order.billing_address" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div v-if="order.shipping_address" class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1.5">Адрес доставки</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">@{{ order.shipping_address.name }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5">@{{ order.shipping_address.address }}</p>
+                                <p v-if="order.shipping_address.phone" class="text-xs text-gray-500 mt-0.5">@{{ order.shipping_address.phone }}</p>
+                            </div>
+                            <div v-if="order.billing_address" class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1.5">Адрес оплаты</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">@{{ order.billing_address.name }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5">@{{ order.billing_address.address }}</p>
+                                <p v-if="order.billing_address.phone" class="text-xs text-gray-500 mt-0.5">@{{ order.billing_address.phone }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Open Full Page Link -->
+                        <div class="pt-2">
+                            <a 
+                                :href="`{{ route('admin.sales.orders.view', '') }}/${order.id}`"
+                                class="flex items-center justify-center gap-2 w-full py-2.5 text-sm font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors duration-200"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Открыть полную страницу заказа
+                            </a>
+                        </div>
+                    </div>
+                </x-slot>
+            </x-admin::modal>
+        </script>
+
+        <script type="module">
+            app.component('v-order-quick-view', {
+                template: '#v-order-quick-view-template',
+
+                data() {
+                    return {
+                        order: {},
+                        isLoading: false,
+                        selectedStatus: '',
+                        isSavingStatus: false,
+                    };
+                },
+
+                mounted() {
+                    this.$emitter.on('open-order-quick-view', (record) => {
+                        this.openQuickView(record);
+                    });
+                },
+
+                methods: {
+                    openQuickView(record) {
+                        this.order = {};
+                        this.isLoading = true;
+                        this.selectedStatus = '';
+                        this.$refs.orderQuickViewModal.toggle();
+
+                        this.$axios.get(`{{ route('admin.sales.orders.quick_view', '') }}/${record.id}`)
+                            .then((response) => {
+                                this.order = response.data;
+                                this.selectedStatus = response.data.status;
+                                this.isLoading = false;
+                            })
+                            .catch((error) => {
+                                this.isLoading = false;
+                                this.$emitter.emit('add-flash', {
+                                    type: 'error',
+                                    message: 'Не удалось загрузить данные заказа'
+                                });
+                            });
+                    },
+
+                    saveStatus() {
+                        if (!this.order.id || this.selectedStatus === this.order.status) return;
+
+                        this.isSavingStatus = true;
+
+                        this.$axios.post(`{{ route('admin.sales.orders.update_status', '') }}/${this.order.id}`, {
+                            status: this.selectedStatus,
+                        }, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                            }
+                        })
+                            .then((response) => {
+                                this.isSavingStatus = false;
+
+                                if (response.data.success) {
+                                    this.order.status = response.data.status;
+                                    this.order.status_label = response.data.status_label;
+
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'success',
+                                        message: response.data.message
+                                    });
+
+                                    // Refresh datagrid without page reload
+                                    this.$emitter.emit('datagrid:refresh');
+                                } else {
+                                    this.$emitter.emit('add-flash', {
+                                        type: 'warning',
+                                        message: response.data.message
+                                    });
+                                }
+                            })
+                            .catch((error) => {
+                                this.isSavingStatus = false;
+                                this.$emitter.emit('add-flash', {
+                                    type: 'error',
+                                    message: error.response?.data?.message || 'Ошибка при обновлении статуса'
+                                });
+                            });
+                    },
+
+                    getStatusStyle(status) {
+                        const styles = {
+                            'pending':         { background: '#fef3c7', color: '#b45309' },
+                            'pending_payment': { background: '#fef3c7', color: '#b45309' },
+                            'processing':      { background: '#dbeafe', color: '#1d4ed8' },
+                            'preparing':       { background: '#e0e7ff', color: '#4338ca' },
+                            'ready':           { background: '#d1fae5', color: '#047857' },
+                            'completed':       { background: '#d1fae5', color: '#047857' },
+                            'canceled':        { background: '#ffe4e6', color: '#be123c' },
+                            'closed':          { background: '#f3f4f6', color: '#374151' },
+                        };
+                        return styles[status] || { background: '#f3f4f6', color: '#374151' };
+                    },
+                },
+            });
+        </script>
+
         <!-- Global functions for order selection -->
         <script>
             // Store for selected orders

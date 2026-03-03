@@ -186,6 +186,72 @@ class OrderController extends Controller
     }
 
     /**
+     * Quick view JSON for modal preview.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function quickView(int $id)
+    {
+        $order = $this->orderRepository->with(['items', 'items.product', 'payment', 'addresses'])->findOrFail($id);
+
+        $items = $order->items->map(function ($item) {
+            $imageUrl = null;
+
+            if ($item->product?->category_image) {
+                $imageUrl = \Illuminate\Support\Facades\Storage::url($item->product->category_image);
+            } elseif ($item->product?->base_image_url) {
+                $imageUrl = $item->product->base_image_url;
+            }
+
+            return [
+                'id'            => $item->id,
+                'name'          => $item->name,
+                'sku'           => $item->sku,
+                'qty'           => $item->qty_ordered,
+                'price'         => core()->formatBasePrice($item->base_price),
+                'total'         => core()->formatBasePrice($item->base_total + $item->base_tax_amount - $item->base_discount_amount),
+                'image_url'     => $imageUrl,
+            ];
+        });
+
+        $shippingAddress = $order->shipping_address;
+        $billingAddress  = $order->billing_address;
+
+        $paymentTitle = '';
+        if ($order->payment) {
+            $paymentTitle = core()->getConfigData('sales.payment_methods.' . $order->payment->method . '.title') ?? $order->payment->method;
+        }
+
+        return response()->json([
+            'id'               => $order->id,
+            'increment_id'     => $order->increment_id,
+            'status'           => $order->status,
+            'status_label'     => trans('admin::app.sales.orders.view.' . $order->status),
+            'created_at'       => $order->created_at->format('d.m.Y H:i'),
+            'customer_name'    => $order->customer_first_name . ' ' . $order->customer_last_name,
+            'customer_email'   => $order->customer_email,
+            'payment_method'   => $paymentTitle,
+            'sub_total'        => core()->formatBasePrice($order->base_sub_total),
+            'tax_amount'       => core()->formatBasePrice($order->base_tax_amount),
+            'discount'         => core()->formatBasePrice($order->base_discount_amount),
+            'grand_total'      => core()->formatBasePrice($order->base_grand_total),
+            'total_paid'       => core()->formatBasePrice($order->base_grand_total_invoiced),
+            'total_due'        => core()->formatBasePrice($order->status !== 'canceled' ? $order->base_total_due : 0),
+            'items'            => $items,
+            'shipping_address' => $shippingAddress ? [
+                'name'    => $shippingAddress->name,
+                'address' => implode(', ', array_filter([$shippingAddress->address1, $shippingAddress->city, $shippingAddress->state, $shippingAddress->postcode, $shippingAddress->country])),
+                'phone'   => $shippingAddress->phone,
+            ] : null,
+            'billing_address'  => $billingAddress ? [
+                'name'    => $billingAddress->name,
+                'address' => implode(', ', array_filter([$billingAddress->address1, $billingAddress->city, $billingAddress->state, $billingAddress->postcode, $billingAddress->country])),
+                'phone'   => $billingAddress->phone,
+            ] : null,
+        ]);
+    }
+
+    /**
      * Reorder action for the specified resource.
      *
      * @return \Illuminate\Http\Response
@@ -290,8 +356,14 @@ class OrderController extends Controller
 
         $newStatus = $validatedData['status'];
 
+        $isAjax = request()->ajax() || request()->expectsJson();
+
         // Проверяем, изменился ли статус
         if ($order->status === $newStatus) {
+            if ($isAjax) {
+                return response()->json(['message' => 'Статус не изменён'], 200);
+            }
+
             session()->flash('info', trans('admin::app.sales.orders.view.status-not-changed'));
 
             return redirect()->route('admin.sales.orders.view', $id);
@@ -300,8 +372,21 @@ class OrderController extends Controller
         try {
             $this->orderRepository->updateOrderStatus($order, $newStatus);
 
+            if ($isAjax) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Статус заказа обновлён',
+                    'status'  => $newStatus,
+                    'status_label' => trans('admin::app.sales.orders.view.' . $newStatus),
+                ]);
+            }
+
             session()->flash('success', trans('admin::app.sales.orders.view.status-updated-success'));
         } catch (\Exception $e) {
+            if ($isAjax) {
+                return response()->json(['message' => 'Ошибка при обновлении статуса: ' . $e->getMessage()], 500);
+            }
+
             session()->flash('error', trans('admin::app.sales.orders.view.status-update-error'));
         }
 
