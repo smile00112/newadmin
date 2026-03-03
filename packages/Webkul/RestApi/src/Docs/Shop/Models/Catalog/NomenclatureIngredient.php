@@ -209,7 +209,8 @@ class NomenclatureIngredient
      * @OA\Property(
      *     title="Attributes",
      *     description="Ingredient attributes with options",
-     *     type="array"
+     *     type="array",
+     *     @OA\Items(type="object")
      * )
      *
      * @var array

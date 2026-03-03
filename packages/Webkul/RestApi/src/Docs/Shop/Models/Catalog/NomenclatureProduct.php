@@ -212,7 +212,8 @@ class NomenclatureProduct
      * @OA\Property(
      *     title="Attributes",
      *     description="Product attributes with options",
-     *     type="array"
+     *     type="array",
+     *     @OA\Items(type="object")
      * )
      *
      * @var array
@@ -275,7 +276,8 @@ class NomenclatureProduct
      * @OA\Property(
      *     title="Constructor Options",
      *     description="Constructor product options; each group has product_ids array instead of full product objects",
-     *     type="array"
+     *     type="array",
+     *     @OA\Items(type="object")
      * )
      *
      * @var array
