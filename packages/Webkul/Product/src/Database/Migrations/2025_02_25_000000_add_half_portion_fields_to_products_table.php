@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('is_half_portion')->default(false)->after('category_image');
+            $table->boolean('is_half_portion')->default(false)->after('additional');
             $table->unsignedInteger('half_portion_pair_product_id')->nullable()->after('is_half_portion');
         });
 
