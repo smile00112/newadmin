@@ -27,6 +27,8 @@ class NomenclatureIngredientResource extends JsonResource
             'formatted_price' => core()->currency($productTypeInstance->getMinimalPrice()),
             'base_image'      => ProductImage::getProductBaseImage($product),
             'in_stock'        => $product->haveSufficientQuantity(1),
+            'weight'          => $product->weight !== null ? (float) $product->weight : null,
+            'volume'          => $product->volume !== null && $product->volume !== '' ? (float) $product->volume : null,
             'videos'          => ProductVideoResource::collection($product->videos),
             'nutrition'       => $this->getNutritionData($product),
         ];

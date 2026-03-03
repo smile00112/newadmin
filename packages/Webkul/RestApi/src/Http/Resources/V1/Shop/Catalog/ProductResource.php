@@ -66,6 +66,10 @@ class ProductResource extends JsonResource
             /* nutrition information (КЖБУ) */
             'nutrition' => $this->getNutritionData($product),
 
+            /* weight and volume from attributes */
+            'weight' => $product->weight !== null ? (float) $product->weight : null,
+            'volume' => $product->volume !== null && $product->volume !== '' ? (float) $product->volume : null,
+
             /* product's extra information */
             $this->merge($this->allProductExtraInfo($product, $productTypeInstance)),
 

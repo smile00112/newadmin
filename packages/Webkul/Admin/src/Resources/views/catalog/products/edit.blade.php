@@ -215,9 +215,8 @@
 
                                 @php
                                     $style = '';
-                                    if(in_array($attribute->code, ['sku', 'tax', 'product_number', 'url_key', 'tax_category_id', 'weight', 'color', 'brand', 'size', 'length', 'width', 'height'])){
+                                    if(in_array($attribute->code, ['sku', 'tax', 'product_number', 'url_key', 'tax_category_id', 'color', 'brand', 'size', 'length', 'width', 'height'])){
                                         $style = 'display: none';
-
                                     }
 
                                     $class = 'last:!mb-0';
