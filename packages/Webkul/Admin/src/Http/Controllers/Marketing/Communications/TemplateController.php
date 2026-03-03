@@ -64,9 +64,9 @@ class TemplateController extends Controller
 
         Event::dispatch('marketing.templates.create.after', $template);
 
-        session()->flash('success', trans('admin::app.marketing.communications.templates.create.create-success'));
-
-        return redirect()->route('admin.marketing.communications.email_templates.index');
+        return new JsonResponse([
+            'message' => trans('admin::app.marketing.communications.templates.create.create-success'),
+        ]);
     }
 
     /**
@@ -78,7 +78,9 @@ class TemplateController extends Controller
     {
         $template = $this->templateRepository->findOrFail($id);
 
-        return view('admin::marketing.communications.templates.edit', compact('template'));
+        return new JsonResponse([
+            'data' => $template,
+        ]);
     }
 
     /**
@@ -104,9 +106,9 @@ class TemplateController extends Controller
 
         Event::dispatch('marketing.templates.update.after', $template);
 
-        session()->flash('success', trans('admin::app.marketing.communications.templates.edit.update-success'));
-
-        return redirect()->route('admin.marketing.communications.email_templates.index');
+        return new JsonResponse([
+            'message' => trans('admin::app.marketing.communications.templates.edit.update-success'),
+        ]);
     }
 
     /**
