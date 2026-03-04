@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'Paket',
         'booking'      => 'Rezervasyon',
-        'configurable' => 'Yapılandırılabilir',
-        'downloadable' => 'İndirilebilir',
+        'configurable'             => 'Yapılandırılabilir',
+        'configurable_constructor' => 'Yapılandırılabilir + Yapıcı',
+        'downloadable'             => 'İndirilebilir',
         'grouped'      => 'Gruplandırılmış',
         'simple'       => 'Basit',
         'virtual'      => 'Sanal',

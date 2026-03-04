@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'حزمة',
         'booking'      => 'الحجز',
-        'configurable' => 'قابل للتكوين',
-        'downloadable' => 'قابل للتنزيل',
+        'configurable'             => 'قابل للتكوين',
+        'configurable_constructor' => 'قابل للتكوين + المنشئ',
+        'downloadable'             => 'قابل للتنزيل',
         'grouped'      => 'مجمع',
         'simple'       => 'بسيط',
         'virtual'      => 'افتراضي',

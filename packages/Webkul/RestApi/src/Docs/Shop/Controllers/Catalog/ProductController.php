@@ -287,7 +287,7 @@ class ProductController
      *      operationId="getShopProductConfigurableOptions",
      *      tags={"Products"},
      *      summary="Get configurable product options by id",
-     *      description="Returns configurable product options by id",
+     *      description="Returns configurable / configurable_constructor product options by id",
      *
      *      @OA\Parameter(
      *          name="id",

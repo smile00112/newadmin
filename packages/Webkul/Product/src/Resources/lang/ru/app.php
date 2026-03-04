@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'Набор',
         'booking'      => 'Бронирование',
-        'configurable' => 'Настроенный',
-        'downloadable' => 'Загружаемый',
+        'configurable'             => 'Настроенный',
+        'configurable_constructor' => 'Настроенный + Конструктор',
+        'downloadable'             => 'Загружаемый',
         'grouped'      => 'Группированный',
         'simple'       => 'Простой',
         'virtual'      => 'Виртуальный',

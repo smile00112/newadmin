@@ -37,7 +37,7 @@ class Product
      * @OA\Property(
      *     title="Type",
      *     description="Product type",
-     *     enum={"simple", "configurable", "virtual", "grouped", "downloadable", "bundle", "booking", "constructor"}
+     *     enum={"simple", "configurable", "virtual", "grouped", "downloadable", "bundle", "booking", "constructor", "configurable_constructor"}
      * )
      *
      * @var string
