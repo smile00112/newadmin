@@ -3,6 +3,7 @@
 namespace Webkul\AlfabankPayment\Payment;
 
 use Illuminate\Foundation\ViteException;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Webkul\AlfabankPayment\Services\AlfabankApiService;
 use Webkul\AlfabankPayment\Services\SavedCardsService;
@@ -66,6 +67,11 @@ class AlfabankPayment extends Payment
 
                 return '';
             }
+
+            Log::warning('Alfabank getRedirectUrl func', [
+                '$orderData' => $orderData,
+                '$response' => $response
+            ]);
 
             if (empty($response['formUrl'])) {
                 \Log::error('Alfabank payment registration: no formUrl in response', $response);
