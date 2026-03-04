@@ -20,7 +20,7 @@ use Webkul\Newsletters\Http\Controllers\LandingPageController;
 /**
  * Public landing page routes.
  */
-Route::group(['prefix' => 'mailing-service'], function () {
+Route::group(['prefix' => 'mailing-service', 'middleware' => ['web']], function () {
     Route::controller(LandingPageController::class)->group(function () {
         Route::get('', 'index')->name('newsletters.landing.index');
         Route::post('register', 'store')->name('newsletters.landing.register');

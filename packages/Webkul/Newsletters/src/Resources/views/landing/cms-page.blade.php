@@ -692,6 +692,8 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
+                    console.log(result);
+
                     if (result.redirect_url) {
                         window.location.href = result.redirect_url;
                     } else {
