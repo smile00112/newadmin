@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'Пакет',
         'booking'      => 'Бронювання',
-        'configurable' => 'Налагоджуваний',
-        'downloadable' => 'Завантажуваний',
+        'configurable'             => 'Налагоджуваний',
+        'configurable_constructor' => 'Налагоджуваний + Конструктор',
+        'downloadable'             => 'Завантажуваний',
         'grouped'      => 'Групований',
         'simple'       => 'Простий',
         'virtual'      => 'Віртуальний',

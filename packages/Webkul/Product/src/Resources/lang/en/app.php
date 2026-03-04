@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'Bundle',
         'booking'      => 'Booking',
-        'configurable' => 'Configurable',
-        'downloadable' => 'Downloadable',
+        'configurable'             => 'Configurable',
+        'configurable_constructor' => 'Configurable + Constructor',
+        'downloadable'             => 'Downloadable',
         'grouped'      => 'Grouped',
         'simple'       => 'Simple',
         'virtual'      => 'Virtual',

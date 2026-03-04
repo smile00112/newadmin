@@ -157,10 +157,10 @@ class ProductController
      *
      *                  @OA\Property(
      *                      property="type",
-     *                      description="Product's type i.e. `simple`, `configurable`, `virtual`, `grouped`, `downloadable`, `bundle`, `booking`",
+     *                      description="Product's type i.e. `simple`, `configurable`, `virtual`, `grouped`, `downloadable`, `bundle`, `booking`, `constructor`, `ingredient`, `configurable_constructor`",
      *                      type="string",
      *                      example="simple",
-     *                      enum={"simple", "configurable", "virtual", "grouped", "downloadable", "bundle", "booking"}
+     *                      enum={"simple", "configurable", "virtual", "grouped", "downloadable", "bundle", "booking", "constructor", "ingredient", "configurable_constructor"}
      *                  ),
      *                  @OA\Property(
      *                      property="attribute_family_id",
@@ -176,7 +176,7 @@ class ProductController
      *                  ),
      *                  @OA\Property(
      *                      property="super_attributes",
-     *                      description="Product's super attributes `Only use with configurable type product`",
+     *                      description="Product's super attributes `Only use with configurable or configurable_constructor type product`",
      *                      type="object",
      *                      @OA\Property(
      *                          property="color",
@@ -208,7 +208,7 @@ class ProductController
      *                 example="Configurable",
      *                 summary="Configurable product",
      *                 value={
-     *                     "type": "Configurable",
+     *                     "type": "configurable",
      *                     "attribute_family_id": 1,
      *                     "sku": "furniture",
      *                     "super_attributes": {
@@ -218,6 +218,18 @@ class ProductController
      *                          "size": {
      *                              6,
      *                          },
+     *                      },
+     *                 },
+     *              ),
+     *               @OA\Examples(
+     *                 example="ConfigurableConstructor",
+     *                 summary="ConfigurableConstructor product",
+     *                 value={
+     *                     "type": "configurable_constructor",
+     *                     "attribute_family_id": 1,
+     *                     "sku": "pizza-margherita",
+     *                     "super_attributes": {
+     *                          "size": [4, 5]
      *                      },
      *                 },
      *              ),
@@ -604,8 +616,8 @@ class ProductController
      *     path="/api/v1/admin/catalog/products/{id}",
      *     operationId="updateOtherTypeProduct",
      *     tags={"Products"},
-     *     summary="Update product (Configurable, Grouped, Downloadable, Bundle, Booking)",
-     *     description="Update product (Configurable, Grouped, Downloadable, Bundle, Booking)",
+     *     summary="Update product (Configurable, Grouped, Downloadable, Bundle, Booking, Constructor, ConfigurableConstructor)",
+     *     description="Update product (Configurable, Grouped, Downloadable, Bundle, Booking, Constructor, ConfigurableConstructor)",
      *     security={{"sanctum_admin": {}}},
      *
      *     @OA\Parameter(
@@ -823,7 +835,7 @@ class ProductController
      *                  ),
      *                  @OA\Property(
      *                      property="variants",
-     *                      description="Product's variants, `Only use in case of configurable type product (required field)`",
+     *                      description="Product's variants, `Only use in case of configurable or configurable_constructor type product (required field)`",
      *                      type="object",
      *                      @OA\Property(
      *                          property="28",
@@ -1124,6 +1136,11 @@ class ProductController
      *                      @OA\Property(property="price_type", description="`Only use with booking type=table`", type="string", example="guest", enum={"guest", "table"}),
      *                      @OA\Property(property="guest_limit", description="`Only use with booking type=table & price_type=table`", type="integer", example=20),
      *                      @OA\Property(property="prevent_scheduling_before", description="`Only use with booking type=table`", type="float", example=5.00)
+     *                  ),
+     *                  @OA\Property(
+     *                      property="constructor",
+     *                      description="Constructor groups and products, `Info: Only use in constructor or configurable_constructor type product`",
+     *                      type="object"
      *                  ),
      *
      *             ),
@@ -1847,6 +1864,57 @@ class ProductController
      *                            }
      *                        }
      *                    }
+     *                 }
+     *             ),
+     *             @OA\Examples(
+     *                 example="ConfigurableConstructorProduct",
+     *                 summary="ConfigurableConstructor Product",
+     *                 value={
+     *                     "channel": "default",
+     *                     "locale": "en",
+     *                     "sku": "pizza-margherita",
+     *                     "product_number": "pm-001",
+     *                     "name": "Pizza Margherita",
+     *                     "url_key": "pizza-margherita",
+     *                     "status": 1,
+     *                     "short_description": "Customizable pizza",
+     *                     "description": "Pizza with variant sizes and constructor groups",
+     *                     "categories": [1, 2],
+     *                     "channels": [1],
+     *                     "variants": {
+     *                         "28": {
+     *                             "sku": "pizza-margherita-s",
+     *                             "name": "Small",
+     *                             "size": 4,
+     *                             "price": 8.5,
+     *                             "weight": 1,
+     *                             "status": 1,
+     *                             "inventories": {"1": 100}
+     *                         },
+     *                         "29": {
+     *                             "sku": "pizza-margherita-l",
+     *                             "name": "Large",
+     *                             "size": 5,
+     *                             "price": 12,
+     *                             "weight": 1.5,
+     *                             "status": 1,
+     *                             "inventories": {"1": 100}
+     *                         }
+     *                     },
+     *                     "constructor": {
+     *                         "option_0": {
+     *                             "visible": 1,
+     *                             "required": 1,
+     *                             "design": "category",
+     *                             "groups": {
+     *                                 "group_0": {
+     *                                     "name": "Toppings",
+     *                                     "field_type": "checkbox",
+     *                                     "products": [1, 2, 3]
+     *                                 }
+     *                             }
+     *                         }
+     *                     }
      *                 }
      *             ),
      *         )

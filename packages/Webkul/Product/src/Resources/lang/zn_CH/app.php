@@ -43,8 +43,9 @@ return [
 
         'bundle'       => '捆绑销售',
         'booking'      => '预订',
-        'configurable' => '可配置的',
-        'downloadable' => '可下载的',
+        'configurable'             => '可配置的',
+        'configurable_constructor' => '可配置的 + 构造器',
+        'downloadable'             => '可下载的',
         'grouped'      => '分组的',
         'simple'       => '简单的',
         'virtual'      => '虚拟的',

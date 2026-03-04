@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'बंडल',
         'booking'      => 'बुकिंग',
-        'configurable' => 'कॉन्फ़िगरेबल',
-        'downloadable' => 'डाउनलोडेबल',
+        'configurable'             => 'कॉन्फ़िगरेबल',
+        'configurable_constructor' => 'कॉन्फ़िगरेबल + कंस्ट्रक्टर',
+        'downloadable'             => 'डाउनलोडेबल',
         'grouped'      => 'समूहित',
         'simple'       => 'साधारित',
         'virtual'      => 'आभासी',

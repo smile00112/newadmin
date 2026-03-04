@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'バンドル',
         'booking'      => '予約',
-        'configurable' => '設定可能',
-        'downloadable' => 'ダウンロード可能',
+        'configurable'             => '設定可能',
+        'configurable_constructor' => '設定可能 + コンストラクター',
+        'downloadable'             => 'ダウンロード可能',
         'grouped'      => 'グループ化',
         'simple'       => 'シンプル',
         'virtual'      => '仮想',

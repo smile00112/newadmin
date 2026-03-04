@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'Bundle',
         'booking'      => 'Pemesanan',
-        'configurable' => 'Konfigurabel',
-        'downloadable' => 'Dapat Diunduh',
+        'configurable'             => 'Konfigurabel',
+        'configurable_constructor' => 'Konfigurabel + Konstruktor',
+        'downloadable'             => 'Dapat Diunduh',
         'grouped'      => 'Terkelompok',
         'simple'       => 'Sederhana',
         'virtual'      => 'Virtual',

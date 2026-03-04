@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'ארגז',
         'booking'      => 'הזמנה',
-        'configurable' => 'ניתן להגדיר',
-        'downloadable' => 'ניתן להוריד',
+        'configurable'             => 'ניתן להגדיר',
+        'configurable_constructor' => 'ניתן להגדיר + קונסטרוקטור',
+        'downloadable'             => 'ניתן להוריד',
         'grouped'      => 'מקובץ',
         'simple'       => 'פשוט',
         'virtual'      => 'וירטואלי',

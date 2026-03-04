@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'සම්පූර්ණය',
         'booking'      => 'බුකින්',
-        'configurable' => 'විකල්ප කළ හැක්කේ',
-        'downloadable' => 'බාගත කළ හැක්කේ',
+        'configurable'             => 'විකල්ප කළ හැක්කේ',
+        'configurable_constructor' => 'විකල්ප කළ හැක්කේ + constructor',
+        'downloadable'             => 'බාගත කළ හැක්කේ',
         'grouped'      => 'සමූහ කළ හැක්කේ',
         'simple'       => 'සරළු',
         'virtual'      => 'විදුහල්',

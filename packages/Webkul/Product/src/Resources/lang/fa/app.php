@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'بسته',
         'booking'      => 'رزرو',
-        'configurable' => 'پیکربندی‌پذیر',
-        'downloadable' => 'قابل دانلود',
+        'configurable'             => 'پیکربندی‌پذیر',
+        'configurable_constructor' => 'پیکربندی‌پذیر + سازنده',
+        'downloadable'             => 'قابل دانلود',
         'grouped'      => 'گروه‌بندی‌شده',
         'simple'       => 'ساده',
         'virtual'      => 'مجازی',

@@ -61,4 +61,10 @@ return [
         'class' => 'Webkul\Product\Type\Constructor',
         'sort'  => 9,
     ],
+    'configurable_constructor' => [
+        'key'   => 'configurable_constructor',
+        'name'  => 'product::app.type.configurable_constructor',
+        'class' => 'Webkul\Product\Type\ConfigurableConstructor',
+        'sort'  => 10,
+    ],
 ];

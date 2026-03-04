@@ -43,8 +43,9 @@ return [
 
         'bundle'       => 'Pack',
         'booking'      => 'Réservation',
-        'configurable' => 'Configurable',
-        'downloadable' => 'Téléchargeable',
+        'configurable'             => 'Configurable',
+        'configurable_constructor' => 'Configurable + Constructeur',
+        'downloadable'             => 'Téléchargeable',
         'grouped'      => 'Regroupé',
         'simple'       => 'Simple',
         'virtual'      => 'Virtuel',

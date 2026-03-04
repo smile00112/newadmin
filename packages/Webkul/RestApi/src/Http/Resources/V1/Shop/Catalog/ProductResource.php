@@ -85,7 +85,7 @@ class ProductResource extends JsonResource
 
             /* drinks for product */
             $this->mergeWhen(
-                in_array($product->type, ['simple', 'constructor', 'configurable', 'grouped', 'bundle']),
+                in_array($product->type, ['simple', 'constructor', 'configurable', 'configurable_constructor', 'grouped', 'bundle']),
                 $this->getDrinksInfo($product)
             ),
         ];
@@ -250,6 +250,17 @@ class ProductResource extends JsonResource
                 $productTypeInstance instanceof \Webkul\Product\Type\Constructor,
                 $product->type == 'constructor'
                     ? $this->getConstructorProductInfo($product)
+                    : null
+            ),
+
+            /* configurable_constructor product (variants + constructor_options) */
+            $this->mergeWhen(
+                $productTypeInstance instanceof \Webkul\Product\Type\ConfigurableConstructor,
+                $product->type === 'configurable_constructor'
+                    ? array_merge(
+                        $this->getConfigurableProductInfo($product),
+                        $this->getConstructorProductInfo($product)
+                    )
                     : null
             ),
         ];
