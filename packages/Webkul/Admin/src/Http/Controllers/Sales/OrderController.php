@@ -182,7 +182,48 @@ class OrderController extends Controller
     {
         $order = $this->orderRepository->findOrFail($id);
 
-        return view('admin::sales.orders.view', compact('order'));
+        // Customer metrics
+        $customerMetrics = null;
+        if ($order->customer_id) {
+            $customer = $order->customer;
+            $customerOrders = $this->orderRepository
+                ->where('customer_id', $order->customer_id)
+                ->get();
+
+            $totalSpent = $customerOrders->sum('base_grand_total');
+            $orderCount = $customerOrders->count();
+            $averageCheck = $orderCount > 0 ? $totalSpent / $orderCount : 0;
+            $lastOrderDate = $customerOrders->max('created_at');
+
+            $customerMetrics = [
+                'order_count'   => $orderCount,
+                'total_spent'   => core()->formatBasePrice($totalSpent),
+                'average_check' => core()->formatBasePrice($averageCheck),
+                'last_order'    => $lastOrderDate ? \Carbon\Carbon::parse($lastOrderDate)->format('d.m.Y') : '-',
+                'registered_at' => $customer?->created_at ? $customer->created_at->format('d.m.Y') : '-',
+                'phone'         => $order->shipping_address?->phone ?? $order->billing_address?->phone ?? null,
+            ];
+        }
+
+        // Available payment methods from config
+        $paymentMethods = [];
+        try {
+            $allPaymentConfigs = config('payment_methods', []);
+            foreach ($allPaymentConfigs as $code => $config) {
+                if (! empty($config['active'])) {
+                    $title = core()->getConfigData('sales.payment_methods.' . $code . '.title')
+                        ?? ($config['title'] ?? $code);
+                    $paymentMethods[] = [
+                        'code'  => $code,
+                        'title' => $title,
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            // fallback
+        }
+
+        return view('admin::sales.orders.view', compact('order', 'customerMetrics', 'paymentMethods'));
     }
 
     /**
@@ -425,6 +466,141 @@ class OrderController extends Controller
         session()->flash('success', trans('admin::app.sales.orders.view.unbind-table-success'));
 
         return redirect()->route('admin.sales.orders.view', $id);
+    }
+
+    /**
+     * Update payment method for an order (SPA).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePayment(int $id)
+    {
+        $order = $this->orderRepository->findOrFail($id);
+
+        $validatedData = $this->validate(request(), [
+            'method' => 'required|string',
+        ]);
+
+        try {
+            $order->payment->update(['method' => $validatedData['method']]);
+
+            $methodLabel = core()->getConfigData('sales.payment_methods.' . $validatedData['method'] . '.title') ?? $validatedData['method'];
+
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Способ оплаты обновлён',
+                'method_label' => $methodLabel,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Ошибка: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update order item quantities (SPA).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateItems(int $id)
+    {
+        $order = $this->orderRepository->findOrFail($id);
+
+        $validatedData = $this->validate(request(), [
+            'items'       => 'required|array|min:1',
+            'items.*.id'  => 'required|integer',
+            'items.*.qty' => 'required|integer|min:0',
+        ]);
+
+        try {
+            $newSubTotal = 0;
+            $newTaxTotal = 0;
+            $newDiscountTotal = 0;
+            $updatedItems = [];
+
+            foreach ($validatedData['items'] as $itemData) {
+                $item = $order->items()->findOrFail($itemData['id']);
+                $oldQty = $item->qty_ordered;
+                $newQty = $itemData['qty'];
+
+                if ($newQty !== $oldQty) {
+                    $pricePerUnit = $item->base_price;
+                    $taxPerUnit = $oldQty > 0 ? $item->base_tax_amount / $oldQty : 0;
+                    $discountPerUnit = $oldQty > 0 ? $item->base_discount_amount / $oldQty : 0;
+
+                    $item->update([
+                        'qty_ordered'          => $newQty,
+                        'base_total'           => $pricePerUnit * $newQty,
+                        'total'                => $pricePerUnit * $newQty,
+                        'base_tax_amount'      => $taxPerUnit * $newQty,
+                        'tax_amount'           => $taxPerUnit * $newQty,
+                        'base_discount_amount' => $discountPerUnit * $newQty,
+                        'discount_amount'      => $discountPerUnit * $newQty,
+                        'base_total_incl_tax'  => ($pricePerUnit + $taxPerUnit) * $newQty,
+                        'total_incl_tax'       => ($pricePerUnit + $taxPerUnit) * $newQty,
+                    ]);
+                }
+
+                $item->refresh();
+                $newSubTotal += $item->base_total;
+                $newTaxTotal += $item->base_tax_amount;
+                $newDiscountTotal += $item->base_discount_amount;
+
+                $imageUrl = null;
+                if ($item->product?->category_image) {
+                    $imageUrl = \Illuminate\Support\Facades\Storage::url($item->product->category_image);
+                } elseif ($item->product?->base_image_url) {
+                    $imageUrl = $item->product->base_image_url;
+                }
+
+                $updatedItems[] = [
+                    'id'                  => $item->id,
+                    'name'                => $item->name,
+                    'sku'                 => $item->sku,
+                    'qty_ordered'         => $item->qty_ordered,
+                    'base_price'          => $item->base_price,
+                    'base_total'          => $item->base_total,
+                    'base_tax_amount'     => $item->base_tax_amount,
+                    'base_discount_amount'=> $item->base_discount_amount,
+                    'formatted_price'     => core()->formatBasePrice($item->base_price),
+                    'image_url'           => $imageUrl,
+                ];
+            }
+
+            // Recalculate order totals
+            $newGrandTotal = $newSubTotal + $newTaxTotal - $newDiscountTotal + $order->base_shipping_amount;
+            $order->update([
+                'base_sub_total'     => $newSubTotal,
+                'sub_total'          => $newSubTotal,
+                'base_tax_amount'    => $newTaxTotal,
+                'tax_amount'         => $newTaxTotal,
+                'base_discount_amount' => $newDiscountTotal,
+                'discount_amount'    => $newDiscountTotal,
+                'base_grand_total'   => $newGrandTotal,
+                'grand_total'        => $newGrandTotal,
+                'base_total_due'     => $newGrandTotal - $order->base_grand_total_invoiced,
+            ]);
+
+            $order->refresh();
+
+            return response()->json([
+                'success'     => true,
+                'message'     => 'Товары обновлены',
+                'items'       => $updatedItems,
+                'totals'      => [
+                    'sub_total'          => core()->formatBasePrice($order->base_sub_total),
+                    'sub_total_incl_tax' => core()->formatBasePrice($order->base_sub_total + $order->base_tax_amount),
+                    'tax'                => core()->formatBasePrice($order->base_tax_amount),
+                    'discount'           => core()->formatBasePrice($order->base_discount_amount),
+                    'grand_total'        => core()->formatBasePrice($order->base_grand_total),
+                    'total_paid'         => core()->formatBasePrice($order->base_grand_total_invoiced),
+                    'total_refunded'     => core()->formatBasePrice($order->base_grand_total_refunded),
+                    'total_due'          => core()->formatBasePrice($order->base_total_due),
+                ],
+                'grand_total' => core()->formatBasePrice($newGrandTotal),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Ошибка: ' . $e->getMessage()], 500);
+        }
     }
 
     /**

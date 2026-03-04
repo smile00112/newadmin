@@ -4,31 +4,49 @@
     </x-slot>
 
     <!-- Header -->
-    <div class="grid">
-        <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-            {!! view_render_event('bagisto.admin.sales.order.title.before', ['order' => $order]) !!}
+    <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
+        {!! view_render_event('bagisto.admin.sales.order.title.before', ['order' => $order]) !!}
 
-            <div class="flex items-center gap-2.5">
-                <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
-                    @lang('admin::app.sales.orders.view.title', ['order_id' => $order->increment_id])
-                </p>
-
-                <!-- Order Status -->
-                <span class="label-{{ $order->status }} text-sm mx-1.5">
-                    @lang("admin::app.sales.orders.view.$order->status")
-                </span>
-            </div>
-
-            {!! view_render_event('bagisto.admin.sales.order.title.after', ['order' => $order]) !!}
-
-            <!-- Back Button -->
-            <a
-                href="{{ route('admin.sales.orders.index') }}"
-                class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
-            >
-                @lang('admin::app.account.edit.back-btn')
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.sales.orders.index') }}" class="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Назад">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
             </a>
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(124,58,237,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
+                        Заказ #{{ $order->increment_id }}
+                    </p>
+                    <span 
+                        class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
+                        style="@php
+                            $statusColors = [
+                                'pending' => 'background:#fef3c7;color:#b45309;',
+                                'pending_payment' => 'background:#fef3c7;color:#b45309;',
+                                'processing' => 'background:#dbeafe;color:#1d4ed8;',
+                                'preparing' => 'background:#e0e7ff;color:#4338ca;',
+                                'ready' => 'background:#d1fae5;color:#047857;',
+                                'completed' => 'background:#d1fae5;color:#047857;',
+                                'canceled' => 'background:#ffe4e6;color:#be123c;',
+                                'closed' => 'background:#f3f4f6;color:#374151;',
+                            ];
+                            echo $statusColors[$order->status] ?? 'background:#f3f4f6;color:#374151;';
+                        @endphp"
+                    >
+                        @lang("admin::app.sales.orders.view.$order->status")
+                    </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">{{ core()->formatDate($order->created_at, 'd.m.Y H:i') }}</p>
+            </div>
         </div>
+
+        {!! view_render_event('bagisto.admin.sales.order.title.after', ['order' => $order]) !!}
     </div>
 
     <div class="mt-5 flex-wrap items-center justify-between gap-x-1 gap-y-2">
@@ -115,216 +133,74 @@
             <div class="flex flex-1 flex-col gap-2 max-xl:flex-auto">
                 {!! view_render_event('bagisto.admin.sales.order.left_component.before', ['order' => $order]) !!}
 
-                <div class="box-shadow rounded bg-white dark:bg-gray-900">
-                    <div class="flex justify-between p-4">
-                        <p class="mb-4 text-base font-semibold text-gray-800 dark:text-white">
-                            @lang('Order Items') ({{ count($order->items) }})
-                        </p>
+                <div class="box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                    @php
+                        $itemsJson = $order->items->map(function ($item) {
+                            $imageUrl = null;
+                            if ($item->product?->category_image) {
+                                $imageUrl = \Illuminate\Support\Facades\Storage::url($item->product->category_image);
+                            } elseif ($item->product?->base_image_url) {
+                                $imageUrl = $item->product->base_image_url;
+                            }
+                            return [
+                                'id'                  => $item->id,
+                                'name'                => $item->name,
+                                'sku'                 => $item->sku,
+                                'qty_ordered'         => $item->qty_ordered,
+                                'base_price'          => $item->base_price,
+                                'base_total'          => $item->base_total,
+                                'base_tax_amount'     => $item->base_tax_amount,
+                                'base_discount_amount'=> $item->base_discount_amount,
+                                'formatted_price'     => core()->formatBasePrice($item->base_price),
+                                'image_url'           => $imageUrl,
+                            ];
+                        })->toArray();
+                    @endphp
 
-                        <p class="text-base font-semibold text-gray-800 dark:text-white">
-                            @lang('admin::app.sales.orders.view.grand-total', ['grand_total' => core()->formatBasePrice($order->base_grand_total)])
-                        </p>
-                    </div>
+                    <v-order-items-editor
+                        order-id="{{ $order->id }}"
+                        initial-items='@json($itemsJson)'
+                        grand-total="{{ core()->formatBasePrice($order->base_grand_total) }}"
+                    ></v-order-items-editor>
 
-                    <!-- Order items -->
-                    <div class="grid">
-                        @foreach ($order->items as $item)
-                            {!! view_render_event('bagisto.admin.sales.order.list.before', ['order' => $order]) !!}
-
-                            <div class="flex justify-between gap-2.5 border-b border-slate-300 px-4 py-6 dark:border-gray-800">
-                                <div class="flex gap-2.5">
-                                    @php
-                                        $imageUrl = null;
-
-                                        // Сначала проверяем category_image
-                                        if ($item?->product?->category_image) {
-                                            $imageUrl = Storage::url($item->product->category_image);
-                                        }
-                                        // Если нет category_image, используем base_image_url
-                                        elseif ($item?->product?->base_image_url) {
-                                            $imageUrl = $item->product->base_image_url;
-                                        }
-                                    @endphp
-
-                                    @if($imageUrl)
-                                        <img
-                                            class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded"
-                                            src="{{ $imageUrl }}"
-                                        >
-                                    @else
-                                        <div class="relative h-[60px] max-h-[60px] w-full max-w-[60px] rounded border border-dashed border-gray-300 dark:border-gray-800 dark:mix-blend-exclusion dark:invert">
-                                            <img src="{{ bagisto_asset('images/product-placeholders/front.svg') }}">
-
-                                            <p class="absolute bottom-1.5 w-full text-center text-[6px] font-semibold text-gray-400">
-                                                @lang('admin::app.sales.invoices.view.product-image')
-                                            </p>
-                                        </div>
-                                    @endif
-
-                                    <div class="grid place-content-start gap-1.5">
-                                        <p class="break-all text-base font-semibold text-gray-800 dark:text-white">
-                                            {{ $item->name }}
-                                        </p>
-
-                                        <div class="flex flex-col place-items-start gap-1.5">
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.amount-per-unit', [
-                                                    'amount' => core()->formatBasePrice($item->base_price),
-                                                    'qty'    => $item->qty_ordered,
-                                                ])
-                                            </p>
-                                            <!--
-                                            @if (isset($item->additional['attributes']))
-                                                @foreach ($item->additional['attributes'] as $attribute)
-                                                    <p class="text-gray-600 dark:text-gray-300">
-                                                        @if (
-                                                            ! isset($attribute['attribute_type'])
-                                                            || $attribute['attribute_type'] !== 'file'
-                                                        )
-                                                        {{ $attribute['attribute_name'] }} : {{ $attribute['option_label'] }}
-                                                    @else
-                                                        {{ $attribute['attribute_name'] }} :
-
-                                                            <a
-                                                                href="{{ Storage::url($attribute['option_label']) }}"
-                                                                class="text-blue-600 hover:underline"
-                                                                download="{{ File::basename($attribute['option_label']) }}"
-                                                            >
-                                                                {{ File::basename($attribute['option_label']) }}
-                                                        </a>
-@endif
-                                                    </p>
-                                                @endforeach
-                                            @endif
-                                            -->
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.sku', ['sku' => $item->sku])
-                                            </p>
-                                            <!--
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                {{ $item->qty_ordered ? trans('admin::app.sales.orders.view.item-ordered', ['qty_ordered' => $item->qty_ordered]) : '' }}
-
-                                            {{ $item->qty_invoiced ? trans('admin::app.sales.orders.view.item-invoice', ['qty_invoiced' => $item->qty_invoiced]) : '' }}
-
-                                            {{ $item->qty_shipped ? trans('admin::app.sales.orders.view.item-shipped', ['qty_shipped' => $item->qty_shipped]) : '' }}
-
-                                            {{ $item->qty_refunded ? trans('admin::app.sales.orders.view.item-refunded', ['qty_refunded' => $item->qty_refunded]) : '' }}
-
-                                            {{ $item->qty_canceled ? trans('admin::app.sales.orders.view.item-canceled', ['qty_canceled' => $item->qty_canceled]) : '' }}
-                                            </p>
--->
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="grid place-content-start gap-1">
-                                    <div class="">
-                                        <p class="flex items-center justify-end gap-x-1 text-base font-semibold text-gray-800 dark:text-white">
-                                            {{ core()->formatBasePrice($item->base_total + $item->base_tax_amount - $item->base_discount_amount) }}
-                                        </p>
-                                    </div>
-
-                                    <div class="flex flex-col place-items-start items-end gap-1.5">
-                                        @if (core()->getConfigData('sales.taxes.sales.display_prices') == 'including_tax')
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.price', ['price' => core()->formatBasePrice($item->base_price_incl_tax)])
-                                            </p>
-                                        @elseif (core()->getConfigData('sales.taxes.sales.display_prices') == 'both')
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.price-excl-tax', ['price' => core()->formatBasePrice($item->base_price)])
-                                            </p>
-
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.price-incl-tax', ['price' => core()->formatBasePrice($item->base_price_incl_tax)])
-                                            </p>
-                                        @else
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.price', ['price' => core()->formatBasePrice($item->base_price)])
-                                            </p>
-                                        @endif
-
-                                        <p class="text-gray-600 dark:text-gray-300">
-                                            @lang('admin::app.sales.orders.view.tax', [
-                                                'percent' => number_format($item->tax_percent, 2) . '%',
-                                                'tax'     => core()->formatBasePrice($item->base_tax_amount)
-                                            ])
-                                        </p>
-
-                                        @if ($order->base_discount_amount > 0)
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.discount', ['discount' => core()->formatBasePrice($item->base_discount_amount)])
-                                            </p>
-                                        @endif
-
-                                        @if (core()->getConfigData('sales.taxes.sales.display_subtotal') == 'including_tax')
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.sub-total', ['sub_total' => core()->formatBasePrice($item->base_total_incl_tax)])
-                                            </p>
-                                        @elseif (core()->getConfigData('sales.taxes.sales.display_subtotal') == 'both')
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.sub-total-excl-tax', ['sub_total' => core()->formatBasePrice($item->base_total)])
-                                            </p>
-
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.sub-total-incl-tax', ['sub_total' => core()->formatBasePrice($item->base_total_incl_tax)])
-                                            </p>
-                                        @else
-                                            <p class="text-gray-600 dark:text-gray-300">
-                                                @lang('admin::app.sales.orders.view.sub-total', ['sub_total' => core()->formatBasePrice($item->base_total)])
-                                            </p>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-
-                            {!! view_render_event('bagisto.admin.sales.order.list.after', ['order' => $order]) !!}
-
-                        @endforeach
-                    </div>
-
-                    <div class="mt-4 flex flex-auto justify-end p-4">
-                        <div class="grid max-w-max gap-2 text-sm">
+                    <div class="p-4" style="border-top: 2px solid #f3f0ff;">
+                        <div class="flex flex-col gap-2.5" style="max-width: 380px; margin-left: auto;">
 
                             {!! view_render_event('bagisto.admin.sales.order.view.subtotal.before') !!}
 
                             <!-- Sub Total -->
                             @if (core()->getConfigData('sales.taxes.sales.display_subtotal') == 'including_tax')
                                 <div class="flex w-full justify-between gap-x-5">
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm text-gray-500">
                                         @lang('admin::app.sales.orders.view.summary-sub-total-incl-tax')
                                     </p>
-
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="sub_total">
                                         {{ core()->formatBasePrice($order->base_sub_total_incl_tax) }}
                                     </p>
                                 </div>
                             @elseif (core()->getConfigData('sales.taxes.sales.display_subtotal') == 'both')
                                 <div class="flex w-full justify-between gap-x-5">
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm text-gray-500">
                                         @lang('admin::app.sales.orders.view.summary-sub-total-excl-tax')
                                     </p>
-
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="sub_total">
                                         {{ core()->formatBasePrice($order->base_sub_total) }}
                                     </p>
                                 </div>
-
                                 <div class="flex w-full justify-between gap-x-5">
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm text-gray-500">
                                         @lang('admin::app.sales.orders.view.summary-sub-total-incl-tax')
                                     </p>
-
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="sub_total_incl_tax">
                                         {{ core()->formatBasePrice($order->base_sub_total_incl_tax) }}
                                     </p>
                                 </div>
                             @else
                                 <div class="flex w-full justify-between gap-x-5">
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm text-gray-500">
                                         @lang('admin::app.sales.orders.view.summary-sub-total')
                                     </p>
-
-                                    <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="sub_total">
                                         {{ core()->formatBasePrice($order->base_sub_total) }}
                                     </p>
                                 </div>
@@ -338,41 +214,36 @@
                             @if ($haveStockableItems = $order->haveStockableItems())
                                 @if (core()->getConfigData('sales.taxes.sales.display_subtotal') == 'including_tax')
                                     <div class="flex w-full justify-between gap-x-5">
-                                        <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm text-gray-500">
                                             @lang('admin::app.sales.orders.view.shipping-and-handling-incl-tax')
                                         </p>
-
-                                        <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                             {{ core()->formatBasePrice($order->base_shipping_amount_incl_tax) }}
                                         </p>
                                     </div>
                                 @elseif (core()->getConfigData('sales.taxes.sales.display_shipping_amount') == 'both')
                                     <div class="flex w-full justify-between gap-x-5">
-                                        <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm text-gray-500">
                                             @lang('admin::app.sales.orders.view.shipping-and-handling-excl-tax')
                                         </p>
-
-                                        <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                             {{ core()->formatBasePrice($order->base_shipping_amount) }}
                                         </p>
                                     </div>
-
                                     <div class="flex w-full justify-between gap-x-5">
-                                        <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm text-gray-500">
                                             @lang('admin::app.sales.orders.view.shipping-and-handling-incl-tax')
                                         </p>
-
-                                        <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                             {{ core()->formatBasePrice($order->base_shipping_amount_incl_tax) }}
                                         </p>
                                     </div>
                                 @else
                                     <div class="flex w-full justify-between gap-x-5">
-                                        <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm text-gray-500">
                                             @lang('admin::app.sales.orders.view.shipping-and-handling')
                                         </p>
-
-                                        <p class="font-semibold !leading-5 text-gray-600 dark:text-gray-300">
+                                        <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                             {{ core()->formatBasePrice($order->base_shipping_amount) }}
                                         </p>
                                     </div>
@@ -385,11 +256,10 @@
 
                             <!-- Tax Amount -->
                             <div class="flex w-full justify-between gap-x-5">
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.summary-tax')
                                 </p>
-
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="tax">
                                     {{ core()->formatBasePrice($order->base_tax_amount) }}
                                 </p>
                             </div>
@@ -400,11 +270,10 @@
 
                             <!-- Discount -->
                             <div class="flex w-full justify-between gap-x-5">
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.summary-discount')
                                 </p>
-
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="discount">
                                     {{ core()->formatBasePrice($order->base_discount_amount) }}
                                 </p>
                             </div>
@@ -416,11 +285,10 @@
                             <!-- Bonus Payment -->
                             @if ($order->base_bonus_amount > 0)
                                 <div class="flex w-full justify-between gap-x-5">
-                                    <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm text-gray-500">
                                         @lang('admin::app.sales.orders.view.bonus-payment')
                                     </p>
-
-                                    <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                         {{ core()->formatBasePrice($order->base_bonus_amount) }}
                                     </p>
                                 </div>
@@ -428,30 +296,33 @@
 
                             {!! view_render_event('bagisto.admin.sales.order.view.bonus.after') !!}
 
+                            <!-- Purple separator before grand total -->
+                            <div style="height: 2px; background: linear-gradient(90deg, transparent, #7c3aed, transparent); margin: 4px 0;"></div>
+
                             {!! view_render_event('bagisto.admin.sales.order.view.grand-total.before') !!}
 
                             <!-- Grand Total -->
-                            <div class="flex w-full justify-between gap-x-5">
-                                <p class="text-base font-semibold !leading-5 text-gray-800 dark:text-white">
+                            <div class="flex w-full justify-between items-center gap-x-5 py-1">
+                                <p class="text-base font-bold text-gray-800 dark:text-white">
                                     @lang('admin::app.sales.orders.view.summary-grand-total')
                                 </p>
-
-                                <p class="text-base font-semibold !leading-5 text-gray-800 dark:text-white">
+                                <p class="text-lg font-black dark:text-white" style="color:#7c3aed; letter-spacing:-0.02em;" data-total="grand_total">
                                     {{ core()->formatBasePrice($order->base_grand_total) }}
                                 </p>
                             </div>
 
                             {!! view_render_event('bagisto.admin.sales.order.view.grand-total.after') !!}
 
+                            <div style="height: 1px; background: #f0f0f0; margin: 2px 0;"></div>
+
                             {!! view_render_event('bagisto.admin.sales.order.view.total-paid.before') !!}
 
                             <!-- Total Paid -->
                             <div class="flex w-full justify-between gap-x-5">
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.total-paid')
                                 </p>
-
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm font-bold" style="color:#059669;" data-total="total_paid">
                                     {{ core()->formatBasePrice($order->base_grand_total_invoiced) }}
                                 </p>
                             </div>
@@ -462,11 +333,10 @@
 
                             <!-- Total Refund -->
                             <div class="flex w-full justify-between gap-x-5">
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.total-refund')
                                 </p>
-
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="total_refunded">
                                     {{ core()->formatBasePrice($order->base_grand_total_refunded) }}
                                 </p>
                             </div>
@@ -476,17 +346,16 @@
                             {!! view_render_event('bagisto.admin.sales.order.view.total-due.before') !!}
 
                             <!-- Total Due -->
-                            <div class="flex w-full justify-between gap-x-5 font-semibold">
-                                <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                            <div class="flex w-full justify-between gap-x-5">
+                                <p class="text-sm font-bold text-gray-600 dark:text-gray-300">
                                     @lang('admin::app.sales.orders.view.total-due')
                                 </p>
-
                                 @if($order->status !== 'canceled')
-                                    <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold" style="color:#ea580c;" data-total="total_due">
                                         {{ core()->formatBasePrice($order->base_total_due) }}
                                     </p>
                                 @else
-                                    <p class="!leading-5 text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200" data-total="total_due">
                                         {{ core()->formatBasePrice(0.00) }}
                                     </p>
                                 @endif
@@ -499,10 +368,17 @@
                 </div>
 
                 <!-- Customer's comment form -->
-                <div class="box-shadow rounded bg-white dark:bg-gray-900">
-                    <p class="p-4 pb-0 text-base font-semibold text-gray-800 dark:text-white">
-                        @lang('admin::app.sales.orders.view.comments')
-                    </p>
+                <div class="box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                    <div class="flex items-center gap-2.5 p-4 pb-0">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background:#fef3c7;">
+                            <svg class="w-4 h-4" style="color:#b45309;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                        </div>
+                        <p class="text-base font-bold text-gray-800 dark:text-white">
+                            @lang('admin::app.sales.orders.view.comments')
+                        </p>
+                    </div>
 
                     <x-admin::form action="{{ route('admin.sales.orders.comment', $order->id) }}">
                         <div class="p-4">
@@ -549,9 +425,13 @@
 
                                 <button
                                     type="submit"
-                                    class="secondary-button"
+                                    class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl transition-all duration-200"
+                                    style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 2px 8px rgba(124,58,237,0.25);"
                                     aria-label="{{ trans('admin::app.sales.orders.view.submit-comment') }}"
                                 >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                    </svg>
                                     @lang('admin::app.sales.orders.view.submit-comment')
                                 </button>
                             </div>
@@ -562,26 +442,26 @@
 
                     <!-- Comment List -->
                     @foreach ($order->comments()->orderBy('id', 'desc')->get() as $comment)
-                        <div class="grid gap-1.5 p-4">
-                            <p class="break-all text-base leading-6 text-gray-800 dark:text-white">
+                        <div class="p-4 mx-4 mb-3 rounded-xl" style="background:#fafafa;">
+                            <p class="break-all text-sm leading-6 text-gray-800 dark:text-white">
                                 {{ $comment->comment }}
                             </p>
 
                             <!-- Notes List Title and Time -->
-                            <p class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                            <p class="flex items-center gap-2 mt-2 text-xs text-gray-400">
                                 @if ($comment->customer_notified)
-                                    <span class="icon-done h-fit rounded-full bg-blue-100 text-2xl text-blue-600"></span>
-
-                                    @lang('admin::app.sales.orders.view.customer-notified', ['date' => core()->formatDate($comment->created_at, 'Y-m-d H:i:s a')])
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full" style="background:#dbeafe;">
+                                        <svg class="w-3 h-3" style="color:#2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    </span>
+                                    @lang('admin::app.sales.orders.view.customer-notified', ['date' => core()->formatDate($comment->created_at, 'd.m.Y H:i')])
                                 @else
-                                    <span class="icon-cancel-1 h-fit rounded-full bg-red-100 text-2xl text-red-600"></span>
-
-                                    @lang('admin::app.sales.orders.view.customer-not-notified', ['date' => core()->formatDate($comment->created_at, 'Y-m-d H:i:s a')])
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full" style="background:#ffe4e6;">
+                                        <svg class="w-3 h-3" style="color:#be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </span>
+                                    @lang('admin::app.sales.orders.view.customer-not-notified', ['date' => core()->formatDate($comment->created_at, 'd.m.Y H:i')])
                                 @endif
                             </p>
                         </div>
-
-                        <span class="block w-full border-b dark:border-gray-800"></span>
                     @endforeach
                 </div>
 
@@ -595,33 +475,141 @@
                 <!-- Customer and address information -->
                 <x-admin::accordion>
                     <x-slot:header>
-                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
-                            @lang('admin::app.sales.orders.view.customer')
-                        </p>
+                        <div class="flex items-center gap-2.5 p-2.5">
+                            <div class="flex items-center justify-center w-7 h-7 rounded-lg" style="background:#f1f0ff;">
+                                <svg class="w-3.5 h-3.5" style="color:#7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <p class="text-base font-bold text-gray-700 dark:text-gray-200">
+                                @lang('admin::app.sales.orders.view.customer')
+                            </p>
+                        </div>
                     </x-slot>
 
                     <x-slot:content>
                         <div class="{{ $order->billing_address ? 'pb-4' : '' }}">
-                            <div class="flex flex-col gap-1.5">
-                                <p class="font-semibold text-gray-800 dark:text-white">
-                                    {{ $order->customer_full_name }}
-                                </p>
+                            <div class="flex flex-col gap-3">
+                                <!-- Customer Avatar + Name + Edit Link -->
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white font-bold text-lg" style="min-width:48px;">
+                                        {{ strtoupper(substr($order->customer_first_name ?? '?', 0, 1)) }}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <p class="font-bold text-gray-800 dark:text-white text-base truncate">
+                                                {{ $order->customer_full_name }}
+                                            </p>
+                                            @if($order->customer_id)
+                                                <a href="{{ route('admin.customers.customers.view', $order->customer_id) }}"
+                                                   class="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-md bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 transition-colors"
+                                                   title="Редактировать клиента"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                </a>
+                                            @endif
+                                        </div>
+                                        @if($order->customer_id)
+                                            <p class="text-xs text-gray-400">ID: {{ $order->customer_id }}@if(isset($customerMetrics) && $customerMetrics['registered_at'] && $customerMetrics['registered_at'] !== '-') • с {{ $customerMetrics['registered_at'] }}@endif</p>
+                                        @else
+                                            <p class="text-xs text-gray-400">Гость</p>
+                                        @endif
+                                    </div>
+                                </div>
 
                                 {!! view_render_event('bagisto.admin.sales.order.customer_full_name.after', ['order' => $order]) !!}
 
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    {{ $order->customer_email }}
-                                </p>
+                                <!-- Phone -->
+                                @php
+                                    $customerPhone = $order->shipping_address?->phone ?? $order->billing_address?->phone ?? null;
+                                @endphp
+                                @if($customerPhone)
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                        <div class="flex items-center gap-3">
+                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                            </svg>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ $customerPhone }}</span>
+                                        </div>
+                                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $customerPhone) }}" 
+                                           target="_blank"
+                                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 transition-colors"
+                                           title="WhatsApp"
+                                        >
+                                            <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                @endif
+
+                                <!-- Email -->
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="text-sm text-gray-700 dark:text-gray-200">{{ $order->customer_email }}</span>
+                                </div>
 
                                 {!! view_render_event('bagisto.admin.sales.order.customer_email.after', ['order' => $order]) !!}
-
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    @lang('admin::app.sales.orders.view.customer-group') : {{ $order->is_guest ? core()->getGuestCustomerGroup()?->name : ($order->customer->group->name ?? '') }}
-                                </p>
-
-                                {!! view_render_event('bagisto.admin.sales.order.customer_group.after', ['order' => $order]) !!}
                             </div>
                         </div>
+
+                        <!-- Customer Metrics -->
+                        @if(isset($customerMetrics) && $customerMetrics)
+                            <span class="block w-full border-b dark:border-gray-800"></span>
+                            <div class="pt-3 pb-2">
+                                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                                    <div class="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                                        <p class="text-lg font-bold text-gray-800 dark:text-white">{{ $customerMetrics['order_count'] }}</p>
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-400">Заказов</p>
+                                    </div>
+                                    <div class="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                                        <p class="text-lg font-bold text-gray-800 dark:text-white">{{ $customerMetrics['total_spent'] }}</p>
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-400">Всего ₽</p>
+                                    </div>
+                                    <div class="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+                                        <p class="text-lg font-bold text-gray-800 dark:text-white">{{ $customerMetrics['average_check'] }}</p>
+                                        <p class="text-[10px] uppercase tracking-wider text-gray-400">Средний ₽</p>
+                                    </div>
+                                </div>
+
+                                <!-- Last Order -->
+                                @if($customerMetrics['last_order'])
+                                    @php
+                                        $lastOrderBadge = '';
+                                        $lastOrderBadgeColor = '';
+                                        try {
+                                            $lastDate = \Carbon\Carbon::parse($customerMetrics['last_order']);
+                                            $diffDays = (int) $lastDate->startOfDay()->diffInDays(now()->startOfDay());
+                                            if ($diffDays === 0) {
+                                                $lastOrderBadge = 'сегодня';
+                                                $lastOrderBadgeColor = 'background:#d4edda;color:#155724;';
+                                            } elseif ($diffDays === 1) {
+                                                $lastOrderBadge = 'вчера';
+                                                $lastOrderBadgeColor = 'background:#cce5ff;color:#004085;';
+                                            } else {
+                                                $lastOrderBadge = $diffDays . ' дн. назад';
+                                                $lastOrderBadgeColor = 'background:#fff3cd;color:#856404;';
+                                            }
+                                        } catch(\Exception $e) {}
+                                    @endphp
+                                    <div class="flex items-center justify-between mt-3 p-3 rounded-xl" style="background:#fef9e7;">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4" style="color:#c4a635;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span class="text-sm text-gray-700 dark:text-gray-200">Последний заказ: {{ $customerMetrics['last_order'] }}</span>
+                                        </div>
+                                        @if($lastOrderBadge)
+                                            <span class="px-3 py-1 text-xs font-bold uppercase rounded-full" style="{{ $lastOrderBadgeColor }}">{{ $lastOrderBadge }}</span>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
 
                         <!-- Billing Address -->
                         {{--
@@ -664,19 +652,24 @@
                 @if ($order->order_labels && count($order->order_labels) > 0)
                     <x-admin::accordion>
                         <x-slot:header>
-                            <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
-                                @lang('admin::app.sales.orders.view.order-labels')
-                            </p>
+                            <div class="flex items-center gap-2.5 p-2.5">
+                                <div class="flex items-center justify-center w-7 h-7 rounded-lg" style="background:#fef3c7;">
+                                    <svg class="w-3.5 h-3.5" style="color:#b45309;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                </div>
+                                <p class="text-base font-bold text-gray-700 dark:text-gray-200">
+                                    @lang('admin::app.sales.orders.view.order-labels')
+                                </p>
+                            </div>
                         </x-slot>
 
                         <x-slot:content>
-                            <div class="flex flex-col gap-2">
+                            <div class="flex flex-wrap gap-2">
                                 @foreach ($order->order_labels as $label)
-                                    <div class="flex items-center gap-2">
-                                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/20">
-                                            {{ $label }}
-                                        </span>
-                                    </div>
+                                    <span class="inline-flex items-center px-3 py-1.5 text-xs font-bold rounded-full" style="background:#e0e7ff; color:#4338ca;">
+                                        {{ $label }}
+                                    </span>
                                 @endforeach
                             </div>
                         </x-slot>
@@ -686,103 +679,58 @@
                 <!-- Order Information -->
                 <x-admin::accordion>
                     <x-slot:header>
-                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
-                            @lang('admin::app.sales.orders.view.order-information')
-                        </p>
+                        <div class="flex items-center gap-2.5 p-2.5">
+                            <div class="flex items-center justify-center w-7 h-7 rounded-lg" style="background:#e0e7ff;">
+                                <svg class="w-3.5 h-3.5" style="color:#4338ca;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p class="text-base font-bold text-gray-700 dark:text-gray-200">
+                                @lang('admin::app.sales.orders.view.order-information')
+                            </p>
+                        </div>
                     </x-slot>
 
                     <x-slot:content>
-                        <div class="flex w-full flex-col gap-y-4">
+                        <div class="flex w-full flex-col gap-y-3">
                             <!-- Order Date Row -->
-                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
-                                <p class="text-gray-600 dark:text-gray-300">
+                            <div class="flex justify-between items-center p-3 rounded-xl" style="background:#fafafa;">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.order-date')
                                 </p>
                                 <div class="flex items-center">
                                     {!! view_render_event('bagisto.admin.sales.order.created_at.before', ['order' => $order]) !!}
-                                    <p class="text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                         {{core()->formatDate($order->created_at) }}
                                     </p>
                                     {!! view_render_event('bagisto.admin.sales.order.created_at.after', ['order' => $order]) !!}
                                 </div>
                             </div>
 
-                            <!-- Order Status Row -->
-                            <div class="flex flex-wrap justify-between items-center min-h-[40px]" >
-                                <p class="text-gray-600 dark:text-gray-300" style="margin-bottom: 6px;width: 100%;">
+                            <!-- Order Status Row (SPA) -->
+                            <div class="p-3 rounded-xl" style="background:#fafafa;">
+                                <p class="text-sm text-gray-500 mb-2">
                                     @lang('admin::app.sales.orders.view.order-status')
                                 </p>
-                                <div class="flex items-center" style="width: 100%; justify-content: space-between;">
+                                <div>
                                     {!! view_render_event('bagisto.admin.sales.order.status_label.before', ['order' => $order]) !!}
-                                    <x-admin::form action="{{ route('admin.sales.orders.update_status', $order->id) }}" method="POST" style="width: 100%;">
-                                        @csrf
-                                        <div class="flex items-center gap-2" style="justify-content: space-between;    width: 100%;">
-                                            <x-admin::form.control-group.control
-                                                type="select"
-                                                name="status"
-                                                :value="$order->status"
-                                                rules="required"
-                                                class="min-w-[200px]"
-                                            >
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING ? 'selected' : '' }}>
-                                                    Оплата
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT ? 'selected' : '' }}>
-                                                    Ожидание оплаты
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PROCESSING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PROCESSING ? 'selected' : '' }}>
-                                                    Принят
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_PREPARING }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_PREPARING ? 'selected' : '' }}>
-                                                    Готовим
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_READY }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_READY ? 'selected' : '' }}>
-                                                    Готов
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_COMPLETED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_COMPLETED ? 'selected' : '' }}>
-                                                    Завершен
-                                                </option>
-                                                <option value="{{ \Webkul\Sales\Models\Order::STATUS_CANCELED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CANCELED ? 'selected' : '' }}>
-                                                    Отмена
-                                                </option>
-                                                {{-- <option value="{{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_CLOSED ? 'selected' : '' }}>
-                                                    Закрыт
-                                                </option> --}}
-                                                {{-- <option value="{{ \Webkul\Sales\Models\Order::STATUS_FRAUD }}" {{ $order->status === \Webkul\Sales\Models\Order::STATUS_FRAUD ? 'selected' : '' }}>
-                                                    Мошенничество
-                                                </option> --}}
-                                            </x-admin::form.control-group.control>
-
-                                            <button
-                                                type="submit"
-                                                class="secondary-button whitespace-nowrap"
-                                            >
-                                                <svg version="1.1" id="Uploaded to svgrepo.com" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                                                     width="24px" height="24px" viewBox="0 0 32 32" xml:space="preserve">
-                                                    <style type="text/css">
-                                                        .blueprint_een{fill:#111918;}
-                                                        .st0{fill:#0B1719;}
-                                                    </style>
-                                                    <path class="blueprint_een" d="M27,1H2C1.448,1,1,1.448,1,2v28c0,0.552,0.448,1,1,1h28c0.552,0,1-0.448,1-1V5L27,1z M8,3h16
-                                                        v10H8V3z M29,29H3V3h4v10c0,0.552,0.448,1,1,1h16c0.552,0,1-0.448,1-1V3h1.172L29,5.829V29z M9,26h14c0.552,0,1-0.448,1-1v-7
-                                                        c0-0.552-0.448-1-1-1H9c-0.552,0-1,0.448-1,1v7C8,25.552,8.448,26,9,26z M9,18h14v7H9V18z M18,12h5V4h-5V12z M19,5h3v6h-3V5z M10,19
-                                                        h12v1H10V19z M10,21h12v1H10V21z M10,23h12v1H10V23z"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </x-admin::form>
+                                    <v-order-status-changer
+                                        order-id="{{ $order->id }}"
+                                        initial-status="{{ $order->status }}"
+                                        update-url="{{ route('admin.sales.orders.update_status', $order->id) }}"
+                                    ></v-order-status-changer>
                                     {!! view_render_event('bagisto.admin.sales.order.status_label.after', ['order' => $order]) !!}
                                 </div>
                             </div>
 
                             <!-- Order Channel Row -->
-                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
-                                <p class="text-gray-600 dark:text-gray-300">
+                            <div class="flex justify-between items-center p-3 rounded-xl" style="background:#fafafa;">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.channel')
                                 </p>
                                 <div class="flex items-center">
                                     {!! view_render_event('bagisto.admin.sales.order.channel_name.before', ['order' => $order]) !!}
-                                    <p class="text-gray-600 dark:text-gray-300">
+                                    <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
                                         {{$order->channel_name}}
                                     </p>
                                     {!! view_render_event('bagisto.admin.sales.order.channel_name.after', ['order' => $order]) !!}
@@ -790,72 +738,84 @@
                             </div>
 
                             <!-- Order Rating Row -->
-                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
-                                <p class="text-gray-600 dark:text-gray-300">
+                            <div class="flex justify-between items-center p-3 rounded-xl" style="background:#fafafa;">
+                                <p class="text-sm text-gray-500">
                                     @lang('admin::app.sales.orders.view.rating')
                                 </p>
                                 <div class="flex items-center">
                                     {!! view_render_event('bagisto.admin.sales.order.rating.before', ['order' => $order]) !!}
                                     @if($order->rating === true)
-                                        <p class="text-green-600 dark:text-green-400 font-semibold">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full" style="background:#d1fae5; color:#047857;">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>
                                             @lang('admin::app.sales.orders.view.rating-like')
-                                        </p>
+                                        </span>
                                     @elseif($order->rating === false)
-                                        <p class="text-red-600 dark:text-red-400 font-semibold">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full" style="background:#ffe4e6; color:#be123c;">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/></svg>
                                             @lang('admin::app.sales.orders.view.rating-dislike')
-                                        </p>
+                                        </span>
                                     @else
-                                        <p class="text-gray-500 dark:text-gray-400">
+                                        <span class="text-xs text-gray-400">
                                             @lang('admin::app.sales.orders.view.rating-not-rated')
-                                        </p>
+                                        </span>
                                     @endif
                                     {!! view_render_event('bagisto.admin.sales.order.rating.after', ['order' => $order]) !!}
                                 </div>
                             </div>
 
                             <!-- Order Table Number Row -->
-                            <div class="flex flex-wrap justify-between items-center min-h-[40px]">
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    @lang('admin::app.sales.orders.view.table-number')
-                                </p>
-                                <div class="flex items-center gap-2">
-                                    @if($order->table_number)
-                                        <p class="text-gray-800 dark:text-white font-semibold">
-                                            {{ $order->table_number }}
-                                        </p>
-                                        <x-admin::form action="{{ route('admin.sales.orders.unbind_table', $order->id) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button
-                                                type="submit"
-                                                class="secondary-button text-xs"
-                                            >
-                                                @lang('admin::app.sales.orders.view.unbind-table')
-                                            </button>
-                                        </x-admin::form>
-                                    @else
-                                        <p class="text-gray-500 dark:text-gray-400">
-                                            @lang('admin::app.sales.orders.view.table-not-set')
-                                        </p>
-                                        <x-admin::form action="{{ route('admin.sales.orders.bind_table', $order->id) }}" method="POST" class="flex items-center gap-2">
-                                            @csrf
-                                            <x-admin::form.control-group.control
-                                                type="number"
-                                                name="table_number"
-                                                :value="null"
-                                                rules="required|integer|min:1"
-                                                min="1"
-                                                class="w-20"
-                                                placeholder="№"
-                                            />
-                                            <button
-                                                type="submit"
-                                                class="secondary-button text-xs"
-                                            >
-                                                @lang('admin::app.sales.orders.view.bind-table')
-                                            </button>
-                                        </x-admin::form>
-                                    @endif
+                            <div class="p-3 rounded-xl" style="background:#fafafa;">
+                                <div class="flex justify-between items-center">
+                                    <p class="text-sm text-gray-500">
+                                        @lang('admin::app.sales.orders.view.table-number')
+                                    </p>
+                                    <div class="flex items-center gap-2">
+                                        @if($order->table_number)
+                                            <span class="px-3 py-1 text-sm font-bold rounded-lg" style="background:#e0e7ff; color:#4338ca;">
+                                                {{ $order->table_number }}
+                                            </span>
+                                            <x-admin::form action="{{ route('admin.sales.orders.unbind_table', $order->id) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button
+                                                    type="submit"
+                                                    class="flex items-center justify-center w-7 h-7 rounded-lg transition-colors"
+                                                    style="background:#ffe4e6;"
+                                                    title="Отвязать стол"
+                                                >
+                                                    <svg class="w-3.5 h-3.5" style="color:#be123c;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </x-admin::form>
+                                        @else
+                                            <span class="text-xs text-gray-400">
+                                                @lang('admin::app.sales.orders.view.table-not-set')
+                                            </span>
+                                            <x-admin::form action="{{ route('admin.sales.orders.bind_table', $order->id) }}" method="POST" class="flex items-center gap-2">
+                                                @csrf
+                                                <x-admin::form.control-group.control
+                                                    type="number"
+                                                    name="table_number"
+                                                    :value="null"
+                                                    rules="required|integer|min:1"
+                                                    min="1"
+                                                    class="w-16 text-center"
+                                                    placeholder="№"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    class="flex items-center justify-center w-7 h-7 rounded-lg transition-colors"
+                                                    style="background:#d1fae5;"
+                                                    title="Привязать стол"
+                                                >
+                                                    <svg class="w-3.5 h-3.5" style="color:#047857;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </button>
+                                            </x-admin::form>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -865,21 +825,46 @@
                 <!-- Payment and Shipping Information-->
                 <x-admin::accordion>
                     <x-slot:header>
-                        <p class="p-2.5 text-base font-semibold text-gray-600 dark:text-gray-300">
-                            @lang('admin::app.sales.orders.view.payment-and-shipping')
-                        </p>
+                        <div class="flex items-center gap-2.5 p-2.5">
+                            <div class="flex items-center justify-center w-7 h-7 rounded-lg" style="background:#d1fae5;">
+                                <svg class="w-3.5 h-3.5" style="color:#047857;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                </svg>
+                            </div>
+                            <p class="text-base font-bold text-gray-700 dark:text-gray-200">
+                                @lang('admin::app.sales.orders.view.payment-and-shipping')
+                            </p>
+                        </div>
                     </x-slot>
 
                     <x-slot:content>
                         <div>
-                            <!-- Payment method -->
-                            <p class="font-semibold text-gray-800 dark:text-white">
-                                {{ core()->getConfigData('sales.payment_methods.' . $order->payment->method . '.title') }}
-                            </p>
+                            <!-- Payment Status Indicator -->
+                            @php
+                                $isPaid = $order->base_grand_total_invoiced >= $order->base_grand_total;
+                                $paymentLabel = core()->getConfigData('sales.payment_methods.' . $order->payment->method . '.title') ?? $order->payment->method;
+                            @endphp
+                            <div class="flex items-center gap-2 mb-3">
+                                @if($isPaid)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full" style="background: #d1fae5; color: #047857;">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        Оплачено
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full" style="background: #fef3c7; color: #b45309;">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Не оплачено
+                                    </span>
+                                @endif
+                            </div>
 
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @lang('admin::app.sales.orders.view.payment-method')
-                            </p>
+                            <!-- Payment method (SPA) -->
+                            <v-order-payment-changer
+                                order-id="{{ $order->id }}"
+                                current-method="{{ $order->payment->method }}"
+                                current-label="{{ $paymentLabel }}"
+                                methods='@json($paymentMethods ?? [])'
+                            ></v-order-payment-changer>
                             {{--
                                                         <!-- Currency -->
                                                         <p class="pt-4 font-semibold text-gray-800 dark:text-white">
@@ -1088,4 +1073,366 @@
             </div>
         </div>
     </div>
+
+    @pushOnce('scripts')
+        <!-- SPA Status Changer Component -->
+        <script type="text/x-template" id="v-order-status-changer-template">
+            <div class="flex items-center gap-2 w-full">
+                <select
+                    v-model="currentStatus"
+                    @change="updateStatus"
+                    :disabled="isSaving"
+                    class="flex-1 px-3 py-1.5 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:opacity-50 min-w-[200px]"
+                >
+                    <option value="pending">Новый</option>
+                    <option value="pending_payment">Ожидание оплаты</option>
+                    <option value="processing">Принят</option>
+                    <option value="preparing">Готовим</option>
+                    <option value="ready">Готов</option>
+                    <option value="completed">Завершён</option>
+                    <option value="canceled">Отмена</option>
+                    <option value="closed">Закрыт</option>
+                </select>
+                <svg v-if="isSaving" class="w-5 h-5 animate-spin text-violet-500 flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg v-if="showSuccess" class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+        </script>
+
+        <!-- SPA Payment Changer Component -->
+        <script type="text/x-template" id="v-order-payment-changer-template">
+            <div class="relative">
+                <div class="flex items-center gap-2">
+                    <div>
+                        <p class="font-semibold text-gray-800 dark:text-white">@{{ currentMethodLabel }}</p>
+                        <p class="text-gray-600 dark:text-gray-300">Способ оплаты</p>
+                    </div>
+                    <button
+                        @click="isEditing = !isEditing"
+                        class="flex items-center justify-center w-7 h-7 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        title="Изменить способ оплаты"
+                    >
+                        <svg class="w-4 h-4 text-gray-400 hover:text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </button>
+                </div>
+                <div v-if="isEditing" class="mt-2">
+                    <select
+                        v-model="selectedMethod"
+                        @change="updatePayment"
+                        :disabled="isSaving"
+                        class="w-full px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
+                    >
+                        <option v-for="method in availableMethods" :key="method.code" :value="method.code">@{{ method.title }}</option>
+                    </select>
+                    <svg v-if="isSaving" class="w-4 h-4 animate-spin text-violet-500 mt-1" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </script>
+
+        <!-- SPA Item Editor Component -->
+        <script type="text/x-template" id="v-order-items-editor-template">
+            <div>
+                <div class="flex justify-between items-center p-4" style="border-bottom: 1px solid #f0f0f0;">
+                    <div class="flex items-center gap-2.5">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background:#f1f0ff;">
+                            <svg class="w-4 h-4" style="color:#7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                        <p class="text-base font-bold text-gray-800 dark:text-white">
+                            Товары
+                        </p>
+                        <span class="px-2 py-0.5 text-xs font-bold rounded-full" style="background:#f1f0ff; color:#7c3aed;">@{{ items.length }}</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <p class="text-lg font-black" style="color:#7c3aed; letter-spacing: -0.02em;">
+                            @{{ formattedGrandTotal }}
+                        </p>
+                        <button
+                            v-if="!isEditing"
+                            @click="startEditing"
+                            class="flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200"
+                            style="background:#f5f3ff;"
+                            title="Редактировать кол-во"
+                        >
+                            <svg class="w-4 h-4" style="color:#7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
+                        <template v-if="isEditing">
+                            <button
+                                @click="saveChanges"
+                                :disabled="isSaving"
+                                class="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl transition-all duration-200 disabled:opacity-50"
+                                style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 2px 8px rgba(124,58,237,0.3);"
+                            >
+                                <svg v-if="isSaving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                Сохранить
+                            </button>
+                            <button
+                                @click="cancelEditing"
+                                class="px-4 py-2 text-xs font-bold text-gray-500 rounded-xl transition-colors"
+                                style="background: #f3f4f6;"
+                            >
+                                Отмена
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div>
+                    <div
+                        v-for="item in items"
+                        :key="item.id"
+                        class="flex justify-between gap-3 px-4 py-4 transition-all duration-200"
+                        style="border-bottom: 1px solid #f5f5f5;"
+                        @mouseenter="$event.currentTarget.style.background='#fafafa'"
+                        @mouseleave="$event.currentTarget.style.background='transparent'"
+                    >
+                        <div class="flex gap-3">
+                            <div v-if="item.image_url" class="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <img :src="item.image_url" class="w-full h-full object-cover" />
+                            </div>
+                            <div v-else class="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center" style="background:#f8f7ff; border: 1px dashed #e0dff5;">
+                                <svg class="w-6 h-6" style="color:#c4b5fd;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <p class="text-sm font-bold text-gray-800 dark:text-white">@{{ item.name }}</p>
+                                <div class="flex flex-col gap-1">
+                                    <p v-if="!isEditing" class="text-xs text-gray-500">
+                                        @{{ item.formatted_price }} × @{{ item.qty_ordered }} шт.
+                                    </p>
+                                    <div v-else class="flex items-center gap-2">
+                                        <span class="text-xs text-gray-500">@{{ item.formatted_price }} ×</span>
+                                        <div class="flex items-center rounded-xl overflow-hidden" style="border: 2px solid #ede9fe;">
+                                            <button
+                                                @click="decrementQty(item)"
+                                                class="px-2.5 py-1 text-sm font-bold transition-colors"
+                                                style="color:#7c3aed; background:#f5f3ff;"
+                                                @mouseenter="$event.currentTarget.style.background='#ede9fe'"
+                                                @mouseleave="$event.currentTarget.style.background='#f5f3ff'"
+                                            >−</button>
+                                            <input
+                                                type="number"
+                                                v-model.number="item.qty_ordered"
+                                                min="0"
+                                                class="w-10 text-center text-sm font-bold border-none bg-transparent text-gray-800 dark:text-white focus:ring-0 p-1"
+                                            />
+                                            <button
+                                                @click="incrementQty(item)"
+                                                class="px-2.5 py-1 text-sm font-bold transition-colors"
+                                                style="color:#7c3aed; background:#f5f3ff;"
+                                                @mouseenter="$event.currentTarget.style.background='#ede9fe'"
+                                                @mouseleave="$event.currentTarget.style.background='#f5f3ff'"
+                                            >+</button>
+                                        </div>
+                                        <span class="text-xs text-gray-500">шт.</span>
+                                    </div>
+                                    <p class="text-[11px] text-gray-400">SKU: @{{ item.sku }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <p class="text-sm font-bold text-gray-800 dark:text-white whitespace-nowrap">
+                                @{{ formatPrice(Number(item.base_total) + Number(item.base_tax_amount) - Number(item.base_discount_amount)) }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </script>
+
+        <script type="module">
+            // SPA Status Changer
+            app.component('v-order-status-changer', {
+                template: '#v-order-status-changer-template',
+                props: ['orderId', 'initialStatus', 'updateUrl'],
+                data() {
+                    return {
+                        currentStatus: this.initialStatus,
+                        isSaving: false,
+                        showSuccess: false,
+                    };
+                },
+                methods: {
+                    updateStatus() {
+                        if (this.currentStatus === this.initialStatus) return;
+
+                        this.isSaving = true;
+                        this.showSuccess = false;
+
+                        this.$axios.post(this.updateUrl, {
+                            status: this.currentStatus,
+                        }, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then((response) => {
+                            this.isSaving = false;
+                            if (response.data.success) {
+                                this.showSuccess = true;
+                                setTimeout(() => { this.showSuccess = false; }, 2000);
+
+                                // Update status badge in header
+                                this.$emitter.emit('add-flash', {
+                                    type: 'success',
+                                    message: response.data.message
+                                });
+                            } else {
+                                this.$emitter.emit('add-flash', {
+                                    type: 'warning',
+                                    message: response.data.message
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            this.isSaving = false;
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || 'Ошибка при обновлении статуса'
+                            });
+                        });
+                    },
+                },
+            });
+
+            // SPA Payment Changer
+            app.component('v-order-payment-changer', {
+                template: '#v-order-payment-changer-template',
+                props: ['orderId', 'currentMethod', 'currentLabel', 'methods'],
+                data() {
+                    return {
+                        selectedMethod: this.currentMethod,
+                        currentMethodLabel: this.currentLabel,
+                        availableMethods: JSON.parse(this.methods || '[]'),
+                        isEditing: false,
+                        isSaving: false,
+                    };
+                },
+                methods: {
+                    updatePayment() {
+                        if (this.selectedMethod === this.currentMethod) return;
+
+                        this.isSaving = true;
+
+                        this.$axios.post(`{{ url('admin/sales/orders') }}/${this.orderId}/update-payment`, {
+                            method: this.selectedMethod,
+                        }, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then((response) => {
+                            this.isSaving = false;
+                            if (response.data.success) {
+                                this.currentMethodLabel = response.data.method_label;
+                                this.isEditing = false;
+                                this.$emitter.emit('add-flash', {
+                                    type: 'success',
+                                    message: response.data.message
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            this.isSaving = false;
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || 'Ошибка при обновлении способа оплаты'
+                            });
+                        });
+                    },
+                },
+            });
+
+            // SPA Items Editor
+            app.component('v-order-items-editor', {
+                template: '#v-order-items-editor-template',
+                props: ['orderId', 'initialItems', 'grandTotal'],
+                data() {
+                    return {
+                        items: JSON.parse(this.initialItems || '[]'),
+                        originalItems: [],
+                        formattedGrandTotal: this.grandTotal,
+                        isEditing: false,
+                        isSaving: false,
+                    };
+                },
+                methods: {
+                    formatPrice(amount) {
+                        const num = parseFloat(amount);
+                        if (isNaN(num)) return '0,00 ₽';
+                        return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB' }).format(num);
+                    },
+                    startEditing() {
+                        this.originalItems = JSON.parse(JSON.stringify(this.items));
+                        this.isEditing = true;
+                    },
+                    cancelEditing() {
+                        this.items = JSON.parse(JSON.stringify(this.originalItems));
+                        this.isEditing = false;
+                    },
+                    incrementQty(item) {
+                        item.qty_ordered++;
+                    },
+                    decrementQty(item) {
+                        if (item.qty_ordered > 0) item.qty_ordered--;
+                    },
+                    saveChanges() {
+                        this.isSaving = true;
+
+                        const updates = this.items.map(item => ({
+                            id: item.id,
+                            qty: item.qty_ordered,
+                        }));
+
+                        this.$axios.post(`{{ url('admin/sales/orders') }}/${this.orderId}/update-items`, {
+                            items: updates,
+                        }, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then((response) => {
+                            this.isSaving = false;
+                            if (response.data.success) {
+                                this.isEditing = false;
+                                if (response.data.items) {
+                                    this.items = response.data.items;
+                                }
+                                if (response.data.grand_total) {
+                                    this.formattedGrandTotal = response.data.grand_total;
+                                }
+
+                                // Update all totals in DOM
+                                if (response.data.totals) {
+                                    Object.keys(response.data.totals).forEach(key => {
+                                        const el = document.querySelector(`[data-total="${key}"]`);
+                                        if (el) el.textContent = response.data.totals[key];
+                                    });
+                                }
+
+                                this.$emitter.emit('add-flash', {
+                                    type: 'success',
+                                    message: response.data.message
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            this.isSaving = false;
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || 'Ошибка при обновлении товаров'
+                            });
+                        });
+                    },
+                },
+            });
+        </script>
+    @endPushOnce
 </x-admin::layouts>
