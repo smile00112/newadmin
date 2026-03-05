@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Models;
+namespace Webkul\PushNotification\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Webkul\Customer\Models\CustomerProxy;
+use Webkul\PushNotification\Contracts\CustomerPushToken as CustomerPushTokenContract;
 
-class CustomerPushToken extends Model
+class CustomerPushToken extends Model implements CustomerPushTokenContract
 {
-    use HasFactory;
-
     /**
      * The attributes that are mass assignable.
      *
@@ -36,6 +35,6 @@ class CustomerPushToken extends Model
      */
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(CustomerProxy::modelClass());
     }
 }

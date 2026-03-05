@@ -1,19 +1,15 @@
 <?php
 
-namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
+namespace Webkul\PushNotification\Http\Controllers\Api;
 
-use App\Models\CustomerPushToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Webkul\RestApi\Http\Controllers\V1\Shop\Controller;
+use Webkul\PushNotification\Models\CustomerPushToken;
 
-class PushTokenController extends Controller
+class PushTokenController
 {
     /**
      * Store a new push token for the authenticated customer.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
      */
     public function store(Request $request): Response
     {
@@ -25,10 +21,9 @@ class PushTokenController extends Controller
         $customer = auth('sanctum')->user();
 
         if (! $customer) {
-            return response(['message' => trans('rest-api::app.shop.customer.auth.not-authorized')], 401);
+            return response(['message' => 'Not authorized'], 401);
         }
 
-        // Upsert: update if token exists for this customer, otherwise create
         $pushToken = CustomerPushToken::updateOrCreate(
             [
                 'customer_id' => $customer->id,
@@ -55,16 +50,13 @@ class PushTokenController extends Controller
 
     /**
      * Delete a push token for the authenticated customer.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
      */
     public function destroy(Request $request): Response
     {
         $customer = auth('sanctum')->user();
 
         if (! $customer) {
-            return response(['message' => trans('rest-api::app.shop.customer.auth.not-authorized')], 401);
+            return response(['message' => 'Not authorized'], 401);
         }
 
         $request->validate([
@@ -74,7 +66,6 @@ class PushTokenController extends Controller
         $token = $request->input('token');
 
         if ($token) {
-            // Delete specific token
             CustomerPushToken::where('customer_id', $customer->id)
                 ->where('token', $token)
                 ->delete();
@@ -84,7 +75,6 @@ class PushTokenController extends Controller
             ]);
         }
 
-        // Delete all tokens for this customer
         CustomerPushToken::where('customer_id', $customer->id)->delete();
 
         return response([

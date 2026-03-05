@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Listeners;
+namespace Webkul\PushNotification\Listeners;
 
-use App\Jobs\SendPushNotificationJob;
-use App\Services\FirebasePushService;
 use Illuminate\Support\Facades\Log;
+use Webkul\PushNotification\Jobs\SendPushNotificationJob;
+use Webkul\PushNotification\Services\FirebasePushService;
 use Webkul\Sales\Models\Order;
 
-class SendPushOnOrderStatusChange
+class OrderStatusChanged
 {
     /**
      * Create the event listener.
@@ -20,28 +20,23 @@ class SendPushOnOrderStatusChange
     public function handle(Order $order): void
     {
         try {
-            // Check if push notifications are enabled
             if (! $this->pushService->isEnabled()) {
                 return;
             }
 
-            // Skip if no customer is associated
             if (! $order->customer_id) {
                 return;
             }
 
-            // Check if the current status should trigger a push
             if (! $this->pushService->isStatusEnabled($order->status)) {
                 return;
             }
 
-            // Get message for the current status
             $message = $this->pushService->getMessageForStatus($order->status, $order);
             if (! $message) {
                 return;
             }
 
-            // Dispatch job to send push notification asynchronously
             SendPushNotificationJob::dispatch(
                 $order->customer_id,
                 $message['title'],
@@ -58,7 +53,7 @@ class SendPushOnOrderStatusChange
                 'status'      => $order->status,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in SendPushOnOrderStatusChange listener', [
+            Log::error('Error in OrderStatusChanged push listener', [
                 'order_id' => $order->id,
                 'error'    => $e->getMessage(),
             ]);

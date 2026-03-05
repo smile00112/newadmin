@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Jobs;
+namespace Webkul\PushNotification\Jobs;
 
-use App\Services\FirebasePushService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Webkul\PushNotification\Services\FirebasePushService;
 
 class SendPushNotificationJob implements ShouldQueue
 {

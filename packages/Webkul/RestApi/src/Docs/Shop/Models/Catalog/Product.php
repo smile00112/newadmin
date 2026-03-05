@@ -686,7 +686,9 @@ class Product
      *                 },
      *                 "is_half_portion": false,
      *                 "half_portion_pair_product_id": null,
-     *                 "half_portion_pair_product": null
+     *                 "half_portion_pair_product": null,
+     *                 "weight": 150.0,
+     *                 "volume": 250.0
      *             }, {
      *                 "id": 26,
      *                 "sku": "ingredient-2",
@@ -712,7 +714,9 @@ class Product
      *                     "name": "Ingredient Name",
      *                     "base_image": {},
      *                     "nutrition": {"calories": 250.5, "proteins": 15.2, "fats": 8.5, "carbs": 30.0}
-     *                 }
+     *                 },
+     *                 "weight": 120.0,
+     *                 "volume": null
      *             }}
      *         }}
      *     }},
@@ -856,7 +860,9 @@ class Product
      *                                  @OA\Property(property="fats", type="float", nullable=true),
      *                                  @OA\Property(property="carbs", type="float", nullable=true)
      *                              )
-     *                          )
+     *                          ),
+     *                          @OA\Property(property="weight", type="float", nullable=true, description="Product weight from attribute"),
+     *                          @OA\Property(property="volume", type="float", nullable=true, description="Product volume from attribute")
      *                      )
      *                  )
      *              )
