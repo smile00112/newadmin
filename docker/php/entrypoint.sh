@@ -20,6 +20,14 @@ wait_for_port() {
     echo "Warning: $name did not become ready after $max_attempts attempts"
 }
 
+# Нефатальный запуск artisan-команд (не должен срывать старт контейнера)
+run_artisan_optional() {
+    cmd="$*"
+    if ! php artisan "$@"; then
+        echo "Warning: php artisan $cmd failed, continuing startup"
+    fi
+}
+
 # Ожидание готовности MySQL
 wait_for_port mysql 3306 "MySQL"
 
@@ -35,10 +43,10 @@ chmod -R 775 /var/www/html/bootstrap/cache
 # Оптимизация Laravel для production
 if [ "$APP_ENV" = "production" ]; then
     echo "Optimizing Laravel for production..."
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
-    php artisan event:cache
+    run_artisan_optional config:cache
+    run_artisan_optional route:cache
+    run_artisan_optional view:cache
+    run_artisan_optional event:cache
 fi
 
 # Выполнение миграций (если нужно)

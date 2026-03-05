@@ -67,6 +67,60 @@ return [
             'user-agreement-info'       => 'Выберите CMS страницу для пользовательского соглашения',
             'privacy-policy'            => 'Условия конфиденциальности',
             'privacy-policy-info'       => 'Выберите CMS страницу для условий конфиденциальности',
+
+            'push-enabled'                     => 'Включить push-уведомления',
+            'push-enabled-info'                => 'Включить отправку push-уведомлений через Firebase',
+            'firebase-credentials-json'        => 'Firebase учётные данные (JSON)',
+            'firebase-credentials-json-info'   => 'Скопируйте содержимое файла Service Account JSON из Firebase Console',
+            'firebase-project-id'              => 'Firebase Project ID',
+            'firebase-project-id-info'         => 'ID проекта Firebase (находится в Service Account JSON)',
+            'push-statuses'                    => 'Статусы для отправки push',
+            'push-statuses-info'               => 'Выберите статусы заказов, при изменении на которые будут отправляться push-уведомления',
+            'push-info'                        => 'Может содержать плейсхолдеры: {order_id}, {status_label}',
+            'push-body-info'                   => 'Полный текст уведомления (может содержать плейсхолдеры: {order_id}, {status_label})',
+
+            'push-title-pending'               => 'Заголовок для статуса "Новый"',
+            'push-body-pending'                => 'Текст для статуса "Новый"',
+            'push-title-pending-payment'       => 'Заголовок для статуса "Ожидание оплаты"',
+            'push-body-pending-payment'        => 'Текст для статуса "Ожидание оплаты"',
+            'push-title-processing'            => 'Заголовок для статуса "Обработка"',
+            'push-body-processing'             => 'Текст для статуса "Обработка"',
+            'push-title-preparing'             => 'Заголовок для статуса "Готовим"',
+            'push-body-preparing'              => 'Текст для статуса "Готовим"',
+            'push-title-ready'                 => 'Заголовок для статуса "Готов"',
+            'push-body-ready'                  => 'Текст для статуса "Готов"',
+            'push-title-completed'             => 'Заголовок для статуса "Выполнен"',
+            'push-body-completed'              => 'Текст для статуса "Выполнен"',
+            'push-title-canceled'              => 'Заголовок для статуса "Отмена"',
+            'push-body-canceled'               => 'Текст для статуса "Отмена"',
+            'push-title-closed'                => 'Заголовок для статуса "Закрыт"',
+            'push-body-closed'                 => 'Текст для статуса "Закрыт"',
+        ],
+
+        'push-notifications' => [
+            'title' => 'Push-уведомления',
+            'info'  => 'Настройки отправки push-уведомлений через Firebase Cloud Messaging',
+
+            'settings' => [
+                'title' => 'Настройки Firebase',
+                'info'  => 'Основные параметры для подключения Firebase',
+            ],
+
+            'messages' => [
+                'title' => 'Текст уведомлений',
+                'info'  => 'Настройки текста push-уведомлений для каждого статуса заказа',
+            ],
+        ],
+
+        'order-status' => [
+            'pending'           => 'Новый',
+            'pending-payment'   => 'Ожидание оплаты',
+            'processing'        => 'Обработка',
+            'preparing'         => 'Готовим',
+            'ready'             => 'Готов',
+            'completed'         => 'Выполнен',
+            'canceled'          => 'Отмена',
+            'closed'            => 'Закрыт',
         ],
     ],
 

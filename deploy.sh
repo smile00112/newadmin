@@ -25,6 +25,10 @@ fi
 # Загрузка переменных
 source .env
 
+# Некоторые версии docker compose могут пытаться интерполировать переменную "__".
+# Явно задаем ее, чтобы убрать шумные WARN и не мешать деплою.
+export __="${__:-}"
+
 # Создание директорий
 info "Создание необходимых директорий..."
 mkdir -p docker/nginx/conf.d docker/nginx/ssl docker/nginx/logs docker/certbot/www
@@ -88,7 +92,29 @@ fi
 # Генерация ключа если нужно
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
     info "Генерация APP_KEY..."
-    docker compose -f docker-compose.prod.yml run --rm app php artisan key:generate --force
+
+    if command -v openssl >/dev/null 2>&1; then
+        generated_key="base64:$(openssl rand -base64 32 | tr -d '\r\n')"
+    elif command -v php >/dev/null 2>&1; then
+        generated_key="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
+    else
+        generated_key=$(docker compose -f docker-compose.prod.yml run --rm app php -r "echo 'base64:' . base64_encode(random_bytes(32));" 2>/dev/null | tr -d '\r\n')
+    fi
+
+    if [ -z "$generated_key" ]; then
+        error "Не удалось сгенерировать APP_KEY"
+    fi
+
+    if grep -q '^APP_KEY=' .env; then
+        sed -i "s|^APP_KEY=.*|APP_KEY=${generated_key}|" .env
+    else
+        echo "APP_KEY=${generated_key}" >> .env
+    fi
+
+    APP_KEY="$generated_key"
+    export APP_KEY
+
+    info "APP_KEY сохранен в .env"
 fi
 
 # Запуск всех сервисов
