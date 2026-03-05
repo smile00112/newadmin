@@ -67,6 +67,60 @@ return [
             'user-agreement-info'       => 'Select CMS page for user agreement',
             'privacy-policy'            => 'Privacy Policy',
             'privacy-policy-info'       => 'Select CMS page for privacy policy',
+
+            'push-enabled'                     => 'Enable Push Notifications',
+            'push-enabled-info'                => 'Enable push notifications sending through Firebase',
+            'firebase-credentials-json'        => 'Firebase Credentials (JSON)',
+            'firebase-credentials-json-info'   => 'Copy the contents of the Service Account JSON file from Firebase Console',
+            'firebase-project-id'              => 'Firebase Project ID',
+            'firebase-project-id-info'         => 'Project ID from Firebase (found in Service Account JSON)',
+            'push-statuses'                    => 'Statuses for Push Notifications',
+            'push-statuses-info'               => 'Select order statuses that trigger push notifications',
+            'push-info'                        => 'May contain placeholders: {order_id}, {status_label}',
+            'push-body-info'                   => 'Full notification text (may contain placeholders: {order_id}, {status_label})',
+
+            'push-title-pending'               => 'Title for "Pending" status',
+            'push-body-pending'                => 'Text for "Pending" status',
+            'push-title-pending-payment'       => 'Title for "Payment Pending" status',
+            'push-body-pending-payment'        => 'Text for "Payment Pending" status',
+            'push-title-processing'            => 'Title for "Processing" status',
+            'push-body-processing'             => 'Text for "Processing" status',
+            'push-title-preparing'             => 'Title for "Preparing" status',
+            'push-body-preparing'              => 'Text for "Preparing" status',
+            'push-title-ready'                 => 'Title for "Ready" status',
+            'push-body-ready'                  => 'Text for "Ready" status',
+            'push-title-completed'             => 'Title for "Completed" status',
+            'push-body-completed'              => 'Text for "Completed" status',
+            'push-title-canceled'              => 'Title for "Canceled" status',
+            'push-body-canceled'               => 'Text for "Canceled" status',
+            'push-title-closed'                => 'Title for "Closed" status',
+            'push-body-closed'                 => 'Text for "Closed" status',
+        ],
+
+        'push-notifications' => [
+            'title' => 'Push Notifications',
+            'info'  => 'Configure push notifications sending through Firebase Cloud Messaging',
+
+            'settings' => [
+                'title' => 'Firebase Settings',
+                'info'  => 'Basic Firebase configuration parameters',
+            ],
+
+            'messages' => [
+                'title' => 'Notification Messages',
+                'info'  => 'Configure notification text for each order status',
+            ],
+        ],
+
+        'order-status' => [
+            'pending'           => 'Pending',
+            'pending-payment'   => 'Payment Pending',
+            'processing'        => 'Processing',
+            'preparing'         => 'Preparing',
+            'ready'             => 'Ready',
+            'completed'         => 'Completed',
+            'canceled'          => 'Canceled',
+            'closed'            => 'Closed',
         ],
     ],
 

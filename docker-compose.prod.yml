@@ -103,7 +103,7 @@ services:
       - app-network
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-${DB_PASSWORD}}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -116,11 +116,11 @@ services:
     ports:
       - "${FORWARD_REDIS_PORT:-6379}:6379"
     command: >
-      sh -c "redis-server
-      ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
-      --appendonly yes
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru"
+      sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
+      exec redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru;
+      else
+      exec redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru;
+      fi'
     volumes:
       - redis_data:/data
     networks:
@@ -240,7 +240,7 @@ services:
       - ./docker/certbot/www:/var/www/certbot
     networks:
       - app-network
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h; done;'"
 
 networks:
   app-network:

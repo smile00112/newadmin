@@ -88,7 +88,23 @@ fi
 # Генерация ключа если нужно
 if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
     info "Генерация APP_KEY..."
-    docker compose -f docker-compose.prod.yml run --rm app php artisan key:generate --force
+
+    generated_key=$(docker compose -f docker-compose.prod.yml run --rm app php artisan key:generate --show 2>/dev/null | tr -d '\r' | grep -E '^base64:' | tail -n 1)
+
+    if [ -z "$generated_key" ]; then
+        error "Не удалось сгенерировать APP_KEY"
+    fi
+
+    if grep -q '^APP_KEY=' .env; then
+        sed -i "s|^APP_KEY=.*|APP_KEY=${generated_key}|" .env
+    else
+        echo "APP_KEY=${generated_key}" >> .env
+    fi
+
+    APP_KEY="$generated_key"
+    export APP_KEY
+
+    info "APP_KEY сохранен в .env"
 fi
 
 # Запуск всех сервисов

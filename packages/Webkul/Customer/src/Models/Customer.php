@@ -294,6 +294,16 @@ class Customer extends Authenticatable implements CustomerContract
     }
 
     /**
+     * Get all push tokens of a customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function pushTokens()
+    {
+        return $this->hasMany(\App\Models\CustomerPushToken::class, 'customer_id');
+    }
+
+    /**
      * Create a new factory instance for the model.
      *
      * @return \Webkul\Customer\Database\Factories\CustomerFactory
