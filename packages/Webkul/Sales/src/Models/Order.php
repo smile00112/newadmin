@@ -124,6 +124,15 @@ class Order extends Model implements OrderContract
     }
 
     /**
+     * Invalidate the status label cache.
+     * Call this after updating OrderStatus records to ensure fresh data on next access.
+     */
+    public static function invalidateStatusLabelCache(): void
+    {
+        static::$statusLabelCache = null;
+    }
+
+    /**
      * Returns the status label from status code (dynamic from DB).
      */
     public function getStatusLabelAttribute()

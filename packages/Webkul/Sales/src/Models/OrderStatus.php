@@ -67,4 +67,36 @@ class OrderStatus extends Model
             ->get(['code', 'name', 'icon', 'color', 'sort_order', 'is_system'])
             ->toArray();
     }
+
+    /**
+     * Get all statuses as options for config multiselect fields.
+     * Format: [['title' => 'Status Name', 'value' => 'status_code'], ...]
+     */
+    public static function getConfigOptions(): array
+    {
+        try {
+            return static::orderBy('sort_order')
+                ->get()
+                ->map(function ($status) {
+                    return [
+                        'title' => $status->name,
+                        'value' => $status->code,
+                    ];
+                })
+                ->toArray();
+        } catch (\Exception $e) {
+            // Fallback if table doesn't exist yet
+            return [
+                ['title' => 'Новый', 'value' => 'pending'],
+                ['title' => 'Ожидание оплаты', 'value' => 'pending_payment'],
+                ['title' => 'Обработка', 'value' => 'processing'],
+                ['title' => 'Готовим', 'value' => 'preparing'],
+                ['title' => 'Готов', 'value' => 'ready'],
+                ['title' => 'Выполнен', 'value' => 'completed'],
+                ['title' => 'Отменён', 'value' => 'canceled'],
+                ['title' => 'Закрыт', 'value' => 'closed'],
+                ['title' => 'Мошенничество', 'value' => 'fraud'],
+            ];
+        }
+    }
 }

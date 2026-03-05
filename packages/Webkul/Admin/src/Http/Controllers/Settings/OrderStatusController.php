@@ -86,6 +86,12 @@ class OrderStatusController extends Controller
                     ->where('is_system', false)
                     ->delete();
             }
+
+            // Clear status label cache in Order model
+            $this->invalidateStatusLabelCache();
+
+            // Clear mobile app settings cache
+            $this->invalidateMobileAppCache();
         }
 
         // 2. Save workflow settings
@@ -99,6 +105,28 @@ class OrderStatusController extends Controller
             'success' => true,
             'message' => 'Настройки статусов сохранены.',
         ]);
+    }
+
+    /**
+     * Invalidate the status label cache in Order model.
+     * This must be called after any status changes to ensure fresh data.
+     */
+    private function invalidateStatusLabelCache(): void
+    {
+        \Webkul\Sales\Models\Order::invalidateStatusLabelCache();
+    }
+
+    /**
+     * Invalidate mobile app settings cache when statuses change.
+     * This ensures the mobile app gets fresh status data on next request.
+     */
+    private function invalidateMobileAppCache(): void
+    {
+        try {
+            \Webkul\MobileApp\Http\Controllers\Api\MobileSettingsController::clearCache();
+        } catch (\Exception $e) {
+            // Silently fail if mobile app package is not available
+        }
     }
 
     /**

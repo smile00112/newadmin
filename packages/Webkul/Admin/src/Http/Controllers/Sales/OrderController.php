@@ -747,17 +747,23 @@ class OrderController extends Controller
                 'required',
                 'string',
                 function ($attribute, $value, $fail) {
-                    $validStatuses = [
-                        Order::STATUS_PENDING,
-                        Order::STATUS_PENDING_PAYMENT,
-                        Order::STATUS_PROCESSING,
-                        Order::STATUS_PREPARING,
-                        Order::STATUS_READY,
-                        Order::STATUS_COMPLETED,
-                        Order::STATUS_CANCELED,
-                        Order::STATUS_CLOSED,
-                        Order::STATUS_FRAUD,
-                    ];
+                    // Dynamic validation: status must exist in order_statuses table
+                    try {
+                        $validStatuses = OrderStatus::pluck('code')->toArray();
+                    } catch (\Exception $e) {
+                        // Fallback if table doesn't exist yet
+                        $validStatuses = [
+                            Order::STATUS_PENDING,
+                            Order::STATUS_PENDING_PAYMENT,
+                            Order::STATUS_PROCESSING,
+                            Order::STATUS_PREPARING,
+                            Order::STATUS_READY,
+                            Order::STATUS_COMPLETED,
+                            Order::STATUS_CANCELED,
+                            Order::STATUS_CLOSED,
+                            Order::STATUS_FRAUD,
+                        ];
+                    }
 
                     if (! in_array($value, $validStatuses)) {
                         $fail('The selected status is invalid.');

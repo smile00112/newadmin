@@ -693,14 +693,13 @@
 
                         totalUnRead: 0,
 
-                        orderTypeMessages: {
-                        {{ \Webkul\Sales\Models\Order::STATUS_PENDING }}: @json(__('admin::app.notifications.order-status-messages.pending')),
-                        {{ \Webkul\Sales\Models\Order::STATUS_CANCELED }}: @json(__('admin::app.notifications.order-status-messages.canceled')),
-                        {{ \Webkul\Sales\Models\Order::STATUS_CLOSED }}: @json(__('admin::app.notifications.order-status-messages.closed')),
-                        {{ \Webkul\Sales\Models\Order::STATUS_COMPLETED }}: @json(__('admin::app.notifications.order-status-messages.completed')),
-                        {{ \Webkul\Sales\Models\Order::STATUS_PROCESSING }}: @json(__('admin::app.notifications.order-status-messages.processing')),
-                        {{ \Webkul\Sales\Models\Order::STATUS_PENDING_PAYMENT }}: @json(__('admin::app.notifications.order-status-messages.pending-payment')),
-                        }
+                        orderTypeMessages: @json(
+                            \Webkul\Sales\Models\OrderStatus::orderBy('sort_order')->get()->mapWithKeys(function($status) {
+                                $translationKey = 'admin::app.notifications.order-status-messages.' . $status->code;
+                                $translation = trans($translationKey);
+                                return [$status->code => $translation !== $translationKey ? $translation : $status->name];
+                            })->toArray()
+                        )
                     }
                 },
 

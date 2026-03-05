@@ -203,31 +203,46 @@ class MobileSettingsController extends Controller
     }
 
     /**
-     * Get all available order statuses with translations.
+     * Get all available order statuses from database.
+     * Now reads from order_statuses table, so any custom statuses will be included automatically.
      */
     protected function getOrderStatuses(): array
     {
-        $statuses = [
-            Order::STATUS_PENDING,
-            Order::STATUS_PENDING_PAYMENT,
-            Order::STATUS_PROCESSING,
-            Order::STATUS_PREPARING,
-            Order::STATUS_READY,
-            Order::STATUS_COMPLETED,
-            Order::STATUS_CANCELED,
-            // Order::STATUS_CLOSED,
-            // Order::STATUS_FRAUD,
-        ];
+        try {
+            // Get all statuses from DB ordered by sort_order
+            $dbStatuses = \Webkul\Sales\Models\OrderStatus::orderBy('sort_order')->get();
 
-        $result = [];
-        foreach ($statuses as $status) {
-            $result[] = [
-                'code'  => $status,
-                'label' => trans('shop::app.customers.account.orders.status.options.' . str_replace('_', '-', $status)),
+            $result = [];
+            foreach ($dbStatuses as $status) {
+                // Try to get translation first, fallback to DB name if translation doesn't exist
+                $label = trans('shop::app.customers.account.orders.status.options.' . str_replace('_', '-', $status->code));
+                
+                // If translation key still contains the key itself, use the DB name instead
+                if (strpos($label, 'shop::app.customers.account.orders.status.options.') !== false) {
+                    $label = $status->name;
+                }
+
+                $result[] = [
+                    'code'  => $status->code,
+                    'label' => $label,
+                    'icon'  => $status->icon,   // New: icon from DB
+                    'color' => $status->color,  // New: color from DB
+                ];
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            // Fallback if table doesn't exist (e.g., during migration)
+            return [
+                ['code' => 'pending', 'label' => 'Новый', 'icon' => 'hourglass-top', 'color' => '#f59e0b'],
+                ['code' => 'pending_payment', 'label' => 'Ожидание оплаты', 'icon' => 'credit-card', 'color' => '#f59e0b'],
+                ['code' => 'processing', 'label' => 'Обработка', 'icon' => 'arrow-repeat', 'color' => '#3b82f6'],
+                ['code' => 'preparing', 'label' => 'Готовим', 'icon' => 'fire', 'color' => '#6366f1'],
+                ['code' => 'ready', 'label' => 'Готов', 'icon' => 'check2-circle', 'color' => '#10b981'],
+                ['code' => 'completed', 'label' => 'Выполнен', 'icon' => 'check-circle-fill', 'color' => '#22c55e'],
+                ['code' => 'canceled', 'label' => 'Отменён', 'icon' => 'x-circle', 'color' => '#ef4444'],
             ];
         }
-
-        return $result;
     }
 
     /**
