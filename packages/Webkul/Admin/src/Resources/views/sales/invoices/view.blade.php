@@ -12,13 +12,24 @@
         <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
             {!! view_render_event('bagisto.admin.sales.invoice.title.before', ['order' => $order]) !!}
 
-            <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
-                @lang('admin::app.sales.invoices.view.title', ['invoice_id' => $invoice->increment_id ?? $invoice->id])
-
-                <span class="{{ $invoice->status_label_class }} mx-1.5 text-sm">
-                    {{ $invoice->status_label }}
-                </span>
-            </p>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 15px rgba(59,130,246,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
+                            @lang('admin::app.sales.invoices.view.title', ['invoice_id' => $invoice->increment_id ?? $invoice->id])
+                        </p>
+                        <span class="{{ $invoice->status_label_class }}">
+                            {{ $invoice->status_label }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">Детали счета</p>
+                </div>
+            </div>
 
             {!! view_render_event('bagisto.admin.sales.invoice.title.after', ['order' => $order]) !!}
 
@@ -26,8 +37,11 @@
                 <!-- Back Button -->
                 <a
                     href="{{ route('admin.sales.invoices.index') }}"
-                    class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                    onmouseenter="this.style.background='#e5e7eb'"
+                    onmouseleave="this.style.background='#f3f4f6'"
                 >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     @lang('admin::app.account.edit.back-btn')
                 </a>
             </div>

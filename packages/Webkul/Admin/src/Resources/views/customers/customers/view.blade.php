@@ -16,7 +16,17 @@
 
             <div class="grid">
                 <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-                    <div class="flex items-center gap-2.5">
+                    <div class="flex items-center gap-3">
+                        <!-- Gradient avatar -->
+                        <div class="flex items-center justify-center rounded-xl" style="width: 48px; height: 48px; min-width: 48px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); box-shadow: 0 4px 15px rgba(6,182,212,0.3);">
+                            <template v-if="customer">
+                                <span style="font-size: 20px; font-weight: 700; color: #fff;" v-text="customer.first_name ? customer.first_name.charAt(0).toUpperCase() : '?'"></span>
+                            </template>
+                            <template v-else>
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            </template>
+                        </div>
+
                         <template
                             v-if="! customer"
                             class="flex gap-5"
@@ -27,40 +37,48 @@
                         </template>
 
                         <template v-else>
-                            <h1
-                                v-if="customer"
-                                class="text-xl font-bold leading-6 text-gray-800 dark:text-white"
-                                v-text="`${customer.first_name} ${customer.last_name}`"
-                            ></h1>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h1
+                                        v-if="customer"
+                                        class="text-xl font-bold leading-6 text-gray-800 dark:text-white"
+                                        v-text="`${customer.first_name} ${customer.last_name}`"
+                                    ></h1>
 
-                            <span
-                                v-if="customer.status"
-                                class="label-active mx-1.5 text-sm"
-                            >
-                                @lang('admin::app.customers.customers.view.active')
-                            </span>
+                                    <span
+                                        v-if="customer.status"
+                                        style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;"
+                                    >
+                                        @lang('admin::app.customers.customers.view.active')
+                                    </span>
 
-                            <span
-                                v-else
-                                class="label-canceled mx-1.5 text-sm"
-                            >
-                                @lang('admin::app.customers.customers.view.inactive')
-                            </span>
+                                    <span
+                                        v-else
+                                        style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;"
+                                    >
+                                        @lang('admin::app.customers.customers.view.inactive')
+                                    </span>
 
-                            <span
-                                v-if="customer.is_suspended"
-                                class="label-canceled text-sm"
-                            >
-                                @lang('admin::app.customers.customers.view.suspended')
-                            </span>
+                                    <span
+                                        v-if="customer.is_suspended"
+                                        style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; background: #fef3c7; color: #d97706; border: 1px solid #fde68a;"
+                                    >
+                                        @lang('admin::app.customers.customers.view.suspended')
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-0.5" v-if="customer" v-text="customer.email"></p>
+                            </div>
                         </template>
                     </div>
 
                     <!-- Back Button -->
                     <a
                         href="{{ route('admin.customers.customers.index') }}"
-                        class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                        style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s;"
+                        @mouseenter="$event.currentTarget.style.background='#e5e7eb'"
+                        @mouseleave="$event.currentTarget.style.background='#f3f4f6'"
                     >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                         @lang('admin::app.customers.customers.view.back-btn')
                     </a>
                 </div>
@@ -69,11 +87,13 @@
             {!! view_render_event('bagisto.admin.customers.customers.view.filters.before') !!}
 
             <!-- Filters -->
-            <div class="mt-7 flex flex-wrap items-center gap-x-1 gap-y-2">
+            <div class="mt-5 flex flex-wrap items-center gap-2">
                 <!-- Create Order button -->
                 @if (bouncer()->hasPermission('sales.orders.create'))
                     <div
-                        class="inline-flex w-full max-w-max cursor-pointer items-center justify-between gap-x-2 px-1 py-1.5 text-center font-semibold text-gray-600 transition-all hover:rounded-md hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800"
+                        style="display: inline-flex; cursor: pointer; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #7c3aed; background: #ede9fe; transition: all 0.15s;"
+                        @mouseenter="$event.currentTarget.style.background='#ddd6fe'"
+                        @mouseleave="$event.currentTarget.style.background='#ede9fe'"
                         @click="$emitter.emit('open-confirm-modal', {
                             message: '@lang('admin::app.customers.customers.view.order-create-confirmation')',
 
@@ -82,7 +102,7 @@
                             }
                         })"
                     >
-                        <span class="icon-cart text-2xl"></span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
 
                         @lang('admin::app.customers.customers.view.create-order')
 
@@ -98,11 +118,13 @@
                 @endif
 
                 <a
-                    class="inline-flex w-full max-w-max cursor-pointer items-center justify-between gap-x-2 px-1 py-1.5 text-center font-semibold text-gray-600 transition-all hover:rounded-md hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #2563eb; background: #dbeafe; transition: all 0.15s; text-decoration: none;"
                     href="{{ route('admin.customers.customers.login_as_customer', $customer->id) }}"
                     target="_blank"
+                    @mouseenter="$event.currentTarget.style.background='#bfdbfe'"
+                    @mouseleave="$event.currentTarget.style.background='#dbeafe'"
                 >
-                    <span class="icon-exit text-2xl"></span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
 
                     @lang('admin::app.customers.customers.view.login-as-customer')
                 </a>
@@ -110,7 +132,9 @@
                 <!-- Account Delete button -->
                 @if (bouncer()->hasPermission('customers.customers.delete'))
                     <div
-                        class="inline-flex w-full max-w-max cursor-pointer items-center justify-between gap-x-2 px-1 py-1.5 text-center font-semibold text-gray-600 transition-all hover:rounded-md hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-800"
+                        style="display: inline-flex; cursor: pointer; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #dc2626; background: #fef2f2; transition: all 0.15s;"
+                        @mouseenter="$event.currentTarget.style.background='#fecaca'"
+                        @mouseleave="$event.currentTarget.style.background='#fef2f2'"
                         @click="$emitter.emit('open-confirm-modal', {
                             message: '@lang('admin::app.customers.customers.view.account-delete-confirmation')',
 
@@ -119,7 +143,7 @@
                             }
                         })"
                     >
-                        <span class="icon-cancel text-2xl"></span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
 
                         @lang('admin::app.customers.customers.view.delete-account')
 
@@ -181,10 +205,15 @@
                     <template v-else>
                         <x-admin::accordion>
                             <x-slot:header>
-                                <div class="flex w-full">
-                                    <p class="w-full p-2.5 text-base font-semibold text-gray-800 dark:text-white">
-                                        @lang('admin::app.customers.customers.view.customer')
-                                    </p>
+                                <div class="flex w-full items-center">
+                                    <div class="flex items-center gap-2 w-full p-2.5">
+                                        <div class="flex items-center justify-center rounded-lg" style="width: 28px; height: 28px; min-width: 28px; background: #ede9fe;">
+                                            <svg class="w-4 h-4" style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                        </div>
+                                        <p class="text-base font-semibold text-gray-800 dark:text-white">
+                                            @lang('admin::app.customers.customers.view.customer')
+                                        </p>
+                                    </div>
 
                                     <!--Customer Edit Component -->
                                     @include('admin::customers.customers.view.edit')
@@ -233,11 +262,15 @@
                         <!-- Addresses listing-->
                         <x-admin::accordion>
                             <x-slot:header>
-                                <div class="flex w-full">
-                                    <!-- Address Title -->
-                                    <p class="w-full p-2.5 text-base font-semibold text-gray-800 dark:text-white">
-                                        @{{ "@lang('admin::app.customers.customers.view.address.count')".replace(':count', customer.addresses.length) }}
-                                    </p>
+                                <div class="flex w-full items-center">
+                                    <div class="flex items-center gap-2 w-full p-2.5">
+                                        <div class="flex items-center justify-center rounded-lg" style="width: 28px; height: 28px; min-width: 28px; background: #dbeafe;">
+                                            <svg class="w-4 h-4" style="color: #2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        </div>
+                                        <p class="text-base font-semibold text-gray-800 dark:text-white">
+                                            @{{ "@lang('admin::app.customers.customers.view.address.count')".replace(':count', customer.addresses.length) }}
+                                        </p>
+                                    </div>
 
                                     <!-- Address Create component -->
                                     @include('admin::customers.customers.view.address.create')

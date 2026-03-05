@@ -109,6 +109,24 @@ class TaxRateController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $taxRate = $this->taxRateRepository->findOrFail($id);
+
+        return view('admin::settings.taxes.rates.panel', compact('taxRate'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        return view('admin::settings.taxes.rates.panel');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(int $id): JsonResponse

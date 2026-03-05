@@ -115,6 +115,27 @@ class TaxCategoryController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $taxCategory = $this->taxCategoryRepository->with('tax_rates')->findOrFail($id);
+        $taxRates = $this->taxRateRepository->all();
+
+        return view('admin::settings.taxes.categories.panel', compact('taxCategory', 'taxRates'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        $taxRates = $this->taxRateRepository->all();
+
+        return view('admin::settings.taxes.categories.panel', compact('taxRates'));
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(int $id): JsonResponse

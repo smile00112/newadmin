@@ -95,6 +95,27 @@ class CurrencyController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $currency = $this->currencyRepository->findOrFail($id);
+        $currencyPositions = CurrencyPositionEnum::options();
+
+        return view('admin::settings.currencies.panel', compact('currency', 'currencyPositions'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        $currencyPositions = CurrencyPositionEnum::options();
+
+        return view('admin::settings.currencies.panel', compact('currencyPositions'));
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(int $id): JsonResponse

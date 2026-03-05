@@ -28,7 +28,7 @@ class SecureHeaders
 
         $response = $next($request);
 
-        $this->setHeaders($response);
+        $this->setHeaders($request, $response);
 
         return $response;
     }
@@ -39,12 +39,23 @@ class SecureHeaders
      * @param  \Illuminate\Http\Response  $response
      * @return void
      */
-    private function setHeaders($response)
+    private function setHeaders($request, $response)
     {
         $response->headers->set('Referrer-Policy', 'no-referrer-when-downgrade');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
-        $response->headers->set('X-Frame-Options', 'DENY');
+
+        // Allow same-origin iframes for panel routes (slide-out drawers)
+        $routeName = $request->route()?->getName() ?? '';
+        if (str_contains($routeName, 'view_panel')
+            || str_contains($routeName, 'edit_panel')
+            || str_contains($routeName, 'create_panel')
+        ) {
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        } else {
+            $response->headers->set('X-Frame-Options', 'DENY');
+        }
+
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
 

@@ -4,18 +4,24 @@
     </x-slot>
 
     <v-users>
-        <div class="flex items-center justify-between">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.settings.users.index.title')
-            </p>
+        <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(124,58,237,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">
+                        @lang('admin::app.settings.users.index.title')
+                    </p>
+                    <p class="text-xs text-gray-400">Администраторы системы</p>
+                </div>
+            </div>
 
             <div class="flex items-center gap-x-2.5">
-                <!-- Create Button -->
                 @if (bouncer()->hasPermission('settings.users.users.create'))
-                    <button
-                        type="button"
-                        class="primary-button"
-                    >
+                    <button type="button" class="primary-button">
                         @lang('admin::app.settings.users.index.create.title')
                     </button>
                 @endif
@@ -26,22 +32,25 @@
     </v-users>
 
     @pushOnce('scripts')
-        <script
-            type="text/x-template"
-            id="v-users-template"
-        >
-            <div class="flex items-center justify-between">
-                <p class="text-xl font-bold text-gray-800 dark:text-white">
-                    @lang('admin::app.settings.users.index.title')
-                </p>
+        <script type="text/x-template" id="v-users-template">
+            <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(124,58,237,0.3); min-width:44px;">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xl font-bold text-gray-800 dark:text-white">
+                            @lang('admin::app.settings.users.index.title')
+                        </p>
+                        <p class="text-xs text-gray-400">Администраторы системы</p>
+                    </div>
+                </div>
 
                 <div class="flex items-center gap-x-2.5">
                     @if (bouncer()->hasPermission('settings.users.users.create'))
-                        <button
-                            type="button"
-                            class="primary-button"
-                            @click="resetForm();$refs.userUpdateOrCreateModal.open()"
-                        >
+                        <button type="button" class="primary-button" @click="openDrawer('create')">
                             @lang('admin::app.settings.users.index.create.title')
                         </button>
                     @endif
@@ -85,7 +94,6 @@
                                     </span>
                                 </span>
 
-                                <!-- Filter Arrow Icon -->
                                 <i
                                     class="align-text-bottom text-base text-gray-800 dark:text-white ltr:ml-1.5 rtl:mr-1.5"
                                     :class="[applied.sort.order === 'asc' ? 'icon-down-stat': 'icon-up-stat']"
@@ -93,8 +101,7 @@
                                 ></i>
                             </p>
                         </div>
-                        
-                        <!-- Actions -->
+
                         @if ($hasPermission)
                             <p class="flex justify-end gap-2.5">
                                 @lang('admin::app.components.datagrid.table.actions')
@@ -120,28 +127,22 @@
                             v-for="record in available.records"
                             class="row grid items-center gap-2.5 border-b px-4 py-4 text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950"
                             :style="'grid-template-columns: repeat(' + (record.actions.length ? 6 : 5) + ', minmax(150px, 1fr));'"
+                            style="cursor: pointer;"
+                            @click="openDrawer('edit', record)"
+                            @mouseenter="preloadRecord(record)"
                         >
-                            <!-- ID -->
                             <p>@{{ record.user_id }}</p>
 
-                            <!-- User Profile -->
                             <p>
                                 <div class="flex items-center gap-2.5">
                                     <div
                                         class="border-3 mr-2 inline-block h-9 w-9 overflow-hidden rounded-full border-gray-800 text-center align-middle"
                                         v-if="record.user_img"
                                     >
-                                        <img
-                                            class="h-9 w-9"
-                                            :src="record.user_img"
-                                            alt="record.user_name"
-                                        />
+                                        <img class="h-9 w-9" :src="record.user_img" alt="record.user_name" />
                                     </div>
 
-                                    <div
-                                        class="profile-info-icon"
-                                        v-else
-                                    >
+                                    <div class="profile-info-icon" v-else>
                                         <button class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-blue-400 text-sm font-semibold leading-6 text-white transition-all hover:bg-blue-500 focus:bg-blue-500">
                                             @{{ record.user_name[0].toUpperCase() }}
                                         </button>
@@ -153,31 +154,23 @@
                                 </div>
                             </p>
 
-                            <!-- Status -->
                             <p>@{{ record.status }}</p>
-
-                            <!-- Email -->
                             <p class="break-words">@{{ record.email }}</p>
-
-                            <!-- Role -->
                             <p>@{{ record.role_name }}</p>
 
-                            <!-- Actions -->
                             <div class="flex justify-end">
-                                <a @click="id=1; editModal(record.actions.find(action => action.index === 'edit')?.url)">
+                                <a @click.stop="openDrawer('edit', record)">
                                     <span
                                         :class="record.actions.find(action => action.index === 'edit')?.icon"
                                         class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                    >
-                                    </span>
+                                    ></span>
                                 </a>
 
-                                <a @click="performAction(record.actions.find(action => action.index === 'delete'))">
+                                <a @click.stop="performAction(record.actions.find(action => action.index === 'delete'))">
                                     <span
                                         :class="record.actions.find(action => action.index === 'delete')?.icon"
                                         class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                    >
-                                    </span>
+                                    ></span>
                                 </a>
                             </div>
                         </div>
@@ -185,314 +178,161 @@
                 </template>
             </x-admin::datagrid>
 
-            <!-- Modal Form -->
-            <x-admin::form
-                v-slot="{ meta, errors, handleSubmit }"
-                as="div"
-                ref="modalForm"
-            >
-                <form
-                    @submit="handleSubmit($event, updateOrCreate)"
-                    ref="userCreateForm"
-                >
-                    <!-- User Create Modal -->
-                    <x-admin::modal ref="userUpdateOrCreateModal">
-                        <!-- Modal Header -->
-                        <x-slot:header>
-                            <p
-                                class="text-lg font-bold text-gray-800 dark:text-white"
-                                v-if="isUpdating"
-                            >
-                                @lang('admin::app.settings.users.index.edit.title')
-                            </p>
+            <!-- Drawer -->
+            <teleport to="body">
+                <div :style="{
+                    position: 'fixed', inset: 0, zIndex: 9998,
+                    visibility: isDrawerOpen ? 'visible' : 'hidden',
+                    pointerEvents: isDrawerOpen ? 'auto' : 'none',
+                }">
+                    <div @click="closeDrawer" :style="{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(2px)', transition: 'opacity 0.3s ease',
+                        opacity: drawerVisible ? 1 : 0,
+                    }"></div>
 
-                            <p
-                                class="text-lg font-bold text-gray-800 dark:text-white"
-                                v-else
-                            >
-                                @lang('admin::app.settings.users.index.create.title')
-                            </p>
-
-                        </x-slot>
-
-                        <!-- Modal Content -->
-                        <x-slot:content>
-                            <!-- Name -->
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.users.index.create.name')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="hidden"
-                                    name="id"
-                                    v-model="data.user.id"
-                                />
-
-                                <x-admin::form.control-group.control
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    rules="required"
-                                    v-model="data.user.name"
-                                    :label="trans('admin::app.settings.users.index.create.name')"
-                                    :placeholder="trans('admin::app.settings.users.index.create.name')"
-                                />
-
-                                <x-admin::form.control-group.error control-name="name" />
-                            </x-admin::form.control-group>
-
-                            <!-- Email -->
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.users.index.create.email')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    rules="required|email"
-                                    v-model="data.user.email"
-                                    :label="trans('admin::app.settings.users.index.create.email')"
-                                    placeholder="email@example.com"
-                                />
-
-                                <x-admin::form.control-group.error control-name="email" />
-                            </x-admin::form.control-group>
-
-                            <div class="flex gap-4">
-                                <!-- Password -->
-                                <x-admin::form.control-group class="mb-2.5 flex-1">
-                                    <x-admin::form.control-group.label>
-                                        @lang('admin::app.settings.users.index.create.password')
-                                    </x-admin::form.control-group.label>
-
-                                    <x-admin::form.control-group.control
-                                        type="password"
-                                        id="password"
-                                        name="password"
-                                        rules="min:6"
-                                        v-model="data.user.password"
-                                        :label="trans('admin::app.settings.users.index.create.password')"
-                                        :placeholder="trans('admin::app.settings.users.index.create.password')"
-                                        ref="password"
-                                    />
-
-                                    <x-admin::form.control-group.error control-name="password" />
-                                </x-admin::form.control-group>
-
-                                <!-- Confirm Password -->
-                                <x-admin::form.control-group class="flex-1">
-                                    <x-admin::form.control-group.label>
-                                        @lang('admin::app.settings.users.index.create.confirm-password')
-                                    </x-admin::form.control-group.label>
-
-                                    <x-admin::form.control-group.control
-                                        type="password"
-                                        id="password_confirmation"
-                                        name="password_confirmation"
-                                        rules="confirmed:@password"
-                                        v-model="data.user.password_confirmation"
-                                        :label="trans('admin::app.settings.users.index.create.password')"
-                                        :placeholder="trans('admin::app.settings.users.index.create.confirm-password')"
-                                    />
-
-                                    <x-admin::form.control-group.error control-name="password_confirmation" />
-                                </x-admin::form.control-group>
-                            </div>
-
-                            <div class="flex gap-4">
-                                <!-- Role -->
-                                <x-admin::form.control-group class="w-full flex-1">
-                                    <x-admin::form.control-group.label class="required">
-                                        @lang('admin::app.settings.users.index.create.role')
-                                    </x-admin::form.control-group.label>
-
-                                    <v-field
-                                        name="role_id"
-                                        rules="required"
-                                        label="@lang('admin::app.settings.users.index.create.role')"
-                                        v-model="data.user.role_id"
-                                    >
-                                        <select
-                                            name="role_id"
-                                            class="flex min-h-[39px] w-full rounded-md border bg-white px-3 py-2 text-sm text-gray-600 transition-all hover:border-gray-400 focus:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-gray-400 dark:focus:border-gray-400"
-                                            :class="[errors['options[sort]'] ? 'border border-red-600 hover:border-red-600' : '']"
-                                            v-model="data.user.role_id"
-                                        >
-                                            <option value="" disabled>@lang('admin::app.settings.taxes.categories.index.create.select')</option>
-
-                                            <option
-                                                v-for="role in roles"
-                                                :value="role.id"
-                                                :text="role.name"
-                                            >
-                                            </option>
-                                        </select>
-                                    </v-field>
-
-                                    <x-admin::form.control-group.error control-name="role_id" />
-                                </x-admin::form.control-group>
-
-                                <template v-if="currentUserId != data.user.id">
-                                    <x-admin::form.control-group class="!mb-0 w-full flex-1">
-                                        <x-admin::form.control-group.label>
-                                            @lang('admin::app.settings.users.index.create.status')
-                                        </x-admin::form.control-group.label>
-
-                                        <div class="mt-2.5 w-full gap-2.5">
-                                            <x-admin::form.control-group.control
-                                                type="switch"
-                                                name="status"
-                                                :value="1"
-                                                v-model="data.user.status"
-                                                :label="trans('admin::app.settings.users.index.create.status')"
-                                                ::checked="data.user.status"
-                                            />
-
-                                            <x-admin::form.control-group.error control-name="status" />
-                                        </div>
-                                    </x-admin::form.control-group>
-                                </template>
-
-                                <template v-else>
-                                    <input
-                                        type="hidden"
-                                        name="status"
-                                        v-model="data.user.status"
-                                    />
-                                </template>
-                            </div>
-
-                            <x-admin::form.control-group>
-                                <div class="hidden">
-                                    <x-admin::media.images
-                                        name="image"
-                                        ::uploaded-images='data.images'
-                                    />
+                    <div
+                        style="position:absolute; top:0; right:0; bottom:0; width:calc(100vw - 270px); max-width:calc(100vw - 270px); background:#f8f9fb; box-shadow:-8px 0 40px rgba(0,0,0,0.15); transition:transform 0.35s cubic-bezier(0.16,1,0.3,1); overflow:hidden; display:flex; flex-direction:column;"
+                        :style="{ transform: drawerVisible ? 'translateX(0)' : 'translateX(100%)' }"
+                    >
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:white; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button @click="closeDrawer" style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; min-width:36px; border-radius:10px; background:#f3f4f6; cursor:pointer; border:none; transition:all 0.2s;" onmouseenter="this.style.background='#e5e7eb'" onmouseleave="this.style.background='#f3f4f6'">
+                                    <svg style="width:18px; height:18px; color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                <div>
+                                    <span v-if="drawerMode === 'edit' && currentRecord" style="font-size:14px; font-weight:600; color:#111827;">
+                                        @{{ currentRecord.user_name }}
+                                        <span style="font-size:12px; color:#6b7280; margin-left:6px; font-weight:400;">@{{ currentRecord.email }}</span>
+                                    </span>
+                                    <span v-else style="font-size:14px; font-weight:600; color:#111827;">
+                                        @lang('admin::app.settings.users.index.create.title')
+                                    </span>
                                 </div>
+                            </div>
+                        </div>
 
-                                <v-media-images
-                                    name="image"
-                                    :uploaded-images='data.images'
-                                >
-                                </v-media-images>
+                        <div v-if="isDrawerLoading && isDrawerOpen" style="position:absolute; top:52px; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(248,249,251,0.9); z-index:5;">
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                                <svg style="width:36px; height:36px; color:#6366f1; animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="10" /></svg>
+                                <span style="font-size:13px; color:#6b7280;">Загрузка...</span>
+                            </div>
+                        </div>
 
-                                <p class="required my-3 text-sm text-gray-400">
-                                    @lang('admin::app.settings.users.index.create.upload-image-info')
-                                </p>
-                            </x-admin::form.control-group>
-                        </x-slot>
-
-                        <!-- Modal Footer -->
-                        <x-slot:footer>
-                            <!-- Save Button -->
-                            <x-admin::button
-                                button-type="submit"
-                                class="primary-button justify-center"
-                                :title="trans('admin::app.settings.users.index.create.save-btn')"
-                                ::loading="isLoading"
-                                ::disabled="isLoading"
-                            />
-                        </x-slot>
-                    </x-admin::modal>
-                </form>
-            </x-admin::form>
+                        <iframe v-if="iframeSrc" :src="iframeSrc" ref="panelIframe" @load="onIframeLoad" style="width:100%; border:none; flex:1; margin:0; padding:0; display:block;" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </teleport>
         </script>
 
         <script type="module">
             app.component('v-users', {
                 template: '#v-users-template',
-
                 data() {
                     return {
-                        isUpdating: false,
-
-                        roles: @json($roles),
-
-                        data: {
-                            user: {},
-                            images: [],
-                        },
-
-                        isLoading: false,
-
-                        currentUserId: "{{ auth()->guard('admin')->user()->id }}",
-                    }
+                        isDrawerOpen: false,
+                        drawerVisible: false,
+                        isDrawerLoading: false,
+                        iframeSrc: '',
+                        currentRecord: null,
+                        currentRecordId: null,
+                        drawerMode: 'edit',
+                        hoverTimer: null,
+                    };
                 },
-
+                computed: {
+                    gridsCount() {
+                        let count = this.$refs.datagrid.available.columns.length;
+                        if (this.$refs.datagrid.available.actions.length) ++count;
+                        if (this.$refs.datagrid.available.massActions.length) ++count;
+                        return count;
+                    },
+                },
+                mounted() {
+                    window.addEventListener('message', this.handleMessage);
+                    window.addEventListener('keydown', this.handleKeyDown);
+                },
+                beforeUnmount() {
+                    window.removeEventListener('message', this.handleMessage);
+                    window.removeEventListener('keydown', this.handleKeyDown);
+                    clearTimeout(this.hoverTimer);
+                },
                 methods: {
-                    updateOrCreate(params, { setErrors }) {
-                        this.isLoading = true;
-
-                        let formData = new FormData(this.$refs.userCreateForm);
-
-                        if (params.id) {
-                            formData.append('_method', 'put');
+                    openDrawer(mode, record = null) {
+                        clearTimeout(this.hoverTimer);
+                        this.drawerMode = mode;
+                        this.currentRecord = record;
+                        let targetUrl, targetId;
+                        if (mode === 'create') {
+                            targetUrl = window.location.origin + '/admin/settings/users/create-panel';
+                            targetId = 'create';
+                        } else {
+                            targetUrl = window.location.origin + '/admin/settings/users/edit-panel/' + record.user_id;
+                            targetId = record.user_id;
                         }
-
-                        this.$axios.post(params.id ? "{{ route('admin.settings.users.update') }}" : "{{ route('admin.settings.users.store') }}", formData, {
-                                headers: {
-                                    'Content-Type': 'multipart/form-data',
-                                }
-                            })
-                            .then((response) => {
-                                this.isLoading = false;
-
-                                this.$refs.userUpdateOrCreateModal.close();
-
+                        const alreadyLoaded = (this.currentRecordId === targetId && !this.isDrawerLoading);
+                        const alreadyLoading = (this.currentRecordId === targetId && this.isDrawerLoading);
+                        if (!alreadyLoaded && !alreadyLoading) {
+                            this.currentRecordId = targetId;
+                            this.isDrawerLoading = true;
+                            this.iframeSrc = targetUrl;
+                        }
+                        this.isDrawerOpen = true;
+                        this.$nextTick(() => { requestAnimationFrame(() => { this.drawerVisible = true; }); });
+                        this.toggleSidebarBlur(true);
+                        document.body.style.overflow = 'hidden';
+                    },
+                    closeDrawer() {
+                        this.drawerVisible = false;
+                        setTimeout(() => {
+                            this.isDrawerOpen = false;
+                            this.toggleSidebarBlur(false);
+                            document.body.style.overflow = '';
+                        }, 350);
+                    },
+                    preloadRecord(record) {
+                        if (this.isDrawerOpen) return;
+                        if (this.currentRecordId === record.user_id) return;
+                        clearTimeout(this.hoverTimer);
+                        this.hoverTimer = setTimeout(() => {
+                            this.currentRecordId = record.user_id;
+                            this.currentRecord = record;
+                            this.drawerMode = 'edit';
+                            this.isDrawerLoading = true;
+                            this.iframeSrc = window.location.origin + '/admin/settings/users/edit-panel/' + record.user_id;
+                        }, 150);
+                    },
+                    onIframeLoad() { this.isDrawerLoading = false; },
+                    handleMessage(event) {
+                        if (!event.data || typeof event.data !== 'object') return;
+                        switch (event.data.type) {
+                            case 'panel-saved':
+                                this.closeDrawer();
+                                this.iframeSrc = '';
+                                this.currentRecordId = null;
+                                this.$emitter.emit('add-flash', { type: 'success', message: event.data.message });
                                 this.$refs.datagrid.get();
-
-                                this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
-
-                                this.resetForm();
-                            })
-                            .catch(error => {
-                                this.isLoading = false;
-
-                                if (error.response.status == 422) {
-                                    setErrors(error.response.data.errors);
-                                }
-                            });
+                                break;
+                            case 'panel-closed':
+                                this.closeDrawer();
+                                break;
+                        }
                     },
-
-                    editModal(url) {
-                        this.isUpdating = true;
-
-                        this.$axios.get(url)
-                            .then((response) => {
-                                this.data = {
-                                    ...response.data,
-                                        images: response.data.user.image_url
-                                        ? [{ id: 'image', url: response.data.user.image_url }]
-                                        : [],
-                                        user: {
-                                            ...response.data.user,
-                                            password:'',
-                                            password_confirmation:'',
-                                        },
-                                };
-
-                                this.$refs.modalForm.setValues(response.data.user);
-
-                                this.$refs.userUpdateOrCreateModal.toggle();
-                            })
-                            .catch(error => this.$emitter.emit('add-flash', {
-                                type: 'error', message: error.response.data.message
-                            }));
-                    },
-
-                    resetForm() {
-                        this.isUpdating = false;
-
-                        this.data = {
-                            user: {},
-                            images: [],
-                        };
+                    handleKeyDown(e) { if (e.key === 'Escape' && this.isDrawerOpen) this.closeDrawer(); },
+                    toggleSidebarBlur(blur) {
+                        const sidebar = document.querySelector('.lg\\:fixed.lg\\:top-\\[58px\\]');
+                        if (sidebar) {
+                            sidebar.style.transition = 'filter 0.3s ease';
+                            sidebar.style.filter = blur ? 'blur(4px)' : 'none';
+                            sidebar.style.pointerEvents = blur ? 'none' : '';
+                        }
                     },
                 },
             });
         </script>
+
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
     @endPushOnce
 </x-admin::layouts>

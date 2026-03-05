@@ -70,6 +70,12 @@ class CampaignController extends Controller
 
         Event::dispatch('marketing.campaigns.create.after', $campaign);
 
+        if (request()->ajax() || request()->wantsJson()) {
+            return new JsonResponse([
+                'message' => trans('admin::app.marketing.communications.campaigns.create-success'),
+            ]);
+        }
+
         session()->flash('success', trans('admin::app.marketing.communications.campaigns.create-success'));
 
         return redirect()->route('admin.marketing.communications.campaigns.index');
@@ -114,6 +120,12 @@ class CampaignController extends Controller
 
         Event::dispatch('marketing.campaigns.update.after', $campaign);
 
+        if (request()->ajax() || request()->wantsJson()) {
+            return new JsonResponse([
+                'message' => trans('admin::app.marketing.communications.campaigns.update-success'),
+            ]);
+        }
+
         session()->flash('success', trans('admin::app.marketing.communications.campaigns.update-success'));
 
         return redirect()->route('admin.marketing.communications.campaigns.index');
@@ -142,5 +154,26 @@ class CampaignController extends Controller
                 'name' => 'admin::app.marketing.communications.campaigns.email-campaign',
             ]),
         ], 500);
+    }
+
+    /**
+     * Show the panel form for editing the specified campaign (iframe).
+     */
+    public function editPanel(int $id)
+    {
+        $campaign = $this->campaignRepository->findOrFail($id);
+        $templates = $this->templateRepository->findByField('status', 'active');
+
+        return view('admin::marketing.communications.campaigns.panel', compact('campaign', 'templates'));
+    }
+
+    /**
+     * Show the panel form for creating a new campaign (iframe).
+     */
+    public function createPanel()
+    {
+        $templates = $this->templateRepository->findByField('status', 'active');
+
+        return view('admin::marketing.communications.campaigns.panel', compact('templates'));
     }
 }

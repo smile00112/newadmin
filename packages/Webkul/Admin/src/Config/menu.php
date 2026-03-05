@@ -403,6 +403,12 @@ return [
         'route'      => 'admin.settings.product_category_positions.index',
         'sort'       => 12,
         'icon'       => '',
+    ], [
+        'key'        => 'settings.order_statuses',
+        'name'       => 'Статусы заказов',
+        'route'      => 'admin.settings.order_statuses.index',
+        'sort'       => 0,
+        'icon'       => '',
     ],
 
     /**

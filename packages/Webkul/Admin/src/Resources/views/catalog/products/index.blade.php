@@ -4,9 +4,19 @@
     </x-slot>
 
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <p class="text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.catalog.products.index.title')
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 15px rgba(245,158,11,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.catalog.products.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Каталог товаров</p>
+            </div>
+        </div>
 
         <div class="flex items-center gap-x-2.5">
             <!-- Export Modal -->
@@ -131,6 +141,9 @@
                 <div
                     class="row border-b px-2 py-2.5 transition-all hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950 sm:px-4 md:grid md:grid-cols-[2fr_1fr_1fr] md:grid-rows-1 md:gap-1.5"
                     v-for="record in available.records"
+                    style="cursor: pointer;"
+                    @mouseenter="$event.currentTarget.style.boxShadow='inset 3px 0 0 #f59e0b'"
+                    @mouseleave="$event.currentTarget.style.boxShadow='none'"
                 >
                     <!-- Mobile Layout -->
                     <div class="block space-y-3 md:hidden">
@@ -317,7 +330,7 @@
                             </div>
 
                             <div class="flex flex-col gap-1.5">
-                                <p class="text-base font-semibold text-gray-800 dark:text-white">
+                                <p class="text-base font-semibold" style="color: #059669;">
 {{--                                    TODO add have price_from property--}}
                                     @{{ $admin.formatPrice(record.price, (record.type === 'constructor' || record.type === 'grouped'), record.selected_ingredients_sum*1, record) }}
                                 </p>
@@ -358,30 +371,42 @@
                         <!-- Status, Category, Type Columns -->
                         <div class="flex items-center justify-between gap-x-4">
                             <div class="flex flex-col gap-1.5">
-                                <p :class="[record.status ? 'label-active': 'label-info']">
+                                <span
+                                    style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; width: fit-content;"
+                                    :style="record.status
+                                        ? 'background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;'
+                                        : 'background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe;'"
+                                >
                                     @{{ record.status ? "@lang('admin::app.catalog.products.index.datagrid.active')" : "@lang('admin::app.catalog.products.index.datagrid.disable')" }}
-                                </p>
+                                </span>
 
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    @{{ record.category_name ?? 'N/A' }}
+                                <p v-if="record.category_name" style="display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 6px; font-size: 11px; background: #fef3c7; color: #d97706; font-weight: 500; width: fit-content;">
+                                    @{{ record.category_name }}
                                 </p>
+                                <p v-else class="text-gray-400" style="font-size: 12px;">—</p>
 
-                                <p class="text-gray-600 dark:text-gray-300">
+                                <p style="display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 6px; font-size: 11px; background: #f3f4f6; color: #6b7280; font-weight: 500; width: fit-content;">
                                     @{{ record.type }}
                                 </p>
                             </div>
 
                             <p
-                                class="flex items-center gap-1.5"
+                                class="flex items-center gap-1"
                                 v-if="available.actions.length"
                             >
                                 <span
-                                    class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                    :class="action.icon"
-                                    v-text="! action.icon ? action.title : ''"
                                     v-for="action in record.actions"
                                     @click="performAction(action)"
+                                    style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; transition: all 0.15s;"
+                                    @mouseenter="$event.currentTarget.style.background='#ede9fe'"
+                                    @mouseleave="$event.currentTarget.style.background='transparent'"
                                 >
+                                    <i
+                                        :class="action.icon"
+                                        style="font-size: 20px; color: #7c3aed;"
+                                        v-if="action.icon"
+                                    ></i>
+                                    <span v-else style="font-size: 12px; color: #7c3aed; font-weight: 600;">@{{ action.title }}</span>
                                 </span>
                             </p>
                         </div>

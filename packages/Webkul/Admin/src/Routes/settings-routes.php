@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Webkul\Admin\Http\Controllers\Settings\ChannelController;
 use Webkul\Admin\Http\Controllers\Settings\CurrencyController;
+use Webkul\Admin\Http\Controllers\Settings\OrderStatusController;
 use Webkul\Admin\Http\Controllers\Settings\DataTransfer\ImportController;
 use Webkul\Admin\Http\Controllers\Settings\ExchangeRateController;
 use Webkul\Admin\Http\Controllers\Settings\InventorySourceController;
@@ -52,6 +53,10 @@ Route::prefix('settings')->group(function () {
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.currencies.delete');
 
         Route::post('mass-delete', 'massDestroy')->name('admin.settings.currencies.mass_delete');
+
+        Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.currencies.edit_panel');
+
+        Route::get('create-panel', 'createPanel')->name('admin.settings.currencies.create_panel');
     });
 
     /**
@@ -69,6 +74,10 @@ Route::prefix('settings')->group(function () {
         Route::put('edit', 'update')->name('admin.settings.exchange_rates.update');
 
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.exchange_rates.delete');
+
+        Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.exchange_rates.edit_panel');
+
+        Route::get('create-panel', 'createPanel')->name('admin.settings.exchange_rates.create_panel');
     });
 
     /**
@@ -84,6 +93,10 @@ Route::prefix('settings')->group(function () {
         Route::put('edit', 'update')->name('admin.settings.locales.update');
 
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.locales.delete');
+
+        Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.locales.edit_panel');
+
+        Route::get('create-panel', 'createPanel')->name('admin.settings.locales.create_panel');
     });
 
     /**
@@ -130,6 +143,10 @@ Route::prefix('settings')->group(function () {
             Route::put('edit', 'update')->name('admin.settings.taxes.categories.update');
 
             Route::delete('edit/{id}', 'destroy')->name('admin.settings.taxes.categories.delete');
+
+            Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.taxes.categories.edit_panel');
+
+            Route::get('create-panel', 'createPanel')->name('admin.settings.taxes.categories.create_panel');
         });
 
         /**
@@ -147,6 +164,10 @@ Route::prefix('settings')->group(function () {
             Route::put('edit/{id}', 'update')->name('admin.settings.taxes.rates.update');
 
             Route::delete('edit/{id}', 'destroy')->name('admin.settings.taxes.rates.delete');
+
+            Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.taxes.rates.edit_panel');
+
+            Route::get('create-panel', 'createPanel')->name('admin.settings.taxes.rates.create_panel');
         });
     });
 
@@ -165,6 +186,10 @@ Route::prefix('settings')->group(function () {
         Route::put('edit/{id}', 'update')->name('admin.settings.roles.update');
 
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.roles.delete');
+
+        Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.roles.edit_panel');
+
+        Route::get('create-panel', 'createPanel')->name('admin.settings.roles.create_panel');
     });
 
     /**
@@ -182,6 +207,10 @@ Route::prefix('settings')->group(function () {
         Route::delete('edit/{id}', 'destroy')->name('admin.settings.users.delete');
 
         Route::put('confirm', 'destroySelf')->name('admin.settings.users.destroy');
+
+        Route::get('edit-panel/{id}', 'editPanel')->name('admin.settings.users.edit_panel');
+
+        Route::get('create-panel', 'createPanel')->name('admin.settings.users.create_panel');
     });
 
     Route::controller(ThemeController::class)->prefix('themes')->group(function () {
@@ -256,5 +285,14 @@ Route::prefix('settings')->group(function () {
     Route::controller(ProductCategoryPositionsController::class)->prefix('product-category-positions')->group(function () {
         Route::get('', 'index')->name('admin.settings.product_category_positions.index');
         Route::post('', 'store')->name('admin.settings.product_category_positions.store');
+    });
+
+    /**
+     * Order Statuses routes.
+     */
+    Route::controller(OrderStatusController::class)->prefix('order-statuses')->group(function () {
+        Route::get('', 'index')->name('admin.settings.order_statuses.index');
+        Route::post('', 'save')->name('admin.settings.order_statuses.save');
+        Route::get('statuses', 'statuses')->name('admin.settings.order_statuses.statuses');
     });
 });

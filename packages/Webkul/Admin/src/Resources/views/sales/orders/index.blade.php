@@ -129,11 +129,12 @@
                         v-for="(record, index) in available.records"
                         :key="record.id"
                         style="border-left: 3px solid transparent; transition: border-color 0.3s, background 0.3s;"
-                        @mouseenter="$event.currentTarget.style.borderLeftColor='#8b5cf6'"
+                        @mouseenter="$event.currentTarget.style.borderLeftColor='#8b5cf6'; $emitter.emit('preload-order', record)"
                         @mouseleave="$event.currentTarget.style.borderLeftColor='transparent'"
+                        @click="$emitter.emit('open-order-drawer', record)"
                     >
                         <!-- Checkbox -->
-                        <div class="flex items-center justify-center w-10 flex-shrink-0 pt-3">
+                        <div class="flex items-center justify-center w-10 flex-shrink-0 pt-3" @click.stop>
                             <input 
                                 type="checkbox" 
                                 :value="record.id"
@@ -146,7 +147,7 @@
                         <!-- Main Content Grid -->
                         <div class="flex-1" style="display: grid; grid-template-columns: 2fr 1.5fr 1.5fr 2fr; gap: 1rem; align-items: center;">
                             <!-- Order Id, Created, Status Section -->
-                            <a :href="`{{ route('admin.sales.orders.view', '') }}/${record.id}`" class="flex items-start gap-4 no-underline">
+                            <div class="flex items-start gap-4">
                                 <!-- Order Number Badge -->
                                 <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:shadow-violet-500/40 group-hover:scale-105 transition-all duration-300">
                                     <span class="text-white font-bold text-sm">#@{{ index + 1 }}</span>
@@ -167,7 +168,7 @@
                                         <span v-html="$formatRelativeDate(record.created_at)"></span>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
 
                             <!-- Total Amount, Pay Via -->
                             <div class="flex flex-col justify-center gap-1.5">
@@ -211,11 +212,11 @@
                                 >
                                 </div>
 
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-1.5" @click.stop>
                                     <!-- Quick View Button -->
                                     <a 
                                         href="javascript:void(0)"
-                                        @click.stop="$emitter.emit('open-order-quick-view', record)"
+                                        @click.stop="$emitter.emit('open-order-drawer', record)"
                                         class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
                                         style="background:#f5f3ff;"
                                         @mouseenter="$event.currentTarget.style.background='#ede9fe'"
@@ -250,321 +251,13 @@
         </template>
     </x-admin::datagrid>
 
-    <!-- Order Quick View Modal -->
-    <v-order-quick-view></v-order-quick-view>
+    <!-- Order Slide-Out Drawer -->
+    <v-order-drawer></v-order-drawer>
 
     @include('admin::customers.customers.index.create')
 
     @pushOnce('scripts')
-        <!-- Order Quick View Component -->
-        <script type="text/x-template" id="v-order-quick-view-template">
-            <x-admin::modal ref="orderQuickViewModal">
-                <x-slot:header style="padding: 18px 28px; border-bottom: 1px solid #f0f0f0;">
-                    <div class="flex items-center justify-between w-full" style="padding: 6px 0;">
-                        <div class="flex items-center gap-3">
-                            <div class="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(124,58,237,0.3);">
-                                <span class="text-white font-bold text-sm">#@{{ order.increment_id }}</span>
-                            </div>
-                            <div>
-                                <p class="text-lg font-bold text-gray-800 dark:text-white">
-                                    Заказ #@{{ order.increment_id }}
-                                </p>
-                                <p class="text-xs text-gray-400" v-html="$formatRelativeDate(order.created_at)"></p>
-                            </div>
-                        </div>
-                        <span 
-                            class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide"
-                            :style="getStatusStyle(order.status)"
-                        >
-                            @{{ order.status_label }}
-                        </span>
-                    </div>
-                </x-slot>
-
-                <x-slot:content style="padding: 24px 28px; border-bottom: none;">
-                    <!-- Status Change -->
-                    <div v-if="!isLoading && order.id" class="flex items-center gap-3 p-4 rounded-2xl" style="background: linear-gradient(135deg, #f8f7ff 0%, #f0f4ff 100%); border: 1px solid #e9e5ff; margin-bottom: 20px;">
-                        <div class="flex items-center justify-center w-9 h-9 rounded-lg" style="background:#ede9fe;">
-                            <svg class="w-4 h-4" style="color:#7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                            </svg>
-                        </div>
-                        <select
-                            v-model="selectedStatus"
-                            @change="saveStatus"
-                            :disabled="isSavingStatus"
-                            class="flex-1 px-4 py-2.5 text-sm font-semibold border-0 rounded-xl text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
-                            style="background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
-                        >
-                            <option value="pending">Новый</option>
-                            <option value="pending_payment">Ожидание оплаты</option>
-                            <option value="processing">В обработке</option>
-                            <option value="preparing">Готовится</option>
-                            <option value="ready">Готов</option>
-                            <option value="completed">Завершён</option>
-                            <option value="canceled">Отменён</option>
-                            <option value="closed">Закрыт</option>
-                        </select>
-                        <svg v-if="isSavingStatus" class="w-5 h-5 animate-spin text-violet-500 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </div>
-
-                    <!-- Loading -->
-                    <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 gap-3">
-                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); animation: pulse 1.5s infinite;">
-                            <svg class="w-6 h-6 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
-                        <p class="text-sm text-gray-400">Загрузка заказа...</p>
-                    </div>
-
-                    <div v-else style="display:flex; flex-direction:column; gap:20px;">
-                        <!-- Customer + Payment Row -->
-                        <div class="flex items-center gap-4" style="padding: 16px 18px; background: #fafafa; border-radius: 16px; border: 1px solid #f0f0f0;">
-                            <div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style="background: linear-gradient(135deg, #34d399 0%, #06b6d4 100%); box-shadow: 0 4px 12px rgba(52,211,153,0.3); font-size: 15px;">
-                                @{{ order.customer_name ? order.customer_name.charAt(0).toUpperCase() : '?' }}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-gray-900 dark:text-white truncate">@{{ order.customer_name }}</p>
-                                <p class="text-xs text-gray-400 truncate" style="margin-top: 2px;">@{{ order.customer_email }}</p>
-                            </div>
-                            <div class="text-right flex-shrink-0" style="padding-left: 12px;">
-                                <p class="text-[10px] text-gray-400 uppercase tracking-wider" style="margin-bottom: 3px;">Оплата</p>
-                                <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">@{{ order.payment_method }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Order Items -->
-                        <div>
-                            <div class="flex items-center justify-between" style="margin-bottom: 12px;">
-                                <p class="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                    <svg class="w-4 h-4" style="color:#7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
-                                    Товары
-                                </p>
-                                <span class="px-2.5 py-1 text-xs font-bold rounded-full" style="background:#f1f0ff; color:#7c3aed;">@{{ order.items ? order.items.length : 0 }}</span>
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:10px; max-height:280px; overflow-y:auto; padding-right:4px; scrollbar-width:thin;">
-                                <div 
-                                    v-for="item in order.items" 
-                                    :key="item.id"
-                                    class="flex items-center gap-4 transition-all duration-200"
-                                    style="padding: 14px 16px; background: white; border: 1px solid #f0f0f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);"
-                                    @mouseenter="$event.currentTarget.style.boxShadow='0 3px 12px rgba(0,0,0,0.08)'"
-                                    @mouseleave="$event.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)'"
-                                >
-                                    <div v-if="item.image_url" class="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                        <img :src="item.image_url" class="w-full h-full object-cover" />
-                                    </div>
-                                    <div v-else class="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" style="background: #f8f7ff; border: 1px dashed #e0dff5;">
-                                        <svg class="w-5 h-5" style="color:#c4b5fd;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-gray-800 dark:text-white truncate">@{{ item.name }}</p>
-                                        <p class="text-xs text-gray-400" style="margin-top: 3px;">@{{ item.qty }} × @{{ item.price }}</p>
-                                    </div>
-                                    <p class="text-sm font-bold text-gray-800 dark:text-white whitespace-nowrap" style="padding-left: 8px;">@{{ item.total }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Totals -->
-                        <div style="padding: 18px 20px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 16px;">
-                            <div style="display:flex; flex-direction:column; gap:10px;">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-400">Подитог</span>
-                                    <span class="text-sm text-gray-600 dark:text-gray-300 font-medium">@{{ order.sub_total }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-400">Налог</span>
-                                    <span class="text-sm text-gray-600 dark:text-gray-300 font-medium">@{{ order.tax_amount }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-400">Скидка</span>
-                                    <span class="text-sm text-gray-600 dark:text-gray-300 font-medium">@{{ order.discount }}</span>
-                                </div>
-                            </div>
-                            <div style="border-top: 2px solid #ede9fe; padding-top: 14px; margin-top: 14px;">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-base font-bold text-gray-800 dark:text-white">Итого</span>
-                                    <span class="font-black" style="color:#7c3aed; font-size:20px; letter-spacing:-0.02em;">@{{ order.grand_total }}</span>
-                                </div>
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f0f0;">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-400">Оплачено</span>
-                                    <span class="text-sm font-bold" style="color:#059669;">@{{ order.total_paid }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-400">К оплате</span>
-                                    <span class="text-sm font-bold" style="color:#ea580c;">@{{ order.total_due }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Addresses -->
-                        <div v-if="order.shipping_address || order.billing_address" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div v-if="order.shipping_address" style="padding: 16px 18px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px;">
-                                <div class="flex items-center gap-1.5" style="margin-bottom: 10px;">
-                                    <svg class="w-3.5 h-3.5" style="color:#16a34a;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <p class="text-[10px] font-bold uppercase tracking-wider" style="color:#16a34a;">Доставка</p>
-                                </div>
-                                <p class="text-xs font-semibold text-gray-700">@{{ order.shipping_address.name }}</p>
-                                <p class="text-[11px] text-gray-500 leading-relaxed" style="margin-top: 6px;">@{{ order.shipping_address.address }}</p>
-                                <p v-if="order.shipping_address.phone" class="text-[11px] text-gray-400" style="margin-top: 5px;">@{{ order.shipping_address.phone }}</p>
-                            </div>
-                            <div v-if="order.billing_address" style="padding: 16px 18px; background: #fef7ff; border: 1px solid #f0abfc; border-radius: 16px;">
-                                <div class="flex items-center gap-1.5" style="margin-bottom: 10px;">
-                                    <svg class="w-3.5 h-3.5" style="color:#a855f7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                    </svg>
-                                    <p class="text-[10px] font-bold uppercase tracking-wider" style="color:#a855f7;">Оплата</p>
-                                </div>
-                                <p class="text-xs font-semibold text-gray-700">@{{ order.billing_address.name }}</p>
-                                <p class="text-[11px] text-gray-500 leading-relaxed" style="margin-top: 6px;">@{{ order.billing_address.address }}</p>
-                                <p v-if="order.billing_address.phone" class="text-[11px] text-gray-400" style="margin-top: 5px;">@{{ order.billing_address.phone }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Open Full Page Link -->
-                        <a 
-                            :href="`{{ route('admin.sales.orders.view', '') }}/${order.id}`"
-                            class="flex items-center justify-center gap-2 w-full text-sm font-bold rounded-2xl transition-all duration-200"
-                            style="padding: 14px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; box-shadow: 0 4px 15px rgba(124,58,237,0.3);"
-                            @mouseenter="$event.currentTarget.style.boxShadow='0 6px 20px rgba(124,58,237,0.4)'"
-                            @mouseleave="$event.currentTarget.style.boxShadow='0 4px 15px rgba(124,58,237,0.3)'"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            Открыть заказ
-                        </a>
-                    </div>
-                </x-slot>
-            </x-admin::modal>
-        </script>
-
         <script type="module">
-            app.component('v-order-quick-view', {
-                template: '#v-order-quick-view-template',
-
-                data() {
-                    return {
-                        order: {},
-                        isLoading: false,
-                        selectedStatus: '',
-                        isSavingStatus: false,
-                    };
-                },
-
-                mounted() {
-                    this.$emitter.on('open-order-quick-view', (record) => {
-                        this.openQuickView(record);
-                    });
-                },
-
-                methods: {
-                    openQuickView(record) {
-                        this.order = {};
-                        this.isLoading = true;
-                        this.selectedStatus = '';
-                        this.$refs.orderQuickViewModal.toggle();
-
-                        // Widen modal for quick view
-                        this.$nextTick(() => {
-                            const modalEl = this.$refs.orderQuickViewModal?.$el;
-                            if (modalEl) {
-                                const box = modalEl.querySelector('.max-w-\\[568px\\]');
-                                if (box) {
-                                    box.style.maxWidth = '660px';
-                                    box.style.borderRadius = '20px';
-                                }
-                            }
-                        });
-
-                        this.$axios.get(`{{ route('admin.sales.orders.quick_view', '') }}/${record.id}`)
-                            .then((response) => {
-                                this.order = response.data;
-                                this.selectedStatus = response.data.status;
-                                this.isLoading = false;
-                            })
-                            .catch((error) => {
-                                this.isLoading = false;
-                                this.$emitter.emit('add-flash', {
-                                    type: 'error',
-                                    message: 'Не удалось загрузить данные заказа'
-                                });
-                            });
-                    },
-
-                    saveStatus() {
-                        if (!this.order.id || this.selectedStatus === this.order.status) return;
-
-                        this.isSavingStatus = true;
-
-                        this.$axios.post(`{{ route('admin.sales.orders.update_status', '') }}/${this.order.id}`, {
-                            status: this.selectedStatus,
-                        }, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                            }
-                        })
-                            .then((response) => {
-                                this.isSavingStatus = false;
-
-                                if (response.data.success) {
-                                    this.order.status = response.data.status;
-                                    this.order.status_label = response.data.status_label;
-
-                                    this.$emitter.emit('add-flash', {
-                                        type: 'success',
-                                        message: response.data.message
-                                    });
-
-                                    // Refresh datagrid without page reload
-                                    this.$emitter.emit('datagrid:refresh');
-                                } else {
-                                    this.$emitter.emit('add-flash', {
-                                        type: 'warning',
-                                        message: response.data.message
-                                    });
-                                }
-                            })
-                            .catch((error) => {
-                                this.isSavingStatus = false;
-                                this.$emitter.emit('add-flash', {
-                                    type: 'error',
-                                    message: error.response?.data?.message || 'Ошибка при обновлении статуса'
-                                });
-                            });
-                    },
-
-                    getStatusStyle(status) {
-                        const styles = {
-                            'pending':         { background: '#fef3c7', color: '#b45309' },
-                            'pending_payment': { background: '#fef3c7', color: '#b45309' },
-                            'processing':      { background: '#dbeafe', color: '#1d4ed8' },
-                            'preparing':       { background: '#e0e7ff', color: '#4338ca' },
-                            'ready':           { background: '#d1fae5', color: '#047857' },
-                            'completed':       { background: '#d1fae5', color: '#047857' },
-                            'canceled':        { background: '#ffe4e6', color: '#be123c' },
-                            'closed':          { background: '#f3f4f6', color: '#374151' },
-                        };
-                        return styles[status] || { background: '#f3f4f6', color: '#374151' };
-                    },
-                },
-            });
-
             // Register formatRelativeDate as Vue global property so it's accessible in templates
             app.config.globalProperties.$formatRelativeDate = window.formatRelativeDate;
         </script>
@@ -709,14 +402,7 @@
                             class="px-3 py-1.5 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                         >
                             <option value="">Статус</option>
-                            <option value="pending">Новый</option>
-                            <option value="pending_payment">Ожидает оплаты</option>
-                            <option value="processing">В обработке</option>
-                            <option value="preparing">Готовится</option>
-                            <option value="ready">Готов</option>
-                            <option value="completed">Завершен</option>
-                            <option value="canceled">Отменен</option>
-                            <option value="closed">Закрыт</option>
+                            <option v-for="s in allStatuses" :key="s.code" :value="s.code">@{{ s.name }}</option>
                         </select>
                     </div>
                     
@@ -758,7 +444,8 @@
                     return {
                         selectedOrders: [],
                         selectedStatus: '',
-                        isLoading: false
+                        isLoading: false,
+                        allStatuses: @json(\Webkul\Sales\Models\OrderStatus::ordered()->toArray()),
                     }
                 },
 
@@ -832,51 +519,324 @@
             }
         </style>
 
+        <!-- Order Slide-Out Drawer Component -->
+        <script type="text/x-template" id="v-order-drawer-template">
+            <teleport to="body">
+                <!-- Always in DOM — visibility controlled via CSS for instant reopen -->
+                <div
+                    :style="{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 9998,
+                        visibility: isOpen ? 'visible' : 'hidden',
+                        pointerEvents: isOpen ? 'auto' : 'none',
+                    }"
+                >
+                    <!-- Backdrop -->
+                    <div
+                        @click="closeDrawer"
+                        :style="{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'rgba(0,0,0,0.3)',
+                            backdropFilter: 'blur(2px)',
+                            transition: 'opacity 0.3s ease',
+                            opacity: panelVisible ? 1 : 0,
+                        }"
+                    ></div>
+
+                    <!-- Slide-out Panel -->
+                    <div
+                        ref="drawerPanel"
+                        style="position:absolute; top:0; right:0; bottom:0; width:calc(100vw - 270px); max-width:calc(100vw - 270px); background:#f8f9fb; box-shadow:-8px 0 40px rgba(0,0,0,0.15); transition:transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); overflow:hidden; display:flex; flex-direction:column;"
+                        :style="{ transform: panelVisible ? 'translateX(0)' : 'translateX(100%)' }"
+                    >
+                        <!-- Drawer Header -->
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 24px; background:white; border-bottom:1px solid #e5e7eb; flex-shrink:0; overflow:hidden;">
+                            <div style="display:flex; align-items:center; gap:14px; min-width:0; flex:1; overflow:hidden;">
+                                <!-- Close Button -->
+                                <button
+                                    @click="closeDrawer"
+                                    style="display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:12px; background:#f3f4f6; border:none; cursor:pointer; transition:all 0.2s;"
+                                    @mouseenter="$event.currentTarget.style.background='#e5e7eb'; $event.currentTarget.style.transform='scale(1.05)'"
+                                    @mouseleave="$event.currentTarget.style.background='#f3f4f6'; $event.currentTarget.style.transform='scale(1)'"
+                                    title="Закрыть (Esc)"
+                                >
+                                    <svg style="width:18px; height:18px; color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+
+                                <!-- Order Info -->
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                        <span style="font-size:18px; font-weight:800; color:#1f2937; letter-spacing:-0.02em;">
+                                            Заказ #@{{ orderRecord.increment_id }}
+                                        </span>
+                                        <span
+                                            v-if="orderRecord.status"
+                                            v-html="orderRecord.status"
+                                        ></span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:8px; margin-top:3px;">
+                                        <span style="font-size:13px; color:#6b7280; font-weight:500;">
+                                            @{{ orderRecord.full_name || 'Гость' }}
+                                        </span>
+                                        <span v-if="orderRecord.base_grand_total" style="font-size:13px; color:#9ca3af;">•</span>
+                                        <span v-if="orderRecord.base_grand_total" style="font-size:13px; font-weight:700; color:#7c3aed;">
+                                            @{{ $admin.formatPrice(orderRecord.base_grand_total) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Open Full Page -->
+                            <a
+                                :href="`{{ route('admin.sales.orders.view', '') }}/${orderRecord.id}`"
+                                style="display:flex; align-items:center; gap:6px; padding:8px 16px; font-size:13px; font-weight:700; color:white; background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-radius:12px; text-decoration:none; box-shadow:0 2px 8px rgba(124,58,237,0.3); transition:all 0.2s; flex-shrink:0; white-space:nowrap;"
+                                @mouseenter="$event.currentTarget.style.boxShadow='0 4px 16px rgba(124,58,237,0.4)'"
+                                @mouseleave="$event.currentTarget.style.boxShadow='0 2px 8px rgba(124,58,237,0.3)'"
+                            >
+                                <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Открыть
+                            </a>
+                        </div>
+
+                        <!-- Loading Overlay -->
+                        <div v-if="isLoading && isOpen" style="flex:1; display:flex; align-items:center; justify-content:center; background:rgba(248,249,251,0.9); position:absolute; top:60px; left:0; right:0; bottom:0; z-index:2;">
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                                <div style="width:48px; height:48px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); animation:pulse 1.5s infinite;">
+                                    <svg style="width:24px; height:24px; color:white; animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24">
+                                        <circle style="opacity:0.25;" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path style="opacity:0.75;" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                                <p style="font-size:14px; color:#9ca3af; font-weight:500;">Загрузка заказа...</p>
+                            </div>
+                        </div>
+
+                        <!-- Iframe Content — kept alive across open/close for instant reopen -->
+                        <iframe
+                            v-if="iframeSrc"
+                            :src="iframeSrc"
+                            ref="orderIframe"
+                            @load="onIframeLoad"
+                            style="width:100%; border:none; flex:1; margin:0; padding:0; display:block;"
+                            allowfullscreen
+                        ></iframe>
+                    </div>
+                </div>
+            </teleport>
+        </script>
+
+        <script type="module">
+            app.component('v-order-drawer', {
+                template: '#v-order-drawer-template',
+
+                data() {
+                    return {
+                        isOpen: false,
+                        panelVisible: false,
+                        isLoading: false,
+                        iframeSrc: '',
+                        orderRecord: {},
+                        currentOrderId: null,
+                        hoverTimer: null,
+                    };
+                },
+
+                mounted() {
+                    // Listen for open events from row clicks
+                    this.$emitter.on('open-order-drawer', (record) => {
+                        this.openDrawer(record);
+                    });
+
+                    // Listen for preload events from row hover
+                    this.$emitter.on('preload-order', (record) => {
+                        this.preloadOrder(record);
+                    });
+
+                    // Listen for postMessage from iframe (close, status update, etc.)
+                    window.addEventListener('message', this.handleMessage);
+
+                    // Close on Escape key
+                    window.addEventListener('keydown', this.handleKeyDown);
+                },
+
+                beforeUnmount() {
+                    window.removeEventListener('message', this.handleMessage);
+                    window.removeEventListener('keydown', this.handleKeyDown);
+                    clearTimeout(this.hoverTimer);
+                },
+
+                methods: {
+                    /**
+                     * Start preloading an order's view-panel on hover.
+                     * The iframe loads in the background (drawer hidden via CSS).
+                     * If user clicks the same order, it opens instantly.
+                     */
+                    preloadOrder(record) {
+                        // Don't preload if drawer is already open
+                        if (this.isOpen) return;
+                        // Don't preload if already loaded/loading this order
+                        if (this.currentOrderId === record.id) return;
+
+                        // Debounce: only preload if mouse stays 120ms (prevents rapid-fire on scroll)
+                        clearTimeout(this.hoverTimer);
+                        this.hoverTimer = setTimeout(() => {
+                            this.currentOrderId = record.id;
+                            this.orderRecord = record;
+                            this.isLoading = true;
+                            this.iframeSrc = window.location.origin + '/admin/sales/orders/view-panel/' + record.id;
+                        }, 120);
+                    },
+
+                    openDrawer(record) {
+                        clearTimeout(this.hoverTimer);
+                        this.orderRecord = record;
+
+                        const alreadyLoaded = (this.currentOrderId === record.id && !this.isLoading);
+                        const alreadyLoading = (this.currentOrderId === record.id && this.isLoading);
+
+                        if (!alreadyLoaded && !alreadyLoading) {
+                            // New order — start loading from scratch
+                            this.currentOrderId = record.id;
+                            this.isLoading = true;
+                            this.iframeSrc = window.location.origin + '/admin/sales/orders/view-panel/' + record.id;
+                        }
+                        // If alreadyLoaded: isLoading is false -> no spinner, instant!
+                        // If alreadyLoading: spinner continues until iframe fires @load
+
+                        this.isOpen = true;
+
+                        // Animate panel in
+                        this.$nextTick(() => {
+                            requestAnimationFrame(() => {
+                                this.panelVisible = true;
+                            });
+                        });
+
+                        // Blur the sidebar
+                        this.toggleSidebarBlur(true);
+
+                        // Prevent body scroll
+                        document.body.style.overflow = 'hidden';
+                    },
+
+                    closeDrawer() {
+                        this.panelVisible = false;
+
+                        // Wait for slide-out animation to finish
+                        setTimeout(() => {
+                            this.isOpen = false;
+                            // Keep iframeSrc & currentOrderId alive!
+                            // Reopening same order = instant.
+
+                            // Remove sidebar blur
+                            this.toggleSidebarBlur(false);
+
+                            // Restore body scroll
+                            document.body.style.overflow = '';
+                        }, 350);
+                    },
+
+                    onIframeLoad() {
+                        this.isLoading = false;
+                    },
+
+                    handleMessage(event) {
+                        if (!event.data || typeof event.data !== 'object') return;
+
+                        switch (event.data.type) {
+                            case 'close-order-panel':
+                                this.closeDrawer();
+                                break;
+                            case 'order-status-updated':
+                            case 'order-items-updated':
+                                // Refresh the datagrid to reflect changes
+                                this.$emitter.emit('datagrid:refresh');
+                                break;
+                        }
+                    },
+
+                    handleKeyDown(e) {
+                        if (e.key === 'Escape' && this.isOpen) {
+                            this.closeDrawer();
+                        }
+                    },
+
+                    toggleSidebarBlur(blur) {
+                        // Find the sidebar element in the layout
+                        const sidebar = document.querySelector('.lg\\:fixed.lg\\:top-\\[58px\\]');
+                        if (sidebar) {
+                            sidebar.style.transition = 'filter 0.3s ease';
+                            sidebar.style.filter = blur ? 'blur(4px)' : 'none';
+                            sidebar.style.pointerEvents = blur ? 'none' : '';
+                        }
+                    },
+                },
+            });
+        </script>
+
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+        </style>
+
         <!-- Order Status Filter Component -->
         <script type="text/x-template" id="v-order-status-filter-template">
-            <div class="mt-4 mb-6">
-                <!-- Status Cards Grid - Larkon Style -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            <div style="margin-top:16px; margin-bottom:24px;">
+                <!-- Status Cards Row -->
+                <div style="display:flex; gap:14px; overflow-x:auto; padding-bottom:6px;">
                     <div
                         v-for="status in statusFilters"
                         :key="status.key"
                         @click="filterByStatus(status.key)"
-                        class="relative flex flex-col p-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group overflow-hidden"
-                        :class="{
-                            'ring-2 ring-violet-500 border-violet-500 shadow-lg shadow-violet-500/20': activeStatus === status.key,
-                            'hover:border-violet-200 dark:hover:border-violet-800': activeStatus !== status.key
+                        style="min-width:155px; flex:1; background:#fff; border-radius:16px; overflow:hidden; cursor:pointer; transition:all 0.3s ease;"
+                        :style="{
+                            boxShadow: activeStatus === status.key
+                                ? '0 8px 28px ' + hexToRgba(status.color, 0.3) + ', 0 0 0 2px ' + status.color
+                                : '0 1px 6px rgba(0,0,0,0.06)',
+                            transform: activeStatus === status.key ? 'translateY(-3px)' : 'translateY(0)'
                         }"
+                        @mouseenter="$event.currentTarget.style.boxShadow = activeStatus === status.key ? '0 8px 28px ' + hexToRgba(status.color, 0.3) + ', 0 0 0 2px ' + status.color : '0 6px 20px ' + hexToRgba(status.color, 0.18); $event.currentTarget.style.transform = 'translateY(-3px)'"
+                        @mouseleave="$event.currentTarget.style.boxShadow = activeStatus === status.key ? '0 8px 28px ' + hexToRgba(status.color, 0.3) + ', 0 0 0 2px ' + status.color : '0 1px 6px rgba(0,0,0,0.06)'; $event.currentTarget.style.transform = activeStatus === status.key ? 'translateY(-3px)' : 'translateY(0)'"
                     >
-                        <!-- Background decoration -->
-                        <div class="absolute top-0 right-0 w-20 h-20 rounded-full opacity-10 -mr-6 -mt-6 transition-transform duration-300 group-hover:scale-150"
-                             :class="getStatusBgClass(status.key)"></div>
-                        
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-2xl font-bold text-gray-800 dark:text-white">@{{ status.count }}</span>
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                                 :class="getStatusIconBgClass(status.key)">
-                                <i :class="[status.icon, getStatusIconColorClass(status.key)]" class="text-lg"></i>
+                        <!-- Top color bar -->
+                        <div style="height:4px;" :style="{ background: 'linear-gradient(90deg, ' + status.color + ', ' + lightenColor(status.color, 30) + ')' }"></div>
+
+                        <!-- Card content -->
+                        <div style="padding:14px 16px 16px;">
+                            <!-- Icon + Label -->
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <div style="width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+                                     :style="{ background: hexToRgba(status.color, 0.13) }">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" :style="{ color: status.color }">
+                                        <path :d="getIconPath(status.icon)" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                              :fill="getIconFill(status.icon) ? 'currentColor' : 'none'"/>
+                                    </svg>
+                                </div>
+                                <span style="font-size:12px; font-weight:600; color:#6b7280; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@{{ status.label }}</span>
                             </div>
-                        </div>
-                        
-                        <span class="text-xs font-medium text-gray-500 dark:text-gray-400 truncate">@{{ status.label }}</span>
-                        
-                        <!-- Progress indicator -->
-                        <div class="mt-2 h-1 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-500"
-                                 :class="getStatusBarClass(status.key)"
-                                 :style="{ width: getProgressWidth(status.key) + '%' }"></div>
+                            <!-- Count number -->
+                            <div style="font-size:28px; font-weight:800; line-height:1;" :style="{ color: status.color }">
+                                @{{ status.count }}
+                            </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Clear Filter Button -->
-                <div v-if="activeStatus" class="mt-4 flex justify-end">
+                <div v-if="activeStatus" style="margin-top:12px; display:flex; justify-content:flex-end;">
                     <button
                         @click="clearFilter"
-                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300 bg-violet-50 dark:bg-violet-900/20 rounded-xl transition-all duration-200 hover:bg-violet-100 dark:hover:bg-violet-900/30"
+                        style="display:flex; align-items:center; gap:6px; padding:6px 14px; font-size:13px; font-weight:500; color:#7c3aed; background:#f5f3ff; border:none; border-radius:10px; cursor:pointer; transition:all 0.2s;"
+                        @mouseenter="$event.currentTarget.style.background='#ede9fe'"
+                        @mouseleave="$event.currentTarget.style.background='#f5f3ff'"
                     >
-                        <i class="icon-cancel text-lg"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         Сбросить фильтр
                     </button>
                 </div>
@@ -897,18 +857,13 @@
                 data() {
                     return {
                         activeStatus: null,
-                        maxCount: 0
                     }
                 },
 
                 mounted() {
-                    this.maxCount = Math.max(...this.statusFilters.map(s => s.count), 1);
-                    
-                    // Check if we need to apply a filter from notification panel
                     const savedFilter = localStorage.getItem('orders_filter_status');
                     if (savedFilter) {
                         localStorage.removeItem('orders_filter_status');
-                        // Apply filter after a short delay to ensure datagrid is ready
                         setTimeout(() => {
                             this.filterByStatus(savedFilter);
                         }, 500);
@@ -923,96 +878,71 @@
                         }
 
                         this.activeStatus = status;
-                        
+
                         this.$emitter.emit('datagrid:filter', {
-                            columns: [
-                                {
-                                    index: 'status',
-                                    value: [status]
-                                }
-                            ]
+                            columns: [{
+                                index: 'status',
+                                value: [status]
+                            }]
                         });
                     },
 
                     clearFilter() {
                         this.activeStatus = null;
-                        
+
                         this.$emitter.emit('datagrid:filter', {
-                            columns: [
-                                {
-                                    index: 'status',
-                                    value: []
-                                }
-                            ]
+                            columns: [{
+                                index: 'status',
+                                value: []
+                            }]
                         });
                     },
-                    
-                    getProgressWidth(status) {
-                        // Fixed progress values based on order workflow stage
-                        const progressMap = {
-                            'pending': 5,
-                            'pending_payment': 5,
-                            'processing': 15,
-                            'preparing': 40,
-                            'ready': 70,
-                            'completed': 100,
-                            'canceled': 100,
-                            'closed': 100
-                        };
-                        return progressMap[status] || 5;
+
+                    hexToRgba(hex, alpha) {
+                        if (!hex) return 'rgba(107,114,128,' + alpha + ')';
+                        const h = hex.replace('#', '');
+                        const r = parseInt(h.substring(0, 2), 16);
+                        const g = parseInt(h.substring(2, 4), 16);
+                        const b = parseInt(h.substring(4, 6), 16);
+                        return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
                     },
-                    
-                    getStatusBgClass(status) {
-                        const classes = {
-                            'pending': 'bg-amber-500',
-                            'pending_payment': 'bg-amber-500',
-                            'processing': 'bg-blue-500',
-                            'completed': 'bg-emerald-500',
-                            'canceled': 'bg-rose-500',
-                            'closed': 'bg-gray-500',
-                            'fraud': 'bg-red-500'
-                        };
-                        return classes[status] || 'bg-violet-500';
+
+                    lightenColor(hex, percent) {
+                        if (!hex) return '#a0a0a0';
+                        const h = hex.replace('#', '');
+                        let r = parseInt(h.substring(0, 2), 16);
+                        let g = parseInt(h.substring(2, 4), 16);
+                        let b = parseInt(h.substring(4, 6), 16);
+                        r = Math.min(255, r + Math.round((255 - r) * percent / 100));
+                        g = Math.min(255, g + Math.round((255 - g) * percent / 100));
+                        b = Math.min(255, b + Math.round((255 - b) * percent / 100));
+                        return '#' + [r, g, b].map(c => c.toString(16).padStart(2, '0')).join('');
                     },
-                    
-                    getStatusIconBgClass(status) {
-                        const classes = {
-                            'pending': 'bg-amber-50 dark:bg-amber-900/30',
-                            'pending_payment': 'bg-amber-50 dark:bg-amber-900/30',
-                            'processing': 'bg-blue-50 dark:bg-blue-900/30',
-                            'completed': 'bg-emerald-50 dark:bg-emerald-900/30',
-                            'canceled': 'bg-rose-50 dark:bg-rose-900/30',
-                            'closed': 'bg-gray-100 dark:bg-gray-800',
-                            'fraud': 'bg-red-50 dark:bg-red-900/30'
-                        };
-                        return classes[status] || 'bg-violet-50 dark:bg-violet-900/30';
+
+                    getIconFill(icon) {
+                        return ['check-circle-fill'].includes(icon);
                     },
-                    
-                    getStatusIconColorClass(status) {
-                        const classes = {
-                            'pending': 'text-amber-500',
-                            'pending_payment': 'text-amber-500',
-                            'processing': 'text-blue-500',
-                            'completed': 'text-emerald-500',
-                            'canceled': 'text-rose-500',
-                            'closed': 'text-gray-500',
-                            'fraud': 'text-red-500'
+
+                    getIconPath(icon) {
+                        const paths = {
+                            'hourglass-top':       'M12 2v4l-3 3 3 3v4M8 2h8M8 22h8M12 18v4',
+                            'receipt':             'M4 2v20l3-2 3 2 3-2 3 2V2l-3 2-3-2-3 2-3-2zM8 7h8M8 11h8M8 15h4',
+                            'credit-card':         'M1 5a2 2 0 012-2h18a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V5zm0 4h22M5 14h4',
+                            'arrow-repeat':        'M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3',
+                            'fire':                'M12 23c-4.97 0-8-3.58-8-8 0-4 2.5-7.5 5-10 .5 2 2 3.5 3.5 3.5C11 8.5 10 5 12 2c2 4 6 6 6 10 0 4.42-3.03 8-6 11z',
+                            'check2-circle':       'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm-1.5-6l-3.5-3.5 1.414-1.414L10.5 13.172l5.586-5.586L17.5 9l-7 7z',
+                            'check-circle-fill':   'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+                            'x-circle':            'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM15 9l-6 6M9 9l6 6',
+                            'lock':                'M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM7 11V7a5 5 0 0110 0v4',
+                            'pause-circle':        'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM10 15V9M14 15V9',
+                            'exclamation-triangle': 'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01',
+                            'lightning':           'M13 2L3 14h9l-1 8 10-12h-9l1-8',
+                            'truck':               'M1 3h15v13H1zM16 8h4l3 3v5h-7V8zM5.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM18.5 21a2.5 2.5 0 100-5 2.5 2.5 0 000 5z',
+                            'bag-check':           'M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6zM3 6h18M16 10a4 4 0 01-8 0',
+                            'clock':               'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2',
                         };
-                        return classes[status] || 'text-violet-500';
+                        return paths[icon] || paths['clock'];
                     },
-                    
-                    getStatusBarClass(status) {
-                        const classes = {
-                            'pending': 'bg-amber-500',
-                            'pending_payment': 'bg-amber-500',
-                            'processing': 'bg-blue-500',
-                            'completed': 'bg-emerald-500',
-                            'canceled': 'bg-rose-500',
-                            'closed': 'bg-gray-500',
-                            'fraud': 'bg-red-500'
-                        };
-                        return classes[status] || 'bg-violet-500';
-                    }
                 }
             });
         </script>

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Webkul\DataGrid\DataGrid;
 use Webkul\Sales\Models\Order;
 use Webkul\Sales\Models\OrderAddress;
+use Webkul\Sales\Models\OrderStatus;
 
 class OrderDataGrid extends DataGrid
 {
@@ -68,74 +69,10 @@ class OrderDataGrid extends DataGrid
             'searchable'         => true,
             'filterable'         => true,
             'filterable_type'    => 'dropdown',
-            'filterable_options' => [
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.processing'),
-                    'value' => Order::STATUS_PROCESSING,
-                ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.preparing'),
-                    'value' => Order::STATUS_PREPARING,
-                ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.ready'),
-                    'value' => Order::STATUS_READY,
-                ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.completed'),
-                    'value' => Order::STATUS_COMPLETED,
-                ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.canceled'),
-                    'value' => Order::STATUS_CANCELED,
-                ],
-                // [
-                //     'label' => trans('admin::app.customers.customers.view.datagrid.orders.closed'),
-                //     'value' => Order::STATUS_CLOSED,
-                // ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.pending'),
-                    'value' => Order::STATUS_PENDING,
-                ],
-                [
-                    'label' => trans('admin::app.customers.customers.view.datagrid.orders.pending-payment'),
-                    'value' => Order::STATUS_PENDING_PAYMENT,
-                ],
-                // [
-                //     'label' => trans('admin::app.customers.customers.view.datagrid.orders.fraud'),
-                //     'value' => Order::STATUS_FRAUD,
-                // ],
-            ],
+            'filterable_options' => $this->getDynamicStatusFilterOptions(),
             'sortable'   => true,
             'closure'    => function ($row) {
-                switch ($row->status) {
-                    case Order::STATUS_PROCESSING:
-                        return '<p class="label-processing">'.trans('admin::app.customers.customers.view.datagrid.orders.processing').'</p>';
-
-                    case Order::STATUS_PREPARING:
-                        return '<p class="label-processing">'.trans('admin::app.customers.customers.view.datagrid.orders.preparing').'</p>';
-
-                    case Order::STATUS_READY:
-                        return '<p class="label-active">'.trans('admin::app.customers.customers.view.datagrid.orders.ready').'</p>';
-
-                    case Order::STATUS_COMPLETED:
-                        return '<p class="label-active">'.trans('admin::app.customers.customers.view.datagrid.orders.completed').'</p>';
-
-                    case Order::STATUS_CANCELED:
-                        return '<p class="label-canceled">'.trans('admin::app.customers.customers.view.datagrid.orders.canceled').'</p>';
-
-                    // case Order::STATUS_CLOSED:
-                    //     return '<p class="label-closed">'.trans('admin::app.customers.customers.view.datagrid.orders.closed').'</p>';
-
-                    case Order::STATUS_PENDING:
-                        return '<p class="label-pending">'.trans('admin::app.customers.customers.view.datagrid.orders.pending').'</p>';
-
-                    case Order::STATUS_PENDING_PAYMENT:
-                        return '<p class="label-pending">'.trans('admin::app.customers.customers.view.datagrid.orders.pending-payment').'</p>';
-
-                    // case Order::STATUS_FRAUD:
-                    //     return '<p class="label-canceled">'.trans('admin::app.customers.customers.view.datagrid.orders.fraud').'</p>';
-                }
+                return $this->renderStatusBadge($row->status);
             },
         ]);
 
@@ -222,5 +159,49 @@ class OrderDataGrid extends DataGrid
                 },
             ]);
         }
+    }
+
+    /**
+     * Get dynamic status filter options from order_statuses table.
+     */
+    protected function getDynamicStatusFilterOptions(): array
+    {
+        try {
+            return OrderStatus::orderBy('sort_order')
+                ->get()
+                ->map(fn ($s) => ['label' => $s->name, 'value' => $s->code])
+                ->toArray();
+        } catch (\Exception $e) {
+            return [
+                ['label' => 'Новый', 'value' => 'pending'],
+                ['label' => 'Обработка', 'value' => 'processing'],
+                ['label' => 'Выполнен', 'value' => 'completed'],
+                ['label' => 'Отменён', 'value' => 'canceled'],
+            ];
+        }
+    }
+
+    /**
+     * Render a colored status badge using dynamic color from order_statuses table.
+     */
+    protected function renderStatusBadge(string $status): string
+    {
+        static $statusMap = null;
+        if ($statusMap === null) {
+            try {
+                $statusMap = OrderStatus::orderBy('sort_order')
+                    ->get()
+                    ->keyBy('code')
+                    ->toArray();
+            } catch (\Exception $e) {
+                $statusMap = [];
+            }
+        }
+
+        $info = $statusMap[$status] ?? null;
+        $name = $info['name'] ?? $status;
+        $color = $info['color'] ?? '#6b7280';
+
+        return '<span style="display:inline-block;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:600;background:'.$color.'1a;color:'.$color.';">'.$name.'</span>';
     }
 }

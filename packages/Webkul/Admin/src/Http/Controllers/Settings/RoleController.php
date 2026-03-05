@@ -137,6 +137,24 @@ class RoleController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $role = $this->roleRepository->findOrFail($id);
+
+        return view('admin::settings.roles.panel', compact('role'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        return view('admin::settings.roles.panel');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(int $id): JsonResponse

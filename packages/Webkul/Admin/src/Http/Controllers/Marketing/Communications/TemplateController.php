@@ -135,4 +135,22 @@ class TemplateController extends Controller
             ]),
         ], 400);
     }
+
+    /**
+     * Show the panel form for editing the specified template (iframe).
+     */
+    public function editPanel(int $id)
+    {
+        $template = $this->templateRepository->findOrFail($id);
+
+        return view('admin::marketing.communications.templates.panel', compact('template'));
+    }
+
+    /**
+     * Show the panel form for creating a new template (iframe).
+     */
+    public function createPanel()
+    {
+        return view('admin::marketing.communications.templates.panel');
+    }
 }

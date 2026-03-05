@@ -5,9 +5,19 @@
     </x-slot>
 
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <p class="text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.sales.transactions.index.title')
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 4px 15px rgba(99,102,241,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.sales.transactions.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Транзакции</p>
+            </div>
+        </div>
 
         <div class="flex items-center gap-x-2.5">
 

@@ -4,9 +4,19 @@
     </x-slot>
 
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <p class="py-3 text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.customers.reviews.index.title')
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 15px rgba(245,158,11,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.customers.reviews.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Отзывы клиентов</p>
+            </div>
+        </div>
     </div>
 
     {!! view_render_event('bagisto.admin.customers.reviews.edit.before') !!}
@@ -122,9 +132,12 @@
                     <template v-else>
                         <div
                             class="row grid grid-cols-1 gap-2 md:grid-cols-[2fr_1fr_minmax(150px,_4fr)_0.5fr] md:gap-0 border-b px-4 py-2.5 transition-all hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950 min-w-full"
+                            style="border-left: 3px solid transparent; transition: all 0.15s;"
+                            @mouseenter="$event.currentTarget.style.borderLeftColor='#f59e0b'"
+                            @mouseleave="$event.currentTarget.style.borderLeftColor='transparent'"
                             v-for="record in available.records"
                         >
-                            <!-- Name, Product, Description -->
+                            <!-- Name, Product, Status -->
                             <div class="flex gap-2.5">
                                 @if ($hasPermission)
                                     <input
@@ -143,16 +156,25 @@
                                     ></label>
                                 @endif
 
-                                <div class="flex flex-col gap-1.5">
-                                    <p class="text-base font-semibold text-gray-800 dark:text-white">
-                                        @{{ record.customer_full_name }}
-                                    </p>
+                                <div class="flex items-start gap-3">
+                                    <!-- Avatar circle -->
+                                    <div
+                                        class="flex items-center justify-center w-9 h-9 rounded-full flex-shrink-0"
+                                        style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); font-size: 13px; font-weight: 700; color: white; min-width: 36px;"
+                                    >
+                                        @{{ record.customer_full_name ? record.customer_full_name.charAt(0).toUpperCase() : '?' }}
+                                    </div>
+                                    <div class="flex flex-col gap-1">
+                                        <p class="text-base font-semibold text-gray-800 dark:text-white">
+                                            @{{ record.customer_full_name }}
+                                        </p>
 
-                                    <p class="text-gray-600 dark:text-gray-300">
-                                        @{{ record.product_name }}
-                                    </p>
+                                        <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                            @{{ record.product_name }}
+                                        </p>
 
-                                    <p v-html="record.product_review_status"></p>
+                                        <p v-html="record.product_review_status"></p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -165,15 +187,15 @@
                                     />
                                 </div>
 
-                                <p class="text-gray-600 dark:text-gray-300">
+                                <p class="text-gray-500 dark:text-gray-400 text-xs">
                                     @{{ record.created_at }}
                                 </p>
 
-                                <p
-                                    class="text-gray-600 dark:text-gray-300"
+                                <span
+                                    style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #f3f4f6; color: #6b7280; width: fit-content;"
                                 >
-                                    @{{ "@lang('admin::app.customers.reviews.index.datagrid.review-id')".replace(':review_id', record.product_review_id) }}
-                                </p>
+                                    #@{{ record.product_review_id }}
+                                </span>
                             </div>
 
                             <!-- Title, Description -->
@@ -182,17 +204,20 @@
                                     @{{ record.title }}
                                 </p>
 
-                                <p class="text-gray-600 dark:text-gray-300">
+                                <p class="text-gray-600 dark:text-gray-300 text-sm" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                     @{{ record.comment }}
                                 </p>
                             </div>
 
-                            <div class="flex place-content-end items-center gap-1.5 self-center">
+                            <div class="flex place-content-end items-center gap-1 self-center">
                                 <!-- Review Delete Button -->
-                                <a @click="performAction(record.actions.find(action => action.index === 'delete'))">
+                                <a @click="performAction(record.actions.find(action => action.index === 'delete'))" style="cursor: pointer;">
                                     <span
                                         :class="record.actions.find(action => action.index === 'delete')?.icon"
-                                        class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 ltr:ml-1 rtl:mr-1"
+                                        class="cursor-pointer rounded-lg p-1.5 text-2xl transition-all ltr:ml-1 rtl:mr-1"
+                                        style="color: #ef4444;"
+                                        @mouseenter="$event.target.style.background='#fef2f2'"
+                                        @mouseleave="$event.target.style.background='transparent'"
                                     >
                                     </span>
                                 </a>
@@ -201,8 +226,14 @@
                                 <a
                                     v-if="record.actions.find(action => action.index === 'edit')"
                                     @click="edit(record.actions.find(action => action.index === 'edit')?.url)"
+                                    style="cursor: pointer;"
                                 >
-                                    <span class="icon-sort-right rtl:icon-sort-left cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 ltr:ml-1 rtl:mr-1"></span>
+                                    <span
+                                        class="icon-sort-right rtl:icon-sort-left cursor-pointer rounded-lg p-1.5 text-2xl transition-all ltr:ml-1 rtl:mr-1"
+                                        style="color: #6366f1;"
+                                        @mouseenter="$event.target.style.background='#eef2ff'"
+                                        @mouseleave="$event.target.style.background='transparent'"
+                                    ></span>
                                 </a>
                             </div>
                         </div>

@@ -140,6 +140,30 @@ class UserController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $user = $this->adminRepository->findOrFail($id);
+        $roles = $this->roleRepository->all();
+        $currentUserId = auth()->guard('admin')->user()->id;
+        $uploadedImages = $user->image ? [['id' => 'image', 'url' => $user->image_url]] : [];
+
+        return view('admin::settings.users.panel', compact('user', 'roles', 'currentUserId', 'uploadedImages'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        $roles = $this->roleRepository->all();
+        $currentUserId = auth()->guard('admin')->user()->id;
+
+        return view('admin::settings.users.panel', compact('roles', 'currentUserId'));
+    }
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param  int  $id

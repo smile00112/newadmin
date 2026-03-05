@@ -12,9 +12,17 @@
             id="v-booking-products-template"
         >
             <div class="flex items-center justify-between gap-[16px] max-sm:flex-wrap">
-                <p class="py-3 text-xl font-bold text-gray-800 dark:text-white">
-                    @lang('admin::app.sales.booking.index.title')
-                </p>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 4px 15px rgba(99,102,241,0.3); min-width:44px;">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                    <div>
+                        <p class="text-xl font-bold text-gray-800 dark:text-white">
+                            @lang('admin::app.sales.booking.index.title')
+                        </p>
+                        <p class="text-xs text-gray-400">Бронирования</p>
+                    </div>
+                </div>
         
                 <div class="flex items-center gap-2.5">
                     <!-- Export Modal -->

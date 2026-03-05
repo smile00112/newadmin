@@ -5,10 +5,19 @@
 
     <!-- Page Header -->
     <div class="mb-5 flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <div class="grid gap-1.5">
-            <p class="pt-1.5 text-xl font-bold leading-6 text-gray-800 dark:text-white">
-                @lang('admin::app.reporting.products.index.title')
-            </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 15px rgba(245,158,11,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
+                    @lang('admin::app.reporting.products.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Аналитика товаров</p>
+            </div>
+        </div>
         </div>
 
         <!-- Actions -->

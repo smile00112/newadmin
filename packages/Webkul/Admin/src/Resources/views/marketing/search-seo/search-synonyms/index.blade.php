@@ -8,9 +8,19 @@
     <!-- Create Sitemap Vue Component -->
     <v-create-sitemaps>
         <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.marketing.search-seo.search-synonyms.index.title')
-            </p>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 4px 15px rgba(139,92,246,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">
+                        @lang('admin::app.marketing.search-seo.search-synonyms.index.title')
+                    </p>
+                    <p class="text-xs text-gray-400">Синонимы</p>
+                </div>
+            </div>
 
             <!-- Create Button -->
             @if (bouncer()->hasPermission('marketing.search_seo.search_synonyms.create'))

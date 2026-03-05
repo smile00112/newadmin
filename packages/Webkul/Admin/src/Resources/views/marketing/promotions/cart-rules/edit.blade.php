@@ -15,16 +15,27 @@
         {!! view_render_event('bagisto.admin.marketing.promotions.cart_rules.edit.edit_form_controls.before', ['cartRule' => $cartRule]) !!}
 
         <div class="mt-3 flex items-center justify-between gap-4 max-sm:flex-wrap">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.marketing.promotions.cart-rules.edit.title')
-            </p>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 15px rgba(245,158,11,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+                </div>
+                <div>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">
+                        @lang('admin::app.marketing.promotions.cart-rules.edit.title')
+                    </p>
+                    <p class="text-xs text-gray-400">Редактирование правила корзины</p>
+                </div>
+            </div>
 
             <div class="flex items-center gap-x-2.5">
                 <!-- Back Button -->
                 <a
                     href="{{ route('admin.marketing.promotions.cart_rules.index') }}"
-                    class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                    onmouseenter="this.style.background='#e5e7eb'"
+                    onmouseleave="this.style.background='#f3f4f6'"
                 >
+                    <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     @lang('admin::app.marketing.promotions.cart-rules.edit.back-btn')
                 </a>
 

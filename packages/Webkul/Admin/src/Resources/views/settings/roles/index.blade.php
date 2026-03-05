@@ -1,5 +1,4 @@
 <x-admin::layouts>
-    <!-- Page Title -->
     <x-slot:title>
         @lang('admin::app.settings.roles.index.title')
     </x-slot>
@@ -16,45 +15,54 @@
 
     <v-roles>
         <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.settings.roles.index.title')
-            </p>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); box-shadow: 0 4px 15px rgba(244,63,94,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">
+                        @lang('admin::app.settings.roles.index.title')
+                    </p>
+                    <p class="text-xs text-gray-400">Роли и права доступа</p>
+                </div>
+            </div>
 
             <div class="flex items-center gap-x-2.5">
                 @if (bouncer()->hasPermission('settings.roles.create'))
-                    <button
-                        type="button"
-                        class="primary-button"
-                    >
+                    <button type="button" class="primary-button">
                         @lang('admin::app.settings.roles.index.create-btn')
                     </button>
                 @endif
             </div>
         </div>
 
-        <!-- DataGrid Shimmer -->
         <x-admin::shimmer.datagrid />
     </v-roles>
 
     {!! view_render_event('bagisto.admin.settings.roles.list.after') !!}
 
     @pushOnce('scripts')
-        <script
-            type="text/x-template"
-            id="v-roles-template"
-        >
+        <script type="text/x-template" id="v-roles-template">
             <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-                <p class="text-xl font-bold text-gray-800 dark:text-white">
-                    @lang('admin::app.settings.roles.index.title')
-                </p>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); box-shadow: 0 4px 15px rgba(244,63,94,0.3); min-width:44px;">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xl font-bold text-gray-800 dark:text-white">
+                            @lang('admin::app.settings.roles.index.title')
+                        </p>
+                        <p class="text-xs text-gray-400">Роли и права доступа</p>
+                    </div>
+                </div>
 
                 <div class="flex items-center gap-x-2.5">
                     @if (bouncer()->hasPermission('settings.roles.create'))
-                        <button
-                            type="button"
-                            class="primary-button"
-                            @click="selectedRole=0; resetForm(); $refs.roleModal.toggle()"
-                        >
+                        <button type="button" class="primary-button" @click="openDrawer('create')">
                             @lang('admin::app.settings.roles.index.create-btn')
                         </button>
                     @endif
@@ -65,7 +73,6 @@
                 :src="route('admin.settings.roles.index')"
                 ref="datagrid"
             >
-                <!-- DataGrid Body -->
                 <template #body="{
                     isLoading,
                     available,
@@ -83,35 +90,30 @@
                             v-for="record in available.records"
                             class="row grid items-center gap-2.5 border-b px-4 py-4 text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950"
                             :style="`grid-template-columns: repeat(${gridsCount}, minmax(0, 1fr))`"
+                            style="cursor: pointer;"
+                            @click="openDrawer('edit', record)"
+                            @mouseenter="preloadRecord(record)"
                         >
-                            <!-- ID -->
                             <p>@{{ record.id }}</p>
-
-                            <!-- Name -->
                             <p>@{{ record.name }}</p>
-
-                            <!-- Permission Type -->
                             <p>@{{ record.permission_type }}</p>
 
-                            <!-- Actions -->
                             <div class="flex justify-end">
                                 @if (bouncer()->hasPermission('settings.roles.edit'))
-                                    <a @click="selectedRole=1; editModal(record.actions.find(action => action.index === 'edit')?.url)">
+                                    <a @click.stop="openDrawer('edit', record)">
                                         <span
                                             :class="record.actions.find(action => action.index === 'edit')?.icon"
                                             class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                        >
-                                        </span>
+                                        ></span>
                                     </a>
                                 @endif
 
                                 @if (bouncer()->hasPermission('settings.roles.delete'))
-                                    <a @click="performAction(record.actions.find(action => action.index === 'delete'))">
+                                    <a @click.stop="performAction(record.actions.find(action => action.index === 'delete'))">
                                         <span
                                             :class="record.actions.find(action => action.index === 'delete')?.icon"
                                             class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                        >
-                                        </span>
+                                        ></span>
                                     </a>
                                 @endif
                             </div>
@@ -120,234 +122,161 @@
                 </template>
             </x-admin::datagrid>
 
-            <!-- Role Create/Edit Modal -->
-            <x-admin::form
-                v-slot="{ meta, errors, handleSubmit }"
-                as="div"
-                ref="modalForm"
-            >
-                <form
-                    @submit="handleSubmit($event, updateOrCreate)"
-                    ref="roleForm"
-                >
-                    <x-admin::modal ref="roleModal">
-                        <!-- Modal Header -->
-                        <x-slot:header>
-                            <p class="text-lg font-bold text-gray-800 dark:text-white">
-                                <span v-if="selectedRole">
-                                    @lang('admin::app.settings.roles.edit.title')
-                                </span>
+            <!-- Drawer -->
+            <teleport to="body">
+                <div :style="{
+                    position: 'fixed', inset: 0, zIndex: 9998,
+                    visibility: isDrawerOpen ? 'visible' : 'hidden',
+                    pointerEvents: isDrawerOpen ? 'auto' : 'none',
+                }">
+                    <div @click="closeDrawer" :style="{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(2px)', transition: 'opacity 0.3s ease',
+                        opacity: drawerVisible ? 1 : 0,
+                    }"></div>
 
-                                <span v-else>
-                                    @lang('admin::app.settings.roles.create.title')
-                                </span>
-                            </p>
-                        </x-slot>
-
-                        <!-- Modal Content -->
-                        <x-slot:content>
-                            <x-admin::form.control-group.control
-                                type="hidden"
-                                name="id"
-                                v-model="role.id"
-                            />
-
-                            <!-- Name -->
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.roles.create.name')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    rules="required"
-                                    v-model="role.name"
-                                    :label="trans('admin::app.settings.roles.create.name')"
-                                    :placeholder="trans('admin::app.settings.roles.create.name')"
-                                />
-
-                                <x-admin::form.control-group.error control-name="name" />
-                            </x-admin::form.control-group>
-
-                            <!-- Description -->
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.roles.create.description')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="textarea"
-                                    id="description"
-                                    name="description"
-                                    rules="required"
-                                    v-model="role.description"
-                                    :label="trans('admin::app.settings.roles.create.description')"
-                                    :placeholder="trans('admin::app.settings.roles.create.description')"
-                                />
-
-                                <x-admin::form.control-group.error control-name="description" />
-                            </x-admin::form.control-group>
-
-                            <!-- Permission Type -->
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.roles.create.permissions')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="select"
-                                    id="permission_type"
-                                    name="permission_type"
-                                    rules="required"
-                                    v-model="role.permission_type"
-                                    :label="trans('admin::app.settings.roles.create.permissions')"
-                                >
-                                    <option value="custom">
-                                        @lang('admin::app.settings.roles.create.custom')
-                                    </option>
-
-                                    <option value="all">
-                                        @lang('admin::app.settings.roles.create.all')
-                                    </option>
-                                </x-admin::form.control-group.control>
-
-                                <x-admin::form.control-group.error control-name="permission_type" />
-                            </x-admin::form.control-group>
-
-                            <!-- Permissions Tree (shown only for custom) -->
-                            <div
-                                v-if="role.permission_type == 'custom'"
-                                class="max-h-[300px] overflow-y-auto rounded border border-gray-200 p-2 dark:border-gray-800"
-                            >
-                                <x-admin::form.control-group.error control-name="permissions" />
-
-                                <v-tree-view
-                                    input-type="checkbox"
-                                    value-field="key"
-                                    id-field="key"
-                                    name-field="permissions"
-                                    items='@json(acl()->getItems())'
-                                    :value="JSON.stringify(role.permissions || [])"
-                                    fallback-locale="{{ config('app.fallback_locale') }}"
-                                    :key="treeKey"
-                                ></v-tree-view>
+                    <div
+                        style="position:absolute; top:0; right:0; bottom:0; width:calc(100vw - 270px); max-width:calc(100vw - 270px); background:#f8f9fb; box-shadow:-8px 0 40px rgba(0,0,0,0.15); transition:transform 0.35s cubic-bezier(0.16,1,0.3,1); overflow:hidden; display:flex; flex-direction:column;"
+                        :style="{ transform: drawerVisible ? 'translateX(0)' : 'translateX(100%)' }"
+                    >
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:white; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button @click="closeDrawer" style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; min-width:36px; border-radius:10px; background:#f3f4f6; cursor:pointer; border:none; transition:all 0.2s;" onmouseenter="this.style.background='#e5e7eb'" onmouseleave="this.style.background='#f3f4f6'">
+                                    <svg style="width:18px; height:18px; color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                <div>
+                                    <span v-if="drawerMode === 'edit' && currentRecord" style="font-size:14px; font-weight:600; color:#111827;">
+                                        @{{ currentRecord.name }}
+                                        <span style="font-size:12px; color:#6b7280; margin-left:6px; font-weight:400;">@{{ currentRecord.permission_type }}</span>
+                                    </span>
+                                    <span v-else style="font-size:14px; font-weight:600; color:#111827;">
+                                        @lang('admin::app.settings.roles.create.title')
+                                    </span>
+                                </div>
                             </div>
-                        </x-slot>
+                        </div>
 
-                        <!-- Modal Footer -->
-                        <x-slot:footer>
-                            <x-admin::button
-                                button-type="button"
-                                class="primary-button"
-                                :title="trans('admin::app.settings.roles.create.save-btn')"
-                                ::loading="isLoading"
-                                ::disabled="isLoading"
-                            />
-                        </x-slot>
-                    </x-admin::modal>
-                </form>
-            </x-admin::form>
+                        <div v-if="isDrawerLoading && isDrawerOpen" style="position:absolute; top:52px; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(248,249,251,0.9); z-index:5;">
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                                <svg style="width:36px; height:36px; color:#6366f1; animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="10" /></svg>
+                                <span style="font-size:13px; color:#6b7280;">Загрузка...</span>
+                            </div>
+                        </div>
+
+                        <iframe v-if="iframeSrc" :src="iframeSrc" ref="panelIframe" @load="onIframeLoad" style="width:100%; border:none; flex:1; margin:0; padding:0; display:block;" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </teleport>
         </script>
 
         <script type="module">
             app.component('v-roles', {
                 template: '#v-roles-template',
-
                 data() {
                     return {
-                        role: {
-                            permission_type: 'custom',
-                            permissions: [],
-                        },
-
-                        isLoading: false,
-
-                        selectedRole: 0,
-
-                        treeKey: 0,
+                        isDrawerOpen: false,
+                        drawerVisible: false,
+                        isDrawerLoading: false,
+                        iframeSrc: '',
+                        currentRecord: null,
+                        currentRecordId: null,
+                        drawerMode: 'edit',
+                        hoverTimer: null,
                     };
                 },
-
                 computed: {
                     gridsCount() {
                         let count = this.$refs.datagrid.available.columns.length;
-
-                        if (this.$refs.datagrid.available.actions.length) {
-                            ++count;
-                        }
-
-                        if (this.$refs.datagrid.available.massActions.length) {
-                            ++count;
-                        }
-
+                        if (this.$refs.datagrid.available.actions.length) ++count;
+                        if (this.$refs.datagrid.available.massActions.length) ++count;
                         return count;
                     },
                 },
-
+                mounted() {
+                    window.addEventListener('message', this.handleMessage);
+                    window.addEventListener('keydown', this.handleKeyDown);
+                },
+                beforeUnmount() {
+                    window.removeEventListener('message', this.handleMessage);
+                    window.removeEventListener('keydown', this.handleKeyDown);
+                    clearTimeout(this.hoverTimer);
+                },
                 methods: {
-                    updateOrCreate(params, { resetForm, setErrors }) {
-                        this.isLoading = true;
-
-                        let formData = new FormData(this.$refs.roleForm);
-
-                        if (params.id) {
-                            formData.append('_method', 'put');
+                    openDrawer(mode, record = null) {
+                        clearTimeout(this.hoverTimer);
+                        this.drawerMode = mode;
+                        this.currentRecord = record;
+                        let targetUrl, targetId;
+                        if (mode === 'create') {
+                            targetUrl = window.location.origin + '/admin/settings/roles/create-panel';
+                            targetId = 'create';
+                        } else {
+                            targetUrl = window.location.origin + '/admin/settings/roles/edit-panel/' + record.id;
+                            targetId = record.id;
                         }
-
-                        this.$axios.post(
-                            params.id
-                                ? "{{ route('admin.settings.roles.update', '__REPLACE_ID__') }}".replace('__REPLACE_ID__', params.id)
-                                : "{{ route('admin.settings.roles.store') }}",
-                            formData
-                        )
-                        .then((response) => {
-                            this.isLoading = false;
-
-                            this.$refs.roleModal.close();
-
-                            this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
-
-                            this.$refs.datagrid.get();
-
-                            resetForm();
-                        })
-                        .catch(error => {
-                            this.isLoading = false;
-
-                            if (error.response.status == 422) {
-                                setErrors(error.response.data.errors);
-                            } else if (error.response.data.message) {
-                                this.$emitter.emit('add-flash', { type: 'error', message: error.response.data.message });
-                            }
-                        });
+                        const alreadyLoaded = (this.currentRecordId === targetId && !this.isDrawerLoading);
+                        const alreadyLoading = (this.currentRecordId === targetId && this.isDrawerLoading);
+                        if (!alreadyLoaded && !alreadyLoading) {
+                            this.currentRecordId = targetId;
+                            this.isDrawerLoading = true;
+                            this.iframeSrc = targetUrl;
+                        }
+                        this.isDrawerOpen = true;
+                        this.$nextTick(() => { requestAnimationFrame(() => { this.drawerVisible = true; }); });
+                        this.toggleSidebarBlur(true);
+                        document.body.style.overflow = 'hidden';
                     },
-
-                    editModal(url) {
-                        this.$axios.get(url)
-                            .then((response) => {
-                                this.role = {
-                                    ...response.data.data,
-                                    permissions: response.data.data.permissions || [],
-                                };
-
-                                this.treeKey++;
-
-                                this.$refs.roleModal.toggle();
-                            });
+                    closeDrawer() {
+                        this.drawerVisible = false;
+                        setTimeout(() => {
+                            this.isDrawerOpen = false;
+                            this.toggleSidebarBlur(false);
+                            document.body.style.overflow = '';
+                        }, 350);
                     },
-
-                    resetForm() {
-                        this.role = {
-                            permission_type: 'custom',
-                            permissions: [],
-                        };
-
-                        this.treeKey++;
+                    preloadRecord(record) {
+                        if (this.isDrawerOpen) return;
+                        if (this.currentRecordId === record.id) return;
+                        clearTimeout(this.hoverTimer);
+                        this.hoverTimer = setTimeout(() => {
+                            this.currentRecordId = record.id;
+                            this.currentRecord = record;
+                            this.drawerMode = 'edit';
+                            this.isDrawerLoading = true;
+                            this.iframeSrc = window.location.origin + '/admin/settings/roles/edit-panel/' + record.id;
+                        }, 150);
+                    },
+                    onIframeLoad() { this.isDrawerLoading = false; },
+                    handleMessage(event) {
+                        if (!event.data || typeof event.data !== 'object') return;
+                        switch (event.data.type) {
+                            case 'panel-saved':
+                                this.closeDrawer();
+                                this.iframeSrc = '';
+                                this.currentRecordId = null;
+                                this.$emitter.emit('add-flash', { type: 'success', message: event.data.message });
+                                this.$refs.datagrid.get();
+                                break;
+                            case 'panel-closed':
+                                this.closeDrawer();
+                                break;
+                        }
+                    },
+                    handleKeyDown(e) { if (e.key === 'Escape' && this.isDrawerOpen) this.closeDrawer(); },
+                    toggleSidebarBlur(blur) {
+                        const sidebar = document.querySelector('.lg\\:fixed.lg\\:top-\\[58px\\]');
+                        if (sidebar) {
+                            sidebar.style.transition = 'filter 0.3s ease';
+                            sidebar.style.filter = blur ? 'blur(4px)' : 'none';
+                            sidebar.style.pointerEvents = blur ? 'none' : '';
+                        }
                     },
                 },
             });
         </script>
+
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
     @endPushOnce
 </x-admin::layouts>

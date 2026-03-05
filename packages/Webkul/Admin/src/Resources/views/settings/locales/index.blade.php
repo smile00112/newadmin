@@ -7,45 +7,57 @@
 
     <v-locales>
         <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.settings.locales.index.title')
-            </p>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 15px rgba(59,130,246,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xl font-bold text-gray-800 dark:text-white">
+                        @lang('admin::app.settings.locales.index.title')
+                    </p>
+                    <p class="text-xs text-gray-400">Языки системы</p>
+                </div>
+            </div>
 
             <div class="flex items-center gap-x-2.5">
                 @if (bouncer()->hasPermission('settings.locales.create'))
-                    <button
-                        type="button"
-                        class="primary-button"
-                    >
+                    <button type="button" class="primary-button">
                         @lang('admin::app.settings.locales.index.create-btn')
                     </button>
                 @endif
             </div>
         </div>
 
-        <!-- DataGrid Shimmer -->
         <x-admin::shimmer.datagrid />
     </v-locales>
 
     {!! view_render_event('bagisto.admin.settings.locales.create.after') !!}
 
     @pushOnce('scripts')
-        <script
-            type="text/x-template"
-            id="v-locales-template"
-        >
+        <script type="text/x-template" id="v-locales-template">
             <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-                <p class="text-xl font-bold text-gray-800 dark:text-white">
-                    @lang('admin::app.settings.locales.index.title')
-                </p>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 15px rgba(59,130,246,0.3); min-width:44px;">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xl font-bold text-gray-800 dark:text-white">
+                            @lang('admin::app.settings.locales.index.title')
+                        </p>
+                        <p class="text-xs text-gray-400">Языки системы</p>
+                    </div>
+                </div>
 
                 <div class="flex items-center gap-x-2.5">
-                    <!-- Locale Create Button -->
                     @if (bouncer()->hasPermission('settings.locales.create'))
                         <button
                             type="button"
                             class="primary-button"
-                            @click="selectedLocales=0;resetForm();$refs.localeUpdateOrCreateModal.toggle()"
+                            @click="openDrawer('create')"
                         >
                             @lang('admin::app.settings.locales.index.create-btn')
                         </button>
@@ -57,7 +69,6 @@
                 :src="route('admin.settings.locales.index')"
                 ref="datagrid"
             >
-                <!-- DataGrid Body -->
                 <template #body="{
                     isLoading,
                     available,
@@ -75,38 +86,31 @@
                             v-for="record in available.records"
                             class="row grid items-center gap-2.5 border-b px-4 py-4 text-gray-600 transition-all hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-950"
                             :style="`grid-template-columns: repeat(${gridsCount}, minmax(0, 1fr))`"
+                            style="cursor: pointer;"
+                            @click="openDrawer('edit', record)"
+                            @mouseenter="preloadRecord(record)"
                         >
-                            <!-- ID -->
                             <p>@{{ record.id }}</p>
-
-                            <!-- Code -->
                             <p>@{{ record.code }}</p>
-
-                            <!-- Name -->
                             <p>@{{ record.name }}</p>
-
-                            <!-- Direction -->
                             <p>@{{ record.direction }}</p>
 
-                            <!-- Actions -->
                             <div class="flex justify-end">
                                 @if (bouncer()->hasPermission('settings.locales.edit'))
-                                    <a @click="selectedLocales=1; editModal(record.actions.find(action => action.index === 'edit')?.url)">
+                                    <a @click.stop="openDrawer('edit', record)">
                                         <span
                                             :class="record.actions.find(action => action.index === 'edit')?.icon"
                                             class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                        >
-                                        </span>
+                                        ></span>
                                     </a>
                                 @endif
 
                                 @if (bouncer()->hasPermission('settings.locales.delete'))
-                                    <a @click="performAction(record.actions.find(action => action.index === 'delete'))">
+                                    <a @click.stop="performAction(record.actions.find(action => action.index === 'delete'))">
                                         <span
                                             :class="record.actions.find(action => action.index === 'delete')?.icon"
                                             class="cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-200 dark:hover:bg-gray-800 max-sm:place-self-center"
-                                        >
-                                        </span>
+                                        ></span>
                                     </a>
                                 @endif
                             </div>
@@ -115,160 +119,54 @@
                 </template>
             </x-admin::datagrid>
 
-            <x-admin::form
-                v-slot="{ meta, errors, handleSubmit }"
-                as="div"
-                ref="modalForm"
-            >
-                <form
-                    @submit="handleSubmit($event, updateOrCreate)"
-                    ref="createLocaleForm"
-                >
+            <!-- Drawer -->
+            <teleport to="body">
+                <div :style="{
+                    position: 'fixed', inset: 0, zIndex: 9998,
+                    visibility: isDrawerOpen ? 'visible' : 'hidden',
+                    pointerEvents: isDrawerOpen ? 'auto' : 'none',
+                }">
+                    <div @click="closeDrawer" :style="{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(2px)', transition: 'opacity 0.3s ease',
+                        opacity: drawerVisible ? 1 : 0,
+                    }"></div>
 
-                    {!! view_render_event('bagisto.admin.settings.locales.create_form_controls.before') !!}
-
-                    <x-admin::modal ref="localeUpdateOrCreateModal">
-                        <!-- Modal Header -->
-                        <x-slot:header>
-                            <p class="text-lg font-bold text-gray-800 dark:text-white">
-                                <span v-if="selectedLocales">
-                                    @lang('admin::app.settings.locales.index.edit.title')
-                                </span>
-
-                                <span v-else>
-                                    @lang('admin::app.settings.locales.index.create.title')
-                                </span>
-                            </p>
-                        </x-slot>
-
-                        <!-- Modal Content -->
-                        <x-slot:content>
-                            {!! view_render_event('bagisto.admin.settings.locale.create.before') !!}
-
-                            <x-admin::form.control-group.control
-                                type="hidden"
-                                name="id"
-                                v-model="locale.id"
-                            />
-
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.locales.index.create.code')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="text"
-                                    id="code"
-                                    name="code"
-                                    rules="required"
-                                    v-model="locale.code"
-                                    :label="trans('admin::app.settings.locales.index.create.code')"
-                                    :placeholder="trans('admin::app.settings.locales.index.create.code')"
-                                    ::disabled="locale.id"
-                                />
-
-                                <x-admin::form.control-group.error control-name="code" />
-                            </x-admin::form.control-group>
-
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.locales.index.create.name')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    rules="required"
-                                    v-model="locale.name"
-                                    :label="trans('admin::app.settings.locales.index.create.name')"
-                                    :placeholder="trans('admin::app.settings.locales.index.create.name')"
-                                />
-
-                                <x-admin::form.control-group.error control-name="name" />
-                            </x-admin::form.control-group>
-
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label class="required">
-                                    @lang('admin::app.settings.locales.index.create.direction')
-                                </x-admin::form.control-group.label>
-
-                                <x-admin::form.control-group.control
-                                    type="select"
-                                    id="direction"
-                                    name="direction"
-                                    rules="required"
-                                    v-model="locale.direction"
-                                    :label="trans('admin::app.settings.locales.index.create.direction')"
-                                >
-                                    <!-- Default Option -->
-                                    <option value="">
-                                        @lang('admin::app.settings.locales.index.create.select-direction')
-                                    </option>
-
-                                    <option
-                                        value="ltr"
-                                        selected title="Text direction left to right"
-                                    >
-                                        LTR
-                                    </option>
-
-                                    <option
-                                        value="rtl"
-                                        title="Text direction right to left"
-                                    >
-                                        RTL
-                                    </option>
-                                </x-admin::form.control-group.control>
-
-                                <x-admin::form.control-group.error control-name="direction" />
-                            </x-admin::form.control-group>
-
-                            <x-admin::form.control-group>
-                                <x-admin::form.control-group.label>
-                                    @lang('admin::app.settings.locales.index.create.locale-logo')
-                                </x-admin::form.control-group.label>
-
-                                <div class="hidden">
-                                    <x-admin::media.images
-                                        name="logo_path"
-                                        ::uploaded-images='locale.image'
-                                    />
+                    <div
+                        style="position:absolute; top:0; right:0; bottom:0; width:calc(100vw - 270px); max-width:calc(100vw - 270px); background:#f8f9fb; box-shadow:-8px 0 40px rgba(0,0,0,0.15); transition:transform 0.35s cubic-bezier(0.16,1,0.3,1); overflow:hidden; display:flex; flex-direction:column;"
+                        :style="{ transform: drawerVisible ? 'translateX(0)' : 'translateX(100%)' }"
+                    >
+                        <!-- Drawer Header -->
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px; background:white; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button @click="closeDrawer" style="display:flex; align-items:center; justify-content:center; width:36px; height:36px; min-width:36px; border-radius:10px; background:#f3f4f6; cursor:pointer; border:none; transition:all 0.2s;" onmouseenter="this.style.background='#e5e7eb'" onmouseleave="this.style.background='#f3f4f6'">
+                                    <svg style="width:18px; height:18px; color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                                <div>
+                                    <span v-if="drawerMode === 'edit' && currentRecord" style="font-size:14px; font-weight:600; color:#111827;">
+                                        @{{ currentRecord.name }}
+                                        <span style="font-size:12px; color:#6b7280; margin-left:6px; font-weight:400;">@{{ currentRecord.code }}</span>
+                                    </span>
+                                    <span v-else style="font-size:14px; font-weight:600; color:#111827;">
+                                        @lang('admin::app.settings.locales.index.create.title')
+                                    </span>
                                 </div>
+                            </div>
+                        </div>
 
-                                <v-media-images
-                                    name="logo_path"
-                                    :uploaded-images='locale.image'
-                                >
-                                </v-media-images>
+                        <!-- Loading -->
+                        <div v-if="isDrawerLoading && isDrawerOpen" style="position:absolute; top:52px; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(248,249,251,0.9); z-index:5;">
+                            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                                <svg style="width:36px; height:36px; color:#6366f1; animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="10" /></svg>
+                                <span style="font-size:13px; color:#6b7280;">Загрузка...</span>
+                            </div>
+                        </div>
 
-                                <x-admin::form.control-group.error control-name="logo_path" />
-                            </x-admin::form.control-group>
-
-                            <p class="text-xs text-gray-600 dark:text-gray-300">
-                                @lang('admin::app.settings.locales.index.logo-size')
-                            </p>
-
-                            {!! view_render_event('bagisto.admin.settings.locale.create.after') !!}
-                        </x-slot>
-
-                        <!-- Modal Footer -->
-                        <x-slot:footer>
-                            <!-- Save Button -->
-                            <x-admin::button
-                                button-type="button"
-                                class="primary-button"
-                                :title="trans('admin::app.settings.locales.index.create.save-btn')"
-                                ::loading="isLoading"
-                                ::disabled="isLoading"
-                            />
-                        </x-slot>
-                    </x-admin::modal>
-
-                    {!! view_render_event('bagisto.admin.settings.locales.create_form_controls.after') !!}
-
-                </form>
-            </x-admin::form>
+                        <!-- Iframe -->
+                        <iframe v-if="iframeSrc" :src="iframeSrc" ref="panelIframe" @load="onIframeLoad" style="width:100%; border:none; flex:1; margin:0; padding:0; display:block;" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </teleport>
         </script>
 
         <script type="module">
@@ -277,88 +175,128 @@
 
                 data() {
                     return {
-                        locale: {
-                            image: [],
-                        },
-
-                        isLoading: false,
-
-                        selectedLocales: 0,
-                    }
+                        isDrawerOpen: false,
+                        drawerVisible: false,
+                        isDrawerLoading: false,
+                        iframeSrc: '',
+                        currentRecord: null,
+                        currentRecordId: null,
+                        drawerMode: 'edit',
+                        hoverTimer: null,
+                    };
                 },
 
                 computed: {
                     gridsCount() {
                         let count = this.$refs.datagrid.available.columns.length;
-
-                        if (this.$refs.datagrid.available.actions.length) {
-                            ++count;
-                        }
-
-                        if (this.$refs.datagrid.available.massActions.length) {
-                            ++count;
-                        }
-
+                        if (this.$refs.datagrid.available.actions.length) ++count;
+                        if (this.$refs.datagrid.available.massActions.length) ++count;
                         return count;
                     },
                 },
 
+                mounted() {
+                    window.addEventListener('message', this.handleMessage);
+                    window.addEventListener('keydown', this.handleKeyDown);
+                },
+
+                beforeUnmount() {
+                    window.removeEventListener('message', this.handleMessage);
+                    window.removeEventListener('keydown', this.handleKeyDown);
+                    clearTimeout(this.hoverTimer);
+                },
+
                 methods: {
-                    updateOrCreate(params, { resetForm, setErrors  }) {
-                        this.isLoading = true;
+                    openDrawer(mode, record = null) {
+                        clearTimeout(this.hoverTimer);
+                        this.drawerMode = mode;
+                        this.currentRecord = record;
 
-                        let formData = new FormData(this.$refs.createLocaleForm);
+                        let targetUrl, targetId;
 
-                        if (params.id) {
-                            formData.append('_method', 'put');
+                        if (mode === 'create') {
+                            targetUrl = window.location.origin + '/admin/settings/locales/create-panel';
+                            targetId = 'create';
+                        } else {
+                            targetUrl = window.location.origin + '/admin/settings/locales/edit-panel/' + record.id;
+                            targetId = record.id;
                         }
 
-                        this.$axios.post(params.id ? "{{ route('admin.settings.locales.update') }}" : "{{ route('admin.settings.locales.store') }}", formData, {
-                            headers: {
-                                'Content-Type': 'multipart/form-data'
-                            }
-                        })
-                        .then((response) => {
-                            this.isLoading = false;
+                        const alreadyLoaded = (this.currentRecordId === targetId && !this.isDrawerLoading);
+                        const alreadyLoading = (this.currentRecordId === targetId && this.isDrawerLoading);
 
-                            this.$refs.localeUpdateOrCreateModal.close();
+                        if (!alreadyLoaded && !alreadyLoading) {
+                            this.currentRecordId = targetId;
+                            this.isDrawerLoading = true;
+                            this.iframeSrc = targetUrl;
+                        }
 
-                            this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
-
-                            this.$refs.datagrid.get();
-
-                            resetForm();
-                        })
-                        .catch(error => {
-                            this.isLoading = false;
-
-                            if (error.response.status == 422) {
-                                setErrors(error.response.data.errors);
-                            }
+                        this.isDrawerOpen = true;
+                        this.$nextTick(() => {
+                            requestAnimationFrame(() => { this.drawerVisible = true; });
                         });
+                        this.toggleSidebarBlur(true);
+                        document.body.style.overflow = 'hidden';
                     },
 
-                    editModal(url) {
-                        this.$axios.get(url)
-                            .then((response) => {
-                                this.locale = {
-                                    ...response.data.data,
-                                        image: response.data.data.logo_path
-                                        ? [{ id: 'logo_url', url: response.data.data.logo_url }]
-                                        : [],
-                                };
-
-                                this.$refs.localeUpdateOrCreateModal.toggle();
-                            })
+                    closeDrawer() {
+                        this.drawerVisible = false;
+                        setTimeout(() => {
+                            this.isDrawerOpen = false;
+                            this.toggleSidebarBlur(false);
+                            document.body.style.overflow = '';
+                        }, 350);
                     },
 
-                    resetForm() {
-                        this.locale = {
-                            image: [],
-                        };
-                    }
+                    preloadRecord(record) {
+                        if (this.isDrawerOpen) return;
+                        if (this.currentRecordId === record.id) return;
+                        clearTimeout(this.hoverTimer);
+                        this.hoverTimer = setTimeout(() => {
+                            this.currentRecordId = record.id;
+                            this.currentRecord = record;
+                            this.drawerMode = 'edit';
+                            this.isDrawerLoading = true;
+                            this.iframeSrc = window.location.origin + '/admin/settings/locales/edit-panel/' + record.id;
+                        }, 150);
+                    },
+
+                    onIframeLoad() { this.isDrawerLoading = false; },
+
+                    handleMessage(event) {
+                        if (!event.data || typeof event.data !== 'object') return;
+                        switch (event.data.type) {
+                            case 'panel-saved':
+                                this.closeDrawer();
+                                this.iframeSrc = '';
+                                this.currentRecordId = null;
+                                this.$emitter.emit('add-flash', { type: 'success', message: event.data.message });
+                                this.$refs.datagrid.get();
+                                break;
+                            case 'panel-closed':
+                                this.closeDrawer();
+                                break;
+                        }
+                    },
+
+                    handleKeyDown(e) {
+                        if (e.key === 'Escape' && this.isDrawerOpen) this.closeDrawer();
+                    },
+
+                    toggleSidebarBlur(blur) {
+                        const sidebar = document.querySelector('.lg\\:fixed.lg\\:top-\\[58px\\]');
+                        if (sidebar) {
+                            sidebar.style.transition = 'filter 0.3s ease';
+                            sidebar.style.filter = blur ? 'blur(4px)' : 'none';
+                            sidebar.style.pointerEvents = blur ? 'none' : '';
+                        }
+                    },
                 },
             });
         </script>
+
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
     @endPushOnce
 </x-admin::layouts>

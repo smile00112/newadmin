@@ -29,19 +29,28 @@
                         <div>
                             <a v-if="entity === 'customers'"
                                 href="{{ route('admin.reporting.customers.index') }}"
-                                class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800">
+                                style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                                @mouseenter="$event.target.style.background='#e5e7eb'"
+                                @mouseleave="$event.target.style.background='#f3f4f6'">
+                                <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                                 @lang('admin::app.reporting.view.back-btn')
                             </a>
                             
                             <a v-else-if="entity === 'products'"
                                 href="{{ route('admin.reporting.products.index') }}"
-                                class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800">
+                                style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                                @mouseenter="$event.target.style.background='#e5e7eb'"
+                                @mouseleave="$event.target.style.background='#f3f4f6'">
+                                <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                                 @lang('admin::app.reporting.view.back-btn')
                             </a>
                             
                             <a v-else
                                 href="{{ route('admin.reporting.sales.index') }}"
-                                class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800">
+                                style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                                @mouseenter="$event.target.style.background='#e5e7eb'"
+                                @mouseleave="$event.target.style.background='#f3f4f6'">
+                                <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                                 @lang('admin::app.reporting.view.back-btn')
                             </a>
                         </div>

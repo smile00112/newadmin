@@ -4,9 +4,19 @@
     </x-slot>
 
     <div class="flex items-center justify-between">
-        <p class="text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.customers.customers.index.title')
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); box-shadow: 0 4px 15px rgba(6,182,212,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.customers.customers.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Управление клиентами</p>
+            </div>
+        </div>
 
         <div class="flex items-center gap-x-2.5">
             <!-- Export Modal -->
@@ -138,8 +148,11 @@
                 <div
                     class="row grid grid-cols-1 gap-2 md:grid-cols-[minmax(150px,_2fr)_1fr_1fr] md:gap-0 border-b px-4 py-2.5 transition-all hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950 min-w-full"
                     v-for="record in available.records"
+                    style="cursor: pointer;"
+                    @mouseenter="$event.currentTarget.style.boxShadow='inset 3px 0 0 #06b6d4'"
+                    @mouseleave="$event.currentTarget.style.boxShadow='none'"
                 >
-                    <div class="flex gap-2.5">
+                    <div class="flex gap-2.5 items-center">
                         @if ($hasPermission)
                             <input
                                 type="checkbox"
@@ -158,81 +171,96 @@
                             </label>
                         @endif
 
-                        <div class="flex flex-col gap-1.5">
+                        <!-- Avatar -->
+                        <div class="flex items-center justify-center rounded-full" style="width: 40px; height: 40px; min-width: 40px; background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); font-weight: 600; font-size: 15px; color: #fff;">
+                            @{{ record.full_name ? record.full_name.charAt(0).toUpperCase() : '?' }}
+                        </div>
+
+                        <div class="flex flex-col gap-1">
                             <p class="text-base font-semibold text-gray-800 dark:text-white">
                                 @{{ record.full_name }}
                             </p>
 
-                            <p class="text-gray-600 dark:text-gray-300">
+                            <p class="text-gray-500 dark:text-gray-400" style="font-size: 13px;">
                                 @{{ record.email }}
                             </p>
 
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @{{ record.phone ?? 'N/A' }}
+                            <p v-if="record.phone" class="text-gray-400 dark:text-gray-500" style="font-size: 12px;">
+                                @{{ record.phone }}
                             </p>
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-1.5 ps-8 md:ps-0">
-                        <div class="flex gap-1.5">
+                    <div class="flex flex-col gap-1.5 ps-8 md:ps-0 justify-center">
+                        <div class="flex gap-1.5 flex-wrap">
                             <span
-                                :class="{
-                                    'label-canceled': record.status == '',
-                                    'label-active': record.status === 1,
-                                }"
+                                style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600;"
+                                :style="record.status === 1
+                                    ? 'background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0;'
+                                    : 'background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;'"
                             >
                                 @{{ record.status ? '@lang('admin::app.customers.customers.index.datagrid.active')' : '@lang('admin::app.customers.customers.index.datagrid.inactive')' }}
                             </span>
 
                             <span
-                                :class="{
-                                    'label-canceled': record.is_suspended === 1,
-                                }"
+                                v-if="record.is_suspended === 1"
+                                style="display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: #fef3c7; color: #d97706; border: 1px solid #fde68a;"
                             >
-                                @{{ record.is_suspended ?  '@lang('admin::app.customers.customers.index.datagrid.suspended')' : '' }}
+                                @lang('admin::app.customers.customers.index.datagrid.suspended')
                             </span>
                         </div>
 
-                        <p class="text-gray-600 dark:text-gray-300">
-                            @{{ record.gender ?? 'N/A' }}
+                        <p class="text-gray-600 dark:text-gray-300" style="font-size: 13px;">
+                            @{{ record.gender ?? '—' }}
                         </p>
 
-                        <p class="text-gray-600 dark:text-gray-300">
-                            @{{ record.group ?? 'N/A' }}
+                        <p v-if="record.group" style="display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 6px; font-size: 11px; background: #ede9fe; color: #7c3aed; font-weight: 500; width: fit-content;">
+                            @{{ record.group }}
                         </p>
 
-                        <p class="text-gray-600 dark:text-gray-300">
-                            @{{ "@lang('admin::app.customers.customers.index.datagrid.id-value')".replace(':id', record.customer_id) }}
+                        <p class="text-gray-400 dark:text-gray-500" style="font-size: 11px;">
+                            ID: @{{ record.customer_id }}
                         </p>
                     </div>
 
                     <div class="flex items-center justify-between gap-x-4 ps-8 md:ps-0">
                         <div class="flex flex-col gap-1.5">
-                            <p class="text-base font-semibold text-gray-800 dark:text-white">
+                            <p class="text-base font-bold" style="color: #059669;">
                                 @{{ $admin.formatPrice(record.revenue) }}
                             </p>
 
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @{{ "@lang('admin::app.customers.customers.index.datagrid.order')".replace(':order', record.order_count) }}
-                            </p>
-
-                            <p class="text-gray-600 dark:text-gray-300">
-                                @{{ "@lang('admin::app.customers.customers.index.datagrid.address')".replace(':address', record.address_count) }}
-                            </p>
+                            <div class="flex items-center gap-1.5">
+                                <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 8px; font-size: 12px; background: #eef2ff; color: #4f46e5; font-weight: 500;">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                    @{{ record.order_count }}
+                                </span>
+                                <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 8px; font-size: 12px; background: #fef3c7; color: #d97706; font-weight: 500;">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    @{{ record.address_count }}
+                                </span>
+                            </div>
                         </div>
 
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-1">
                             <a
-                                class="icon-login cursor-pointer p-1.5 text-2xl hover:rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 ltr:ml-1 rtl:mr-1"
-                                :href=`{{ route('admin.customers.customers.login_as_customer', '') }}/${record.customer_id}`
+                                style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.15s;"
+                                :href="`{{ route('admin.customers.customers.login_as_customer', '') }}/${record.customer_id}`"
                                 target="_blank"
+                                @mouseenter="$event.currentTarget.style.background='#ede9fe'"
+                                @mouseleave="$event.currentTarget.style.background='transparent'"
+                                title="Войти как клиент"
                             >
+                                <svg class="w-4 h-4" style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
                             </a>
 
                             <a
-                                class="icon-sort-right rtl:icon-sort-left cursor-pointer p-1.5 text-2xl hover:rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 ltr:ml-1 rtl:mr-1"
-                                :href=`{{ route('admin.customers.customers.view', '') }}/${record.customer_id}`
+                                style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; transition: all 0.15s;"
+                                :href="`{{ route('admin.customers.customers.view', '') }}/${record.customer_id}`"
+                                @mouseenter="$event.currentTarget.style.background='#dbeafe'"
+                                @mouseleave="$event.currentTarget.style.background='transparent'"
+                                title="Просмотр"
                             >
+                                <svg class="w-4 h-4" style="color: #2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                             </a>
                         </div>
                     </div>

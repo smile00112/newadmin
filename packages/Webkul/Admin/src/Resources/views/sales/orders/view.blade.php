@@ -3,6 +3,15 @@
         @lang('admin::app.sales.orders.view.title', ['order_id' => $order->increment_id])
     </x-slot>
 
+    @pushOnce('styles')
+        <style>
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        </style>
+    @endPushOnce
+
     <!-- Header -->
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
         {!! view_render_event('bagisto.admin.sales.order.title.before', ['order' => $order]) !!}
@@ -25,21 +34,13 @@
                     </p>
                     <span 
                         class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
+                        data-order-status-badge
                         style="@php
-                            $statusColors = [
-                                'pending' => 'background:#fef3c7;color:#b45309;',
-                                'pending_payment' => 'background:#fef3c7;color:#b45309;',
-                                'processing' => 'background:#dbeafe;color:#1d4ed8;',
-                                'preparing' => 'background:#e0e7ff;color:#4338ca;',
-                                'ready' => 'background:#d1fae5;color:#047857;',
-                                'completed' => 'background:#d1fae5;color:#047857;',
-                                'canceled' => 'background:#ffe4e6;color:#be123c;',
-                                'closed' => 'background:#f3f4f6;color:#374151;',
-                            ];
-                            echo $statusColors[$order->status] ?? 'background:#f3f4f6;color:#374151;';
+                            $statusColor = $statusColorMap[$order->status] ?? '#6b7280';
+                            echo 'background:'.$statusColor.'1a;color:'.$statusColor.';';
                         @endphp"
                     >
-                        @lang("admin::app.sales.orders.view.$order->status")
+                        {{ $order->status_label }}
                     </span>
                 </div>
                 <p class="text-xs text-gray-400 mt-0.5">{{ core()->formatDate($order->created_at, 'd.m.Y H:i') }}</p>
@@ -128,10 +129,36 @@
         </div>
 
         <!-- Order details -->
-        <div class="mt-3.5 flex gap-2.5 max-xl:flex-wrap">
+        <div class="mt-3.5 flex max-xl:flex-wrap" style="gap: 20px;">
             <!-- Left Component -->
-            <div class="flex flex-1 flex-col gap-2 max-xl:flex-auto">
+            <div class="flex flex-1 flex-col max-xl:flex-auto" style="gap: 20px;">
                 {!! view_render_event('bagisto.admin.sales.order.left_component.before', ['order' => $order]) !!}
+
+                <!-- Step Progress Bar -->
+                <div class="box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                    <div class="flex items-center gap-2.5 px-5 py-3.5" style="border-bottom: 1px solid #f3f4f6;">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background: #f1f0ff;">
+                            <svg class="w-4 h-4" style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                        </div>
+                        <p class="text-sm font-bold text-gray-800 dark:text-white">
+                            Шаговый прогресс
+                        </p>
+                        @php
+                            $paymentLabel = core()->getConfigData('sales.payment_methods.' . $order->payment->method . '.title') ?? $order->payment->method;
+                        @endphp
+                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full" style="background: #f3f4f6; color: #6b7280;">
+                            {{ $paymentLabel }}
+                        </span>
+                    </div>
+
+                    <v-order-step-progress
+                        order-id="{{ $order->id }}"
+                        initial-status="{{ $order->status }}"
+                        update-url="{{ route('admin.sales.orders.update_status', $order->id) }}"
+                    ></v-order-step-progress>
+                </div>
 
                 <div class="box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
                     @php
@@ -469,7 +496,7 @@
             </div>
 
             <!-- Right Component -->
-            <div class="flex w-[360px] max-w-full flex-col gap-2 max-sm:w-full">
+            <div class="flex w-[360px] max-w-full flex-col max-sm:w-full" style="gap: 20px;">
                 {!! view_render_event('bagisto.admin.sales.order.right_component.before', ['order' => $order]) !!}
 
                 <!-- Customer and address information -->
@@ -523,34 +550,60 @@
 
                                 <!-- Phone -->
                                 @php
-                                    $customerPhone = $order->shipping_address?->phone ?? $order->billing_address?->phone ?? null;
+                                    $customerPhone = $order->shipping_address?->phone 
+                                        ?? $order->billing_address?->phone 
+                                        ?? $order->customer?->phone 
+                                        ?? null;
+                                    $phoneDigits = $customerPhone ? preg_replace('/[^0-9]/', '', $customerPhone) : null;
                                 @endphp
                                 @if($customerPhone)
-                                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                    <div class="flex items-center justify-between p-3 rounded-xl" style="background: #f0fdf4;">
                                         <div class="flex items-center gap-3">
-                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                            </svg>
-                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ $customerPhone }}</span>
+                                            <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background: #dcfce7;">
+                                                <svg class="w-4 h-4" style="color: #16a34a;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                                </svg>
+                                            </div>
+                                            <a href="tel:{{ $phoneDigits }}" class="text-sm font-semibold text-gray-800 dark:text-white hover:underline">
+                                                {{ $customerPhone }}
+                                            </a>
                                         </div>
-                                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $customerPhone) }}" 
-                                           target="_blank"
-                                           class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 transition-colors"
-                                           title="WhatsApp"
-                                        >
-                                            <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                                            </svg>
-                                        </a>
+                                        <div class="flex items-center gap-1.5">
+                                            <a href="tel:{{ $phoneDigits }}"
+                                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                                               style="background: #dbeafe;"
+                                               title="Позвонить"
+                                               onmouseenter="this.style.background='#bfdbfe'" onmouseleave="this.style.background='#dbeafe'"
+                                            >
+                                                <svg class="w-4 h-4" style="color: #2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                                </svg>
+                                            </a>
+                                            <a href="https://wa.me/{{ $phoneDigits }}" 
+                                               target="_blank"
+                                               class="inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+                                               style="background: #dcfce7;"
+                                               title="WhatsApp"
+                                               onmouseenter="this.style.background='#bbf7d0'" onmouseleave="this.style.background='#dcfce7'"
+                                            >
+                                                <svg class="w-4 h-4" style="color: #16a34a;" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                                                </svg>
+                                            </a>
+                                        </div>
                                     </div>
                                 @endif
 
                                 <!-- Email -->
-                                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                    <span class="text-sm text-gray-700 dark:text-gray-200">{{ $order->customer_email }}</span>
+                                <div class="flex items-center gap-3 p-3 rounded-xl" style="background: #eff6ff;">
+                                    <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background: #dbeafe;">
+                                        <svg class="w-4 h-4" style="color: #2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <a href="mailto:{{ $order->customer_email }}" class="text-sm font-medium text-gray-700 dark:text-gray-200 hover:underline">
+                                        {{ $order->customer_email }}
+                                    </a>
                                 </div>
 
                                 {!! view_render_event('bagisto.admin.sales.order.customer_email.after', ['order' => $order]) !!}
@@ -692,7 +745,7 @@
                     </x-slot>
 
                     <x-slot:content>
-                        <div class="flex w-full flex-col gap-y-3">
+                        <div class="flex w-full flex-col" style="gap: 5px;">
                             <!-- Order Date Row -->
                             <div class="flex justify-between items-center p-3 rounded-xl" style="background:#fafafa;">
                                 <p class="text-sm text-gray-500">
@@ -1075,6 +1128,95 @@
     </div>
 
     @pushOnce('scripts')
+        <!-- Step Progress Component -->
+        <script type="text/x-template" id="v-order-step-progress-template">
+            <div style="padding: 28px 24px 24px;">
+                <div style="position: relative; display: flex; align-items: flex-start; justify-content: space-between;">
+                    <!-- Connecting line (background) -->
+                    <div style="position: absolute; top: 22px; left: 44px; right: 44px; height: 3px; background: #e5e7eb; border-radius: 2px; z-index: 0;"></div>
+                    <!-- Connecting line (filled) -->
+                    <div :style="{
+                        position: 'absolute',
+                        top: '22px',
+                        left: '44px',
+                        height: '3px',
+                        background: 'linear-gradient(90deg, #7c3aed, #6d28d9)',
+                        borderRadius: '2px',
+                        zIndex: 1,
+                        transition: 'width 0.5s ease',
+                        width: progressWidth,
+                    }"></div>
+
+                    <!-- Steps -->
+                    <div
+                        v-for="(step, idx) in steps"
+                        :key="step.key"
+                        style="display: flex; flex-direction: column; align-items: center; position: relative; z-index: 2; cursor: pointer; flex: 1;"
+                        @click="goToStep(step, idx)"
+                    >
+                        <!-- Circle -->
+                        <div :style="{
+                            width: '44px',
+                            height: '44px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s ease',
+                            boxShadow: stepIndex(step) <= activeIdx ? '0 4px 15px rgba(124,58,237,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
+                            background: stepIndex(step) <= activeIdx
+                                ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
+                                : (stepIndex(step) === activeIdx + 1 ? '#f5f3ff' : '#f3f4f6'),
+                            border: stepIndex(step) === activeIdx + 1 ? '2px solid #c4b5fd' : 'none',
+                        }">
+                            <!-- Icon -->
+                            <svg
+                                v-if="stepIndex(step) < activeIdx"
+                                style="width: 20px; height: 20px; color: white;"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <svg
+                                v-else
+                                :style="{
+                                    width: '20px',
+                                    height: '20px',
+                                    color: stepIndex(step) <= activeIdx ? 'white' : (stepIndex(step) === activeIdx + 1 ? '#7c3aed' : '#9ca3af'),
+                                }"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/>
+                            </svg>
+
+                            <!-- Spinner overlay -->
+                            <svg
+                                v-if="isSaving && savingIdx === idx"
+                                style="position: absolute; width: 44px; height: 44px; animation: spin 1s linear infinite;"
+                                fill="none" viewBox="0 0 24 24"
+                            >
+                                <circle style="opacity: 0.2;" cx="12" cy="12" r="10" stroke="#7c3aed" stroke-width="2"></circle>
+                                <path style="opacity: 0.8;" fill="#7c3aed" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Label -->
+                        <p :style="{
+                            marginTop: '10px',
+                            fontSize: '12px',
+                            fontWeight: stepIndex(step) === activeIdx ? '700' : '600',
+                            color: stepIndex(step) <= activeIdx ? '#4c1d95' : (stepIndex(step) === activeIdx + 1 ? '#6d28d9' : '#9ca3af'),
+                            transition: 'color 0.3s ease',
+                            textAlign: 'center',
+                            letterSpacing: '0.01em',
+                        }">
+                            @{{ step.label }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </script>
+
         <!-- SPA Status Changer Component -->
         <script type="text/x-template" id="v-order-status-changer-template">
             <div class="flex items-center gap-2 w-full">
@@ -1084,14 +1226,7 @@
                     :disabled="isSaving"
                     class="flex-1 px-3 py-1.5 text-sm font-medium border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 disabled:opacity-50 min-w-[200px]"
                 >
-                    <option value="pending">Новый</option>
-                    <option value="pending_payment">Ожидание оплаты</option>
-                    <option value="processing">Принят</option>
-                    <option value="preparing">Готовим</option>
-                    <option value="ready">Готов</option>
-                    <option value="completed">Завершён</option>
-                    <option value="canceled">Отмена</option>
-                    <option value="closed">Закрыт</option>
+                    <option v-for="s in allStatuses" :key="s.code" :value="s.code">@{{ s.name }}</option>
                 </select>
                 <svg v-if="isSaving" class="w-5 h-5 animate-spin text-violet-500 flex-shrink-0" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1254,6 +1389,110 @@
         </script>
 
         <script type="module">
+            // Step Progress Component
+            app.component('v-order-step-progress', {
+                template: '#v-order-step-progress-template',
+                props: ['orderId', 'initialStatus', 'updateUrl'],
+                data() {
+                    return {
+                        currentStatus: this.initialStatus,
+                        isSaving: false,
+                        savingIdx: -1,
+                        // Dynamic steps from order_statuses table (exclude negative statuses)
+                        steps: (() => {
+                            const allSt = @json($allStatuses ?? []);
+                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed'];
+                            const defaultIcon = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+                            return allSt
+                                .filter(s => !negative.includes(s.code))
+                                .map(s => ({
+                                    key: s.code,
+                                    statuses: [s.code],
+                                    label: s.name,
+                                    color: s.color || '#6b7280',
+                                    icon: defaultIcon,
+                                }));
+                        })(),
+                    };
+                },
+                computed: {
+                    activeIdx() {
+                        for (let i = this.steps.length - 1; i >= 0; i--) {
+                            if (this.steps[i].statuses.includes(this.currentStatus)) return i;
+                        }
+                        // canceled/closed → show as step 0 (dimmed)
+                        if (['canceled', 'closed'].includes(this.currentStatus)) return -1;
+                        return 0;
+                    },
+                    progressWidth() {
+                        if (this.activeIdx <= 0) return '0%';
+                        const pct = (this.activeIdx / (this.steps.length - 1)) * 100;
+                        return `calc(${pct}% - 0px)`;
+                    },
+                },
+                methods: {
+                    stepIndex(step) {
+                        return this.steps.indexOf(step);
+                    },
+                    goToStep(step, idx) {
+                        if (this.isSaving) return;
+                        if (step.statuses.includes(this.currentStatus)) return;
+
+                        const newStatus = step.key;
+                        this.isSaving = true;
+                        this.savingIdx = idx;
+
+                        this.$axios.post(this.updateUrl, {
+                            status: newStatus,
+                        }, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then((response) => {
+                            this.isSaving = false;
+                            this.savingIdx = -1;
+                            if (response.data.success) {
+                                this.currentStatus = newStatus;
+                                // Sync the dropdown status changer if present
+                                this.$emitter.emit('order-status-changed', newStatus);
+                                this.$emitter.emit('add-flash', {
+                                    type: 'success',
+                                    message: response.data.message
+                                });
+                                // Update header badge dynamically
+                                const badge = document.querySelector('[data-order-status-badge]');
+                                if (badge) {
+                                    const colorMap = @json($statusColorMap ?? []);
+                                    const c = colorMap[newStatus] || '#6b7280';
+                                    badge.style.cssText = 'background:' + c + '1a;color:' + c + ';';
+                                    // Also update the label text
+                                    const stepData = this.steps.find(s => s.key === newStatus);
+                                    if (stepData) badge.textContent = stepData.label;
+                                }
+                            } else {
+                                this.$emitter.emit('add-flash', {
+                                    type: 'warning',
+                                    message: response.data.message
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            this.isSaving = false;
+                            this.savingIdx = -1;
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || 'Ошибка при обновлении статуса'
+                            });
+                        });
+                    },
+                },
+                mounted() {
+                    // Listen for status changes from the dropdown changer
+                    this.$emitter.on('order-status-synced', (status) => {
+                        this.currentStatus = status;
+                    });
+                },
+            });
+
             // SPA Status Changer
             app.component('v-order-status-changer', {
                 template: '#v-order-status-changer-template',
@@ -1263,6 +1502,7 @@
                         currentStatus: this.initialStatus,
                         isSaving: false,
                         showSuccess: false,
+                        allStatuses: @json($allStatuses ?? []),
                     };
                 },
                 methods: {
@@ -1282,6 +1522,9 @@
                             if (response.data.success) {
                                 this.showSuccess = true;
                                 setTimeout(() => { this.showSuccess = false; }, 2000);
+
+                                // Sync step progress bar
+                                this.$emitter.emit('order-status-synced', this.currentStatus);
 
                                 // Update status badge in header
                                 this.$emitter.emit('add-flash', {
@@ -1303,6 +1546,12 @@
                             });
                         });
                     },
+                },
+                mounted() {
+                    // Listen for status changes from step progress
+                    this.$emitter.on('order-status-changed', (status) => {
+                        this.currentStatus = status;
+                    });
                 },
             });
 
