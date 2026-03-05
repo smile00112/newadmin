@@ -40,6 +40,8 @@ class NomenclatureIngredientResource extends JsonResource
             'half_portion_pair_product_id' => $product->half_portion_pair_product_id,
             'attributes'         => $this->getProductAttributes($product),
             'nutrition'          => $this->getNutritionData($product),
+            'weight'             => $product->weight !== null ? (float) $product->weight : null,
+            'volume'             => $product->volume,
         ];
     }
 }

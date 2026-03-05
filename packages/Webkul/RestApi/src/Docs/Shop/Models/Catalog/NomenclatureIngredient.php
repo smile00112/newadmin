@@ -207,6 +207,33 @@ class NomenclatureIngredient
 
     /**
      * @OA\Property(
+     *     title="Weight",
+     *     description="Ingredient weight",
+     *     type="number",
+     *     format="float",
+     *     nullable=true,
+     *     example=150.0
+     * )
+     *
+     * @var float|null
+     */
+    public $weight;
+
+    /**
+     * @OA\Property(
+     *     title="Volume",
+     *     description="Ingredient volume",
+     *     type="string",
+     *     nullable=true,
+     *     example="250 ml"
+     * )
+     *
+     * @var string|null
+     */
+    public $volume;
+
+    /**
+     * @OA\Property(
      *     title="Attributes",
      *     description="Ingredient attributes with options",
      *     type="array",
