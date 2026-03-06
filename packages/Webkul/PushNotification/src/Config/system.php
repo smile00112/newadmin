@@ -8,17 +8,11 @@ return [
         'key'  => 'mobile_app.push_notifications',
         'name' => 'push_notification::app.settings.title',
         'info' => 'push_notification::app.settings.info',
+        'icon' => 'settings/store.svg',
         'sort' => 11,
     ],
     [
-        'key'  => 'mobile_app.push_notifications.general',
-        'name' => 'push_notification::app.settings.general.title',
-        'info' => 'push_notification::app.settings.general.info',
-        'icon' => 'settings/store.svg',
-        'sort' => 1,
-    ],
-    [
-        'key'    => 'mobile_app.push_notifications.general.settings',
+        'key'    => 'mobile_app.push_notifications.settings',
         'name'   => 'push_notification::app.settings.general.settings.title',
         'info'   => 'push_notification::app.settings.general.settings.info',
         'sort'   => 1,
@@ -67,7 +61,7 @@ return [
         ],
     ],
     [
-        'key'    => 'mobile_app.push_notifications.general.messages',
+        'key'    => 'mobile_app.push_notifications.messages',
         'name'   => 'push_notification::app.settings.general.messages.title',
         'info'   => 'push_notification::app.settings.general.messages.info',
         'sort'   => 2,

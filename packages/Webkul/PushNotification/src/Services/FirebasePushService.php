@@ -16,7 +16,7 @@ class FirebasePushService
      */
     public function isEnabled(): bool
     {
-        return (bool) core()->getConfigData('push_notification.general.settings.enabled');
+        return (bool) core()->getConfigData('mobile_app.push_notifications.settings.enabled');
     }
 
     /**
@@ -28,7 +28,7 @@ class FirebasePushService
             return false;
         }
 
-        $enabledStatuses = core()->getConfigData('push_notification.general.settings.statuses');
+        $enabledStatuses = core()->getConfigData('mobile_app.push_notifications.settings.statuses');
 
         if (! $enabledStatuses) {
             return false;
@@ -46,8 +46,8 @@ class FirebasePushService
      */
     public function getMessageForStatus(string $status, Order $order): ?array
     {
-        $title = core()->getConfigData("push_notification.general.messages.title_{$status}");
-        $body = core()->getConfigData("push_notification.general.messages.body_{$status}");
+        $title = core()->getConfigData("mobile_app.push_notifications.messages.title_{$status}");
+        $body = core()->getConfigData("mobile_app.push_notifications.messages.body_{$status}");
 
         if (! $title || ! $body) {
             return null;
@@ -107,8 +107,8 @@ class FirebasePushService
     public function sendToToken(string $token, string $title, string $body, array $data = []): bool
     {
         try {
-            $projectId = core()->getConfigData('push_notification.general.settings.firebase_project_id');
-            $credentialsJson = core()->getConfigData('push_notification.general.settings.firebase_credentials_json');
+            $projectId = core()->getConfigData('mobile_app.push_notifications.settings.firebase_project_id');
+            $credentialsJson = core()->getConfigData('mobile_app.push_notifications.settings.firebase_credentials_json');
 
             if (! $projectId || ! $credentialsJson) {
                 Log::warning('Firebase configuration is incomplete');
