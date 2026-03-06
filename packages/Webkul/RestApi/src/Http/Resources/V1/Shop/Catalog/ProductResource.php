@@ -432,6 +432,8 @@ class ProductResource extends JsonResource
                                     && $groupProduct->half_portion_pair_product
                                     ? $this->getHalfPortionPairSummary($groupProduct->half_portion_pair_product)
                                     : null,
+                                'weight'                     => $groupProduct->weight !== null ? (float) $groupProduct->weight : null,
+                                'volume'                     => $groupProduct->volume !== null && $groupProduct->volume !== '' ? (float) $groupProduct->volume : null,
                             ];
                         })->sortBy('sort')->values(),
                     ];
