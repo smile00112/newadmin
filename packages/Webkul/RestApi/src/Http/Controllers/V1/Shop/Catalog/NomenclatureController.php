@@ -67,7 +67,7 @@ class NomenclatureController extends CatalogController
         return Product::with([
             'images', 'attribute_family', 'price_indices', 'inventory_indices',
             'up_sells:id', 'cross_sells:id', 'drinks:id',
-            'constructor.groups.products:id',
+            'constructor.groups.products:id,type',
         ])
             ->whereHas('product_flats', function ($query) use ($channelCode, $locale) {
                 $query->where('channel', $channelCode)
