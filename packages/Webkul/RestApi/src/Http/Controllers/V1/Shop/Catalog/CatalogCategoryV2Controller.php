@@ -70,7 +70,7 @@ class CatalogCategoryV2Controller extends CatalogController
                             'up_sells:id',
                             'cross_sells:id',
                             'drinks:id',
-                            'constructor.groups.products:id',
+                            'constructor.groups.products:id,type',
                         ]);
                     },
                 ])
