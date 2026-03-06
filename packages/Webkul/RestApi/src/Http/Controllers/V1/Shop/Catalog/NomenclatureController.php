@@ -56,7 +56,9 @@ class NomenclatureController extends CatalogController
             return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         });
 
-        return api_stream_json($jsonResponse, 'nomenclature.json');
+        return api_stream_json($jsonResponse, 'nomenclature.json', [
+            'Cache-Control' => 'public, max-age=' . $this->cacheTtl,
+        ]);
     }
 
     /**
@@ -65,7 +67,10 @@ class NomenclatureController extends CatalogController
     protected function getProducts(string $channelCode, string $locale)
     {
         return Product::with([
-            'images', 'attribute_family', 'price_indices', 'inventory_indices',
+            'attribute_values',
+            'images', 'videos', 'attribute_family',
+            'price_indices', 'inventory_indices',
+            'super_attributes.options',
             'up_sells:id', 'cross_sells:id', 'drinks:id',
             'constructor.groups.products:id,type',
         ])
@@ -86,7 +91,11 @@ class NomenclatureController extends CatalogController
      */
     protected function getIngredients(string $channelCode, string $locale)
     {
-        return Product::with(['images', 'attribute_family', 'price_indices', 'inventory_indices', 'videos'])
+        return Product::with([
+            'attribute_values',
+            'images', 'attribute_family',
+            'price_indices', 'inventory_indices', 'videos',
+        ])
             ->whereHas('product_flats', function ($query) use ($channelCode, $locale) {
                 $query->where('channel', $channelCode)
                     ->where('locale', $locale)

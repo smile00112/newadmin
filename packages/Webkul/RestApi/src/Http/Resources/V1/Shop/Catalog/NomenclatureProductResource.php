@@ -20,6 +20,8 @@ class NomenclatureProductResource extends JsonResource
     {
         $product = $this->product ?? $this;
         $productTypeInstance = $product->getTypeInstance();
+        $minimalPrice = $productTypeInstance->getMinimalPrice();
+        $hasDiscount = $productTypeInstance->haveDiscount();
 
         return array_merge(
             [
@@ -27,8 +29,8 @@ class NomenclatureProductResource extends JsonResource
                 'sku'                => $product->sku,
                 'type'               => $product->type,
                 'name'               => $product->name,
-                'price'              => core()->convertPrice($productTypeInstance->getMinimalPrice()),
-                'formatted_price'    => core()->currency($productTypeInstance->getMinimalPrice()),
+                'price'              => core()->convertPrice($minimalPrice),
+                'formatted_price'    => core()->currency($minimalPrice),
                 'short_description'  => $this->cleanHtmlDescription($product->short_description),
                 'description'        => $this->cleanHtmlDescription($product->description),
                 'images'             => ProductImageResource::collection($product->images),
@@ -58,7 +60,7 @@ class NomenclatureProductResource extends JsonResource
                 'drinks'             => $this->getDrinksIds($product),
                 'constructor_options' => $this->getConstructorOptionsWithProductIds($product),
             ],
-            $this->specialPriceInfo($product, $productTypeInstance)
+            $this->specialPriceInfo($product, $productTypeInstance, $minimalPrice, $hasDiscount)
         );
     }
 

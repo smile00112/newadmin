@@ -129,7 +129,9 @@ class CatalogCategoryController extends CatalogController
         });
 
         // Используем helper функцию для быстрого возврата JSON через stream
-        return api_stream_json($jsonResponse, 'catalog.json');
+        return api_stream_json($jsonResponse, 'catalog.json', [
+            'Cache-Control' => 'public, max-age=' . $this->cacheTtl,
+        ]);
     }
 
     /**

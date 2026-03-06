@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog\Concerns;
 
 use Illuminate\Support\Facades\Storage;
+use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Product\Facades\ProductImage;
 
 trait ProductResourceFields
@@ -23,7 +24,12 @@ trait ProductResourceFields
             return $attributes;
         }
 
-        $customAttributes = $attributeFamily->custom_attributes;
+        $customAttributes = core()->getSingletonInstance(AttributeRepository::class)
+            ->getFamilyAttributes($attributeFamily);
+
+        $customAttributes
+            ->filter(fn ($a) => in_array($a->type, ['select', 'multiselect', 'checkbox']))
+            ->each(fn ($a) => $a->loadMissing('options'));
 
         foreach ($customAttributes as $attribute) {
             if (! in_array($attribute->type, ['select', 'multiselect', 'checkbox'])) {
@@ -137,27 +143,23 @@ trait ProductResourceFields
      *
      * @param  \Webkul\Product\Models\Product  $product
      * @param  \Webkul\Product\Type\AbstractType  $productTypeInstance
+     * @param  mixed  $minimalPrice  Pre-computed minimal price
+     * @param  bool  $hasDiscount   Pre-computed discount flag
      * @return array
      */
-    protected function specialPriceInfo($product, $productTypeInstance)
+    protected function specialPriceInfo($product, $productTypeInstance, $minimalPrice, bool $hasDiscount): array
     {
+        if (! $hasDiscount) {
+            return [];
+        }
+
+        $productPrices = $productTypeInstance->getProductPrices();
+
         return [
-            'special_price'           => $this->when(
-                $productTypeInstance->haveDiscount(),
-                core()->convertPrice($productTypeInstance->getMinimalPrice())
-            ),
-            'formatted_special_price' => $this->when(
-                $productTypeInstance->haveDiscount(),
-                core()->currency($productTypeInstance->getMinimalPrice())
-            ),
-            'regular_price'           => $this->when(
-                $productTypeInstance->haveDiscount(),
-                data_get($productTypeInstance->getProductPrices(), 'regular.price')
-            ),
-            'formatted_regular_price' => $this->when(
-                $productTypeInstance->haveDiscount(),
-                data_get($productTypeInstance->getProductPrices(), 'regular.formatted_price')
-            ),
+            'special_price'           => core()->convertPrice($minimalPrice),
+            'formatted_special_price' => core()->currency($minimalPrice),
+            'regular_price'           => data_get($productPrices, 'regular.price'),
+            'formatted_regular_price' => data_get($productPrices, 'regular.formatted_price'),
         ];
     }
 

@@ -21,13 +21,14 @@ class NomenclatureIngredientResource extends JsonResource
     {
         $product = $this->product ?? $this;
         $productTypeInstance = $product->getTypeInstance();
+        $minimalPrice = $productTypeInstance->getMinimalPrice();
 
         return [
             'id'                 => $product->id,
             'sku'                => $product->sku,
             'name'               => $product->name,
-            'price'              => core()->convertPrice($productTypeInstance->getMinimalPrice()),
-            'formatted_price'    => core()->currency($productTypeInstance->getMinimalPrice()),
+            'price'              => core()->convertPrice($minimalPrice),
+            'formatted_price'    => core()->currency($minimalPrice),
             'short_description'  => $this->cleanHtmlDescription($product->short_description),
             'description'        => $this->cleanHtmlDescription($product->description),
             'images'             => ProductImageResource::collection($product->images),
