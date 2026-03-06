@@ -29,6 +29,11 @@ return [
                 'title' => 'Document Links',
                 'info'  => 'Links to documents for mobile app',
             ],
+
+            'order-defaults' => [
+                'title' => 'Default Order Methods',
+                'info'  => 'Automatically assign shipping and payment methods when creating orders via mobile app, if not selected by user',
+            ],
         ],
 
         'fields' => [
@@ -67,6 +72,15 @@ return [
             'user-agreement-info'       => 'Select CMS page for user agreement',
             'privacy-policy'            => 'Privacy Policy',
             'privacy-policy-info'       => 'Select CMS page for privacy policy',
+
+            'auto-assign-shipping'         => 'Auto-assign shipping method',
+            'auto-assign-shipping-info'    => 'Apply default shipping when user has not selected one',
+            'default-shipping-method'      => 'Default shipping method',
+            'default-shipping-method-info' => 'Shipping method to use when auto-assign is enabled',
+            'auto-assign-payment'          => 'Auto-assign payment method',
+            'auto-assign-payment-info'     => 'Apply default payment when user has not selected one',
+            'default-payment-method'       => 'Default payment method',
+            'default-payment-method-info'  => 'Payment method to use when auto-assign is enabled',
         ],
     ],
 

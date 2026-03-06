@@ -6,6 +6,7 @@ use Webkul\Attribute\Repositories\AttributeRepository;
 use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\CMS\Repositories\PageRepository;
 use Webkul\Core\Repositories\ChannelRepository;
+use Webkul\Payment\Facades\Payment;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Shipping\Facades\Shipping;
 
@@ -135,6 +136,38 @@ class FieldsConfig
                 'description' => 'mobile_app::app.settings.fields.privacy-policy-info',
                 'group'       => 'documents',
             ],
+            [
+                'key'         => 'auto_assign_shipping_method',
+                'title'       => 'mobile_app::app.settings.fields.auto-assign-shipping',
+                'type'        => 'boolean',
+                'default'     => false,
+                'description' => 'mobile_app::app.settings.fields.auto-assign-shipping-info',
+                'group'       => 'order_defaults',
+            ],
+            [
+                'key'         => 'default_shipping_method',
+                'title'       => 'mobile_app::app.settings.fields.default-shipping-method',
+                'type'        => 'select',
+                'source'      => 'shipping_rates',
+                'description' => 'mobile_app::app.settings.fields.default-shipping-method-info',
+                'group'       => 'order_defaults',
+            ],
+            [
+                'key'         => 'auto_assign_payment_method',
+                'title'       => 'mobile_app::app.settings.fields.auto-assign-payment',
+                'type'        => 'boolean',
+                'default'     => false,
+                'description' => 'mobile_app::app.settings.fields.auto-assign-payment-info',
+                'group'       => 'order_defaults',
+            ],
+            [
+                'key'         => 'default_payment_method',
+                'title'       => 'mobile_app::app.settings.fields.default-payment-method',
+                'type'        => 'select',
+                'source'      => 'payment_methods',
+                'description' => 'mobile_app::app.settings.fields.default-payment-method-info',
+                'group'       => 'order_defaults',
+            ],
         ];
     }
 
@@ -148,6 +181,8 @@ class FieldsConfig
             'products'         => $this->getProductOptions(),
             'channels'         => $this->getChannelOptions(),
             'shipping_methods' => $this->getShippingMethodOptions(),
+            'shipping_rates'   => $this->getShippingRateOptions(),
+            'payment_methods'  => $this->getPaymentMethodOptions(),
             'attributes'       => $this->getAttributeOptions(),
             'cms_pages'        => $this->getCmsPageOptions(),
             default            => [],
@@ -208,7 +243,7 @@ class FieldsConfig
     protected function getShippingMethodOptions(): array
     {
         $methods = [];
-        
+
         foreach (config('carriers', []) as $code => $carrier) {
             $methods[] = [
                 'id'    => $code,
@@ -216,8 +251,40 @@ class FieldsConfig
                 'value' => $code,
             ];
         }
-        
+
         return $methods;
+    }
+
+    /**
+     * Get shipping rate options (full method codes for order defaults).
+     */
+    protected function getShippingRateOptions(): array
+    {
+        $methods = Shipping::getShippingMethods();
+
+        return array_map(function ($method) {
+            return [
+                'id'    => $method['method'],
+                'title' => $method['method_title'] ?? $method['method'],
+                'value' => $method['method'],
+            ];
+        }, $methods);
+    }
+
+    /**
+     * Get payment method options (method codes for order defaults).
+     */
+    protected function getPaymentMethodOptions(): array
+    {
+        $methods = Payment::getPaymentMethods();
+
+        return array_map(function ($method) {
+            return [
+                'id'    => $method['method'],
+                'title' => $method['method_title'] ?? $method['method'],
+                'value' => $method['method'],
+            ];
+        }, $methods);
     }
 
     /**

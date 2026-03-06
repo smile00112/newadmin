@@ -206,6 +206,9 @@ class AttributeRepository extends Repository
      */
     public function getFamilyAttributes($attributeFamily)
     {
+        if ($attributeFamily === null) {
+            return collect();
+        }
         if (array_key_exists($attributeFamily->id, $this->attributes)) {
             return $this->attributes[$attributeFamily->id];
         }
