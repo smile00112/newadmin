@@ -147,11 +147,22 @@
                             </div>
                         </div>
 
-                        <div v-if="isDrawerLoading && isDrawerOpen" style="position:absolute; top:52px; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:rgba(248,249,251,0.9); z-index:5;">
-                            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-                                <svg style="width:36px; height:36px; color:#6366f1; animation:spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="10" /></svg>
-                                <span style="font-size:13px; color:#6b7280;">Загрузка...</span>
+                        <div v-if="isDrawerLoading && isDrawerOpen" style="position:absolute; top:52px; left:0; right:0; bottom:0; overflow:auto; background:#f8f9fb; z-index:5;">
+                            <div style="padding: 16px 24px 20px; animation: pulse-all 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;">
+                                <div style="background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+                                    <div style="padding: 16px 20px; border-bottom: 1px solid #f3f4f6; background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 2s infinite; height: 20px; border-radius: 4px;"></div>
+                                    <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+                                        <div v-for="i in 6" :key="'sk-' + i" style="display: flex; flex-direction: column; gap: 8px;">
+                                            <div style="height: 14px; background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 2s infinite; border-radius: 4px; width: 30%;"></div>
+                                            <div style="height: 36px; background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 2s infinite; border-radius: 8px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            <style>
+                                @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+                                @keyframes pulse-all { 0%, 100% { opacity: 1; } 50% { opacity: 0.95; } }
+                            </style>
                         </div>
 
                         <iframe v-if="iframeSrc" :src="iframeSrc" ref="panelIframe" @load="onIframeLoad" style="width:100%; border:none; flex:1; margin:0; padding:0; display:block;" allowfullscreen></iframe>
@@ -215,14 +226,14 @@
                         this.isDrawerOpen = true;
                         this.$nextTick(() => { requestAnimationFrame(() => { this.drawerVisible = true; }); });
                         this.toggleSidebarBlur(true);
-                        document.body.style.overflow = 'hidden';
+                        window.BodyOverflowManager?.push();
                     },
                     closeDrawer() {
                         this.drawerVisible = false;
                         setTimeout(() => {
                             this.isDrawerOpen = false;
                             this.toggleSidebarBlur(false);
-                            document.body.style.overflow = '';
+                            window.BodyOverflowManager?.pop();
                         }, 350);
                     },
                     preloadRecord(record) {

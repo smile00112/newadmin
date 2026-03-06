@@ -65,8 +65,9 @@
                 leave-to-class="opacity-0"
             >
                 <div
-                    class="fixed inset-0 z-[10001] bg-gray-500 bg-opacity-50 transition-opacity"
+                    class="fixed inset-0 z-[10001] bg-gray-500 bg-opacity-50 transition-opacity will-change-opacity"
                     v-show="isOpen"
+                    style="backface-visibility: hidden; -webkit-font-smoothing: antialiased;"
                 ></div>
             </transition>
 
@@ -81,8 +82,9 @@
                 leave-to-class="translate-y-4 opacity-0 md:translate-y-0 md:scale-95"
             >
                 <div
-                    class="fixed inset-0 z-[10002] transform overflow-y-auto transition"
+                    class="fixed inset-0 z-[10002] transform overflow-y-auto transition will-change-transform"
                     v-if="isOpen"
+                    style="backface-visibility: hidden; contain: layout style paint;"
                 >
                     <div class="flex min-h-screen items-end justify-center p-4 sm:items-center sm:p-0">
                         <div class="box-shadow relative z-[999] w-screen max-w-[568px] rounded-lg bg-white dark:bg-gray-900 max-lg:mb-4 max-lg:mt-4 max-md:w-[90%]">
@@ -123,9 +125,9 @@
                     this.isOpen = ! this.isOpen;
 
                     if (this.isOpen) {
-                        document.body.style.overflow = 'hidden';
+                        window.BodyOverflowManager?.push();
                     } else {
-                        document.body.style.overflow = 'auto';
+                        window.BodyOverflowManager?.pop();
                     }
 
                     this.$emit('toggle', { isActive: this.isOpen });
@@ -134,7 +136,7 @@
                 open() {
                     this.isOpen = true;
 
-                    document.body.style.overflow = 'hidden';
+                    window.BodyOverflowManager?.push();
 
                     this.$emit('open', { isActive: this.isOpen });
                 },
@@ -142,7 +144,7 @@
                 close() {
                     this.isOpen = false;
 
-                    document.body.style.overflow = 'auto';
+                    window.BodyOverflowManager?.pop();
 
                     this.$emit('close', { isActive: this.isOpen });
                 }

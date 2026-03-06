@@ -73,8 +73,9 @@
                 leave-to-class="opacity-0"
             >
                 <div
-                    class="fixed inset-0 z-[10001] bg-gray-500 bg-opacity-50 transition-opacity"
+                    class="fixed inset-0 z-[10001] bg-gray-500 bg-opacity-50 transition-opacity will-change-opacity"
                     v-show="isOpen"
+                    style="backface-visibility: hidden; -webkit-font-smoothing: antialiased;"
                 ></div>
             </transition>
 
@@ -83,10 +84,10 @@
                 tag="div"
                 name="drawer"
                 :enter-from-class="enterFromLeaveToClasses"
-                enter-active-class="transform transition duration-200 ease-in-out"
+                enter-active-class="transform transition duration-200 ease-in-out will-change-transform"
                 enter-to-class="translate-x-0"
                 leave-from-class="translate-x-0"
-                leave-active-class="transform transition duration-200 ease-in-out"
+                leave-active-class="transform transition duration-200 ease-in-out will-change-transform"
                 :leave-to-class="enterFromLeaveToClasses"
             >
                 <div
@@ -97,7 +98,7 @@
                         'inset-y-0 ltr:right-0 rtl:left-0': position == 'right',
                         'inset-y-0 ltr:left-0 rtl:right-0': position == 'left'
                     }"
-                    :style="'width:' + width"
+                    :style="'width:' + width + '; contain: layout style paint; backface-visibility: hidden; -webkit-font-smoothing: antialiased;'"
                     v-if="isOpen"
                 >
                     <div class="pointer-events-auto h-full w-full overflow-auto bg-white dark:bg-gray-900">
@@ -166,9 +167,9 @@
                     this.isOpen = ! this.isOpen;
 
                     if (this.isOpen) {
-                        document.body.style.overflow = 'hidden';
+                        window.BodyOverflowManager?.push();
                     } else {
-                        document.body.style.overflow ='auto';
+                        window.BodyOverflowManager?.pop();
                     }
 
                     this.$emit('toggle', { isActive: this.isOpen });
@@ -177,7 +178,7 @@
                 open() {
                     this.isOpen = true;
 
-                    document.body.style.overflow = 'hidden';
+                    window.BodyOverflowManager?.push();
 
                     this.$emit('open', { isActive: this.isOpen });
                 },
@@ -185,7 +186,7 @@
                 close() {
                     this.isOpen = false;
 
-                    document.body.style.overflow = 'auto';
+                    window.BodyOverflowManager?.pop();
 
                     this.$emit('close', { isActive: this.isOpen });
                 }
