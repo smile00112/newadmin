@@ -1,0 +1,138 @@
+<?php
+
+namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\Concerns\ProductResourceFields;
+
+class CatalogV2ProductResource extends JsonResource
+{
+    use ProductResourceFields;
+
+    /**
+     * Transform the resource into an array.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
+    public function toArray($request)
+    {
+        $product = $this->product ?? $this;
+        $productTypeInstance = $product->getTypeInstance();
+
+        return [
+            'id'                      => $product->id,
+            'sku'                     => $product->sku,
+            'type'                    => $product->type,
+            'name'                    => $product->name,
+            'price'                   => core()->convertPrice($productTypeInstance->getMinimalPrice()),
+            'formatted_price'         => core()->currency($productTypeInstance->getMinimalPrice()),
+            'short_description'       => $this->cleanHtmlDescription($product->short_description),
+            'description'             => $this->cleanHtmlDescription($product->description),
+            'category_image'          => $this->getCategoryImage($product),
+            'videos'                  => ProductVideoResource::collection($product->videos),
+            'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
+            'in_stock'                => $product->haveSufficientQuantity(1),
+            'nutrition'               => $this->getNutritionData($product),
+            'weight'                  => $product->weight !== null ? (float) $product->weight : null,
+            'volume'                  => $product->volume !== null && $product->volume !== '' ? (float) $product->volume : null,
+            'up_sells'                => $this->getRelationIds($product, 'up_sells'),
+            'cross_sells'             => $this->getRelationIds($product, 'cross_sells'),
+            'drinks'                  => $this->getDrinksIds($product),
+            'constructor_options'     => $this->getConstructorOptionsWithProductIds($product),
+        ];
+    }
+
+    /**
+     * Get related product IDs by relation name.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @param  string  $relation
+     * @return array
+     */
+    private function getRelationIds($product, string $relation): array
+    {
+        if (! $product->relationLoaded($relation)) {
+            $product->load($relation);
+        }
+
+        return $product->{$relation}
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Get drinks as array of product IDs.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getDrinksIds($product): array
+    {
+        if (! $product->relationLoaded('drinks')) {
+            return [];
+        }
+
+        return $product->drinks->pluck('id')->values()->all();
+    }
+
+    /**
+     * Get constructor options with group products as array of IDs.
+     * Handles both constructor and configurable_constructor types.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getConstructorOptionsWithProductIds($product): array
+    {
+        if (! in_array($product->type, ['constructor', 'configurable_constructor'])) {
+            return [];
+        }
+
+        if (! $product->relationLoaded('constructor')) {
+            $product->load('constructor.groups.products');
+        }
+
+        if ($product->constructor->isEmpty()) {
+            return [];
+        }
+
+        return $product->constructor->map(function ($constructor) {
+            return [
+                'id'               => $constructor->id,
+                'visible'          => $constructor->visible,
+                'required'         => $constructor->required,
+                'combo'            => $constructor->combo,
+                'discount'         => $constructor->discount,
+                'design'            => $constructor->design,
+                'discount_type'    => $constructor->discount_type,
+                'discount_value'   => $constructor->discount_value,
+                'min_selected_sum' => $constructor->min_selected_sum,
+                'groups'           => $constructor->groups->map(function ($group) {
+                    return [
+                        'id'                          => $group->id,
+                        'name'                        => $group->name,
+                        'field_type'                  => $group->field_type,
+                        'checked_type'                => $group->checked_type,
+                        'quantity_min'                => $group->quantity_min,
+                        'quantity_max'                => $group->quantity_max,
+                        'show_title'                  => $group->show_title,
+                        'opened_by_default'           => $group->opened_by_default,
+                        'zero_price'                  => $group->zero_price,
+                        'required'                    => $group->required,
+                        'hidden'                      => $group->hidden,
+                        'sort'                        => $group->sort,
+                        'double_portions'             => $group->double_portions,
+                        'half_portions'               => $group->half_portions,
+                        'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
+                        'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
+                        'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
+                        'product_ids'                 => $group->products->pluck('id')->values()->all(),
+                    ];
+                })->sortBy('sort')->values()->all(),
+            ];
+        })->values()->all();
+    }
+}
