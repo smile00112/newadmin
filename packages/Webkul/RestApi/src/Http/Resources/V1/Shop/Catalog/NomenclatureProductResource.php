@@ -88,15 +88,42 @@ class NomenclatureProductResource extends JsonResource
             return $product->super_attributes ?? collect();
         }
 
-        $variantAttributeIds = $product->variants
-            ->flatMap(fn ($variant) => $variant->attribute_values ?? collect())
-            ->pluck('attribute_id')
-            ->unique()
-            ->all();
+        $variantAttributeValues = $product->variants
+            ->flatMap(fn ($variant) => $variant->attribute_values ?? collect());
+
+        $variantAttributeIds = $variantAttributeValues->pluck('attribute_id')->unique()->all();
+
+        $variantOptionIdsByAttribute = $variantAttributeValues
+            ->filter(fn ($av) => $av->attribute_id)
+            ->groupBy('attribute_id')
+            ->map(function ($group) {
+                $optionIds = collect();
+                foreach ($group as $av) {
+                    if (isset($av->integer_value) && $av->integer_value) {
+                        $optionIds->push((int) $av->integer_value);
+                    }
+                    if (isset($av->text_value) && $av->text_value) {
+                        $ids = is_numeric($av->text_value)
+                            ? [(int) $av->text_value]
+                            : array_map('intval', array_filter(explode(',', $av->text_value)));
+                        $optionIds = $optionIds->merge($ids);
+                    }
+                }
+
+                return $optionIds->unique()->values()->all();
+            });
 
         return $product->super_attributes->filter(
             fn ($attr) => in_array($attr->id, $variantAttributeIds)
-        )->values();
+        )->map(function ($attr) use ($variantOptionIdsByAttribute) {
+            $optionIds = $variantOptionIdsByAttribute[$attr->id] ?? [];
+            $filteredOptions = $attr->relationLoaded('options')
+                ? $attr->options->filter(fn ($opt) => in_array((int) $opt->id, $optionIds, true))->values()
+                : collect();
+            $attr->setRelation('options', $filteredOptions);
+
+            return $attr;
+        })->values();
     }
 
     /**
