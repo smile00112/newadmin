@@ -49,7 +49,7 @@ class NomenclatureProductResource extends JsonResource
                 'nutrition'          => $this->getNutritionData($product),
                 'super_attributes'   => $this->when(
                     $productTypeInstance->isComposite(),
-                    AttributeResource::collection($product->super_attributes)
+                    AttributeResource::collection($this->getFilteredSuperAttributes($product))
                 ),
                 'up_sells'           => $product->relationLoaded('up_sells')
                     ? $product->up_sells->pluck('id')->values()->all()
@@ -62,6 +62,29 @@ class NomenclatureProductResource extends JsonResource
                 'constructor_options' => $this->getConstructorOptionsWithProductIds($product),
             ],
             $this->specialPriceInfo($product, $productTypeInstance, $minimalPrice, $hasDiscount)
+        );
+    }
+
+    /**
+     * Get super attributes filtered by existing variants (configurable and configurable_constructor).
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return \Illuminate\Support\Collection
+     */
+    private function getFilteredSuperAttributes($product)
+    {
+        if (! in_array($product->type, ['configurable', 'configurable_constructor']) || ! $product->relationLoaded('variants')) {
+            return $product->super_attributes;
+        }
+
+        $variantAttributeIds = $product->variants
+            ->flatMap(fn ($variant) => $variant->attribute_values ?? collect())
+            ->pluck('attribute_id')
+            ->unique()
+            ->all();
+
+        return $product->super_attributes->filter(
+            fn ($attr) => in_array($attr->id, $variantAttributeIds)
         );
     }
 
