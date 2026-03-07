@@ -18,10 +18,14 @@ class NomenclatureProductResource extends JsonResource
      */
     public function toArray($request)
     {
-        $product = $this->product ?? $this;
+        $product = $this->resource;
         $productTypeInstance = $product->getTypeInstance();
         $minimalPrice = $productTypeInstance->getMinimalPrice();
         $hasDiscount = $productTypeInstance->haveDiscount();
+
+        $filteredSuperAttributes = $productTypeInstance->isComposite()
+            ? $this->getFilteredSuperAttributes($product)
+            : null;
 
         return array_merge(
             [
@@ -49,7 +53,7 @@ class NomenclatureProductResource extends JsonResource
                 'nutrition'          => $this->getNutritionData($product),
                 'super_attributes'   => $this->when(
                     $productTypeInstance->isComposite(),
-                    AttributeResource::collection($this->getFilteredSuperAttributes($product))
+                    AttributeResource::collection($filteredSuperAttributes)
                 ),
                 'up_sells'           => $product->relationLoaded('up_sells')
                     ? $product->up_sells->pluck('id')->values()->all()
@@ -58,7 +62,10 @@ class NomenclatureProductResource extends JsonResource
                     ? $product->cross_sells->pluck('id')->values()->all()
                     : [],
                 'drinks'             => $this->getDrinksIds($product),
-                'variants'           => $this->getVariantsData($product),
+                'variants'           => $this->getVariantsData(
+                    $product,
+                    $filteredSuperAttributes?->pluck('id')->toArray()
+                ),
                 'constructor_options' => $this->getConstructorOptionsWithProductIds($product),
             ],
             $this->specialPriceInfo($product, $productTypeInstance, $minimalPrice, $hasDiscount)
@@ -73,6 +80,10 @@ class NomenclatureProductResource extends JsonResource
      */
     private function getFilteredSuperAttributes($product)
     {
+        if (! $product->relationLoaded('super_attributes') || $product->super_attributes === null) {
+            return collect();
+        }
+
         if (! in_array($product->type, ['configurable', 'configurable_constructor']) || ! $product->relationLoaded('variants')) {
             return $product->super_attributes;
         }
@@ -85,16 +96,17 @@ class NomenclatureProductResource extends JsonResource
 
         return $product->super_attributes->filter(
             fn ($attr) => in_array($attr->id, $variantAttributeIds)
-        );
+        )->values();
     }
 
     /**
      * Get variants data for configurable and configurable_constructor products.
      *
      * @param  \Webkul\Product\Models\Product  $product
+     * @param  array<int>|null  $superAttributeIds  Filtered super attribute IDs (when provided, used for variant attribute_values)
      * @return array
      */
-    private function getVariantsData($product): array
+    private function getVariantsData($product, ?array $superAttributeIds = null): array
     {
         if (! in_array($product->type, ['configurable', 'configurable_constructor'])) {
             return [];
@@ -104,9 +116,9 @@ class NomenclatureProductResource extends JsonResource
             $product->load('variants.attribute_values');
         }
 
-        $superAttributeIds = $product->relationLoaded('super_attributes')
+        $superAttributeIds = $superAttributeIds ?? ($product->relationLoaded('super_attributes')
             ? $product->super_attributes->pluck('id')->toArray()
-            : [];
+            : []);
 
         return $product->variants->map(function ($variant) use ($superAttributeIds) {
             $arr = $variant->toArray();
@@ -123,10 +135,11 @@ class NomenclatureProductResource extends JsonResource
             }
 
             $variantTypeInstance = $variant->getTypeInstance();
+            $variantMinPrice = $variantTypeInstance->getMinimalPrice();
 
             return array_merge($arr, [
-                'price'           => core()->convertPrice($variantTypeInstance->getMinimalPrice()),
-                'formatted_price' => core()->currency($variantTypeInstance->getMinimalPrice()),
+                'price'           => core()->convertPrice($variantMinPrice),
+                'formatted_price' => core()->currency($variantMinPrice),
                 'in_stock'        => $variant->haveSufficientQuantity(1),
                 'nutrition'       => $this->getNutritionData($variant),
                 'weight'          => $variant->weight !== null ? (float) $variant->weight : null,

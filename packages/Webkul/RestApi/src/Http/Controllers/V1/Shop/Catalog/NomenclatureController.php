@@ -5,6 +5,7 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop\Catalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Webkul\Core\Facades\Core;
 use Webkul\Product\Models\Product;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\NomenclatureIngredientResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\NomenclatureProductResource;
@@ -72,11 +73,15 @@ class NomenclatureController extends CatalogController
             'price_indices', 'inventory_indices',
             'super_attributes.options',
             'variants.attribute_values',
+            'variants.price_indices',
+            'variants.inventory_indices',
             'up_sells:id', 'cross_sells:id', 'drinks:id',
             'constructor.groups.products:id,type',
         ])
-            ->whereHas('product_flats', function ($query) use ($channelCode, $locale) {
-                $query->where('channel', $channelCode)
+            ->whereIn('id', function ($query) use ($channelCode, $locale) {
+                $query->select('product_id')
+                    ->from('product_flat')
+                    ->where('channel', $channelCode)
                     ->where('locale', $locale)
                     ->where('status', 1)
                     ->where('visible_individually', 1);
@@ -97,14 +102,90 @@ class NomenclatureController extends CatalogController
             'images', 'attribute_family',
             'price_indices', 'inventory_indices', 'videos',
         ])
-            ->whereHas('product_flats', function ($query) use ($channelCode, $locale) {
-                $query->where('channel', $channelCode)
+            ->whereIn('id', function ($query) use ($channelCode, $locale) {
+                $query->select('product_id')
+                    ->from('product_flat')
+                    ->where('channel', $channelCode)
                     ->where('locale', $locale)
                     ->where('status', 1);
             })
             ->where('type', 'ingredient')
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Warm nomenclature cache for all channel+locale combinations.
+     * Call after clearNomenclatureCache() to pre-build cache so users never hit cold cache.
+     */
+    public static function warmCache(): void
+    {
+        $channels = Core::getAllChannels();
+
+        foreach ($channels as $channel) {
+            $locales = $channel->locales ?? collect([$channel->default_locale])->filter();
+
+            foreach ($locales as $locale) {
+                $localeCode = is_object($locale) ? $locale->code : $locale;
+
+                if (empty($localeCode)) {
+                    continue;
+                }
+
+                try {
+                    self::warmCacheForChannelAndLocale($channel, $localeCode);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to warm nomenclature cache', [
+                        'channel_id'   => $channel->id,
+                        'locale'       => $localeCode,
+                        'message'      => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Build and cache nomenclature for a specific channel and locale.
+     */
+    public static function warmCacheForChannelAndLocale($channel, string $localeCode): void
+    {
+        $channelCode = $channel->code ?? (string) $channel->id;
+        $channelId = $channel->id;
+        $cacheKey = self::CACHE_PREFIX . ":{$channelId}:{$localeCode}";
+
+        $originalChannel = core()->getCurrentChannel();
+        $originalRequest = request();
+
+        core()->setCurrentChannel($channel);
+
+        $request = Request::create(
+            '/api/v1/nomenclature?' . http_build_query(['locale' => $localeCode]),
+            'GET'
+        );
+        app()->instance('request', $request);
+
+        try {
+            $controller = app(self::class);
+            $ttl = $controller->cacheTtl;
+
+            $products = $controller->getProducts($channelCode, $localeCode);
+            $ingredients = $controller->getIngredients($channelCode, $localeCode);
+
+            $data = [
+                'products'    => NomenclatureProductResource::collection($products)->resolve($request),
+                'ingredients' => NomenclatureIngredientResource::collection($ingredients)->resolve($request),
+            ];
+
+            $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            Cache::put($cacheKey, $jsonResponse, $ttl);
+        } finally {
+            if ($originalChannel) {
+                core()->setCurrentChannel($originalChannel);
+            }
+            app()->instance('request', $originalRequest);
+        }
     }
 
     /**
