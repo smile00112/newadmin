@@ -275,7 +275,7 @@ class NomenclatureProduct
     /**
      * @OA\Property(
      *     title="Constructor Options",
-     *     description="Constructor product options; each group has product_ids array instead of full product objects",
+     *     description="Constructor product options; each group has products array with objects {id, default}",
      *     type="array",
      *     @OA\Items(type="object")
      * )

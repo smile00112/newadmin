@@ -177,7 +177,16 @@ class NomenclatureProductResource extends JsonResource
                         'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
                         'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
                         'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
-                        'product_ids'                 => $group->products->pluck('id')->values()->all(),
+                        'products'                    => $group->products
+                            ->sortBy(fn ($p) => $p->pivot->sort ?? 0)
+                            ->values()
+                            ->map(function ($groupProduct) {
+                                return [
+                                    'id'      => $groupProduct->id,
+                                    'default' => (bool) ($groupProduct->pivot->default ?? false),
+                                ];
+                            })
+                            ->all(),
                     ];
                 })->sortBy('sort')->values()->all(),
             ];
