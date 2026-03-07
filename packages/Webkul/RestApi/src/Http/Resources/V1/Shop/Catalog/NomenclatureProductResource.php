@@ -37,8 +37,8 @@ class NomenclatureProductResource extends JsonResource
                 'formatted_price'    => core()->currency($minimalPrice),
                 'short_description'  => $this->cleanHtmlDescription($product->short_description),
                 'description'        => $this->cleanHtmlDescription($product->description),
-                'images'             => ProductImageResource::collection($product->images),
-                'videos'             => ProductVideoResource::collection($product->videos),
+                'images'             => ProductImageResource::collection($product->images ?? collect()),
+                'videos'             => ProductVideoResource::collection($product->videos ?? collect()),
                 'base_image'         => ProductImage::getProductBaseImage($product),
                 'category_image'     => $this->getCategoryImage($product),
                 'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
@@ -53,7 +53,7 @@ class NomenclatureProductResource extends JsonResource
                 'nutrition'          => $this->getNutritionData($product),
                 'super_attributes'   => $this->when(
                     $productTypeInstance->isComposite(),
-                    AttributeResource::collection($filteredSuperAttributes)
+                    AttributeResource::collection($filteredSuperAttributes ?? collect())
                 ),
                 'up_sells'           => $product->relationLoaded('up_sells')
                     ? $product->up_sells->pluck('id')->values()->all()
@@ -85,7 +85,7 @@ class NomenclatureProductResource extends JsonResource
         }
 
         if (! in_array($product->type, ['configurable', 'configurable_constructor']) || ! $product->relationLoaded('variants')) {
-            return $product->super_attributes;
+            return $product->super_attributes ?? collect();
         }
 
         $variantAttributeIds = $product->variants
@@ -213,7 +213,7 @@ class NomenclatureProductResource extends JsonResource
                         'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
                         'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
                         'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
-                        'products'                    => $group->products
+                        'products'                    => ($group->products ?? collect())
                             ->sortBy(fn ($p) => $p->pivot->sort ?? 0)
                             ->values()
                             ->map(function ($groupProduct) {
