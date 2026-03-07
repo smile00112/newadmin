@@ -351,7 +351,7 @@ class CheckoutController extends CustomerController
             $autoAssignShipping
             && $defaultShipping !== ''
             && $cart->haveStockableItems()
-            && ! $cart->selected_shipping_rate
+            //&& ! $cart->selected_shipping_rate
             && Shipping::isMethodCodeExists($defaultShipping)
         ) {
             if (Cart::saveShippingMethod($defaultShipping)) {

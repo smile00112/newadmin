@@ -58,10 +58,58 @@ class NomenclatureProductResource extends JsonResource
                     ? $product->cross_sells->pluck('id')->values()->all()
                     : [],
                 'drinks'             => $this->getDrinksIds($product),
+                'variants'           => $this->getVariantsData($product),
                 'constructor_options' => $this->getConstructorOptionsWithProductIds($product),
             ],
             $this->specialPriceInfo($product, $productTypeInstance, $minimalPrice, $hasDiscount)
         );
+    }
+
+    /**
+     * Get variants data for configurable and configurable_constructor products.
+     *
+     * @param  \Webkul\Product\Models\Product  $product
+     * @return array
+     */
+    private function getVariantsData($product): array
+    {
+        if (! in_array($product->type, ['configurable', 'configurable_constructor'])) {
+            return [];
+        }
+
+        if (! $product->relationLoaded('variants')) {
+            $product->load('variants.attribute_values');
+        }
+
+        $superAttributeIds = $product->relationLoaded('super_attributes')
+            ? $product->super_attributes->pluck('id')->toArray()
+            : [];
+
+        return $product->variants->map(function ($variant) use ($superAttributeIds) {
+            $arr = $variant->toArray();
+
+            if (
+                isset($arr['attribute_values'])
+                && is_array($arr['attribute_values'])
+                && ! empty($superAttributeIds)
+            ) {
+                $arr['attribute_values'] = array_values(array_filter(
+                    $arr['attribute_values'],
+                    fn ($av) => isset($av['attribute_id']) && in_array($av['attribute_id'], $superAttributeIds, true)
+                ));
+            }
+
+            $variantTypeInstance = $variant->getTypeInstance();
+
+            return array_merge($arr, [
+                'price'           => core()->convertPrice($variantTypeInstance->getMinimalPrice()),
+                'formatted_price' => core()->currency($variantTypeInstance->getMinimalPrice()),
+                'in_stock'        => $variant->haveSufficientQuantity(1),
+                'nutrition'       => $this->getNutritionData($variant),
+                'weight'          => $variant->weight !== null ? (float) $variant->weight : null,
+                'volume'          => $variant->volume !== null && $variant->volume !== '' ? (float) $variant->volume : null,
+            ]);
+        })->values()->all();
     }
 
     /**
@@ -87,7 +135,7 @@ class NomenclatureProductResource extends JsonResource
      */
     private function getConstructorOptionsWithProductIds($product): array
     {
-        if ($product->type !== 'constructor') {
+        if (! in_array($product->type, ['constructor', 'configurable_constructor'])) {
             return [];
         }
 
