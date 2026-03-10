@@ -24,6 +24,53 @@ return [
     ],
 
     /**
+     * Analytics.
+     */
+    [
+        'key'        => 'analytics',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics',
+        'route'      => 'admin.analytics.executive.index',
+        'sort'       => 2,
+        'icon'       => 'icon-graph',
+    ], [
+        'key'        => 'analytics.executive',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics-executive',
+        'route'      => 'admin.analytics.executive.index',
+        'sort'       => 1,
+        'icon'       => '',
+    ], [
+        'key'        => 'analytics.daily',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics-daily',
+        'route'      => 'admin.analytics.daily.index',
+        'sort'       => 2,
+        'icon'       => '',
+    ], [
+        'key'        => 'analytics.product',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics-product',
+        'route'      => 'admin.analytics.product.index',
+        'sort'       => 3,
+        'icon'       => '',
+    ], [
+        'key'        => 'analytics.operations',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics-operations',
+        'route'      => 'admin.analytics.operations.index',
+        'sort'       => 4,
+        'icon'       => '',
+    ], [
+        'key'        => 'analytics.menu',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics-menu',
+        'route'      => 'admin.analytics.menu.index',
+        'sort'       => 5,
+        'icon'       => '',
+    ], [
+        'key'        => 'analytics.channels',
+        'name'       => 'admin::app.components.layouts.sidebar.analytics-channels',
+        'route'      => 'admin.analytics.channels.index',
+        'sort'       => 6,
+        'icon'       => '',
+    ],
+
+    /**
      * Sales.
      */
     [

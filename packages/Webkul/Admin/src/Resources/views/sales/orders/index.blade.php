@@ -123,7 +123,7 @@
 
             <template v-else>
                 <!-- Modern Order Cards -->
-                <div class="divide-y divide-gray-100 dark:divide-gray-800" style="border-radius: 0 0 16px 16px; overflow: hidden;">
+                <div class="divide-y divide-gray-100 dark:divide-gray-800" style="border-radius: 0 0 16px 16px; overflow: visible;">
                     <div
                         class="group flex items-start gap-4 md:gap-6 px-5 py-4 transition-all duration-300 hover:bg-gradient-to-r hover:from-violet-50/60 hover:to-transparent dark:hover:from-violet-900/10 relative cursor-pointer"
                         v-for="(record, index) in available.records"
@@ -158,7 +158,11 @@
                                         <p class="text-base font-bold text-gray-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors duration-200">
                                             #@{{ record.increment_id }}
                                         </p>
-                                        <span v-html="record.status"></span>
+                                        <v-inline-order-status
+                                            :order-id="record.id"
+                                            :initial-status-code="record.status_code"
+                                            :initial-status-html="record.status"
+                                        ></v-inline-order-status>
                                     </div>
 
                                     <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -377,6 +381,180 @@
         </script>
     
         <!-- Order Mass Action Component -->
+        <script type="text/x-template" id="v-inline-order-status-template">
+            <div class="relative inline-flex" ref="statusTrigger" @click.stop>
+                <button
+                    type="button"
+                    @click="toggle"
+                    class="inline-flex items-center gap-1"
+                    :disabled="isLoading"
+                    style="cursor:pointer;"
+                >
+                    <span v-html="statusHtml"></span>
+                    <svg
+                        class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200"
+                        :style="{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <Teleport to="body">
+                    <div
+                        v-if="isOpen"
+                        class="fixed z-[10020] min-w-[210px] rounded-xl border border-gray-200 bg-white p-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+                        :style="dropdownStyle"
+                    >
+                        <button
+                            v-for="s in allStatuses"
+                            :key="s.code"
+                            type="button"
+                            @click="changeStatus(s.code)"
+                            class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                            :disabled="isLoading || s.code === currentStatusCode"
+                        >
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="inline-block h-2.5 w-2.5 rounded-full"
+                                    :style="{ backgroundColor: s.color || '#6b7280' }"
+                                ></span>
+                                <span class="text-gray-700 dark:text-gray-200">@{{ s.name }}</span>
+                            </span>
+
+                            <svg
+                                v-if="s.code === currentStatusCode"
+                                class="h-4 w-4 text-emerald-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </Teleport>
+            </div>
+        </script>
+
+        <script type="module">
+            app.component('v-inline-order-status', {
+                template: '#v-inline-order-status-template',
+
+                props: {
+                    orderId: {
+                        type: [String, Number],
+                        required: true,
+                    },
+
+                    initialStatusCode: {
+                        type: String,
+                        default: '',
+                    },
+
+                    initialStatusHtml: {
+                        type: String,
+                        default: '',
+                    },
+                },
+
+                data() {
+                    return {
+                        isOpen: false,
+                        isLoading: false,
+                        currentStatusCode: this.initialStatusCode,
+                        statusHtml: this.initialStatusHtml,
+                        allStatuses: @json(\Webkul\Sales\Models\OrderStatus::allForJs()),
+                        dropdownStyle: {},
+                    };
+                },
+
+                mounted() {
+                    document.addEventListener('click', this.handleOutsideClick);
+                },
+
+                beforeUnmount() {
+                    document.removeEventListener('click', this.handleOutsideClick);
+                },
+
+                methods: {
+                    toggle() {
+                        if (this.isLoading) return;
+
+                        this.isOpen = !this.isOpen;
+
+                        if (this.isOpen) {
+                            this.$nextTick(() => this.positionDropdown());
+                        }
+                    },
+
+                    positionDropdown() {
+                        const trigger = this.$refs.statusTrigger;
+                        if (!trigger) return;
+
+                        const rect = trigger.getBoundingClientRect();
+                        this.dropdownStyle = {
+                            top: (rect.bottom + 4) + 'px',
+                            left: rect.left + 'px',
+                        };
+                    },
+
+                    handleOutsideClick(event) {
+                        if (!this.$el.contains(event.target)) {
+                            this.isOpen = false;
+                        }
+                    },
+
+                    buildBadgeHtml(code) {
+                        const status = this.allStatuses.find((item) => item.code === code);
+
+                        if (!status) {
+                            return this.statusHtml;
+                        }
+
+                        const color = status.color || '#6b7280';
+
+                        return `<span style="display:inline-block;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:600;background:${color}1a;color:${color};">${status.name}</span>`;
+                    },
+
+                    async changeStatus(code) {
+                        if (!code || code === this.currentStatusCode || this.isLoading) {
+                            this.isOpen = false;
+                            return;
+                        }
+
+                        this.isLoading = true;
+
+                        try {
+                            const url = '{{ route('admin.sales.orders.update_status', ['id' => '__ID__']) }}'.replace('__ID__', this.orderId);
+
+                            const response = await this.$axios.post(url, { status: code });
+
+                            this.currentStatusCode = code;
+                            this.statusHtml = this.buildBadgeHtml(code);
+                            this.isOpen = false;
+
+                            this.$emitter.emit('add-flash', {
+                                type: 'success',
+                                message: response.data?.message || 'Статус заказа обновлён',
+                            });
+
+                            this.$emitter.emit('datagrid:refresh');
+                        } catch (error) {
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || 'Не удалось обновить статус заказа',
+                            });
+                        } finally {
+                            this.isLoading = false;
+                        }
+                    },
+                },
+            });
+        </script>
+
         <script type="text/x-template" id="v-order-mass-action-template">
             <transition name="slide-up">
                 <div v-if="selectedOrders.length > 0" 

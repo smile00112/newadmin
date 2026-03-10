@@ -69,12 +69,12 @@
 
        <!-- Notification Component -->
         <v-notifications {{ $attributes }}>
-            <button class="group relative flex items-center justify-center rounded-xl p-2.5 text-gray-500 transition-all duration-300 hover:bg-gradient-to-br hover:from-rose-50 hover:to-pink-50 hover:text-rose-500 hover:shadow-sm active:scale-95 dark:text-gray-400 dark:hover:bg-gray-800/80 dark:hover:text-rose-400">
+            <span class="group relative flex items-center justify-center rounded-xl p-2.5 text-gray-500 transition-all duration-300 hover:bg-gradient-to-br hover:from-rose-50 hover:to-pink-50 hover:text-rose-500 hover:shadow-sm active:scale-95 dark:text-gray-400 dark:hover:bg-gray-800/80 dark:hover:text-rose-400">
                 <span
                     class="icon-notification text-xl transition-transform duration-300 group-hover:rotate-12 sm:text-2xl"
                     title="@lang('admin::app.components.layouts.header.notifications')"
                 ></span>
-            </button>
+            </span>
         </v-notifications>
 
         <!-- Sound Alert Toggle for New Orders -->
@@ -567,83 +567,283 @@
 
     <script
         type="text/x-template"
+        id="v-notification-item-template"
+    >
+        <div class="group/item">
+            <div
+                class="relative flex items-center gap-3 notification-card"
+                :class="containerClasses"
+                style="padding: 12px 14px; margin: 6px 10px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: all 0.15s ease; overflow: hidden;"
+            >
+                <span
+                    v-if="! notification.read"
+                    class="notification-accent-bar"
+                    style="position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: #6366f1;"
+                ></span>
+
+                <a
+                    :href="href"
+                    class="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    style="padding-right: 32px;"
+                >
+                    <div
+                        class="notification-icon-wrap flex flex-shrink-0 items-center justify-center"
+                        :class="iconWrapperClasses"
+                        :style="iconWrapperStyle"
+                    >
+                        <span
+                            class="text-base"
+                            :class="iconClass"
+                        ></span>
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                        <p
+                            class="truncate text-[#111827] dark:text-gray-100"
+                            :class="notification.read ? 'font-semibold' : 'font-semibold'"
+                            style="font-size: 14px; font-weight: 600; line-height: 1.4;"
+                        >
+                            @{{ title }}
+                        </p>
+
+                        <p
+                            class="truncate text-[#6b7280] dark:text-gray-400"
+                            style="font-size: 13px; line-height: 1.4; margin-top: 2px;"
+                        >
+                            @{{ meta }}
+                        </p>
+
+                        <p
+                            class="text-[#9ca3af] dark:text-gray-500"
+                            style="font-size: 12px; line-height: 1.4; margin-top: 2px;"
+                        >
+                            @{{ timestamp }}
+                        </p>
+                    </div>
+                </a>
+
+                <span
+                    v-if="! notification.read"
+                    class="notification-unread-dot absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#ef4444] group-hover/item:hidden"
+                    style="width: 8px; height: 8px; box-shadow: 0 0 0 3px rgba(239,68,68,0.15);"
+                ></span>
+
+                <button
+                    v-if="! notification.read"
+                    type="button"
+                    class="absolute right-2.5 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-gray-400 transition-colors duration-100 hover:bg-gray-200 hover:text-gray-600 group-hover/item:inline-flex dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                    :class="isBusy ? 'pointer-events-none !inline-flex' : ''"
+                    :title="dismissTitle"
+                    @click.stop.prevent="$emit('mark-as-read', notification)"
+                >
+                    <span
+                        class="text-xs"
+                        :class="isBusy ? 'icon-loader animate-spin' : 'icon-cross'"
+                    ></span>
+                </button>
+            </div>
+        </div>
+    </script>
+
+    <script type="module">
+        app.component('v-notification-item', {
+            template: '#v-notification-item-template',
+
+            props: {
+                notification: {
+                    type: Object,
+                    required: true,
+                },
+
+                iconClass: {
+                    type: String,
+                    default: 'icon-notification',
+                },
+
+                iconWrapperClasses: {
+                    type: String,
+                    default: '',
+                },
+
+                iconWrapperStyle: {
+                    type: String,
+                    default: 'width: 40px; height: 40px; border-radius: 50%; background: #f3f4f6;',
+                },
+
+                title: {
+                    type: String,
+                    default: '',
+                },
+
+                meta: {
+                    type: String,
+                    default: '',
+                },
+
+                timestamp: {
+                    type: String,
+                    default: '',
+                },
+
+                href: {
+                    type: String,
+                    required: true,
+                },
+
+                isBusy: {
+                    type: Boolean,
+                    default: false,
+                },
+
+                dismissTitle: {
+                    type: String,
+                    default: 'Mark as read',
+                },
+            },
+
+            computed: {
+                containerClasses() {
+                    return this.notification.read
+                        ? 'bg-white hover:bg-[#f9fafb] hover:-translate-y-px dark:bg-gray-800/50 dark:hover:bg-gray-800'
+                        : 'bg-white hover:bg-[#f9fafb] hover:-translate-y-px dark:bg-gray-800/50 dark:hover:bg-gray-800';
+                },
+            },
+        });
+    </script>
+
+    <script
+        type="text/x-template"
         id="v-notifications-template"
     >
-        <x-admin::dropdown position="bottom-{{ core()->getCurrentLocale()->direction === 'ltr' ? 'right' : 'left' }}">
-            <!-- Notification Toggle -->
-            <x-slot:toggle>
-                <span class="relative flex">
-                    <span
-                        class="icon-notification text-red cursor-pointer rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950"
-                        title="@lang('admin::app.components.layouts.header.notifications')"
-                    >
-                    </span>
-
-                    <span
-                        class="absolute -top-2 flex h-5 min-w-5 cursor-pointer items-center justify-center rounded-full bg-blue-600 p-1.5 text-[10px] font-semibold leading-[9px] text-white ltr:left-5 rtl:right-5"
-                        v-if="totalUnRead"
-                    >
-                        @{{ totalUnRead }}
-                    </span>
-                </span>
-            </x-slot>
-
-            <!-- Notification Content -->
-            <x-slot:content class="min-w-[250px] max-w-[250px] !p-0">
-                <!-- Header -->
-                <div class="border-b p-3 text-base font-semibold text-gray-600 dark:border-gray-800 dark:text-gray-300">
-                    @lang('admin::app.notifications.title', ['read' => 0])
-                </div>
-
-                <!-- Content -->
-                <div class="grid">
-                    <a
-                        class="flex items-start gap-1.5 border-b p-3 last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-950"
-                        v-for="notification in notifications"
-                        :href="'{{ route('admin.notification.viewed_notification', ':orderId') }}'.replace(':orderId', notification.order_id)"
-                    >
-                        <!-- Notification Icon -->
+        <div class="relative inline-flex shrink-0" ref="notificationsRoot">
+            <div
+                class="relative cursor-pointer"
+                @click.stop="toggleNotifications()"
+            >
+                <slot>
+                    <span class="group relative flex items-center justify-center rounded-xl p-2.5 text-gray-500 transition-all duration-300 hover:bg-gradient-to-br hover:from-rose-50 hover:to-pink-50 hover:text-rose-500 hover:shadow-sm active:scale-95 dark:text-gray-400 dark:hover:bg-gray-800/80 dark:hover:text-rose-400">
                         <span
-                            v-if="notification.order.status in notificationStatusIcon"
-                            class="h-fit"
-                            :class="notificationStatusIcon[notification.order.status]"
-                        >
-                        </span>
+                            class="icon-notification text-xl transition-transform duration-300 group-hover:rotate-12 sm:text-2xl"
+                            title="@lang('admin::app.components.layouts.header.notifications')"
+                        ></span>
+                    </span>
+                </slot>
 
-                        <div class="grid">
-                            <!-- Order Id & Status -->
-                            <p class="text-gray-800 dark:text-white">
-                                #@{{ notification.order.id }}
-                                @{{ orderTypeMessages[notification.order.status] }}
-                            </p>
+                <span
+                    v-if="totalUnRead"
+                    class="pointer-events-none absolute flex items-center justify-center text-white"
+                    style="top: -5px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #ef4444; font-size: 11px; font-weight: 600; border: 2px solid white;"
+                >
+                    @{{ totalUnRead }}
+                </span>
+            </div>
 
-                            <!-- Created Date In humand Readable Format -->
-                            <p class="text-xs text-gray-600 dark:text-gray-300">
-                                @{{ notification.order.datetime }}
-                            </p>
+            <transition
+                enter-active-class="transform transition duration-150 ease-out"
+                enter-from-class="-translate-y-1.5 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+                leave-active-class="transform transition duration-150 ease-in"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="-translate-y-1.5 opacity-0"
+            >
+                <div
+                    v-if="isNotificationsOpen"
+                    class="absolute z-[1000] w-[380px] max-w-[calc(100vw-24px)] overflow-hidden bg-white dark:bg-gray-900"
+                    style="top: 46px; right: 0; border-radius: 16px; border: 1px solid #eee; box-shadow: 0 10px 30px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);"
+                    aria-label="@lang('admin::app.components.layouts.header.notifications')"
+                    @click.stop
+                >
+                    <div class="w-full">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between gap-3 dark:border-gray-800" style="padding: 16px; border-bottom: 1px solid #f1f5f9; background: linear-gradient(180deg, #fafafa, #f5f5f5);">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-gray-900 dark:text-gray-100" style="font-size: 15px; font-weight: 600;">
+                                    Уведомления
+                                </p>
+                            </div>
+
+                            <button
+                                v-if="notifications.length && totalUnRead"
+                                type="button"
+                                class="group inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#f4f2ff] text-[#8b80f9] transition-all duration-150 hover:bg-[#ebe7ff] hover:text-[#786cf6] dark:bg-gray-800 dark:text-violet-300 dark:hover:bg-gray-700"
+                                :class="isMarkingAllRead ? 'pointer-events-none opacity-70' : ''"
+                                :title="readAllTitleText"
+                                @click.stop="readAll()"
+                            >
+                                <span v-if="isMarkingAllRead" class="icon-loader animate-spin text-base"></span>
+
+                                <span v-else class="relative block h-4 w-4">
+                                    <span class="icon-done absolute -left-0.5 top-0 text-[11px]"></span>
+                                    <span class="icon-done absolute left-[6px] top-0 text-[11px]"></span>
+                                </span>
+                            </button>
                         </div>
-                    </a>
-                </div>
 
-                <!-- Footer -->
-                <div class="flex h-[47px] justify-between gap-1.5 border-t px-6 py-4 dark:border-gray-800">
-                    <a
-                        href="{{ route('admin.notification.index') }}"
-                        class="cursor-pointer text-xs font-semibold text-blue-600 transition-all hover:underline"
-                    >
-                        @lang('admin::app.notifications.view-all')
-                    </a>
+                        <!-- Content -->
+                        <div class="overflow-y-auto py-1 notifications-scroll" style="max-height: 520px;">
+                            <transition-group
+                                tag="div"
+                                enter-from-class="translate-y-2 opacity-0"
+                                enter-active-class="transform transition duration-200 ease-out"
+                                enter-to-class="translate-y-0 opacity-100"
+                                leave-from-class="translate-y-0 opacity-100"
+                                leave-active-class="transform transition duration-200 ease-in"
+                                leave-to-class="-translate-y-1 opacity-0"
+                                move-class="transition duration-200"
+                                class="grid"
+                            >
+                                <v-notification-item
+                                    v-for="notification in notifications"
+                                    :key="notification.id"
+                                    :notification="notification"
+                                    :icon-class="getNotificationIcon(notification)"
+                                    :icon-wrapper-classes="getNotificationIconWrapperClasses(notification)"
+                                    :icon-wrapper-style="getNotificationIconBgStyle(notification)"
+                                    :title="getNotificationTitle(notification)"
+                                    :meta="getNotificationMeta(notification)"
+                                    :timestamp="getNotificationTimestamp(notification)"
+                                    :href="getNotificationHref(notification)"
+                                    :is-busy="Boolean(processingNotificationIds[notification.id])"
+                                    :dismiss-title="singleReadTitleText"
+                                    @mark-as-read="markAsRead"
+                                ></v-notification-item>
+                            </transition-group>
 
-                    <a
-                        class="cursor-pointer text-xs font-semibold text-blue-600 transition-all hover:underline"
-                        v-if="notifications?.length"
-                        @click="readAll()"
-                    >
-                        @lang('admin::app.notifications.read-all')
-                    </a>
+                            <div
+                                v-if="! notifications.length && ! isLoading"
+                                class="flex min-h-[10rem] flex-col items-center justify-center bg-[#fafafa] px-6 text-center dark:bg-gray-800/50"
+                                style="margin: 6px 10px; border-radius: 12px;"
+                            >
+                                <span class="icon-notification text-3xl text-gray-300 dark:text-gray-600"></span>
+
+                                <p class="mt-3 text-[13px] font-medium text-gray-500 dark:text-gray-400">
+                                    Нет уведомлений
+                                </p>
+                            </div>
+
+                            <div
+                                v-if="isLoading"
+                                class="py-2"
+                            >
+                                <div
+                                    v-for="index in 4"
+                                    :key="`skeleton-${index}`"
+                                    class="flex items-center gap-3 bg-[#fafafa] dark:bg-gray-800/50"
+                                    style="padding: 12px 14px; margin: 6px 10px; border-radius: 12px;"
+                                >
+                                    <div class="flex-shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" style="width: 40px; height: 40px;"></div>
+                                    <div class="flex-1">
+                                        <div class="h-3.5 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+                                        <div class="mt-2 h-3 w-1/2 animate-pulse rounded bg-gray-100 dark:bg-gray-700/60"></div>
+                                        <div class="mt-1.5 h-2.5 w-1/4 animate-pulse rounded bg-gray-100 dark:bg-gray-700/40"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </x-slot>
-        </x-admin::dropdown>
+            </transition>
+        </div>
     </script>
 
     <script type="module">
@@ -659,39 +859,15 @@
                     return {
                         notifications: [],
 
-                        ordertype: {
-                            pending: {
-                                icon: 'icon-information',
-                                message: @json(__('admin::app.notifications.order-status-messages.pending-payment'))
-                            },
-
-                            processing: {
-                                icon: 'icon-processing',
-                                message: @json(__('admin::app.notifications.order-status-messages.processing')),
-                            },
-
-                            canceled: {
-                                icon: 'icon-cancel-1',
-                                message: @json(__('admin::app.notifications.order-status-messages.canceled'))
-                            },
-
-                            completed: {
-                                icon: 'icon-done',
-                                message: @json(__('admin::app.notifications.order-status-messages.completed'))
-                            },
-
-                            closed: {
-                                icon: 'icon-cancel-1',
-                                message: @json(__('admin::app.notifications.order-status-messages.closed'))
-                            },
-
-                            pending_payment: {
-                                icon: "icon-information",
-                                message: @json(__('admin::app.notifications.order-status-messages.pending-payment'))
-                            },
-                        },
+                        isNotificationsOpen: false,
 
                         totalUnRead: 0,
+
+                        isLoading: true,
+
+                        isMarkingAllRead: false,
+
+                        processingNotificationIds: {},
 
                         orderTypeMessages: @json(
                             \Webkul\Sales\Models\OrderStatus::orderBy('sort_order')->get()->mapWithKeys(function($status) {
@@ -699,53 +875,247 @@
                                 $translation = trans($translationKey);
                                 return [$status->code => $translation !== $translationKey ? $translation : $status->name];
                             })->toArray()
-                        )
+                        ),
+
+                        singleReadTitleText: 'Отметить как прочитанное',
+
+                        readAllTitleText: @json(__('admin::app.notifications.read-all')),
                     }
                 },
 
                 computed: {
                     notificationStatusIcon() {
                         return {
-                            pending: 'icon-information rounded-full bg-amber-100 text-2xl text-amber-600 dark:!text-amber-600',
-                            closed: 'icon-repeat rounded-full bg-red-100 text-2xl text-red-600 dark:!text-red-600',
-                            completed: 'icon-done rounded-full bg-blue-100 text-2xl text-blue-600 dark:!text-blue-600',
-                            canceled: 'icon-cancel-1 rounded-full bg-red-100 text-2xl text-red-600 dark:!text-red-600',
-                            processing: 'icon-sort-right rounded-full bg-green-100 text-2xl text-green-600 dark:!text-green-600',
+                            pending: 'icon-information',
+                            pending_payment: 'icon-information',
+                            preparing: 'icon-information',
+                            ready: 'icon-cart',
+                            closed: 'icon-cross',
+                            completed: 'icon-cart',
+                            canceled: 'icon-cross',
+                            processing: 'icon-cart',
+                            failed: 'icon-cross',
+                            fraud: 'icon-cross',
                         };
+                    },
+
+                    notificationStatusWrapperClasses() {
+                        return {
+                            pending: 'text-[#D97706] dark:text-amber-300',
+                            pending_payment: 'text-[#D97706] dark:text-amber-300',
+                            preparing: 'text-[#D97706] dark:text-amber-300',
+                            ready: 'text-[#059669] dark:text-emerald-300',
+                            closed: 'text-[#DC2626] dark:text-red-300',
+                            completed: 'text-[#059669] dark:text-emerald-300',
+                            canceled: 'text-[#DC2626] dark:text-red-300',
+                            processing: 'text-[#059669] dark:text-emerald-300',
+                            failed: 'text-[#DC2626] dark:text-red-300',
+                            fraud: 'text-[#DC2626] dark:text-red-300',
+                        };
+                    },
+
+                    notificationStatusBgStyles() {
+                        return {
+                            pending: 'background: linear-gradient(135deg, #FEF3C7, #FDE68A);',
+                            pending_payment: 'background: linear-gradient(135deg, #FEF3C7, #FDE68A);',
+                            preparing: 'background: linear-gradient(135deg, #FEF3C7, #FDE68A);',
+                            ready: 'background: linear-gradient(135deg, #DCFCE7, #BBF7D0);',
+                            closed: 'background: linear-gradient(135deg, #FEE2E2, #FECACA);',
+                            completed: 'background: linear-gradient(135deg, #DCFCE7, #BBF7D0);',
+                            canceled: 'background: linear-gradient(135deg, #FEE2E2, #FECACA);',
+                            processing: 'background: linear-gradient(135deg, #DCFCE7, #BBF7D0);',
+                            failed: 'background: linear-gradient(135deg, #FEE2E2, #FECACA);',
+                            fraud: 'background: linear-gradient(135deg, #FEE2E2, #FECACA);',
+                        };
+                    },
+
+                    headerSubtitle() {
+                        if (! this.notifications.length) {
+                            return 'Новые события появятся здесь';
+                        }
+
+                        if (! this.totalUnRead) {
+                            return 'Все просмотрено';
+                        }
+
+                        return `${this.totalUnRead} непрочитанных`;
                     },
                 },
 
                 mounted() {
                     this.getNotification();
+
+                    window.addEventListener('click', this.handleNotificationsFocusOut);
+                },
+
+                beforeDestroy() {
+                    window.removeEventListener('click', this.handleNotificationsFocusOut);
                 },
 
                 methods: {
+                    toggleNotifications() {
+                        this.isNotificationsOpen = ! this.isNotificationsOpen;
+                    },
+
+                    closeNotifications() {
+                        this.isNotificationsOpen = false;
+                    },
+
+                    handleNotificationsFocusOut(event) {
+                        if (! this.$refs.notificationsRoot || ! this.$refs.notificationsRoot.contains(event.target)) {
+                            this.closeNotifications();
+                        }
+                    },
+
+                    getOrderData(notification) {
+                        return notification && notification.order
+                            ? notification.order
+                            : {};
+                    },
+
+                    normalizeNotification(notification) {
+                        return {
+                            ...notification,
+                            read: Boolean(notification.read),
+                        };
+                    },
+
                     getNotification() {
+                        this.isLoading = true;
+
                         this.$axios.get('{{ route('admin.notification.get_notification') }}', {
                                 params: {
-                                    limit: 5,
-                                    read: 0
+                                    limit: 50,
                                 }
                             })
                             .then((response) => {
-                                this.notifications = response.data.search_results.data;
-
-                                this.totalUnRead =   response.data.total_unread;
-                            })
-                            .catch(error => console.log(error))
-                    },
-
-                    readAll() {
-                        this.$axios.post('{{ route('admin.notification.read_all') }}')
-                            .then((response) => {
-                                this.notifications = response.data.search_results.data;
+                                this.notifications = response.data.search_results.data.map((notification) => this.normalizeNotification(notification));
 
                                 this.totalUnRead = response.data.total_unread;
 
-                            this.$emitter.emit('add-flash', { type: 'success', message: response.data.success_message });
-                        })
-                        .catch((error) => {});
-                },
+                                this.isLoading = false;
+                            })
+                            .catch(error => {
+                                this.isLoading = false;
+                            })
+                    },
+
+                    getNotificationHref(notification) {
+                        return '{{ route('admin.notification.viewed_notification', ':orderId') }}'.replace(':orderId', notification.order_id);
+                    },
+
+                    getNotificationIcon(notification) {
+                        const order = this.getOrderData(notification);
+
+                        return this.notificationStatusIcon[order.status] || 'icon-notification text-gray-500 dark:!text-gray-400';
+                    },
+
+                    getNotificationIconWrapperClasses(notification) {
+                        const order = this.getOrderData(notification);
+
+                        return this.notificationStatusWrapperClasses[order.status] || 'text-gray-500 dark:text-gray-400';
+                    },
+
+                    getNotificationIconBgStyle(notification) {
+                        const order = this.getOrderData(notification);
+                        const bg = this.notificationStatusBgStyles[order.status] || 'background: #f3f4f6;';
+
+                        return 'width: 40px; height: 40px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6); ' + bg;
+                    },
+
+                    getNotificationTitle(notification) {
+                        const order = this.getOrderData(notification);
+                        const orderNumber = order.increment_id || order.id || notification.order_id;
+                        const statusLabel = this.orderTypeMessages[order.status] || order.status || 'Обновление заказа';
+
+                        return `${statusLabel} #${orderNumber}`;
+                    },
+
+                    getNotificationMeta(notification) {
+                        const order = this.getOrderData(notification);
+                        const amount = this.formatPrice(order.grand_total, order.order_currency_code);
+                        const customerName = [order.customer_first_name, order.customer_last_name]
+                            .filter(Boolean)
+                            .join(' ') || 'Гость';
+
+                        return `${amount} • ${customerName}`;
+                    },
+
+                    getNotificationTimestamp(notification) {
+                        const order = this.getOrderData(notification);
+
+                        return order.datetime || '';
+                    },
+
+                    formatPrice(amount, currencyCode) {
+                        const numericAmount = Number(amount || 0);
+
+                        try {
+                            return new Intl.NumberFormat(document.documentElement.lang || undefined, {
+                                style: 'currency',
+                                currency: currencyCode || 'USD',
+                                maximumFractionDigits: 0,
+                            }).format(numericAmount);
+                        } catch (error) {
+                            return `${numericAmount} ${currencyCode || ''}`.trim();
+                        }
+                    },
+
+                    markAsRead(notification) {
+                        if (notification.read || this.processingNotificationIds[notification.id]) {
+                            return;
+                        }
+
+                        this.processingNotificationIds = {
+                            ...this.processingNotificationIds,
+                            [notification.id]: true,
+                        };
+
+                        this.$axios.post('{{ route('admin.notification.read', ':notificationId') }}'.replace(':notificationId', notification.id))
+                            .then((response) => {
+                                this.notifications = this.notifications.filter((item) => item.id !== notification.id);
+
+                                this.totalUnRead = response.data.total_unread;
+
+                                if (! this.notifications.length) {
+                                    this.closeNotifications();
+                                }
+                            })
+                            .catch((error) => {})
+                            .finally(() => {
+                                const processingNotificationIds = {
+                                    ...this.processingNotificationIds,
+                                };
+
+                                delete processingNotificationIds[notification.id];
+
+                                this.processingNotificationIds = processingNotificationIds;
+                            });
+                    },
+
+                    readAll() {
+                        if (! this.notifications.length || this.isMarkingAllRead) {
+                            return;
+                        }
+
+                        this.isMarkingAllRead = true;
+
+                        this.$axios.post('{{ route('admin.notification.read_all') }}')
+                            .then((response) => {
+                                this.notifications = this.notifications.map((notification) => ({
+                                    ...notification,
+                                    read: true,
+                                }));
+
+                                this.totalUnRead = response.data.total_unread;
+
+                                this.$emitter.emit('add-flash', { type: 'success', message: response.data.success_message });
+                            })
+                            .catch((error) => {})
+                            .finally(() => {
+                                this.isMarkingAllRead = false;
+                            });
+                    },
             },
         });
     </script>
@@ -816,4 +1186,45 @@
             },
         });
     </script>
-@endpushOnce
+@endPushOnce
+
+@pushOnce('styles')
+    <style>
+        .notifications-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .notifications-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .notifications-scroll::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 6px;
+        }
+        .notifications-scroll::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+        .notifications-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #d1d5db transparent;
+        }
+        .notification-card {
+            border: 1px solid #f1f5f9;
+        }
+        .notification-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
+        }
+        .notification-icon-wrap {
+            transition: transform 0.15s ease;
+        }
+        .notification-card:hover .notification-icon-wrap {
+            transform: scale(1.05);
+        }
+        .notification-unread-dot {
+            animation: unread-pulse 2s ease-in-out infinite;
+        }
+        @keyframes unread-pulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
+        }
+    </style>
+@endPushOnce

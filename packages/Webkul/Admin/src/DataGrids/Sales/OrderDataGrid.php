@@ -37,6 +37,7 @@ class OrderDataGrid extends DataGrid
                 'channel_name',
                 'channel_id',
                 'status',
+                DB::raw('orders.status as status_code'),
                 'customer_email',
                 'orders.cart_id as items',
                 DB::raw('CONCAT('.DB::getTablePrefix().'orders.customer_first_name, " ", '.DB::getTablePrefix().'orders.customer_last_name) as full_name'),
