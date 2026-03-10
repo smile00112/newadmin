@@ -573,15 +573,21 @@
             <div
                 class="relative flex items-center gap-3 notification-card"
                 :class="containerClasses"
-                style="padding: 12px 14px; margin: 6px 10px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: all 0.15s ease;"
+                style="padding: 12px 14px; margin: 6px 10px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: all 0.15s ease; overflow: hidden;"
             >
+                <span
+                    v-if="! notification.read"
+                    class="notification-accent-bar"
+                    style="position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: #6366f1;"
+                ></span>
+
                 <a
                     :href="href"
                     class="flex min-w-0 flex-1 items-center gap-3 text-left"
                     style="padding-right: 32px;"
                 >
                     <div
-                        class="flex flex-shrink-0 items-center justify-center"
+                        class="notification-icon-wrap flex flex-shrink-0 items-center justify-center"
                         :class="iconWrapperClasses"
                         :style="iconWrapperStyle"
                     >
@@ -618,7 +624,7 @@
 
                 <span
                     v-if="! notification.read"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#ef4444] group-hover/item:hidden"
+                    class="notification-unread-dot absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-[#ef4444] group-hover/item:hidden"
                     style="width: 8px; height: 8px; box-shadow: 0 0 0 3px rgba(239,68,68,0.15);"
                 ></span>
 
@@ -698,8 +704,8 @@
             computed: {
                 containerClasses() {
                     return this.notification.read
-                        ? 'bg-[#fafafa] hover:bg-[#f8fafc] hover:-translate-y-px dark:bg-gray-800/50 dark:hover:bg-gray-800'
-                        : 'bg-[#fafafa] hover:bg-[#f8fafc] hover:-translate-y-px dark:bg-gray-800/50 dark:hover:bg-gray-800';
+                        ? 'bg-white hover:bg-[#f9fafb] hover:-translate-y-px dark:bg-gray-800/50 dark:hover:bg-gray-800'
+                        : 'bg-white hover:bg-[#f9fafb] hover:-translate-y-px dark:bg-gray-800/50 dark:hover:bg-gray-800';
                 },
             },
         });
@@ -749,7 +755,7 @@
                 >
                     <div class="w-full">
                         <!-- Header -->
-                        <div class="flex items-center justify-between gap-3 dark:border-gray-800" style="padding: 16px; border-bottom: 1px solid #f1f5f9; background: #fafafa;">
+                        <div class="flex items-center justify-between gap-3 dark:border-gray-800" style="padding: 16px; border-bottom: 1px solid #f1f5f9; background: linear-gradient(180deg, #fafafa, #f5f5f5);">
                             <div class="min-w-0 flex-1">
                                 <p class="text-gray-900 dark:text-gray-100" style="font-size: 15px; font-weight: 600;">
                                     Уведомления
@@ -1201,8 +1207,24 @@
             scrollbar-width: thin;
             scrollbar-color: #d1d5db transparent;
         }
+        .notification-card {
+            border: 1px solid #f1f5f9;
+        }
         .notification-card:hover {
-            box-shadow: 0 4px 10px rgba(0,0,0,0.06) !important;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06) !important;
+        }
+        .notification-icon-wrap {
+            transition: transform 0.15s ease;
+        }
+        .notification-card:hover .notification-icon-wrap {
+            transform: scale(1.05);
+        }
+        .notification-unread-dot {
+            animation: unread-pulse 2s ease-in-out infinite;
+        }
+        @keyframes unread-pulse {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
         }
     </style>
 @endPushOnce
