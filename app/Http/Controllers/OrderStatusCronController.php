@@ -34,4 +34,48 @@ class OrderStatusCronController extends Controller
             'to_status'     => Order::STATUS_PREPARING,
         ]);
     }
+
+    public function preparingToReady(): JsonResponse
+    {
+        $updatedCount = 0;
+
+        Order::query()
+            ->where('status', Order::STATUS_PREPARING)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+                foreach ($orders as $order) {
+                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_READY);
+                    $updatedCount++;
+                }
+            });
+
+        return response()->json([
+            'success'       => true,
+            'updated_count' => $updatedCount,
+            'from_status'   => Order::STATUS_PREPARING,
+            'to_status'     => Order::STATUS_READY,
+        ]);
+    }
+
+    public function readyToCompleted(): JsonResponse
+    {
+        $updatedCount = 0;
+
+        Order::query()
+            ->where('status', Order::STATUS_READY)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+                foreach ($orders as $order) {
+                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_COMPLETED);
+                    $updatedCount++;
+                }
+            });
+
+        return response()->json([
+            'success'       => true,
+            'updated_count' => $updatedCount,
+            'from_status'   => Order::STATUS_READY,
+            'to_status'     => Order::STATUS_COMPLETED,
+        ]);
+    }
 }
