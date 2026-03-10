@@ -25,12 +25,15 @@
                     @php
                         $contactFields = [];
                         $documentFields = [];
+                        $orderDefaultsFields = [];
                         $otherFields = [];
                         foreach ($fields as $field) {
                             if (isset($field['group']) && $field['group'] === 'contact') {
                                 $contactFields[] = $field;
                             } elseif (isset($field['group']) && $field['group'] === 'documents') {
                                 $documentFields[] = $field;
+                            } elseif (isset($field['group']) && $field['group'] === 'order_defaults') {
+                                $orderDefaultsFields[] = $field;
                             } else {
                                 $otherFields[] = $field;
                             }
@@ -188,6 +191,60 @@
                                         @if (isset($field['description']))
                                             <x-admin::form.control-group.error control-name="settings[{{ $field['key'] }}]" />
                                             <p class="mt-1 text-xs text-green-600 dark:text-green-400">
+                                                {{ trans($field['description']) }}
+                                            </p>
+                                        @endif
+                                    </x-admin::form.control-group>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (count($orderDefaultsFields) > 0)
+                        {{-- Order Defaults Group --}}
+                        <div class="mt-6 mb-4 rounded-lg border-2 border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                            <p class="mb-4 text-base font-semibold text-amber-800 dark:text-amber-300">
+                                @lang('mobile_app::app.settings.order-defaults.title')
+                            </p>
+                            <p class="mb-4 text-sm text-amber-700 dark:text-amber-400">
+                                @lang('mobile_app::app.settings.order-defaults.info')
+                            </p>
+
+                            @foreach ($orderDefaultsFields as $field)
+                                <div class="mb-4">
+                                    <x-admin::form.control-group>
+                                        <x-admin::form.control-group.label>
+                                            {{ trans($field['title']) }}
+                                        </x-admin::form.control-group.label>
+
+                                        @if ($field['type'] === 'boolean')
+                                            <x-admin::form.control-group.control
+                                                type="switch"
+                                                name="settings[{{ $field['key'] }}]"
+                                                :value="1"
+                                                :checked="(bool) ($field['value'] ?? false)"
+                                            />
+                                        @elseif ($field['type'] === 'select' && isset($field['options']))
+                                            <x-admin::form.control-group.control
+                                                type="select"
+                                                name="settings[{{ $field['key'] }}]"
+                                                :value="$field['value'] ?? ''"
+                                            >
+                                                <option value="">{{ __('admin::app.common.select') }}</option>
+                                                @foreach ($field['options'] as $option)
+                                                    <option
+                                                        value="{{ $option['value'] }}"
+                                                        {{ ($field['value'] ?? '') == $option['value'] ? 'selected' : '' }}
+                                                    >
+                                                        {{ $option['title'] }}
+                                                    </option>
+                                                @endforeach
+                                            </x-admin::form.control-group.control>
+                                        @endif
+
+                                        @if (isset($field['description']))
+                                            <x-admin::form.control-group.error control-name="settings[{{ $field['key'] }}]" />
+                                            <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">
                                                 {{ trans($field['description']) }}
                                             </p>
                                         @endif

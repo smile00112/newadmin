@@ -311,8 +311,31 @@ class ProductResource extends JsonResource
      */
     private function getConfigurableProductInfo($product)
     {
+        $variants = $product->variants->map(function ($variant) use ($product) {
+            $arr = $variant->toArray();
+
+            if (
+                isset($arr['attribute_values'])
+                && is_array($arr['attribute_values'])
+                && $product->relationLoaded('super_attributes')
+            ) {
+                $superAttributeIds = $product->super_attributes->pluck('id')->toArray();
+                $arr['attribute_values'] = array_values(array_filter(
+                    $arr['attribute_values'],
+                    fn ($av) => isset($av['attribute_id']) && in_array($av['attribute_id'], $superAttributeIds, true)
+                ));
+            }
+
+            /* nutrition, weight, volume from variant attributes */
+            $arr['nutrition'] = $this->getNutritionData($variant);
+            $arr['weight'] = $variant->weight !== null ? (float) $variant->weight : null;
+            $arr['volume'] = $variant->volume !== null && $variant->volume !== '' ? (float) $variant->volume : null;
+
+            return $arr;
+        });
+
         return [
-            'variants' => $product->variants,
+            'variants' => $variants->values()->all(),
         ];
     }
 

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Exceptions\Handler as BaseHandler;
 use Webkul\RestApi\Exceptions\Handler;
+use Webkul\RestApi\Console\Commands\WarmNomenclatureCacheCommand;
 use Webkul\RestApi\Listeners\InvalidateCustomerOrdersCache;
 use Webkul\Sales\Models\Order;
 
@@ -101,10 +102,10 @@ class RestApiServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-//        if ($this->app->runningInConsole()) {
-//            $this->commands([
-//
-//            ]);
-//        }
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                WarmNomenclatureCacheCommand::class,
+            ]);
+        }
     }
 }

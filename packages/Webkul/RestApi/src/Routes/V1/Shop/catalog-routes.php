@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\AttributeController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\AttributeFamilyController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryV2Controller;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\ProductController;
@@ -79,6 +80,17 @@ Route::controller(AttributeFamilyController::class)->prefix('attribute-families'
  */
 Route::controller(CatalogCategoryController::class)
     ->prefix('catalog')
+    ->group(function () {
+        Route::get('', 'allResources');
+
+        Route::get('{id}', 'getResource');
+    });
+
+/**
+ * Catalog V2 routes (lightweight - IDs only for nested products/ingredients).
+ */
+Route::controller(CatalogCategoryV2Controller::class)
+    ->prefix('catalog-v2')
     ->group(function () {
         Route::get('', 'allResources');
 

@@ -5,6 +5,7 @@ namespace Webkul\Product\Observers;
 use Illuminate\Support\Facades\Storage;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
+use Webkul\RestApi\Jobs\WarmNomenclatureCacheJob;
 
 class ProductObserver
 {
@@ -43,6 +44,7 @@ class ProductObserver
 
         if (class_exists(NomenclatureController::class)) {
             NomenclatureController::clearNomenclatureCache();
+            WarmNomenclatureCacheJob::dispatch();
         }
     }
 }

@@ -352,6 +352,28 @@ class ProductFlat
 
     /**
      * @OA\Property(
+     *     title="Nutrition",
+     *     description="Nutrition data (КЖБУ) from product attributes",
+     *     example={"calories": 250.5, "proteins": 15.2, "fats": 8.5, "carbs": 30.0}
+     * )
+     *
+     * @var object|null
+     */
+    public $nutrition;
+
+    /**
+     * @OA\Property(
+     *     title="Volume",
+     *     description="Product volume from attribute",
+     *     example=250.0
+     * )
+     *
+     * @var float|null
+     */
+    public $volume;
+
+    /**
+     * @OA\Property(
      *     title="Inventories",
      *     description="Product's inventories"
      * )

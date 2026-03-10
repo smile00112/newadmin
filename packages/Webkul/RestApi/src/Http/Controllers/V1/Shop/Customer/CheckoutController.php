@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Customer\Repositories\CustomerAddressRepository;
+use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Facades\Payment;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartShippingRateResource;
@@ -21,6 +22,7 @@ class CheckoutController extends CustomerController
 {
     public function __construct(
         protected CustomerAddressRepository $customerAddressRepository,
+        protected MobileAppSettingRepository $mobileAppSettingRepository,
     ) {}
 
     /**
@@ -243,6 +245,8 @@ class CheckoutController extends CustomerController
 
             Cart::collectTotals();
 
+            $this->applyDefaultOrderMethodsIfNeeded();
+
             $this->validateOrder();
 
             $cart = Cart::getCart();
@@ -318,6 +322,75 @@ class CheckoutController extends CustomerController
                     'payment'                => Cart::getCart()->payment ? true : false,
                 ] : null,
             ], 400);
+        }
+    }
+
+    /**
+     * Apply default shipping and payment methods from mobile app settings
+     * when cart lacks them (auto-assign only if not selected by user).
+     */
+    protected function applyDefaultOrderMethodsIfNeeded(): void
+    {
+        $cart = Cart::getCart();
+        if (! $cart) {
+            return;
+        }
+
+        $channelCode = $cart->channel->code ?? core()->getDefaultChannelCode();
+        $settings = $this->mobileAppSettingRepository->getAllSettings($channelCode);
+
+        $autoAssignShipping = filter_var($settings['auto_assign_shipping_method'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $defaultShipping = trim((string) ($settings['default_shipping_method'] ?? ''));
+        $autoAssignPayment = filter_var($settings['auto_assign_payment_method'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $defaultPayment = trim((string) ($settings['default_payment_method'] ?? ''));
+
+        $needsCollectTotals = false;
+
+        // Auto-assign shipping when cart has stockable items and no shipping selected
+        if (
+            $autoAssignShipping
+            && $defaultShipping !== ''
+            && $cart->haveStockableItems()
+            //&& ! $cart->selected_shipping_rate
+            && Shipping::isMethodCodeExists($defaultShipping)
+        ) {
+            if (Cart::saveShippingMethod($defaultShipping)) {
+                Shipping::collectRates();
+                $cart = Cart::getCart();
+
+                // Fallback for pickup/dinein when rate was not created (no address)
+                if ($cart && ! $cart->selected_shipping_rate) {
+                    $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+                    if ($skipAddressValidation && $cart->shipping_method) {
+                        foreach (Config::get('carriers', []) as $shippingMethod) {
+                            $object = new $shippingMethod['class'];
+                            if ($object->getMethod() === $cart->shipping_method) {
+                                if ($rate = $object->calculate()) {
+                                    $rate->cart_id = $cart->id;
+                                    $rate->cart_address_id = null;
+                                    $rate->price_incl_tax = $rate->price;
+                                    $rate->base_price_incl_tax = $rate->base_price;
+                                    $rate->save();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                $needsCollectTotals = true;
+            }
+        }
+
+        // Auto-assign payment when cart has no payment
+        $cart = Cart::getCart();
+        if ($autoAssignPayment && $defaultPayment !== '' && $cart && ! $cart->payment) {
+            if (Cart::savePaymentMethod(['method' => $defaultPayment])) {
+                $needsCollectTotals = true;
+            }
+        }
+
+        if ($needsCollectTotals) {
+            Cart::collectTotals();
         }
     }
 
