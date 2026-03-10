@@ -5065,6 +5065,13 @@ return [
             ],
 
             'sidebar' => [
+                'analytics'                => 'Analytics',
+                'analytics-executive'      => 'Executive',
+                'analytics-daily'          => 'Daily Management',
+                'analytics-product'        => 'Product Analytics',
+                'analytics-operations'     => 'Operations',
+                'analytics-menu'           => 'Menu Analytics',
+                'analytics-channels'       => 'Channels & Format',
                 'application-errors'       => 'Application Errors',
                 'attribute-families'       => 'Attribute Families',
                 'attributes'               => 'Attributes',

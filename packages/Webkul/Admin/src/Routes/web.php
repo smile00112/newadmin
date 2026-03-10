@@ -45,6 +45,11 @@ Route::group(['middleware' => ['admin', NoCacheMiddleware::class], 'prefix' => c
     require 'reporting-routes.php';
 
     /**
+     * Analytics routes.
+     */
+    require 'analytics-routes.php';
+
+    /**
      * Settings routes.
      */
     require 'settings-routes.php';
