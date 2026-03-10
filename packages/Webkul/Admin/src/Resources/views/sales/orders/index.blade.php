@@ -382,7 +382,7 @@
     
         <!-- Order Mass Action Component -->
         <script type="text/x-template" id="v-inline-order-status-template">
-            <div class="relative" :style="{ zIndex: isOpen ? 10020 : 1 }" @click.stop>
+            <div class="relative inline-flex" ref="statusTrigger" @click.stop>
                 <button
                     type="button"
                     @click="toggle"
@@ -402,37 +402,40 @@
                     </svg>
                 </button>
 
-                <div
-                    v-if="isOpen"
-                    class="absolute z-[10020] mt-2 min-w-[210px] rounded-xl border border-gray-200 bg-white p-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
-                >
-                    <button
-                        v-for="s in allStatuses"
-                        :key="s.code"
-                        type="button"
-                        @click="changeStatus(s.code)"
-                        class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-                        :disabled="isLoading || s.code === currentStatusCode"
+                <Teleport to="body">
+                    <div
+                        v-if="isOpen"
+                        class="fixed z-[10020] min-w-[210px] rounded-xl border border-gray-200 bg-white p-1 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+                        :style="dropdownStyle"
                     >
-                        <span class="flex items-center gap-2">
-                            <span
-                                class="inline-block h-2.5 w-2.5 rounded-full"
-                                :style="{ backgroundColor: s.color || '#6b7280' }"
-                            ></span>
-                            <span class="text-gray-700 dark:text-gray-200">@{{ s.name }}</span>
-                        </span>
-
-                        <svg
-                            v-if="s.code === currentStatusCode"
-                            class="h-4 w-4 text-emerald-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                        <button
+                            v-for="s in allStatuses"
+                            :key="s.code"
+                            type="button"
+                            @click="changeStatus(s.code)"
+                            class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                            :disabled="isLoading || s.code === currentStatusCode"
                         >
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                    </button>
-                </div>
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="inline-block h-2.5 w-2.5 rounded-full"
+                                    :style="{ backgroundColor: s.color || '#6b7280' }"
+                                ></span>
+                                <span class="text-gray-700 dark:text-gray-200">@{{ s.name }}</span>
+                            </span>
+
+                            <svg
+                                v-if="s.code === currentStatusCode"
+                                class="h-4 w-4 text-emerald-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </button>
+                    </div>
+                </Teleport>
             </div>
         </script>
 
@@ -464,6 +467,7 @@
                         currentStatusCode: this.initialStatusCode,
                         statusHtml: this.initialStatusHtml,
                         allStatuses: @json(\Webkul\Sales\Models\OrderStatus::allForJs()),
+                        dropdownStyle: {},
                     };
                 },
 
@@ -480,6 +484,21 @@
                         if (this.isLoading) return;
 
                         this.isOpen = !this.isOpen;
+
+                        if (this.isOpen) {
+                            this.$nextTick(() => this.positionDropdown());
+                        }
+                    },
+
+                    positionDropdown() {
+                        const trigger = this.$refs.statusTrigger;
+                        if (!trigger) return;
+
+                        const rect = trigger.getBoundingClientRect();
+                        this.dropdownStyle = {
+                            top: (rect.bottom + 4) + 'px',
+                            left: rect.left + 'px',
+                        };
                     },
 
                     handleOutsideClick(event) {
