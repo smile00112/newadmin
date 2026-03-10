@@ -12,17 +12,28 @@
 
         {!! view_render_event('bagisto.admin.marketing.communications.templates.edit.edit_form_controls.before', ['template' => $template]) !!}
 
-        <div class="flex items-center justify-between">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.marketing.communications.templates.edit.title')
-            </p>
+<div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); box-shadow: 0 4px 15px rgba(236,72,153,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.marketing.communications.templates.edit.title')
+                </p>
+                <p class="text-xs text-gray-400">Редактирование шаблона</p>
+            </div>
+        </div>
 
             <div class="flex items-center gap-x-2.5">
                 <!-- Back Button -->
                 <a
                     href="{{ route('admin.marketing.communications.email_templates.index') }}"
-                    class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                    onmouseenter="this.style.background='#e5e7eb'"
+                    onmouseleave="this.style.background='#f3f4f6'"
                 >
+                    <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     @lang('admin::app.marketing.communications.templates.edit.back-btn')
                 </a>
 

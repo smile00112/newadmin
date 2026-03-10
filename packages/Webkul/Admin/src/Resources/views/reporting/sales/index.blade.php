@@ -6,10 +6,19 @@
     <!-- Page Header -->
     <div class="mb-5 flex items-center justify-between gap-4 max-sm:flex-wrap">
         <!-- Title -->
-        <div class="flex gap-1.5">
-            <p class="pt-1.5 text-xl font-bold leading-6 text-gray-800 dark:text-white">
-                @lang('admin::app.reporting.sales.index.title')
-            </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16,185,129,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
+                    @lang('admin::app.reporting.sales.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Аналитика продаж</p>
+            </div>
+        </div>
         </div>
 
         <!-- Actions -->

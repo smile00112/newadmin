@@ -109,22 +109,11 @@ class Order extends Model implements OrderContract
     ];
 
     /**
-     * Status label.
+     * Status label (dynamic from order_statuses table, cached).
      *
-     * @var array
+     * @var array|null
      */
-    protected $statusLabel = [
-        self::STATUS_PENDING         => 'Новый',
-        self::STATUS_PENDING_PAYMENT => 'Ожидание оплаты',
-        self::STATUS_PROCESSING      => 'Обработка',
-        self::STATUS_PREPARING       => 'Готовим',
-        self::STATUS_READY           => 'Готов',
-        self::STATUS_COMPLETED       => 'Выполнен',
-        self::STATUS_CANCELED        => 'Отмена',
-        self::STATUS_CLOSED          => 'Закрыт',
-        self::STATUS_FRAUD           => 'Мошенничество',
-        self::STATUS_FAILED          => 'Неудачный',
-    ];
+    protected static $statusLabelCache = null;
 
     /**
      * Get the order items record associated with the order.
@@ -135,11 +124,40 @@ class Order extends Model implements OrderContract
     }
 
     /**
-     * Returns the status label from status code.
+     * Invalidate the status label cache.
+     * Call this after updating OrderStatus records to ensure fresh data on next access.
+     */
+    public static function invalidateStatusLabelCache(): void
+    {
+        static::$statusLabelCache = null;
+    }
+
+    /**
+     * Returns the status label from status code (dynamic from DB).
      */
     public function getStatusLabelAttribute()
     {
-        return $this->statusLabel[$this->status];
+        if (static::$statusLabelCache === null) {
+            try {
+                static::$statusLabelCache = \Webkul\Sales\Models\OrderStatus::allAsMap();
+            } catch (\Exception $e) {
+                // Fallback if table doesn't exist yet
+                static::$statusLabelCache = [
+                    'pending'         => 'Новый',
+                    'pending_payment' => 'Ожидание оплаты',
+                    'processing'      => 'Обработка',
+                    'preparing'       => 'Готовим',
+                    'ready'           => 'Готов',
+                    'completed'       => 'Выполнен',
+                    'canceled'        => 'Отмена',
+                    'closed'          => 'Закрыт',
+                    'fraud'           => 'Мошенничество',
+                    'failed'          => 'Неудачный',
+                ];
+            }
+        }
+
+        return static::$statusLabelCache[$this->status] ?? $this->status;
     }
 
     /**

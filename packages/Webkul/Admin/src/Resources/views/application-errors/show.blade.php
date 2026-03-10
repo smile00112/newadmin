@@ -4,9 +4,17 @@
     </x-slot>
 
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap mb-6">
-        <p class="text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.application_errors.show.title', ['id' => $error->id])
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 15px rgba(239,68,68,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.application_errors.show.title', ['id' => $error->id])
+                </p>
+                <p class="text-xs text-gray-400">Детали ошибки</p>
+            </div>
+        </div>
         <a
             href="{{ route('admin.application_errors.index') }}"
             class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"

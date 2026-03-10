@@ -4,7 +4,7 @@ return [
     [
         'key'        => 'settings.bonus',
         'name'       => 'bonus::app.admin.settings.title',
-        'route'      => 'admin.configuration.index',
+        'route'      => 'admin.bonus.settings.index',
         'sort'       => 12,
         'icon'       => '',
     ],

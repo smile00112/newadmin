@@ -13,17 +13,28 @@
 
         {!! view_render_event('bagisto.admin.marketing.communications.campaigns.create.create_form_controls.before', ['campaign' => $campaign]) !!}
 
-        <div class="flex items-center justify-between">
-            <p class="text-xl font-bold text-gray-800 dark:text-white">
-                @lang('admin::app.marketing.communications.campaigns.edit.title')
-            </p>
+<div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); box-shadow: 0 4px 15px rgba(236,72,153,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.marketing.communications.campaigns.edit.title')
+                </p>
+                <p class="text-xs text-gray-400">Редактирование кампании</p>
+            </div>
+        </div>
 
             <div class="flex items-center gap-x-2.5">
                 <!-- Back Button -->
                 <a
                     href="{{ route('admin.marketing.communications.campaigns.index') }}"
-                    class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                    onmouseenter="this.style.background='#e5e7eb'"
+                    onmouseleave="this.style.background='#f3f4f6'"
                 >
+                    <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     @lang('admin::app.marketing.communications.campaigns.edit.back-btn')
                 </a>
 

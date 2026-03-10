@@ -7,16 +7,29 @@
 
     <div class="grid">
         <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-            <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
-                @lang('admin::app.sales.shipments.view.title', ['shipment_id' => $shipment->id])
-            </p>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); box-shadow: 0 4px 15px rgba(20,184,166,0.3); min-width:44px;">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
+                        @lang('admin::app.sales.shipments.view.title', ['shipment_id' => $shipment->id])
+                    </p>
+                    <p class="text-xs text-gray-400 mt-0.5">Детали доставки</p>
+                </div>
+            </div>
 
             <div class="flex items-center gap-x-2.5">
                 <!-- Back Button -->
                 <a
                     href="{{ route('admin.sales.shipments.index') }}"
-                    class="transparent-button hover:bg-gray-200 dark:text-white dark:hover:bg-gray-800"
+                    style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #6b7280; background: #f3f4f6; transition: all 0.15s; text-decoration: none;"
+                    onmouseenter="this.style.background='#e5e7eb'"
+                    onmouseleave="this.style.background='#f3f4f6'"
                 >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     @lang('admin::app.account.edit.back-btn')
                 </a>
             </div>

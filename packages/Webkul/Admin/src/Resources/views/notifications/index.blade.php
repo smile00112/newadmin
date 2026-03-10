@@ -156,36 +156,22 @@
                                 message: '@lang('admin::app.notifications.order-status-messages.all')',
                                 status: 'all'
                             },
-
-                            pending : {
-                                icon: 'icon-information bg-amber-100 text-amber-600 dark:!text-amber-600',
-                                message: '@lang('admin::app.notifications.order-status-messages.pending')',
-                                status: 'pending'
+                            @php
+                                $statusIcons = [
+                                    'pending' => 'icon-information bg-amber-100 text-amber-600 dark:!text-amber-600',
+                                    'processing' => 'icon-sort-right bg-green-100 text-green-600 dark:!text-green-600',
+                                    'canceled' => 'icon-cancel-1 bg-red-100 text-red-600 dark:!text-red-600',
+                                    'completed' => 'icon-done bg-blue-100 text-blue-600 dark:!text-blue-600',
+                                    'closed' => 'icon-repeat bg-red-100 text-red-600 dark:!text-red-600',
+                                ];
+                            @endphp
+                            @foreach(\Webkul\Sales\Models\OrderStatus::orderBy('sort_order')->get() as $status)
+                            '{{ $status->code }}' : {
+                                icon: '{{ $statusIcons[$status->code] ?? ($status->icon . " bg-gray-100 text-gray-600 dark:!text-gray-600") }}',
+                                message: @json(trans('admin::app.notifications.order-status-messages.' . $status->code) !== 'admin::app.notifications.order-status-messages.' . $status->code ? trans('admin::app.notifications.order-status-messages.' . $status->code) : $status->name),
+                                status: '{{ $status->code }}'
                             },
-
-                            processing : {
-                                icon: 'icon-sort-right bg-green-100 text-green-600 dark:!text-green-600',
-                                message: '@lang('admin::app.notifications.order-status-messages.processing')',
-                                status: 'processing'
-                            },
-
-                            canceled : {
-                                icon: 'icon-cancel-1 bg-red-100 text-red-600 dark:!text-red-600',
-                                message: '@lang('admin::app.notifications.order-status-messages.canceled')',
-                                status: 'canceled'
-                            },
-
-                            completed : {
-                                icon: 'icon-done bg-blue-100 text-blue-600 dark:!text-blue-600',
-                                message: '@lang('admin::app.notifications.order-status-messages.completed')',
-                                status: 'completed'
-                            },
-
-                            closed : {
-                                icon: 'icon-repeat bg-red-100 text-red-600 dark:!text-red-600',
-                                message: '@lang('admin::app.notifications.order-status-messages.closed')',
-                                status: 'closed'
-                            },
+                            @endforeach
                         },
 
                         isLoading: true,

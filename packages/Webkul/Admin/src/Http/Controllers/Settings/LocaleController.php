@@ -91,6 +91,28 @@ class LocaleController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $locale = $this->localeRepository->findOrFail($id);
+
+        $uploadedImages = $locale->logo_path
+            ? [['id' => 'logo_url', 'url' => $locale->logo_url]]
+            : [];
+
+        return view('admin::settings.locales.panel', compact('locale', 'uploadedImages'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        return view('admin::settings.locales.panel');
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(int $id): JsonResponse

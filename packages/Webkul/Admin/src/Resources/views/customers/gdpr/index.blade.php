@@ -4,9 +4,17 @@
     </x-slot>
 
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <p class="py-3 text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.customers.gdpr.index.title')
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); box-shadow: 0 4px 15px rgba(6,182,212,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            </div>
+            <div>
+                <p class="py-3 text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.customers.gdpr.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Запросы GDPR</p>
+            </div>
+        </div>
 
         <x-admin::datagrid.export src="{{ route('admin.customers.gdpr.index') }}" />
     </div>

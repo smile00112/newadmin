@@ -4,10 +4,19 @@
     </x-slot>
 
     <div class="flex items-center justify-between gap-4 max-sm:flex-wrap">
-        <!-- Title -->
-        <p class="text-xl font-bold text-gray-800 dark:text-white">
-            @lang('admin::app.catalog.attributes.index.title')
-        </p>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-11 h-11 rounded-xl" style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); box-shadow: 0 4px 15px rgba(168,85,247,0.3); min-width:44px;">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+            </div>
+            <div>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">
+                    @lang('admin::app.catalog.attributes.index.title')
+                </p>
+                <p class="text-xs text-gray-400">Атрибуты товаров</p>
+            </div>
+        </div>
 
         <div class="flex items-center gap-x-2.5">
             @if (bouncer()->hasPermission('catalog.attributes.create'))

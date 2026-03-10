@@ -121,6 +121,27 @@ class ExchangeRateController extends Controller
     }
 
     /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $exchangeRate = $this->exchangeRateRepository->findOrFail($id);
+        $currencies = $this->currencyRepository->all();
+
+        return view('admin::settings.exchange-rates.panel', compact('exchangeRate', 'currencies'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        $currencies = $this->currencyRepository->all();
+
+        return view('admin::settings.exchange-rates.panel', compact('currencies'));
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(int $id): JsonResponse

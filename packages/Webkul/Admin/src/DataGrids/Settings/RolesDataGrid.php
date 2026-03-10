@@ -76,6 +76,7 @@ class RolesDataGrid extends DataGrid
     {
         if (bouncer()->hasPermission('settings.roles.edit')) {
             $this->addAction([
+                'index'  => 'edit',
                 'icon'   => 'icon-edit',
                 'title'  => trans('admin::app.settings.roles.index.datagrid.edit'),
                 'method' => 'GET',
@@ -87,6 +88,7 @@ class RolesDataGrid extends DataGrid
 
         if (bouncer()->hasPermission('settings.roles.delete')) {
             $this->addAction([
+                'index'  => 'delete',
                 'icon'   => 'icon-delete',
                 'title'  => trans('admin::app.settings.roles.index.datagrid.delete'),
                 'method' => 'DELETE',

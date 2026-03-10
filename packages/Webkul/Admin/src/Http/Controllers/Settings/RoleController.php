@@ -47,10 +47,8 @@ class RoleController extends Controller
 
     /**
      * Store a newly created resource in storage.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function store()
+    public function store(): JsonResponse
     {
         $this->validate(request(), [
             'name'            => 'required',
@@ -77,29 +75,27 @@ class RoleController extends Controller
 
         Event::dispatch('user.role.create.after', $role);
 
-        session()->flash('success', trans('admin::app.settings.roles.create-success'));
-
-        return redirect()->route('admin.settings.roles.index');
+        return new JsonResponse([
+            'message' => trans('admin::app.settings.roles.create-success'),
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
-     *
-     * @return \Illuminate\View\View
      */
-    public function edit(int $id)
+    public function edit(int $id): JsonResponse
     {
         $role = $this->roleRepository->findOrFail($id);
 
-        return view('admin::settings.roles.edit', compact('role'));
+        return new JsonResponse([
+            'data' => $role,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
-     *
-     * @return \Illuminate\Http\Response
      */
-    public function update(int $id)
+    public function update(int $id): JsonResponse
     {
         $this->validate(request(), [
             'name'            => 'required',
@@ -116,9 +112,9 @@ class RoleController extends Controller
             $isChangedFromAll
             && $this->adminRepository->countAdminsWithAllAccess() === 1
         ) {
-            session()->flash('error', trans('admin::app.settings.roles.being-used'));
-
-            return redirect()->route('admin.settings.roles.index');
+            return new JsonResponse([
+                'message' => trans('admin::app.settings.roles.being-used'),
+            ], 400);
         }
 
         $data = array_merge(request()->only([
@@ -135,9 +131,27 @@ class RoleController extends Controller
 
         Event::dispatch('user.role.update.after', $role);
 
-        session()->flash('success', trans('admin::app.settings.roles.update-success'));
+        return new JsonResponse([
+            'message' => trans('admin::app.settings.roles.update-success'),
+        ]);
+    }
 
-        return redirect()->route('admin.settings.roles.index');
+    /**
+     * Show edit panel for iframe drawer.
+     */
+    public function editPanel(int $id)
+    {
+        $role = $this->roleRepository->findOrFail($id);
+
+        return view('admin::settings.roles.panel', compact('role'));
+    }
+
+    /**
+     * Show create panel for iframe drawer.
+     */
+    public function createPanel()
+    {
+        return view('admin::settings.roles.panel');
     }
 
     /**

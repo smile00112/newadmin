@@ -90,6 +90,10 @@ Route::prefix('marketing')->group(function () {
             Route::put('edit/{id}', 'update')->name('admin.marketing.communications.email_templates.update');
 
             Route::delete('edit/{id}', 'destroy')->name('admin.marketing.communications.email_templates.delete');
+
+            Route::get('edit-panel/{id}', 'editPanel')->name('admin.marketing.communications.email_templates.edit_panel');
+
+            Route::get('create-panel', 'createPanel')->name('admin.marketing.communications.email_templates.create_panel');
         });
 
         /**
@@ -105,6 +109,10 @@ Route::prefix('marketing')->group(function () {
             Route::put('edit', 'update')->name('admin.marketing.communications.events.update');
 
             Route::delete('edit/{id}', 'destroy')->name('admin.marketing.communications.events.delete');
+
+            Route::get('edit-panel/{id}', 'editPanel')->name('admin.marketing.communications.events.edit_panel');
+
+            Route::get('create-panel', 'createPanel')->name('admin.marketing.communications.events.create_panel');
         });
 
         /**
@@ -122,6 +130,10 @@ Route::prefix('marketing')->group(function () {
             Route::put('edit/{id}', 'update')->name('admin.marketing.communications.campaigns.update');
 
             Route::delete('edit/{id}', 'destroy')->name('admin.marketing.communications.campaigns.delete');
+
+            Route::get('edit-panel/{id}', 'editPanel')->name('admin.marketing.communications.campaigns.edit_panel');
+
+            Route::get('create-panel', 'createPanel')->name('admin.marketing.communications.campaigns.create_panel');
         });
 
         /**

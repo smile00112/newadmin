@@ -131,4 +131,22 @@ class EventController extends Controller
             'message' => trans('admin::app.marketing.communications.events.delete-failed', ['name'  =>  'admin::app.marketing.communications.events.index.event']),
         ], 500);
     }
+
+    /**
+     * Show the panel form for editing the specified event (iframe).
+     */
+    public function editPanel(int $id)
+    {
+        $event = $this->eventRepository->findOrFail($id);
+
+        return view('admin::marketing.communications.events.panel', compact('event'));
+    }
+
+    /**
+     * Show the panel form for creating a new event (iframe).
+     */
+    public function createPanel()
+    {
+        return view('admin::marketing.communications.events.panel');
+    }
 }

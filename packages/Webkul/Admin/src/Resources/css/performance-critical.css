@@ -1,0 +1,86 @@
+/* Critical rendering path styles - injected inline early */
+@keyframes shimmer { 
+    0% { background-position: 200% 0; } 
+    100% { background-position: -200% 0; } 
+}
+
+@keyframes pulse-all { 
+    0%, 100% { opacity: 1; } 
+    50% { opacity: 0.95; } 
+}
+
+@keyframes spin { 
+    to { transform: rotate(360deg); } 
+}
+
+/* Skeleton loader - fast visual feedback */
+.skeleton-panel {
+    padding: 16px 24px 20px;
+    animation: pulse-all 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-panel .skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.skeleton-panel .skeleton-box {
+    height: 36px;
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+    border-radius: 8px;
+}
+
+/* GPU Acceleration */
+.drawer-container,
+.modal-container,
+.drawer-overlay,
+.modal-overlay {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -webkit-perspective: 1000;
+    perspective: 1000;
+}
+
+/* Drawer and Modal Optimization */
+.drawer {
+    contain: layout style paint;
+    transform: translateZ(0);
+}
+
+.modal {
+    contain: layout style paint;
+    transform: translateZ(0);
+}
+
+/* Iframe optimization */
+iframe {
+    contain: content;
+}
+
+/* Prevent layout thrashing */
+body.modal-open,
+body.drawer-open {
+    overflow: hidden;
+    /* Use will-change for smooth performance */
+    will-change: scroll-position;
+}
+
+/* DataGrid optimization */
+[data-datagrid-lazy] {
+    contain: layout style paint;
+}
+
+/* Reduce motion for better performance on lower-end devices */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

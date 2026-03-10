@@ -1,3 +1,5 @@
+@props(['hideNavigation' => false])
+
 <!DOCTYPE html>
 
 <html
@@ -94,27 +96,36 @@
 
     {!! view_render_event('bagisto.admin.layout.content.before') !!}
 
-    <!-- Page Header Blade Component -->
-    <x-admin::layouts.header />
+    @unless($hideNavigation)
+        <!-- Page Header Blade Component -->
+        <x-admin::layouts.header />
+    @endunless
 
     <div
         class="group/container {{ request()->cookie('sidebar_collapsed') ?? 0 ? 'sidebar-collapsed' : 'sidebar-not-collapsed' }} flex flex-col lg:flex-row gap-0"
         ref="appLayout"
     >
-        <!-- Page Sidebar Blade Component -->
-        <div class="lg:fixed lg:top-[58px] lg:left-0 rtl:lg:right-0 rtl:lg:left-auto lg:z-10 w-full lg:w-auto">
-            <x-admin::layouts.sidebar />
-        </div>
+        @unless($hideNavigation)
+            <!-- Page Sidebar Blade Component -->
+            <div class="lg:fixed lg:top-[58px] lg:left-0 rtl:lg:right-0 rtl:lg:left-auto lg:z-10 w-full lg:w-auto">
+                <x-admin::layouts.sidebar />
+            </div>
+        @endunless
 
-        <div class="flex min-h-[calc(100vh-58px)] max-w-full flex-1 flex-col bg-transparent transition-all duration-300 pt-5 px-4 sm:px-6 lg:pt-6 lg:px-8 lg:ltr:pl-[280px] lg:group-[.sidebar-collapsed]/container:ltr:pl-[90px] lg:rtl:pr-[280px] lg:group-[.sidebar-collapsed]/container:rtl:pr-[90px]">
+        <div
+            class="flex max-w-full flex-1 flex-col bg-transparent transition-all duration-300 {{ $hideNavigation ? '' : 'pt-5 px-4 sm:px-6 lg:pt-6 lg:px-8 lg:ltr:pl-[280px] lg:group-[.sidebar-collapsed]/container:ltr:pl-[90px] lg:rtl:pr-[280px] lg:group-[.sidebar-collapsed]/container:rtl:pr-[90px]' }}"
+            style="{{ $hideNavigation ? 'min-height:100vh; padding: 16px 20px;' : 'min-height:calc(100vh - 58px);' }}"
+        >
             <!-- Added dynamic tabs for third level menus  -->
-            <div class="pb-6 lg:pb-8">
-                <!-- Todo @suraj-webkul need to optimize below statement. -->
-                @if (! request()->routeIs('admin.configuration.index'))
-                    <div class="overflow-x-auto">
-                        <x-admin::layouts.tabs />
-                    </div>
-                @endif
+            <div class="{{ $hideNavigation ? 'pb-4' : 'pb-6 lg:pb-8' }}">
+                @unless($hideNavigation)
+                    <!-- Todo @suraj-webkul need to optimize below statement. -->
+                    @if (! request()->routeIs('admin.configuration.index'))
+                        <div class="overflow-x-auto">
+                            <x-admin::layouts.tabs />
+                        </div>
+                    @endif
+                @endunless
 
                 <!-- Page Content Blade Component -->
                 <div class="w-full overflow-x-hidden">
@@ -122,23 +133,27 @@
                 </div>
             </div>
 
-            <!-- Powered By -->
-            <div class="mt-auto">
-{{--                <div class="border-t bg-white py-2 text-center text-xs sm:text-sm dark:border-gray-800 dark:bg-gray-900 dark:text-white">--}}
-{{--                    @lang('admin::app.components.layouts.powered-by.description', [--}}
-{{--                        'bagisto' => '<a class="text-blue-600 hover:underline dark:text-darkBlue" href="https://bagisto.com/en/">Bagisto</a>',--}}
-{{--                        'webkul' => '<a class="text-blue-600 hover:underline dark:text-darkBlue" href="https://webkul.com/">Webkul</a>',--}}
-{{--                    ])--}}
-{{--                </div>--}}
-            </div>
+            @unless($hideNavigation)
+                <!-- Powered By -->
+                <div class="mt-auto">
+{{--                    <div class="border-t bg-white py-2 text-center text-xs sm:text-sm dark:border-gray-800 dark:bg-gray-900 dark:text-white">--}}
+{{--                        @lang('admin::app.components.layouts.powered-by.description', [--}}
+{{--                            'bagisto' => '<a class="text-blue-600 hover:underline dark:text-darkBlue" href="https://bagisto.com/en/">Bagisto</a>',--}}
+{{--                            'webkul' => '<a class="text-blue-600 hover:underline dark:text-darkBlue" href="https://webkul.com/">Webkul</a>',--}}
+{{--                        ])--}}
+{{--                    </div>--}}
+                </div>
+            @endunless
         </div>
     </div>
 
-    <!-- AI Assistant Script (included in header) -->
-    @include('admin::components.layouts.ai-assistant-chat')
-    
-    <!-- New Order Notification Widget -->
-    @include('admin::components.layouts.new-order-notification')
+    @unless($hideNavigation)
+        <!-- AI Assistant Script (included in header) -->
+        @include('admin::components.layouts.ai-assistant-chat')
+        
+        <!-- New Order Notification Widget -->
+        @include('admin::components.layouts.new-order-notification')
+    @endunless
 
     {!! view_render_event('bagisto.admin.layout.content.after') !!}
 </div>
