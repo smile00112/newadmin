@@ -67,6 +67,30 @@ class NotificationController extends Controller
     }
 
     /**
+     * Mark a single notification as read.
+     *
+     * @param  int  $notificationId
+     * @return array
+     */
+    public function readNotification($notificationId)
+    {
+        if ($notification = $this->notificationRepository->find($notificationId)) {
+            if (! $notification->read) {
+                $notification->read = 1;
+
+                $notification->save();
+            }
+
+            return [
+                'notification_id' => $notification->id,
+                'total_unread'    => $this->notificationRepository->where('read', 0)->count(),
+            ];
+        }
+
+        abort(404);
+    }
+
+    /**
      * Update the notification is reade or not.
      *
      * @return array
