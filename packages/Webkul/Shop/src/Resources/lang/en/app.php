@@ -220,6 +220,7 @@ return [
                     'information' => [
                         'discount'                   => 'Discount',
                         'bonus-payment'               => 'Bonus Payment',
+                        'bonus-accrued'              => 'Bonus Accrued',
                         'excl-tax'                   => 'Excl Tax:',
                         'grand-total'                => 'Grand Total',
                         'info'                       => 'Information',

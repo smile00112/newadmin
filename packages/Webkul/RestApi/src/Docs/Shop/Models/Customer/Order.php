@@ -156,6 +156,50 @@ class Order
 
     /**
      * @OA\Property(
+     *      title="Bonus Amount",
+     *      description="Bonus points used as discount (order currency)",
+     *      example="10.00"
+     * )
+     *
+     * @var float
+     */
+    private $bonus_amount;
+
+    /**
+     * @OA\Property(
+     *      title="Base Bonus Amount",
+     *      description="Bonus points used as discount (base currency)",
+     *      example="10.00"
+     * )
+     *
+     * @var float
+     */
+    private $base_bonus_amount;
+
+    /**
+     * @OA\Property(
+     *      title="Bonus Amount Accrued",
+     *      description="Bonus points credited to customer for this order (order currency)",
+     *      example="5.00"
+     * )
+     *
+     * @var float
+     */
+    private $bonus_amount_accrued;
+
+    /**
+     * @OA\Property(
+     *      title="Base Bonus Amount Accrued",
+     *      description="Bonus points credited to customer for this order (base currency)",
+     *      example="5.00"
+     * )
+     *
+     * @var float
+     */
+    private $base_bonus_amount_accrued;
+
+    /**
+     * @OA\Property(
      *     title="Order Items",
      *     description="Order Items"
      * )

@@ -220,6 +220,7 @@ return [
                     'information' => [
                         'discount'                   => 'Скидка',
                         'bonus-payment'               => 'Оплата бонусами',
+                        'bonus-accrued'              => 'Начисленные бонусы',
                         'excl-tax'                   => 'Без налога:',
                         'grand-total'                => 'Общая сумма',
                         'info'                       => 'Информация',

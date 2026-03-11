@@ -430,6 +430,7 @@ return [
                 'summary-sub-total'              => 'Sub Total',
                 'summary-discount'               => 'Discount',
                 'bonus-payment'                   => 'Bonus Payment',
+                'bonus-accrued'                   => 'Bonus Accrued',
                 'summary-tax'                    => 'Tax',
                 'tax'                            => 'Tax (:percent) - :tax',
                 'title'                          => 'Order #:order_id',
