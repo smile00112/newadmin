@@ -1,4 +1,4 @@
-FROM php:8.3-cli-alpine AS base
+FROM php:8.4-cli-alpine AS base
 
 # Установка системных зависимостей (БЕЗ изменения /etc/resolv.conf)
 RUN apk add --no-cache \
