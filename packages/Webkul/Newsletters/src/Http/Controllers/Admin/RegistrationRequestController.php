@@ -81,6 +81,35 @@ class RegistrationRequestController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Mass delete selected registration requests.
+     */
+    public function massDestroy(Request $request)
+    {
+        $this->requireNewsletterPermission('newsletters.registration-requests.delete');
+
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'required|integer|exists:registration_requests,id',
+        ]);
+
+        try {
+            $deletedCount = 0;
+            foreach (array_unique($validated['ids']) as $id) {
+                $this->registrationRequestRepository->delete((int) $id);
+                $deletedCount++;
+            }
+
+            return response()->json([
+                'message' => trans('newsletters::app.admin.registration-requests.mass-delete-success', ['count' => $deletedCount]),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => trans('newsletters::app.admin.registration-requests.mass-delete-failed'),
+            ], 500);
+        }
+    }
 }
 
 

@@ -96,5 +96,15 @@ class Company extends Model
     {
         return $this->hasOne(CompanyAccount::class);
     }
+
+    /**
+     * Get the admins (owners and managers) for the company.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function admins(): HasMany
+    {
+        return $this->hasMany(\Webkul\User\Models\Admin::class, 'company_id');
+    }
 }
 

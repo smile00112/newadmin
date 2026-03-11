@@ -96,6 +96,10 @@ class CompanyController extends Controller
             $this->ensureSameCompany($company->id);
         }
 
+        $company->load(['admins' => function ($query) {
+            $query->with('role')->orderBy('name');
+        }]);
+
         return view('newsletters::admin.companies.edit', compact('company'));
     }
 

@@ -320,6 +320,17 @@ return [
             'mass-delete-confirm' => 'Are you sure you want to delete selected companies?',
             'mass-delete-success' => 'Selected companies were deleted. Deleted: :count.',
             'mass-delete-failed' => 'Selected companies can not be deleted.',
+            'users-title' => 'Users linked to company',
+            'users-name' => 'Name',
+            'users-email' => 'Email',
+            'users-role' => 'Role',
+            'users-role-owner' => 'Owner',
+            'users-role-manager' => 'Manager',
+            'users-status' => 'Status',
+            'users-empty' => 'No users linked to this company.',
+            'users-help' => 'Owners and managers can be edited and deleted. To add new users, create an owner or manager and assign them to this company.',
+            'users-delete-confirm' => 'Are you sure you want to delete user :name?',
+            'users-delete-failed' => 'Failed to delete user.',
         ],
 
         'managers' => [
@@ -455,6 +466,11 @@ return [
             'delete-success' => 'Registration request deleted successfully.',
             'delete-failed' => 'Failed to delete registration request.',
             'delete-confirm' => 'Are you sure you want to delete this registration request?',
+            'delete-selected' => 'Delete Selected',
+            'select_all' => 'Select All',
+            'mass-delete-confirm' => 'Are you sure you want to delete selected requests? (:count)',
+            'mass-delete-success' => 'Selected requests were deleted. Deleted: :count.',
+            'mass-delete-failed' => 'Failed to delete selected requests.',
         ],
 
         'errors' => [

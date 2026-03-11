@@ -98,9 +98,11 @@ class ManagerController extends Controller
         $admin = auth()->guard('admin')->user();
         $manager = $this->adminRepository->findOrFail($id);
 
-        // Проверка, что менеджер принадлежит той же компании
-        if ($manager->company_id !== $admin->company_id) {
-            abort(403, trans('newsletters::app.admin.errors.different-company'));
+        // Super admin может редактировать любого менеджера
+        if (! $this->isSuperAdmin($admin)) {
+            if ($manager->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
         }
 
         // Нельзя редактировать владельца
@@ -125,9 +127,11 @@ class ManagerController extends Controller
         $admin = auth()->guard('admin')->user();
         $manager = $this->adminRepository->findOrFail($id);
 
-        // Проверка, что менеджер принадлежит той же компании
-        if ($manager->company_id !== $admin->company_id) {
-            abort(403, trans('newsletters::app.admin.errors.different-company'));
+        // Super admin может обновлять любого менеджера
+        if (! $this->isSuperAdmin($admin)) {
+            if ($manager->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
         }
 
         // Нельзя редактировать владельца
@@ -173,9 +177,11 @@ class ManagerController extends Controller
         $admin = auth()->guard('admin')->user();
         $manager = $this->adminRepository->findOrFail($id);
 
-        // Проверка, что менеджер принадлежит той же компании
-        if ($manager->company_id !== $admin->company_id) {
-            abort(403, trans('newsletters::app.admin.errors.different-company'));
+        // Super admin может удалять любого менеджера
+        if (! $this->isSuperAdmin($admin)) {
+            if ($manager->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
         }
 
         // Нельзя удалить владельца
@@ -211,9 +217,11 @@ class ManagerController extends Controller
         $admin = auth()->guard('admin')->user();
         $manager = $this->adminRepository->findOrFail($id);
 
-        // Проверка, что менеджер принадлежит той же компании
-        if ($manager->company_id !== $admin->company_id) {
-            abort(403, trans('newsletters::app.admin.errors.different-company'));
+        // Super admin может обновлять разрешения любого менеджера
+        if (! $this->isSuperAdmin($admin)) {
+            if ($manager->company_id !== $admin->company_id) {
+                abort(403, trans('newsletters::app.admin.errors.different-company'));
+            }
         }
 
         // Обновить разрешения роли менеджера
@@ -231,6 +239,17 @@ class ManagerController extends Controller
         session()->flash('success', trans('newsletters::app.admin.managers.permissions-updated'));
 
         return redirect()->route('admin.newsletters.managers.index');
+    }
+
+    /**
+     * Determine whether admin is super admin.
+     */
+    protected function isSuperAdmin($admin): bool
+    {
+        return $admin
+            && $admin->role
+            && $admin->role->permission_type === 'all'
+            && ! $admin->company_id;
     }
 }
 

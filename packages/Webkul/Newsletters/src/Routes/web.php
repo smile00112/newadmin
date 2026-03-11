@@ -133,6 +133,7 @@ Route::group([
                     Route::put('edit/{id}', 'update')->name('admin.newsletters.registration-requests.update');
                 });
                 Route::middleware('newsletters.permission:newsletters.registration-requests.delete')->group(function () {
+                    Route::post('mass-destroy', 'massDestroy')->name('admin.newsletters.registration-requests.mass-destroy');
                     Route::delete('{id}', 'destroy')->name('admin.newsletters.registration-requests.destroy');
                 });
             });
