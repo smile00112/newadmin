@@ -10,6 +10,11 @@ use Webkul\RestApi\Jobs\WarmNomenclatureCacheJob;
 class ProductObserver
 {
     /**
+     * Debounce flag to clear catalog cache only once per request.
+     */
+    protected static bool $cacheScheduled = false;
+
+    /**
      * Handle the Product "deleted" event.
      *
      * @param  \Webkul\Product\Contracts\Product  $product
@@ -30,7 +35,14 @@ class ProductObserver
      */
     public function saved($product)
     {
-        $this->clearCatalogCache();
+        if (! self::$cacheScheduled) {
+            self::$cacheScheduled = true;
+            $observer = $this;
+            app()->terminating(function () use ($observer) {
+                $observer->clearCatalogCache();
+                self::$cacheScheduled = false;
+            });
+        }
     }
 
     /**

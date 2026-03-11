@@ -2,11 +2,13 @@
 
 namespace Webkul\Product\Type;
 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Webkul\Admin\Validations\ConfigurableUniqueSku;
 use Webkul\Checkout\Models\CartItem as CartItemModel;
 use Webkul\Product\DataTypes\CartItemValidationResult;
 use Webkul\Product\Facades\ProductImage;
+use Webkul\Product\Models\Product as ProductModel;
 use Webkul\Product\Helpers\Indexers\Price\Configurable as ConfigurableIndexer;
 use Webkul\Tax\Facades\Tax;
 
@@ -144,36 +146,42 @@ class Configurable extends AbstractType
 
         $previousVariantIds = $product->variants->pluck('id');
 
-        foreach ($data['variants'] ?? [] as $variantId => $variantData) {
-            if (Str::contains($variantId, 'variant_')) {
-                $superAttributes = [];
+        ProductModel::withoutEvents(function () use ($data, $product, &$previousVariantIds) {
+            foreach ($data['variants'] ?? [] as $variantId => $variantData) {
+                if (Str::contains($variantId, 'variant_')) {
+                    $superAttributes = [];
 
-                foreach ($product->super_attributes as $superAttribute) {
-                    $superAttributes[$superAttribute->id] = $variantData[$superAttribute->code];
+                    foreach ($product->super_attributes as $superAttribute) {
+                        $superAttributes[$superAttribute->id] = $variantData[$superAttribute->code];
 
-                    $this->fillableVariantAttributes->push($superAttribute);
+                        $this->fillableVariantAttributes->push($superAttribute);
+                    }
+
+                    $this->createVariant($product, $superAttributes, array_merge($variantData, [
+                        'channel' => $data['channel'] ?? core()->getDefaultChannelCode(),
+                        'locale'  => $data['locale'] ?? core()->getDefaultLocaleCodeFromDefaultChannel(),
+                    ]));
+                } else {
+                    if (is_numeric($index = $previousVariantIds->search($variantId))) {
+                        $previousVariantIds->forget($index);
+                    }
+
+                    $this->updateVariant(array_merge($variantData, [
+                        'channel'         => $data['channel'] ?? core()->getDefaultChannelCode(),
+                        'locale'          => $data['locale'] ?? core()->getDefaultLocaleCodeFromDefaultChannel(),
+                        'tax_category_id' => $data['tax_category_id'] ?? null,
+                    ]), $variantId);
                 }
-
-                $this->createVariant($product, $superAttributes, array_merge($variantData, [
-                    'channel' => $data['channel'] ?? core()->getDefaultChannelCode(),
-                    'locale'  => $data['locale'] ?? core()->getDefaultLocaleCodeFromDefaultChannel(),
-                ]));
-            } else {
-                if (is_numeric($index = $previousVariantIds->search($variantId))) {
-                    $previousVariantIds->forget($index);
-                }
-
-                $this->updateVariant(array_merge($variantData, [
-                    'channel'         => $data['channel'] ?? core()->getDefaultChannelCode(),
-                    'locale'          => $data['locale'] ?? core()->getDefaultLocaleCodeFromDefaultChannel(),
-                    'tax_category_id' => $data['tax_category_id'] ?? null,
-                ]), $variantId);
             }
-        }
 
-        foreach ($previousVariantIds as $variantId) {
-            $this->productRepository->delete($variantId);
-        }
+            foreach ($previousVariantIds as $variantId) {
+                $variant = $this->productRepository->find($variantId);
+                if ($variant) {
+                    Storage::deleteDirectory('product/'.$variant->id);
+                }
+                $this->productRepository->delete($variantId);
+            }
+        });
 
         return $product;
     }

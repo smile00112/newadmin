@@ -5,7 +5,6 @@ namespace Webkul\Admin\Http\Controllers\Catalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Admin\DataGrids\Catalog\ProductDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -25,7 +24,6 @@ use Webkul\Product\Repositories\ProductDownloadableLinkRepository;
 use Webkul\Product\Repositories\ProductDownloadableSampleRepository;
 use Webkul\Product\Repositories\ProductInventoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
-use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 
 class ProductController extends Controller
 {
@@ -166,32 +164,11 @@ class ProductController extends Controller
      */
     public function update(ProductForm $request, int $id)
     {
-        // Debug: check images data
-        \Log::info('Product update - images data:', [
-            'images_exists' => request()->has('images'),
-            'images_input' => request()->input('images'),
-            'images_file' => request()->file('images'),
-            'all_files' => request()->allFiles(),
-            'all_data_keys' => array_keys(request()->all()),
-        ]);
-        
         Event::dispatch('catalog.product.update.before', $id);
 
         $product = $this->productRepository->update(request()->all(), $id);
 
         Event::dispatch('catalog.product.update.after', $product);
-
-        // Clear catalog API cache after product update
-        try {
-            Log::info('Clearing catalog cache after product update', ['product_id' => $product->id]);
-            CatalogCategoryController::clearCatalogCache();
-            Log::info('Catalog cache cleared successfully', ['product_id' => $product->id]);
-        } catch (\Exception $e) {
-            Log::error('Failed to clear catalog cache after product update', [
-                'product_id' => $product->id,
-                'error' => $e->getMessage()
-            ]);
-        }
 
         session()->flash('success', trans('admin::app.catalog.products.update-success'));
 
@@ -218,9 +195,6 @@ class ProductController extends Controller
         $this->productInventoryRepository->saveInventories(request()->all(), $product);
 
         Event::dispatch('catalog.product.update.after', $product);
-
-        // Clear catalog cache after inventory update
-        CatalogCategoryController::clearCatalogCache();
 
         return response()->json([
             'message'      => __('admin::app.catalog.products.saved-inventory-message'),

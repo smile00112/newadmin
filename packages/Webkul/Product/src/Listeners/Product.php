@@ -3,9 +3,9 @@
 namespace Webkul\Product\Listeners;
 
 use Illuminate\Support\Facades\Bus;
-use Webkul\Product\Helpers\Indexers\Flat as FlatIndexer;
 use Webkul\Product\Jobs\ElasticSearch\DeleteIndex as DeleteElasticSearchIndexJob;
 use Webkul\Product\Jobs\ElasticSearch\UpdateCreateIndex as UpdateCreateElasticSearchIndexJob;
+use Webkul\Product\Jobs\UpdateProductFlatIndex as UpdateProductFlatIndexJob;
 use Webkul\Product\Jobs\UpdateCreateInventoryIndex as UpdateCreateInventoryIndexJob;
 use Webkul\Product\Jobs\UpdateCreatePriceIndex as UpdateCreatePriceIndexJob;
 use Webkul\Product\Repositories\ProductBundleOptionProductRepository;
@@ -22,8 +22,7 @@ class Product
     public function __construct(
         protected ProductRepository $productRepository,
         protected ProductBundleOptionProductRepository $productBundleOptionProductRepository,
-        protected ProductGroupedProductRepository $productGroupedProductRepository,
-        protected FlatIndexer $flatIndexer
+        protected ProductGroupedProductRepository $productGroupedProductRepository
     ) {}
 
     /**
@@ -34,7 +33,7 @@ class Product
      */
     public function afterCreate($product)
     {
-        $this->flatIndexer->refresh($product);
+        UpdateProductFlatIndexJob::dispatch($product->id);
 
         $productIds = $this->getAllRelatedProductIds($product);
 
@@ -49,7 +48,7 @@ class Product
      */
     public function afterUpdate($product)
     {
-        $this->flatIndexer->refresh($product);
+        UpdateProductFlatIndexJob::dispatch($product->id);
 
         $productIds = $this->getAllRelatedProductIds($product);
 
