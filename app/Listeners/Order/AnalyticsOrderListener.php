@@ -2,6 +2,7 @@
 
 namespace App\Listeners\Order;
 
+use App\Jobs\Analytics\TrackOrderCreatedJob;
 use App\Models\Analytics\AnalyticsOrderTimestamp;
 use App\Services\Analytics\EventTracker;
 use Illuminate\Support\Facades\Log;
@@ -13,35 +14,23 @@ class AnalyticsOrderListener
     ) {}
 
     /**
-     * Handle order created event (checkout.order.save.after).
+     * Handle order created event — dispatch to queue.
      */
     public function afterCreated($order): void
     {
         try {
-            AnalyticsOrderTimestamp::updateOrCreate(
-                ['order_id' => $order->id],
-                [
-                    'channel'     => $order->channel_name ?? $order->channel ?? null,
-                    'location_id' => $order->location_id ?? null,
-                    'order_type'  => $order->order_type ?? 'dine_in',
-                    'created_at'  => $order->created_at,
-                ]
-            );
-
-            $this->tracker->track('order_created', [
-                'order_id'    => $order->id,
-                'channel'     => $order->channel_name ?? $order->channel ?? null,
-                'customer_id' => $order->customer_id,
-                'total'       => $order->base_grand_total,
-                'items_count' => $order->items->count(),
-            ], ['customer_id' => $order->customer_id, 'channel' => $order->channel_name ?? $order->channel]);
+            TrackOrderCreatedJob::dispatch($order->id);
         } catch (\Throwable $e) {
-            Log::warning('Analytics: afterCreated failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+            Log::warning('Analytics: failed to dispatch TrackOrderCreatedJob', [
+                'order' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
     /**
      * Handle order status updated (sales.order.update-status.after).
+     * Stays synchronous — runs outside the order creation hot path.
      */
     public function afterStatusUpdated($order): void
     {
@@ -66,27 +55,25 @@ class AnalyticsOrderListener
                 default       => null,
             };
 
-            if ($statusColumn && !$ts->{$statusColumn}) {
+            if ($statusColumn && ! $ts->{$statusColumn}) {
                 $ts->{$statusColumn} = $now;
 
-                // Calculate total seconds from creation to current state
                 $ts->total_seconds = $now->diffInSeconds($ts->created_at);
 
-                // Check SLA (default 7 minutes = 420 seconds)
                 if (in_array($order->status, ['ready', 'completed'])) {
                     $slaSeconds = config('analytics.sla_seconds', 420);
                     $ts->sla_seconds = $slaSeconds;
-                    $ts->within_sla  = $ts->total_seconds <= $slaSeconds;
+                    $ts->within_sla = $ts->total_seconds <= $slaSeconds;
                 }
 
                 $ts->save();
             }
 
             $this->tracker->track('order_status_changed', [
-                'order_id'   => $order->id,
-                'status'     => $order->status,
-                'channel'    => $order->channel_name ?? $order->channel ?? null,
-                'total'      => $order->base_grand_total,
+                'order_id' => $order->id,
+                'status'   => $order->status,
+                'channel'  => $order->channel_name ?? $order->channel ?? null,
+                'total'    => $order->base_grand_total,
             ], ['customer_id' => $order->customer_id, 'channel' => $order->channel_name ?? $order->channel]);
         } catch (\Throwable $e) {
             Log::warning('Analytics: afterStatusUpdated failed', ['order' => $order->id, 'error' => $e->getMessage()]);
@@ -101,8 +88,8 @@ class AnalyticsOrderListener
         try {
             $ts = AnalyticsOrderTimestamp::where('order_id', $order->id)->first();
 
-            if ($ts && !$ts->cancelled_at) {
-                $ts->cancelled_at  = now();
+            if ($ts && ! $ts->cancelled_at) {
+                $ts->cancelled_at = now();
                 $ts->total_seconds = now()->diffInSeconds($ts->created_at);
                 $ts->save();
             }

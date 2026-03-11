@@ -2,6 +2,7 @@
 
 namespace Webkul\Checkout;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Webkul\AlfabankPayment\Models\SavedCard;
 use Webkul\AlfabankPayment\Services\SavedCardsService;
@@ -867,10 +868,20 @@ class Cart
 
         Event::dispatch('checkout.cart.collect.totals.before', $this->cart);
 
-        // Закомментировано для ускорения: расчёт налога по позициям (см. calculateItemsTax).
-        // $this->calculateItemsTax();
-        // Налог по позициям принудительно 0.
-        foreach ($this->cart->items as $item) {
+        // Zero-out tax fields and sync incl_tax columns in a single query instead of N individual saves.
+        $this->cart->items()->update([
+            'tax_percent'          => 0,
+            'tax_amount'           => 0,
+            'base_tax_amount'      => 0,
+            'applied_tax_rate'     => null,
+            'price_incl_tax'       => DB::raw('`price`'),
+            'base_price_incl_tax'  => DB::raw('`base_price`'),
+            'total_incl_tax'       => DB::raw('`total`'),
+            'base_total_incl_tax'  => DB::raw('`base_total`'),
+        ]);
+
+        // Sync in-memory models so totals calculation below uses correct values.
+        $this->cart->items->each(function ($item) {
             $item->tax_percent = 0;
             $item->tax_amount = 0;
             $item->base_tax_amount = 0;
@@ -879,8 +890,7 @@ class Cart
             $item->total_incl_tax = $item->total;
             $item->base_total_incl_tax = $item->base_total;
             $item->applied_tax_rate = null;
-            $item->save();
-        }
+        });
 
         $this->calculateShippingTax();
 

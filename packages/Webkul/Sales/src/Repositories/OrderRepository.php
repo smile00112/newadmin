@@ -37,11 +37,16 @@ class OrderRepository extends Repository
     }
 
     /**
-     * This method will try attempt to a create order.
+     * Maximum number of retry attempts for order creation.
+     */
+    protected const MAX_ORDER_CREATE_RETRIES = 2;
+
+    /**
+     * This method will try attempt to create an order.
      *
      * @return \Webkul\Sales\Contracts\Order
      */
-    public function createOrderIfNotThenRetry(array $data)
+    public function createOrderIfNotThenRetry(array $data, int $attempt = 0)
     {
         DB::beginTransaction();
 
@@ -63,8 +68,6 @@ class OrderRepository extends Repository
             }
 
             foreach ($data['items'] as $item) {
-                Event::dispatch('checkout.order.orderitem.save.before', $item);
-
                 $orderItem = $this->orderItemRepository->create(array_merge($item, ['order_id' => $order->id]));
 
                 if (! empty($item['children'])) {
@@ -78,27 +81,27 @@ class OrderRepository extends Repository
                 $this->orderItemRepository->manageCustomizableOptions($orderItem);
 
                 $this->downloadableLinkPurchasedRepository->saveLinks($orderItem, 'available');
-
-                Event::dispatch('checkout.order.orderitem.save.after', $orderItem);
             }
 
-            Event::dispatch('checkout.order.save.after', $order);
+            DB::commit();
         } catch (\Exception $e) {
-            /* rolling back first */
             DB::rollBack();
 
-            /* storing log for errors */
             Log::error(
                 'OrderRepository:createOrderIfNotThenRetry: '.$e->getMessage(),
-                ['data' => $data]
+                ['data' => $data, 'attempt' => $attempt]
             );
 
-            /* recalling */
-            return $this->createOrderIfNotThenRetry($data);
-        } finally {
-            /* commit in each case */
-            DB::commit();
+            if ($attempt < self::MAX_ORDER_CREATE_RETRIES) {
+                return $this->createOrderIfNotThenRetry($data, $attempt + 1);
+            }
+
+            throw $e;
         }
+
+        // Dispatch post-commit events outside the transaction so listeners
+        // (HTTP calls, invoices, cache invalidation) don't hold the DB lock.
+        Event::dispatch('checkout.order.save.after', $order);
 
         return $order;
     }
