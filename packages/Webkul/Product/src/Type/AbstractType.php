@@ -239,7 +239,6 @@ abstract class AbstractType
 
         $this->productCustomerGroupPriceRepository->saveCustomerGroupPrices($data, $product);
 
-        // Handle category_image upload
         $this->handleCategoryImage($data, $product);
 
         return $product;
@@ -1172,7 +1171,12 @@ abstract class AbstractType
             
             if (Str::contains($file->getMimeType(), 'image')) {
                 $manager = new ImageManager;
-                $image = $manager->make($file)->encode('webp');
+                $image = $manager->make($file);
+                $image->resize(1200, 1200, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                });
+                $image = $image->encode('webp', 80);
                 $path = 'product/'.$product->id.'/category_'.Str::random(40).'.webp';
                 Storage::put($path, $image);
             } else {

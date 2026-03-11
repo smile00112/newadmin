@@ -2,26 +2,18 @@
 
 namespace Webkul\FPC\Listeners;
 
-use Spatie\ResponseCache\Facades\ResponseCache;
+use Webkul\FPC\Jobs\InvalidateOrderProductCacheJob;
 
 class Order extends Product
 {
     /**
-     * After order is created
+     * After order is created or cancelled — dispatch cache invalidation to queue.
      *
      * @param  \Webkul\Sale\Contracts\Order  $order
      * @return void
      */
     public function afterCancelOrCreate($order)
     {
-        foreach ($order->all_items as $item) {
-            if (! $item->product) {
-                continue;
-            }
-
-            $urls = $this->getForgettableUrls($item->product);
-
-            ResponseCache::forget($urls);
-        }
+        InvalidateOrderProductCacheJob::dispatch($order->id);
     }
 }

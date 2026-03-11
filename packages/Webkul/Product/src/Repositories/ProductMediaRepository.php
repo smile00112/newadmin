@@ -44,19 +44,16 @@ class ProductMediaRepository extends Repository
      */
     public function upload($data, $product, string $uploadFileType): void
     {
-        \Log::info('ProductMediaRepository upload:', [
-            'uploadFileType' => $uploadFileType,
-            'has_files_key' => isset($data[$uploadFileType]['files']),
-            'data_keys' => isset($data[$uploadFileType]) ? array_keys($data[$uploadFileType]) : 'no uploadFileType key',
-            'files_count' => isset($data[$uploadFileType]['files']) ? count($data[$uploadFileType]['files']) : 0,
-        ]);
-        
         /**
          * Previous model ids for filtering.
          */
         $previousIds = $this->resolveFileTypeQueryBuilder($product, $uploadFileType)->pluck('id');
 
         $position = 0;
+
+        $manager = new ImageManager;
+        $maxDimension = 1200;
+        $webpQuality = 80;
 
         if (! empty($data[$uploadFileType]['files'])) {
             foreach ($data[$uploadFileType]['files'] as $indexOrModelId => $file) {
@@ -72,31 +69,24 @@ class ProductMediaRepository extends Repository
                     ], $indexOrModelId);
                     continue;
                 }
-                
-                \Log::info('Processing file:', [
-                    'indexOrModelId' => $indexOrModelId,
-                    'file_type' => is_object($file) ? get_class($file) : gettype($file),
-                    'is_uploaded_file' => $file instanceof UploadedFile,
-                ]);
-                
-                if ($file instanceof UploadedFile) {
-                    \Log::info('File is UploadedFile, mime: ' . $file->getMimeType());
-                    
-                    if (Str::contains($file->getMimeType(), 'image')) {
-                        $manager = new ImageManager;
 
-                        $image = $manager->make($file)->encode('webp');
+                if ($file instanceof UploadedFile) {
+                    if (Str::contains($file->getMimeType(), 'image')) {
+                        $image = $manager->make($file);
+                        $image->resize($maxDimension, $maxDimension, function ($constraint) {
+                            $constraint->aspectRatio();
+                            $constraint->upsize();
+                        });
+                        $image = $image->encode('webp', $webpQuality);
 
                         $path = $this->getProductDirectory($product).'/'.Str::random(40).'.webp';
 
                         Storage::put($path, $image);
-                        
-                        \Log::info('Image saved to: ' . $path);
                     } else {
                         $path = $file->store($this->getProductDirectory($product));
                     }
 
-                    $created = $this->create([
+                    $this->create([
                         'type'       => $uploadFileType,
                         'path'       => $path,
                         'product_id' => $product->id,

@@ -8694,6 +8694,21 @@
                         "format": "int64",
                         "nullable": true
                     },
+                    "weight": {
+                        "title": "Weight",
+                        "description": "Ingredient weight",
+                        "type": "number",
+                        "format": "float",
+                        "example": 150,
+                        "nullable": true
+                    },
+                    "volume": {
+                        "title": "Volume",
+                        "description": "Ingredient volume",
+                        "type": "string",
+                        "example": "250 ml",
+                        "nullable": true
+                    },
                     "attributes": {
                         "title": "Attributes",
                         "description": "Ingredient attributes with options",
@@ -8898,7 +8913,7 @@
                     },
                     "constructor_options": {
                         "title": "Constructor Options",
-                        "description": "Constructor product options; each group has product_ids array instead of full product objects",
+                        "description": "Constructor product options; each group has products array with objects {id, default}",
                         "type": "array",
                         "items": {
                             "type": "object"
@@ -9783,6 +9798,18 @@
                                                             },
                                                             "type": "object",
                                                             "nullable": true
+                                                        },
+                                                        "weight": {
+                                                            "description": "Product weight from attribute",
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "nullable": true
+                                                        },
+                                                        "volume": {
+                                                            "description": "Product volume from attribute",
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "nullable": true
                                                         }
                                                     },
                                                     "type": "object"
@@ -9861,7 +9888,9 @@
                                                 },
                                                 "is_half_portion": false,
                                                 "half_portion_pair_product_id": null,
-                                                "half_portion_pair_product": null
+                                                "half_portion_pair_product": null,
+                                                "weight": 150,
+                                                "volume": 250
                                             },
                                             {
                                                 "id": 26,
@@ -9893,7 +9922,9 @@
                                                         "fats": 8.5,
                                                         "carbs": 30
                                                     }
-                                                }
+                                                },
+                                                "weight": 120,
+                                                "volume": null
                                             }
                                         ]
                                     }
@@ -11919,6 +11950,26 @@
                         "type": "number",
                         "format": "float",
                         "example": 3
+                    },
+                    "nutrition": {
+                        "title": "Nutrition",
+                        "description": "Nutrition data (КЖБУ) from product attributes",
+                        "type": "object",
+                        "example": {
+                            "calories": 250.5,
+                            "proteins": 15.2,
+                            "fats": 8.5,
+                            "carbs": 30
+                        },
+                        "nullable": true
+                    },
+                    "volume": {
+                        "title": "Volume",
+                        "description": "Product volume from attribute",
+                        "type": "number",
+                        "format": "float",
+                        "example": 250,
+                        "nullable": true
                     },
                     "inventories": {
                         "$ref": "#/components/schemas/ProductInventory"
@@ -13978,6 +14029,34 @@
                         "description": "Formatted Base Grand Total of the Order",
                         "type": "string",
                         "example": "$10.00"
+                    },
+                    "bonus_amount": {
+                        "title": "Bonus Amount",
+                        "description": "Bonus points used as discount (order currency)",
+                        "type": "number",
+                        "format": "float",
+                        "example": "10.00"
+                    },
+                    "base_bonus_amount": {
+                        "title": "Base Bonus Amount",
+                        "description": "Bonus points used as discount (base currency)",
+                        "type": "number",
+                        "format": "float",
+                        "example": "10.00"
+                    },
+                    "bonus_amount_accrued": {
+                        "title": "Bonus Amount Accrued",
+                        "description": "Bonus points credited to customer for this order (order currency)",
+                        "type": "number",
+                        "format": "float",
+                        "example": "5.00"
+                    },
+                    "base_bonus_amount_accrued": {
+                        "title": "Base Bonus Amount Accrued",
+                        "description": "Bonus points credited to customer for this order (base currency)",
+                        "type": "number",
+                        "format": "float",
+                        "example": "5.00"
                     },
                     "items": {
                         "$ref": "#/components/schemas/OrderItem"

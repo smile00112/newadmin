@@ -261,6 +261,18 @@
                             </div>
                         @endif
 
+                        <!-- Bonus Accrued -->
+                        @if (($order->base_bonus_amount_accrued ?? 0) > 0)
+                            <div class="flex w-full justify-between gap-x-5">
+                                <p class="text-sm text-gray-500">
+                                    @lang('admin::app.sales.orders.view.bonus-accrued')
+                                </p>
+                                <p class="text-sm font-bold text-gray-700 dark:text-gray-200">
+                                    {{ core()->formatBasePrice($order->base_bonus_amount_accrued) }}
+                                </p>
+                            </div>
+                        @endif
+
                         <!-- Purple separator before grand total -->
                         <div style="height: 2px; background: linear-gradient(90deg, transparent, #7c3aed, transparent); margin: 4px 0;"></div>
 

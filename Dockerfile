@@ -1,4 +1,4 @@
-FROM php:8.3-cli-alpine AS base
+FROM php:8.4-cli-alpine AS base
 
 # Установка системных зависимостей (БЕЗ изменения /etc/resolv.conf)
 RUN apk add --no-cache \
@@ -38,7 +38,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     calendar \
     xml \
     dom \
-    fileinfo
+    fileinfo \
+    sockets
 
 # Установка Redis через PECL с использованием curl (более надежно)
 RUN curl -sSL https://pecl.php.net/get/redis -o /tmp/redis.tar.gz \
@@ -63,9 +64,13 @@ COPY . .
 
 # Установка зависимостей Composer (без скриптов)
 RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
+RUN php artisan package:discover --ansi || true
 
 # Генерация автозагрузчика
 RUN composer dump-autoload --optimize
+
+# Установка RoadRunner
+RUN php vendor/bin/rr get-binary --location /usr/local/bin
 
 # Настройка прав
 RUN chown -R www-data:www-data /var/www/html \

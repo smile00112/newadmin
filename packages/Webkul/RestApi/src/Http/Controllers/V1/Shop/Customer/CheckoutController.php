@@ -243,8 +243,8 @@ class CheckoutController extends CustomerController
                 ], 400);
             }
 
-            Cart::collectTotals();
-
+            // collectTotals is called inside applyDefaultOrderMethodsIfNeeded
+            // (always exactly once), avoiding redundant recalculations.
             $this->applyDefaultOrderMethodsIfNeeded();
 
             $this->validateOrder();
@@ -328,6 +328,7 @@ class CheckoutController extends CustomerController
     /**
      * Apply default shipping and payment methods from mobile app settings
      * when cart lacks them (auto-assign only if not selected by user).
+     * Always calls collectTotals exactly once at the end.
      */
     protected function applyDefaultOrderMethodsIfNeeded(): void
     {
@@ -344,21 +345,16 @@ class CheckoutController extends CustomerController
         $autoAssignPayment = filter_var($settings['auto_assign_payment_method'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $defaultPayment = trim((string) ($settings['default_payment_method'] ?? ''));
 
-        $needsCollectTotals = false;
-
-        // Auto-assign shipping when cart has stockable items and no shipping selected
         if (
             $autoAssignShipping
             && $defaultShipping !== ''
             && $cart->haveStockableItems()
-            //&& ! $cart->selected_shipping_rate
             && Shipping::isMethodCodeExists($defaultShipping)
         ) {
             if (Cart::saveShippingMethod($defaultShipping)) {
                 Shipping::collectRates();
                 $cart = Cart::getCart();
 
-                // Fallback for pickup/dinein when rate was not created (no address)
                 if ($cart && ! $cart->selected_shipping_rate) {
                     $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
                     if ($skipAddressValidation && $cart->shipping_method) {
@@ -377,21 +373,15 @@ class CheckoutController extends CustomerController
                         }
                     }
                 }
-                $needsCollectTotals = true;
             }
         }
 
-        // Auto-assign payment when cart has no payment
         $cart = Cart::getCart();
         if ($autoAssignPayment && $defaultPayment !== '' && $cart && ! $cart->payment) {
-            if (Cart::savePaymentMethod(['method' => $defaultPayment])) {
-                $needsCollectTotals = true;
-            }
+            Cart::savePaymentMethod(['method' => $defaultPayment]);
         }
 
-        if ($needsCollectTotals) {
-            Cart::collectTotals();
-        }
+        Cart::collectTotals();
     }
 
     /**
