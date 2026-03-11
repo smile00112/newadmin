@@ -1,0 +1,19 @@
+{
+    "name": "webkul/reporting",
+    "description": "Analytics & Reporting module for Bagisto admin panel",
+    "type": "library",
+    "license": "MIT",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Webkul\\Reporting\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Webkul\\Reporting\\Providers\\ReportingServiceProvider"
+            ]
+        }
+    }
+}
