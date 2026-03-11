@@ -3455,6 +3455,10 @@ return [
                 'save-btn'         => 'Save Settings',
                 'update-success'   => 'Registration notification settings updated successfully.',
                 'invalid-email'     => 'The email address :email is invalid.',
+                'payment-company-label'    => 'Company for registration payment',
+                'payment-company-placeholder' => 'Select company',
+                'payment-company-help'     => 'Select the company whose payment settings (Tochka) will be used for registration form payments. If not selected — default settings are used.',
+                'payment-company-empty'    => 'Not selected (default settings)',
             ],
         ],
 

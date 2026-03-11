@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Webkul\Newsletters\Services;
 
 use Illuminate\Support\Facades\Log;
+use Webkul\Core\Models\CoreConfig;
 use Webkul\ExternalPayments\Services\Adapters\TochkaPaymentAdapter;
 use Webkul\Newsletters\Models\AccountTopup;
 use Webkul\Newsletters\Repositories\AccountTopupRepository;
 use Webkul\Newsletters\Repositories\CompanyAccountRepository;
+use Webkul\Newsletters\Repositories\CompanyRepository;
 use Webkul\User\Models\Admin;
 
 final class RegistrationPaymentService
@@ -16,7 +18,8 @@ final class RegistrationPaymentService
     public function __construct(
         protected TochkaPaymentAdapter $tochkaAdapter,
         protected CompanyAccountRepository $accountRepository,
-        protected AccountTopupRepository $topupRepository
+        protected AccountTopupRepository $topupRepository,
+        protected CompanyRepository $companyRepository
     ) {}
 
     /**
@@ -32,8 +35,10 @@ final class RegistrationPaymentService
             'amount' => $amount,
         ]);
 
-        $companyId = (int) $admin->company_id;
-        $account = $this->accountRepository->getOrCreateForCompany($companyId);
+        $accountCompanyId = (int) $admin->company_id;
+        $paymentCompanyId = $this->getPaymentCompanyId($accountCompanyId);
+
+        $account = $this->accountRepository->getOrCreateForCompany($accountCompanyId);
 
         Log::channel('single')->info('[Registration Payment] Step 8b: Account resolved', [
             'admin_id' => $admin->id,
@@ -63,7 +68,7 @@ final class RegistrationPaymentService
             'client_name' => $admin->name,
             'client_email' => $admin->email,
             'client_phone' => '',
-            'company_id' => $companyId,
+            'company_id' => $paymentCompanyId,
             'external_order_id' => sprintf('newsletter_registration_%d', $topup->id),
             'product_name' => 'Пополнение счёта при регистрации',
             'success_redirect_path' => $basePath,
@@ -111,5 +116,32 @@ final class RegistrationPaymentService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Get company ID to use for payment (Tochka merchant settings).
+     * Uses registration.notifications.payment_company_id if set and valid, otherwise fallback.
+     */
+    protected function getPaymentCompanyId(int $fallbackCompanyId): int
+    {
+        $config = CoreConfig::where('code', 'registration.notifications.payment_company_id')
+            ->whereNull('channel_code')
+            ->whereNull('locale_code')
+            ->first();
+
+        if (! $config || (string) $config->value === '') {
+            return $fallbackCompanyId;
+        }
+
+        $companyId = (int) $config->value;
+        if ($companyId <= 0) {
+            return $fallbackCompanyId;
+        }
+
+        if (! $this->companyRepository->find($companyId)) {
+            return $fallbackCompanyId;
+        }
+
+        return $companyId;
     }
 }

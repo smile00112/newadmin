@@ -74,6 +74,33 @@
                         <x-admin::form.control-group.error control-name="new_registration_emails" />
                     </x-admin::form.control-group>
 
+                    <!-- Payment Company -->
+                    <x-admin::form.control-group class="mt-4">
+                        <x-admin::form.control-group.label>
+                            @lang('admin::app.settings.registration-notifications.index.payment-company-label')
+                        </x-admin::form.control-group.label>
+
+                        <x-admin::form.control-group.control
+                            type="select"
+                            name="payment_company_id"
+                            rules=""
+                            :value="old('payment_company_id', $paymentCompanyId ?? '')"
+                            v-model="paymentCompanyId"
+                            :label="trans('admin::app.settings.registration-notifications.index.payment-company-label')"
+                        >
+                            <option value="">@lang('admin::app.settings.registration-notifications.index.payment-company-empty')</option>
+                            @foreach($companies ?? [] as $company)
+                                <option value="{{ $company->id }}">{{ $company->name }}</option>
+                            @endforeach
+                        </x-admin::form.control-group.control>
+
+                        <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                            @lang('admin::app.settings.registration-notifications.index.payment-company-help')
+                        </p>
+
+                        <x-admin::form.control-group.error control-name="payment_company_id" />
+                    </x-admin::form.control-group>
+
                     <!-- Save Button -->
                     <div class="mt-6 flex items-center justify-end gap-x-2.5">
                         <x-admin::button
@@ -162,6 +189,32 @@
                             <x-admin::form.control-group.error control-name="new_registration_emails" />
                         </x-admin::form.control-group>
 
+                        <!-- Payment Company -->
+                        <x-admin::form.control-group class="mt-4">
+                            <x-admin::form.control-group.label>
+                                @lang('admin::app.settings.registration-notifications.index.payment-company-label')
+                            </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="select"
+                                name="payment_company_id"
+                                rules=""
+                                v-model="paymentCompanyId"
+                                :label="trans('admin::app.settings.registration-notifications.index.payment-company-label')"
+                            >
+                                <option value="">@lang('admin::app.settings.registration-notifications.index.payment-company-empty')</option>
+                                @foreach($companies ?? [] as $company)
+                                    <option value="{{ $company->id }}">{{ $company->name }}</option>
+                                @endforeach
+                            </x-admin::form.control-group.control>
+
+                            <p class="mt-1 block text-xs italic leading-5 text-gray-600 dark:text-gray-300">
+                                @lang('admin::app.settings.registration-notifications.index.payment-company-help')
+                            </p>
+
+                            <x-admin::form.control-group.error control-name="payment_company_id" />
+                        </x-admin::form.control-group>
+
                         <!-- Save Button -->
                         <div class="mt-6 flex items-center justify-end gap-x-2.5">
                             <x-admin::button
@@ -185,6 +238,7 @@
                     return {
                         emails: @json($emails),
                         newRegistrationEmails: @json($newRegistrationEmails ?? ''),
+                        paymentCompanyId: @json($paymentCompanyId ?? ''),
 
                         isLoading: false,
                     };
@@ -207,6 +261,9 @@
                                 }
                                 if (response.data.new_registration_emails !== undefined) {
                                     this.newRegistrationEmails = response.data.new_registration_emails;
+                                }
+                                if (response.data.payment_company_id !== undefined) {
+                                    this.paymentCompanyId = response.data.payment_company_id;
                                 }
 
                                 this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });

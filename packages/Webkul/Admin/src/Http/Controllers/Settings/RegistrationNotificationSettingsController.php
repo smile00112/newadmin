@@ -7,14 +7,16 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Core\Models\CoreConfig;
+use Webkul\Newsletters\Repositories\CompanyRepository;
 
 class RegistrationNotificationSettingsController extends Controller
 {
     /**
      * Create a new controller instance.
      */
-    public function __construct()
-    {
+    public function __construct(
+        protected CompanyRepository $companyRepository
+    ) {
         $this->middleware(function ($request, $next) {
             $admin = auth()->guard('admin')->user();
             
@@ -33,8 +35,15 @@ class RegistrationNotificationSettingsController extends Controller
     {
         $emails = $this->getConfigValue('registration.notifications.emails');
         $newRegistrationEmails = $this->getConfigValue('registration.notifications.new_registration_emails');
+        $paymentCompanyId = $this->getConfigValue('registration.notifications.payment_company_id');
+        $companies = $this->companyRepository->all();
 
-        return view('admin::settings.registration-notifications.index', compact('emails', 'newRegistrationEmails'));
+        return view('admin::settings.registration-notifications.index', compact(
+            'emails',
+            'newRegistrationEmails',
+            'paymentCompanyId',
+            'companies'
+        ));
     }
 
     protected function getConfigValue(string $code): string
@@ -55,6 +64,7 @@ class RegistrationNotificationSettingsController extends Controller
         $request->validate([
             'emails' => 'nullable|string',
             'new_registration_emails' => 'nullable|string',
+            'payment_company_id' => 'nullable|integer|exists:companies,id',
         ]);
 
         $emailsResult = $this->validateAndNormalizeEmails($request->input('emails', ''));
@@ -78,10 +88,15 @@ class RegistrationNotificationSettingsController extends Controller
         $this->saveConfig('registration.notifications.emails', $emailsResult['value']);
         $this->saveConfig('registration.notifications.new_registration_emails', $newResult['value']);
 
+        $paymentCompanyId = $request->input('payment_company_id');
+        $paymentCompanyIdValue = $paymentCompanyId !== null && $paymentCompanyId !== '' ? (string) $paymentCompanyId : '';
+        $this->saveConfig('registration.notifications.payment_company_id', $paymentCompanyIdValue);
+
         return new JsonResponse([
             'message' => trans('admin::app.settings.registration-notifications.update-success'),
             'emails' => $emailsResult['value'],
             'new_registration_emails' => $newResult['value'],
+            'payment_company_id' => $paymentCompanyIdValue,
         ]);
     }
 
