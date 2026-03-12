@@ -45,6 +45,10 @@ return [
             'driver'   => 'session',
             'provider' => 'admins',
         ],
+        'api' => [
+            'driver'   => 'sanctum',      // или 'sanctum' / 'passport' / 'jwt' в зависимости от того, чем реально пользуетесь
+            'provider' => 'customers',  // или другой провайдер, если API под админа
+        ],
     ],
 
     /*
