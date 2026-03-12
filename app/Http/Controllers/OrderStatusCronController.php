@@ -18,6 +18,36 @@ class OrderStatusCronController extends Controller
         $updatedCount = 0;
 
         Order::query()
+            ->where('status', Order::STATUS_READY)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+                foreach ($orders as $order) {
+                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_COMPLETED);
+                    $updatedCount++;
+                }
+            });
+
+        Order::query()
+            ->where('status', Order::STATUS_PREPARING)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+                foreach ($orders as $order) {
+                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_READY);
+                    $updatedCount++;
+                }
+            });
+
+        Order::query()
+            ->where('status', Order::STATUS_PENDING)
+            ->orderBy('id')
+            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+                foreach ($orders as $order) {
+                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_PREPARING);
+                    $updatedCount++;
+                }
+            });
+
+        Order::query()
             ->where('status', Order::STATUS_PENDING)
             ->orderBy('id')
             ->chunkById(100, function ($orders) use (&$updatedCount): void {
@@ -39,15 +69,15 @@ class OrderStatusCronController extends Controller
     {
         $updatedCount = 0;
 
-        Order::query()
-            ->where('status', Order::STATUS_PREPARING)
-            ->orderBy('id')
-            ->chunkById(100, function ($orders) use (&$updatedCount): void {
-                foreach ($orders as $order) {
-                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_READY);
-                    $updatedCount++;
-                }
-            });
+//        Order::query()
+//            ->where('status', Order::STATUS_PREPARING)
+//            ->orderBy('id')
+//            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+//                foreach ($orders as $order) {
+//                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_READY);
+//                    $updatedCount++;
+//                }
+//            });
 
         return response()->json([
             'success'       => true,
@@ -61,15 +91,15 @@ class OrderStatusCronController extends Controller
     {
         $updatedCount = 0;
 
-        Order::query()
-            ->where('status', Order::STATUS_READY)
-            ->orderBy('id')
-            ->chunkById(100, function ($orders) use (&$updatedCount): void {
-                foreach ($orders as $order) {
-                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_COMPLETED);
-                    $updatedCount++;
-                }
-            });
+//        Order::query()
+//            ->where('status', Order::STATUS_READY)
+//            ->orderBy('id')
+//            ->chunkById(100, function ($orders) use (&$updatedCount): void {
+//                foreach ($orders as $order) {
+//                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_COMPLETED);
+//                    $updatedCount++;
+//                }
+//            });
 
         return response()->json([
             'success'       => true,
