@@ -46,4 +46,5 @@ return [
     Webkul\User\Providers\UserServiceProvider::class,
     Webkul\MobileApp\Providers\MobileAppServiceProvider::class,
     Webkul\AlfabankPayment\Providers\AlfabankPaymentServiceProvider::class,
+    Webkul\Reporting\Providers\ReportingServiceProvider::class,
 ];

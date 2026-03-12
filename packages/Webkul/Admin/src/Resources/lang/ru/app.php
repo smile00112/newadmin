@@ -5084,13 +5084,6 @@ return [
             ],
 
             'sidebar' => [
-                'analytics'                => 'Аналитика',
-                'analytics-executive'      => 'Сводка',
-                'analytics-daily'          => 'Ежедневная сводка',
-                'analytics-product'        => 'Продуктовая аналитика',
-                'analytics-operations'     => 'Операции',
-                'analytics-menu'           => 'Аналитика меню',
-                'analytics-channels'       => 'Каналы и форматы',
                 'application-errors'       => 'Ошибки приложения',
                 'attribute-families'       => 'Группы атрибутов',
                 'attributes'               => 'Атрибуты',

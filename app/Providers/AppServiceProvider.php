@@ -2,13 +2,11 @@
 
 namespace App\Providers;
 
-use App\Listeners\Order\AnalyticsOrderListener;
 use App\Repositories\ApplicationErrorRepository;
 use Barryvdh\Debugbar\Facades\Debugbar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -50,10 +48,5 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
-
-        // Analytics event listeners
-        Event::listen('checkout.order.save.after', [AnalyticsOrderListener::class, 'afterCreated']);
-        Event::listen('sales.order.update-status.after', [AnalyticsOrderListener::class, 'afterStatusUpdated']);
-        Event::listen('sales.order.cancel.after', [AnalyticsOrderListener::class, 'afterCanceled']);
     }
 }
