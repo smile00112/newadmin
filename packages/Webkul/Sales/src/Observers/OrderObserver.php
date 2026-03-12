@@ -90,9 +90,9 @@ class OrderObserver
             return 'admin';
         }
 
-        if (Auth::guard('api')->check()) {
-            return 'api';
-        }
+//        if (Auth::guard('api')->check()) {
+//            return 'api';
+//        }
 
         if (Auth::guard('customer')->check()) {
             return 'customer';

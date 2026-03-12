@@ -1,8 +1,0 @@
-<?php
-define('RBSPAYMENT_ALFABANKBY_PAYMENT_NAME', 'Alfa Bank BY');
-define('RBSPAYMENT_ALFABANKBY_PROD_URL' , 'https://ecom.alfabank.by/payment/rest/');
-define('RBSPAYMENT_ALFABANKBY_TEST_URL' , 'https://abby.rbsuat.com/payment/rest/');
-define('RBSPAYMENT_ALFABANKBY_ENABLE_LOGGING', true);
-define('RBSPAYMENT_ALFABANKBY_SKIP_CONFIRMATION_STEP', true);
-define('RBSPAYMENT_ALFABANKBY_ENABLE_CALLBACK', true);
-define('RBSPAYMENT_ALFABANKBY_MANDATORY_CURRENCY', true);

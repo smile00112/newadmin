@@ -191,7 +191,11 @@ class NomenclatureProductResource extends JsonResource
             return [];
         }
 
-        return $product->drinks->map(function ($drink) {
+        $sortedDrinks = $product->drinks
+            ->sortBy(fn ($drink) => $drink->pivot->sort ?? 0)
+            ->values();
+
+        return $sortedDrinks->map(function ($drink) {
             return [
                 'id'      => $drink->id,
                 'default' => (bool) ($drink->pivot->default ?? false),
