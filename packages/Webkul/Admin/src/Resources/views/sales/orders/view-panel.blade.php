@@ -425,6 +425,87 @@
                 @endforeach
             </div>
 
+            <!-- Status History Timeline -->
+            @php
+                $statusHistory = $order->statusHistory()->get();
+            @endphp
+
+            @if ($statusHistory->isNotEmpty())
+                <div class="mt-5 box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
+                    <div class="flex items-center gap-2.5 p-4 pb-0">
+                        <div class="flex items-center justify-center w-8 h-8 rounded-lg" style="background:#eff6ff;">
+                            <svg class="w-4 h-4" style="color:#2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p class="text-base font-bold text-gray-800 dark:text-white">
+                            @lang('admin::app.sales.orders.view.status-history')
+                        </p>
+                    </div>
+
+                    <div class="p-4 pt-3">
+                        <div class="relative">
+                            <div class="absolute left-4 top-1 bottom-1 w-px bg-gray-200 dark:bg-gray-800"></div>
+
+                            <div class="space-y-3">
+                                @foreach ($statusHistory as $history)
+                                    @php
+                                        $newCode = $history->new_status;
+                                        $oldCode = $history->old_status;
+                                        $color = $statusColorMap[$newCode] ?? '#6b7280';
+                                        $fromLabel = $history->old_status_label ?? __('admin::app.sales.orders.view.status-history-initial');
+                                        $toLabel = $history->new_status_label;
+                                        $who = $history->user_name
+                                            ?? ($history->user_type === 'admin' ? __('admin::app.sales.orders.view.status-history-admin') : null)
+                                            ?? ($history->user_type === 'customer' ? __('admin::app.sales.orders.view.status-history-customer') : null);
+                                        $source = $history->source;
+                                    @endphp
+
+                                    <div class="relative pl-9">
+                                        <div class="absolute left-1.5 top-2 w-3 h-3 rounded-full border-2" style="background:{{ $color }}1a;border-color:{{ $color }};"></div>
+
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide" style="background:{{ $color }}1a;color:{{ $color }};">
+                                                    {{ $fromLabel }}
+                                                </span>
+
+                                                <span class="text-xs text-gray-400">
+                                                    →
+                                                </span>
+
+                                                <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide" style="background:{{ $color }}1a;color:{{ $color }};">
+                                                    {{ $toLabel }}
+                                                </span>
+                                            </div>
+
+                                            <span class="text-xs text-gray-400">
+                                                {{ core()->formatDate($history->created_at, 'd.m.Y H:i') }}
+                                            </span>
+                                        </div>
+
+                                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                                            @if ($who)
+                                                <span>
+                                                    @lang('admin::app.sales.orders.view.status-history-by', ['user' => $who])
+                                                </span>
+                                            @endif
+
+                                            @if ($source)
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                                    <span class="w-1.5 h-1.5 rounded-full" style="background:{{ $color }};"></span>
+                                                    {{ __('admin::app.sales.orders.view.status-history-source-' . $source) ?? $source }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
         </div>
 
         <!-- Right Component -->

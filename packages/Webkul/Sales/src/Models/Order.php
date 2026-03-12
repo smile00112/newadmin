@@ -210,6 +210,15 @@ class Order extends Model implements OrderContract
     }
 
     /**
+     * Get the status history entries associated with the order.
+     */
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistoryProxy::modelClass(), 'order_id')
+            ->orderByDesc('created_at');
+    }
+
+    /**
      * Get the order items record associated with the order.
      */
     public function all_items(): HasMany
