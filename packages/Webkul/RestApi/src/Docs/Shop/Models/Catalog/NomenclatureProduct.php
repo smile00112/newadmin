@@ -262,10 +262,26 @@ class NomenclatureProduct
     /**
      * @OA\Property(
      *     title="Drinks",
-     *     description="Array of product IDs for linked drinks",
+     *     description="Array of drink objects with product ID and default flag",
      *     type="array",
-     *     @OA\Items(type="integer", format="int64"),
-     *     example={27, 28}
+     *     @OA\Items(
+     *         type="object",
+     *         @OA\Property(
+     *             property="id",
+     *             type="integer",
+     *             format="int64",
+     *             description="Drink product ID"
+     *         ),
+     *         @OA\Property(
+     *             property="default",
+     *             type="boolean",
+     *             description="Whether this drink is selected by default"
+     *         )
+     *     ),
+     *     example={
+     *         {"id": 27, "default": true},
+     *         {"id": 28, "default": false}
+     *     }
      * )
      *
      * @var array

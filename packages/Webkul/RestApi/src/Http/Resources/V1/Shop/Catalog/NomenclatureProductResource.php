@@ -61,7 +61,7 @@ class NomenclatureProductResource extends JsonResource
                 'cross_sells'        => $product->relationLoaded('cross_sells')
                     ? $product->cross_sells->pluck('id')->values()->all()
                     : [],
-                'drinks'             => $this->getDrinksIds($product),
+                'drinks'             => $this->getDrinksWithDefault($product),
                 'variants'           => $this->getVariantsData(
                     $product,
                     $filteredSuperAttributes?->pluck('id')->toArray()
@@ -176,18 +176,27 @@ class NomenclatureProductResource extends JsonResource
     }
 
     /**
-     * Get drinks as array of product IDs.
+     * Get drinks as array of objects with ID and default flag.
      *
      * @param  \Webkul\Product\Models\Product  $product
      * @return array
      */
-    private function getDrinksIds($product): array
+    private function getDrinksWithDefault($product): array
     {
         if (! $product->relationLoaded('drinks')) {
             return [];
         }
 
-        return $product->drinks->pluck('id')->values()->all();
+        if ($product->drinks->isEmpty()) {
+            return [];
+        }
+
+        return $product->drinks->map(function ($drink) {
+            return [
+                'id'      => $drink->id,
+                'default' => (bool) ($drink->pivot->default ?? false),
+            ];
+        })->values()->all();
     }
 
     /**

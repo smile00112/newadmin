@@ -8900,15 +8900,31 @@
                     },
                     "drinks": {
                         "title": "Drinks",
-                        "description": "Array of product IDs for linked drinks",
+                        "description": "Array of drink objects with product ID and default flag",
                         "type": "array",
                         "items": {
-                            "type": "integer",
-                            "format": "int64"
+                            "properties": {
+                                "id": {
+                                    "description": "Drink product ID",
+                                    "type": "integer",
+                                    "format": "int64"
+                                },
+                                "default": {
+                                    "description": "Whether this drink is selected by default",
+                                    "type": "boolean"
+                                }
+                            },
+                            "type": "object"
                         },
                         "example": [
-                            27,
-                            28
+                            {
+                                "id": 27,
+                                "default": true
+                            },
+                            {
+                                "id": 28,
+                                "default": false
+                            }
                         ]
                     },
                     "constructor_options": {
@@ -10254,11 +10270,15 @@
                     "datetime_value": {
                         "title": "Datetime Value",
                         "description": "Datetime type attribute value",
+                        "type": "string",
+                        "format": "date-time",
                         "example": "2023-11-24 10:20:00"
                     },
                     "date_value": {
                         "title": "Date Value",
                         "description": "Date type attribute value i.e. Special Price From",
+                        "type": "string",
+                        "format": "date",
                         "example": "2023-11-16"
                     },
                     "json_value": {
