@@ -9,6 +9,13 @@ use Webkul\Sales\Contracts\OrderStatusHistory as OrderStatusHistoryContract;
 class OrderStatusHistory extends Model implements OrderStatusHistoryContract
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'order_status_history';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * We only store `created_at` which is handled by the DB default.
