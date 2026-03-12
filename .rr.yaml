@@ -36,12 +36,13 @@ logs:
 metrics:
   address: localhost:2112
 
-reload:
-  interval: 1s
-  patterns: [".php"]
-  services:
-    http:
-      recursive: true
-      ignore: ["vendor"]
-      patterns: [".php"]
-      dirs: ["app", "config", "database", "routes", "packages"]
+# File watcher disabled in production (enable for local dev only)
+# reload:
+#   interval: 1s
+#   patterns: [".php"]
+#   services:
+#     http:
+#       recursive: true
+#       ignore: ["vendor"]
+#       patterns: [".php"]
+#       dirs: ["app", "config", "database", "routes", "packages"]

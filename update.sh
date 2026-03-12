@@ -67,61 +67,61 @@ git pull origin "$CURRENT_BRANCH"
 
 # Обновление зависимостей Composer
 info "Обновление зависимостей Composer..."
-docker-compose -f docker-compose.prod.yml run --rm app composer install --no-dev --optimize-autoloader --no-interaction
+docker compose -f docker-compose.prod.yml run --rm app composer install --no-dev --optimize-autoloader --no-interaction
 
 # Обновление зависимостей NPM (если нужно)
 if [ -f package.json ]; then
     info "Обновление зависимостей NPM..."
-    docker-compose -f docker-compose.prod.yml run --rm app npm install --production
-    docker-compose -f docker-compose.prod.yml run --rm app npm run build
+    docker compose -f docker-compose.prod.yml run --rm app npm install --production
+    docker compose -f docker-compose.prod.yml run --rm app npm run build
 fi
 
 # Пересборка образов (если нужно)
 info "Проверка изменений в Dockerfile..."
 if git diff HEAD@{1} HEAD --name-only | grep -q -E "(Dockerfile|docker-compose.prod.yml|\.rr\.yaml)"; then
     warn "Обнаружены изменения в Docker конфигурации. Пересборка образов..."
-    docker-compose -f docker-compose.prod.yml build
+    docker compose -f docker-compose.prod.yml build
 fi
 
 # Запуск миграций
 info "Запуск миграций базы данных..."
-docker-compose -f docker-compose.prod.yml run --rm app php artisan migrate --force
+docker compose -f docker-compose.prod.yml run --rm app php artisan migrate --force
 
 # Очистка кеша
 info "Очистка кеша..."
-docker-compose -f docker-compose.prod.yml run --rm app php artisan cache:clear
-docker-compose -f docker-compose.prod.yml run --rm app php artisan config:clear
-docker-compose -f docker-compose.prod.yml run --rm app php artisan route:clear
-docker-compose -f docker-compose.prod.yml run --rm app php artisan view:clear
+docker compose -f docker-compose.prod.yml run --rm app php artisan cache:clear
+docker compose -f docker-compose.prod.yml run --rm app php artisan config:clear
+docker compose -f docker-compose.prod.yml run --rm app php artisan route:clear
+docker compose -f docker-compose.prod.yml run --rm app php artisan view:clear
 
 # Оптимизация Laravel
 info "Оптимизация Laravel для production..."
-docker-compose -f docker-compose.prod.yml run --rm app php artisan config:cache
-docker-compose -f docker-compose.prod.yml run --rm app php artisan route:cache
-docker-compose -f docker-compose.prod.yml run --rm app php artisan view:cache
-docker-compose -f docker-compose.prod.yml run --rm app php artisan event:cache
+docker compose -f docker-compose.prod.yml run --rm app php artisan config:cache
+docker compose -f docker-compose.prod.yml run --rm app php artisan route:cache
+docker compose -f docker-compose.prod.yml run --rm app php artisan view:cache
+docker compose -f docker-compose.prod.yml run --rm app php artisan event:cache
 
 # Graceful reload RoadRunner
 info "Перезагрузка RoadRunner (graceful reload)..."
-docker-compose -f docker-compose.prod.yml exec app php artisan octane:reload || {
+docker compose -f docker-compose.prod.yml exec app php artisan octane:reload || {
     warn "Не удалось выполнить graceful reload. Перезапуск контейнера..."
-    docker-compose -f docker-compose.prod.yml restart app
+    docker compose -f docker-compose.prod.yml restart app
 }
 
 # Перезапуск queue worker
 info "Перезапуск queue worker..."
-docker-compose -f docker-compose.prod.yml restart queue
+docker compose -f docker-compose.prod.yml restart queue
 
 # Перезапуск Nginx (если нужно)
 if git diff HEAD@{1} HEAD --name-only | grep -q "docker/nginx/"; then
     info "Обнаружены изменения в конфигурации Nginx. Перезапуск..."
-    docker-compose -f docker-compose.prod.yml exec nginx nginx -t
-    docker-compose -f docker-compose.prod.yml exec nginx nginx -s reload
+    docker compose -f docker-compose.prod.yml exec nginx nginx -t
+    docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 fi
 
 # Проверка статуса
 info "Проверка статуса сервисов..."
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 echo ""
 info "=========================================="
@@ -129,5 +129,5 @@ info "  Обновление завершено!"
 info "=========================================="
 echo ""
 info "Все сервисы обновлены и перезапущены."
-info "Для просмотра логов: docker-compose -f docker-compose.prod.yml logs -f"
+info "Для просмотра логов: docker compose -f docker-compose.prod.yml logs -f"
 echo ""

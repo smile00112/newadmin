@@ -23,6 +23,8 @@
 
 {!! view_render_event('bagisto.admin.catalog.product.edit.form.inventories.controls.before', ['product' => $product]) !!}
 
+<v-product-inventory :product='@json($product)'></v-product-inventory>
+
 <!-- Product Inventory Component Template -->
 <script type="text/x-template" id="v-product-inventory-template">
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200" data-block-id="product-inventory">

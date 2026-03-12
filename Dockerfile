@@ -60,14 +60,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+COPY composer.json composer.lock ./
+
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
+
 COPY . .
 
-# Установка зависимостей Composer (без скриптов)
-RUN composer install --no-scripts --no-autoloader --no-interaction --prefer-dist
+RUN composer dump-autoload --optimize --no-dev
 RUN php artisan package:discover --ansi || true
-
-# Генерация автозагрузчика
-RUN composer dump-autoload --optimize
 
 # Установка RoadRunner
 RUN php vendor/bin/rr get-binary --location /usr/local/bin

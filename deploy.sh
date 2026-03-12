@@ -117,6 +117,37 @@ if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
     info "APP_KEY сохранен в .env"
 fi
 
+# SSL-сертификат: проверка / первичная генерация
+DOMAIN="${DOMAIN:-sunrise-n.softnova.ru}"
+SSL_CERT_DIR="docker/nginx/ssl/live/${DOMAIN}"
+
+if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
+    info "SSL-сертификат не найден. Запуск certbot для получения сертификата..."
+
+    mkdir -p docker/certbot/www "${SSL_CERT_DIR}"
+
+    info "Запуск nginx в HTTP-only режиме для ACME-challenge..."
+    docker compose -f docker-compose.prod.yml up -d nginx
+
+    sleep 3
+
+    docker compose -f docker-compose.prod.yml run --rm certbot \
+        certbot certonly --webroot \
+        --webroot-path=/var/www/certbot \
+        --email "${SSL_EMAIL:-admin@${DOMAIN}}" \
+        --domain "${DOMAIN}" \
+        --agree-tos \
+        --no-eff-email \
+        --non-interactive || {
+            warn "Не удалось получить SSL-сертификат. Nginx запустится, но HTTPS может не работать."
+            warn "Проверьте DNS и повторите: docker compose -f docker-compose.prod.yml run --rm certbot certbot certonly ..."
+        }
+
+    docker compose -f docker-compose.prod.yml stop nginx
+else
+    info "SSL-сертификат найден: ${SSL_CERT_DIR}/fullchain.pem"
+fi
+
 # Запуск всех сервисов
 info "Запуск всех сервисов..."
 docker compose -f docker-compose.prod.yml up -d
