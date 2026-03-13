@@ -42,8 +42,14 @@
     {!! view_render_event('bagisto.admin.catalog.products.list.before') !!}
 
     <!-- Datagrid -->
+    @php
+        $datagridSrc = route('admin.catalog.products.index');
+        if (request('category')) {
+            $datagridSrc .= '?' . http_build_query(['filters' => ['category_name' => [request('category')]]]);
+        }
+    @endphp
     <x-admin::datagrid
-        :src="route('admin.catalog.products.index')"
+        :src="$datagridSrc"
         :isMultiRow="true"
     >
         <!-- Datagrid Header -->
@@ -230,7 +236,14 @@
                                         <div v-else>
                                             <p
                                                 class="text-xs text-gray-600 dark:text-gray-300 sm:text-sm"
-                                                v-if="record.quantity > 0"
+                                                v-if="!record.manage_stock"
+                                            >
+                                                <span class="text-green-600">В наличии</span>
+                                            </p>
+
+                                            <p
+                                                class="text-xs text-gray-600 dark:text-gray-300 sm:text-sm"
+                                                v-else-if="record.quantity > 0"
                                             >
                                                 <span class="text-green-600">
                                                     @{{ "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', record.quantity) }}
@@ -345,7 +358,14 @@
                                 <div v-else>
                                     <p
                                         class="text-gray-600 dark:text-gray-300"
-                                        v-if="record.quantity > 0"
+                                        v-if="!record.manage_stock"
+                                    >
+                                        <span class="text-green-600">В наличии</span>
+                                    </p>
+
+                                    <p
+                                        class="text-gray-600 dark:text-gray-300"
+                                        v-else-if="record.quantity > 0"
                                     >
                                         <span class="text-green-600">
                                             @{{ "@lang('admin::app.catalog.products.index.datagrid.qty-value')".replace(':qty', record.quantity) }}

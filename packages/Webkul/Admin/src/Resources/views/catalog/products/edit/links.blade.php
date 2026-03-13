@@ -271,22 +271,27 @@
                     selectedType: 'related_products',
 
                     types: [
+                        /* Related products — hidden
                         {
                             key: 'related_products',
                             title: `@lang('admin::app.catalog.products.edit.links.related-products.title')`,
                             info: `@lang('admin::app.catalog.products.edit.links.related-products.info')`,
                             empty_info: `@lang('admin::app.catalog.products.edit.links.related-products.empty-info')`,
-                        }, {
+                        },*/
+                        {
                             key: 'up_sells',
                             title: `@lang('admin::app.catalog.products.edit.links.up-sells.title')`,
                             info: `@lang('admin::app.catalog.products.edit.links.up-sells.info')`,
                             empty_info: `@lang('admin::app.catalog.products.edit.links.up-sells.empty-info')`,
-                        }, {
+                        },
+                        /* Cross sells — hidden
+                        {
                             key: 'cross_sells',
                             title: `@lang('admin::app.catalog.products.edit.links.cross-sells.title')`,
                             info: `@lang('admin::app.catalog.products.edit.links.cross-sells.info')`,
                             empty_info: `@lang('admin::app.catalog.products.edit.links.cross-sells.empty-info')`,
-                        }, {
+                        },*/
+                        {
                             key: 'drinks',
                             title: `@lang('admin::app.catalog.products.edit.links.drinks.title')`,
                             info: `@lang('admin::app.catalog.products.edit.links.drinks.info')`,

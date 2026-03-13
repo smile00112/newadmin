@@ -172,7 +172,7 @@ class Sale extends AbstractReporting
             ->resetModel()
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum(DB::raw('base_grand_total_invoiced - base_grand_total_refunded'));
+            ->sum('base_grand_total');
     }
 
     /**
@@ -187,7 +187,7 @@ class Sale extends AbstractReporting
             ->resetModel()
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum(DB::raw('base_sub_total_invoiced - base_sub_total_refunded'));
+            ->sum('base_sub_total');
     }
 
     /**
@@ -225,7 +225,7 @@ class Sale extends AbstractReporting
         return $this->getOverTimeStats(
             $startDate,
             $endDate,
-            'SUM(base_grand_total_invoiced - base_grand_total_refunded)',
+            'SUM(base_grand_total)',
             $period
         );
     }
@@ -256,7 +256,7 @@ class Sale extends AbstractReporting
             ->resetModel()
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->avg(DB::raw('base_grand_total_invoiced - base_grand_total_refunded'));
+            ->avg('base_grand_total');
     }
 
     /**
@@ -294,7 +294,7 @@ class Sale extends AbstractReporting
         return $this->getOverTimeStats(
             $startDate,
             $endDate,
-            'AVG(base_grand_total_invoiced - base_grand_total_refunded)',
+            'AVG(base_grand_total)',
             $period
         );
     }
@@ -394,7 +394,7 @@ class Sale extends AbstractReporting
             ->resetModel()
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum(DB::raw('base_tax_amount_invoiced - base_tax_amount_refunded'));
+            ->sum('base_tax_amount');
     }
 
     /**
@@ -432,7 +432,7 @@ class Sale extends AbstractReporting
         return $this->getOverTimeStats(
             $startDate,
             $endDate,
-            'SUM(base_tax_amount_invoiced - base_tax_amount_refunded)',
+            'SUM(base_tax_amount)',
             $period
         );
     }
@@ -451,7 +451,7 @@ class Sale extends AbstractReporting
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
             ->leftJoin('tax_categories', 'order_items.tax_category_id', '=', 'tax_categories.id')
             ->select('tax_categories.id as tax_category_id', 'tax_categories.name')
-            ->addSelect(DB::raw("SUM({$tablePrefix}order_items.base_tax_amount_invoiced - {$tablePrefix}order_items.base_tax_amount_refunded) as total"))
+            ->addSelect(DB::raw("SUM({$tablePrefix}order_items.base_tax_amount) as total"))
             ->whereIn('orders.channel_id', $this->channelIds)
             ->whereBetween('order_items.created_at', [$this->startDate, $this->endDate])
             ->whereNotNull('tax_category_id')
@@ -486,7 +486,7 @@ class Sale extends AbstractReporting
             ->resetModel()
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum(DB::raw('base_shipping_invoiced - base_shipping_refunded'));
+            ->sum('base_shipping_amount');
     }
 
     /**
@@ -524,7 +524,7 @@ class Sale extends AbstractReporting
         return $this->getOverTimeStats(
             $startDate,
             $endDate,
-            'SUM(base_shipping_invoiced - base_shipping_refunded)',
+            'SUM(base_shipping_amount)',
             $period
         );
     }
@@ -539,7 +539,7 @@ class Sale extends AbstractReporting
         return $this->orderRepository
             ->resetModel()
             ->select('shipping_title as title')
-            ->addSelect(DB::raw('SUM(base_shipping_invoiced - base_shipping_refunded) as total'))
+            ->addSelect(DB::raw('SUM(base_shipping_amount) as total'))
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('created_at', [$this->startDate, $this->endDate])
             ->whereNotNull('shipping_method')

@@ -267,7 +267,8 @@
                 },
                 
                 playNotificationSound() {
-                    // One-time chime for toast notification
+                    // Sound module disabled — always return immediately
+                    return;
                     const soundEnabled = localStorage.getItem('order_sound_alert') !== 'false';
                     if (!soundEnabled) return;
                     
@@ -296,6 +297,9 @@
                 },
                 
                 manageContinuousSound() {
+                    // Sound module disabled — stop any playing sound and return
+                    this.stopSound();
+                    return;
                     const soundEnabled = localStorage.getItem('order_sound_alert') !== 'false';
                     
                     if (soundEnabled && this.pendingCount > 0) {
@@ -322,6 +326,9 @@
                 },
                 
                 playBeepLoop() {
+                    // Sound module disabled
+                    this.stopSound();
+                    return;
                     if (!this.isPlayingSound || !this.audioContext) return;
                     
                     const soundEnabled = localStorage.getItem('order_sound_alert') !== 'false';
