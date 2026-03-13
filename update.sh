@@ -70,11 +70,11 @@ info "Обновление зависимостей Composer..."
 docker compose -f docker-compose.prod.yml run --rm app composer install --no-dev --optimize-autoloader --no-interaction
 
 # Обновление зависимостей NPM (если нужно)
-if [ -f package.json ]; then
-    info "Обновление зависимостей NPM..."
-    docker compose -f docker-compose.prod.yml run --rm app npm install --production
-    docker compose -f docker-compose.prod.yml run --rm app npm run build
-fi
+#if [ -f package.json ]; then
+#    info "Обновление зависимостей NPM..."
+#    docker compose -f docker-compose.prod.yml run --rm app npm install --production
+#    docker compose -f docker-compose.prod.yml run --rm app npm run build
+#fi
 
 # Пересборка образов (если нужно)
 info "Проверка изменений в Dockerfile..."
