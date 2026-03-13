@@ -33,11 +33,19 @@ class Product
      */
     public function afterCreate($product)
     {
-        UpdateProductFlatIndexJob::dispatch($product->id);
-
+        $productId = $product->id;
         $productIds = $this->getAllRelatedProductIds($product);
 
-        UpdateCreateElasticSearchIndexJob::dispatch($productIds);
+        if (config('queue.default') === 'sync') {
+            // Defer heavy sync jobs until after HTTP response is sent
+            app()->terminating(function () use ($productId, $productIds) {
+                UpdateProductFlatIndexJob::dispatch($productId);
+                UpdateCreateElasticSearchIndexJob::dispatch($productIds);
+            });
+        } else {
+            UpdateProductFlatIndexJob::dispatch($productId);
+            UpdateCreateElasticSearchIndexJob::dispatch($productIds);
+        }
     }
 
     /**
@@ -48,15 +56,29 @@ class Product
      */
     public function afterUpdate($product)
     {
-        UpdateProductFlatIndexJob::dispatch($product->id);
-
+        $productId = $product->id;
         $productIds = $this->getAllRelatedProductIds($product);
 
-        Bus::chain([
-            new UpdateCreateInventoryIndexJob($productIds),
-            new UpdateCreatePriceIndexJob($productIds),
-            new UpdateCreateElasticSearchIndexJob($productIds),
-        ])->dispatch();
+        if (config('queue.default') === 'sync') {
+            // Defer heavy sync jobs until after HTTP response is sent
+            app()->terminating(function () use ($productId, $productIds) {
+                UpdateProductFlatIndexJob::dispatch($productId);
+
+                Bus::chain([
+                    new UpdateCreateInventoryIndexJob($productIds),
+                    new UpdateCreatePriceIndexJob($productIds),
+                    new UpdateCreateElasticSearchIndexJob($productIds),
+                ])->dispatch();
+            });
+        } else {
+            UpdateProductFlatIndexJob::dispatch($productId);
+
+            Bus::chain([
+                new UpdateCreateInventoryIndexJob($productIds),
+                new UpdateCreatePriceIndexJob($productIds),
+                new UpdateCreateElasticSearchIndexJob($productIds),
+            ])->dispatch();
+        }
     }
 
     /**

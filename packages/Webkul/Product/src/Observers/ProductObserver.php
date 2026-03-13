@@ -24,7 +24,7 @@ class ProductObserver
     {
         Storage::deleteDirectory('product/'.$product->id);
 
-        $this->clearCatalogCache();
+        $this->scheduleCacheClear();
     }
 
     /**
@@ -35,11 +35,19 @@ class ProductObserver
      */
     public function saved($product)
     {
+        $this->scheduleCacheClear();
+    }
+
+    /**
+     * Schedule cache clear once per request (after response is sent).
+     */
+    protected function scheduleCacheClear(): void
+    {
         if (! self::$cacheScheduled) {
             self::$cacheScheduled = true;
-            $observer = $this;
-            app()->terminating(function () use ($observer) {
-                $observer->clearCatalogCache();
+
+            app()->terminating(function () {
+                $this->clearCatalogCache();
                 self::$cacheScheduled = false;
             });
         }
@@ -56,7 +64,11 @@ class ProductObserver
 
         if (class_exists(NomenclatureController::class)) {
             NomenclatureController::clearNomenclatureCache();
-            WarmNomenclatureCacheJob::dispatch();
+
+            // Only dispatch warm cache if queue is async; skip on sync to avoid blocking
+            if (config('queue.default') !== 'sync') {
+                WarmNomenclatureCacheJob::dispatch();
+            }
         }
     }
 }

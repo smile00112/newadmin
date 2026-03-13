@@ -279,7 +279,7 @@ class ProductController extends Controller
             foreach ($productIds as $productId) {
                 $product = $this->productRepository->find($productId);
 
-                if (isset($product)) {
+                if ($product) {
                     Event::dispatch('catalog.product.delete.before', $productId);
 
                     $this->productRepository->delete($productId);
@@ -497,6 +497,102 @@ class ProductController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Show the edit form inside a panel (for iframe-based SPA drawer).
+     *
+     * @return \Illuminate\View\View
+     */
+    public function editPanel(int $id)
+    {
+        $product = $this->productRepository->findOrFail($id);
+
+        $incompatibilityTemplates = $this->incompatibilityTemplateRepository
+            ->where('active', 1)
+            ->orderBy('name')
+            ->get();
+
+        $constructorGroupTemplates = $this->constructorGroupTemplateRepository
+            ->with('products')
+            ->orderBy('template_name')
+            ->get();
+
+        return view('admin::catalog.products.edit-panel', compact('product', 'incompatibilityTemplates', 'constructorGroupTemplates'));
+    }
+
+    /**
+     * Update product from panel (iframe) and redirect back to panel.
+     */
+    public function updatePanel(ProductForm $request, int $id)
+    {
+        Event::dispatch('catalog.product.update.before', $id);
+
+        $product = $this->productRepository->update(request()->all(), $id);
+
+        Event::dispatch('catalog.product.update.after', $product);
+
+        session()->flash('success', trans('admin::app.catalog.products.update-success'));
+
+        return redirect()->route('admin.catalog.products.edit_panel', $id);
+    }
+
+    /**
+     * Quick inline update of product fields (status, type, category).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function quickUpdate(int $id): JsonResponse
+    {
+        $product = $this->productRepository->findOrFail($id);
+        $field = request()->input('field');
+        $value = request()->input('value');
+
+        $allowed = ['status', 'type'];
+
+        if (! in_array($field, $allowed) && $field !== 'category') {
+            return new JsonResponse(['message' => 'Field not allowed'], 422);
+        }
+
+        if ($field === 'category') {
+            $categoryIds = is_array($value) ? $value : [$value];
+            $product->categories()->sync($categoryIds);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => trans('admin::app.catalog.products.update-success'),
+            ]);
+        }
+
+        if ($field === 'type') {
+            $allowedTypes = ['simple', 'configurable', 'grouped', 'bundle', 'ingredient', 'constructor', 'configurable_constructor'];
+            if (! in_array($value, $allowedTypes)) {
+                return new JsonResponse(['message' => 'Invalid type'], 422);
+            }
+            DB::table('products')->where('id', $id)->update(['type' => $value]);
+            DB::table('product_flat')->where('product_id', $id)->update(['type' => $value]);
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => trans('admin::app.catalog.products.update-success'),
+            ]);
+        }
+
+        // status — direct DB update to avoid heavy sync jobs
+        $statusValue = (bool) $value;
+        DB::table('product_attribute_values')
+            ->updateOrInsert(
+                ['product_id' => $id, 'attribute_id' => 8],
+                ['boolean_value' => $statusValue]
+            );
+        DB::table('product_flat')
+            ->where('product_id', $id)
+            ->update(['status' => $statusValue]);
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => trans('admin::app.catalog.products.update-success'),
+        ]);
     }
 
     /**

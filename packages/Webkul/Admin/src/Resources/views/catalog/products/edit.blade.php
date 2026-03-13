@@ -35,6 +35,18 @@
                         </p>
                         <p class="text-xs text-gray-400">Редактирование товара</p>
                     </div>
+
+                    @php
+                        $typeLabels = [
+                            'simple' => 'Простой',
+                            'configurable' => 'Настроенный',
+                            'grouped' => 'Группированный',
+                            'bundle' => 'Набор',
+                            'ingredient' => 'Ингредиент',
+                            'constructor' => 'Конструктор',
+                            'configurable_constructor' => 'Настроенный + Конструктор',
+                        ];
+                    @endphp
                 </div>
 
                 <div class="flex items-center gap-x-2.5">
@@ -156,6 +168,45 @@
         </div>
 
         {!! view_render_event('bagisto.admin.catalog.product.edit.actions.after', ['product' => $product]) !!}
+
+        <!-- Product Type Card -->
+        <div id="edit-type-changer" class="mt-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style="max-width:360px;">
+            <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-white">Тип товара</p>
+            <div style="position:relative;">
+                <button
+                    type="button"
+                    id="edit-type-btn"
+                    onclick="document.getElementById('edit-type-dropdown').classList.toggle('hidden')"
+                    style="display:flex; width:100%; align-items:center; justify-content:space-between; padding:8px 14px; border-radius:10px; font-size:13px; background:#f9fafb; color:#374151; font-weight:600; border:1px solid #e5e7eb; cursor:pointer; transition:all 0.15s;"
+                    onmouseenter="this.style.borderColor='#d1d5db'; this.style.background='#f3f4f6'"
+                    onmouseleave="this.style.borderColor='#e5e7eb'; this.style.background='#f9fafb'"
+                >
+                    <span id="edit-type-label">{{ $typeLabels[$product->type] ?? $product->type }}</span>
+                    <svg style="width:14px; height:14px; color:#9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="edit-type-dropdown" class="hidden" style="position:absolute; top:100%; left:0; right:0; margin-top:4px; background:white; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:50; padding:4px; max-height:300px; overflow-y:auto;">
+                    @foreach($typeLabels as $typeKey => $typeLabel)
+                        <button
+                            type="button"
+                            data-type="{{ $typeKey }}"
+                            onclick="changeProductTypeEdit('{{ $typeKey }}', '{{ $typeLabel }}')"
+                            style="display:flex; width:100%; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:8px; font-size:13px; color:#374151; background:transparent; border:none; cursor:pointer; transition:background 0.15s; text-align:left;"
+                            onmouseenter="this.style.background='#f3f4f6'"
+                            onmouseleave="this.style.background='transparent'"
+                        >
+                            <span>{{ $typeLabel }}</span>
+                            @if($product->type === $typeKey)
+                                <svg class="edit-type-check" style="width:16px; height:16px; color:#059669; flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                            @endif
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        </div>
 
         <!-- body content -->
         {!! view_render_event('bagisto.admin.catalog.product.edit.form.before', ['product' => $product]) !!}
@@ -365,5 +416,52 @@
     </x-admin::form>
 
     {!! view_render_event('bagisto.admin.catalog.product.edit.after', ['product' => $product]) !!}
+
+    @pushOnce('scripts')
+        <script>
+            // Close type dropdown on click outside
+            document.addEventListener('click', function(e) {
+                var changer = document.getElementById('edit-type-changer');
+                var dropdown = document.getElementById('edit-type-dropdown');
+                if (changer && dropdown && !changer.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            // Change product type via AJAX then reload
+            function changeProductTypeEdit(newType, newLabel) {
+                var productId = {{ $product->id }};
+                var currentType = '{{ $product->type }}';
+                if (newType === currentType) {
+                    document.getElementById('edit-type-dropdown').classList.add('hidden');
+                    return;
+                }
+
+                var csrf = document.querySelector('meta[name="csrf-token"]')?.content
+                         || document.querySelector('input[name="_token"]')?.value;
+
+                fetch('/admin/catalog/products/quick-update/' + productId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({ field: 'type', value: newType }),
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        document.getElementById('edit-type-label').textContent = newLabel;
+                        document.getElementById('edit-type-dropdown').classList.add('hidden');
+                        window.location.reload();
+                    }
+                })
+                .catch(function() {
+                    alert('Ошибка смены типа товара');
+                });
+            }
+        </script>
+    @endPushOnce
 
 </x-admin::layouts>
