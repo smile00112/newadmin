@@ -126,12 +126,22 @@ if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
 
     mkdir -p docker/certbot/www "${SSL_CERT_DIR}"
 
-    info "Запуск nginx в HTTP-only режиме для ACME-challenge..."
+    # Временный самоподписанный сертификат, чтобы nginx мог запуститься с HTTPS-блоком
+    info "Генерация временного самоподписанного сертификата..."
+    openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+        -keyout "${SSL_CERT_DIR}/privkey.pem" \
+        -out "${SSL_CERT_DIR}/fullchain.pem" \
+        -subj "/CN=${DOMAIN}" 2>/dev/null
+    cp "${SSL_CERT_DIR}/fullchain.pem" "${SSL_CERT_DIR}/chain.pem"
+
+    info "Запуск nginx для ACME-challenge..."
     docker compose -f docker-compose.prod.yml up -d nginx
 
-    sleep 3
+    sleep 5
 
-    docker compose -f docker-compose.prod.yml run --rm certbot \
+    # --entrypoint "" сбрасывает entrypoint из docker-compose (бесконечный цикл renew),
+    # позволяя выполнить certbot certonly напрямую
+    docker compose -f docker-compose.prod.yml run --rm --entrypoint "" certbot \
         certbot certonly --webroot \
         --webroot-path=/var/www/certbot \
         --email "${SSL_EMAIL:-admin@${DOMAIN}}" \
@@ -140,7 +150,7 @@ if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
         --no-eff-email \
         --non-interactive || {
             warn "Не удалось получить SSL-сертификат. Nginx запустится, но HTTPS может не работать."
-            warn "Проверьте DNS и повторите: docker compose -f docker-compose.prod.yml run --rm certbot certbot certonly ..."
+            warn "Проверьте DNS и повторите: docker compose -f docker-compose.prod.yml run --rm --entrypoint '' certbot certbot certonly ..."
         }
 
     docker compose -f docker-compose.prod.yml stop nginx
