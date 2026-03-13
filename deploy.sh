@@ -124,9 +124,15 @@ SSL_CERT_DIR="docker/nginx/ssl/live/${DOMAIN}"
 if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
     info "SSL-сертификат не найден. Запуск certbot для получения сертификата..."
 
+    # Полная очистка предыдущих certbot-артефактов, чтобы избежать создания
+    # линейки с суффиксом -0001 из-за сломанных renewal-конфигов
+    rm -rf docker/nginx/ssl/live
+    rm -rf docker/nginx/ssl/archive
+    rm -rf docker/nginx/ssl/renewal
+    rm -rf docker/nginx/ssl/accounts
+
     mkdir -p docker/certbot/www "${SSL_CERT_DIR}"
 
-    # Временный самоподписанный сертификат, чтобы nginx мог запуститься с HTTPS-блоком
     info "Генерация временного самоподписанного сертификата..."
     openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
         -keyout "${SSL_CERT_DIR}/privkey.pem" \
@@ -139,10 +145,10 @@ if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
 
     sleep 5
 
-    # Удаляем самоподписанный сертификат и certbot-артефакты перед запросом —
-    # nginx уже запущен и держит файлы в памяти, а certbot упадёт с
-    # CertStorageError если в live/<domain>/ лежат чужие файлы
-    rm -rf "${SSL_CERT_DIR}"
+    # Удаляем всё содержимое certbot — nginx уже держит файлы в памяти.
+    # Важно удалять всё (live, archive, renewal), иначе certbot может
+    # создать линейку с суффиксом -0001 вместо ожидаемого имени домена.
+    rm -rf docker/nginx/ssl/live
     rm -rf docker/nginx/ssl/archive
     rm -rf docker/nginx/ssl/renewal
 
@@ -162,7 +168,23 @@ if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
 
     docker compose -f docker-compose.prod.yml stop nginx
 
-    # Если certbot не смог сохранить сертификат — генерируем самоподписанный как fallback
+    # Certbot мог сохранить сертификат с суффиксом (напр. -0001),
+    # если в момент запроса остались сломанные renewal-конфиги.
+    # Переносим такой сертификат на ожидаемый путь.
+    if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ] || [ ! -f "${SSL_CERT_DIR}/privkey.pem" ]; then
+        SUFFIXED_DIR=$(find docker/nginx/ssl/live -maxdepth 1 -type d -name "${DOMAIN}-*" 2>/dev/null | head -1)
+        if [ -n "${SUFFIXED_DIR}" ] && [ -f "${SUFFIXED_DIR}/fullchain.pem" ]; then
+            warn "Certbot сохранил сертификат в ${SUFFIXED_DIR}. Переносим в ${SSL_CERT_DIR}..."
+            mkdir -p "${SSL_CERT_DIR}"
+            cp "${SUFFIXED_DIR}/fullchain.pem" "${SSL_CERT_DIR}/fullchain.pem"
+            cp "${SUFFIXED_DIR}/privkey.pem"   "${SSL_CERT_DIR}/privkey.pem"
+            cp "${SUFFIXED_DIR}/chain.pem"     "${SSL_CERT_DIR}/chain.pem" 2>/dev/null || \
+                cp "${SUFFIXED_DIR}/fullchain.pem" "${SSL_CERT_DIR}/chain.pem"
+            info "Сертификат перенесён в ${SSL_CERT_DIR}"
+        fi
+    fi
+
+    # Если сертификат всё ещё не найден — генерируем самоподписанный как fallback
     if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ] || [ ! -f "${SSL_CERT_DIR}/privkey.pem" ]; then
         warn "Сертификат не найден после certbot. Генерация самоподписанного для запуска nginx..."
         mkdir -p "${SSL_CERT_DIR}"
