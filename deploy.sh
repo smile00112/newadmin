@@ -139,6 +139,13 @@ if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
 
     sleep 5
 
+    # Удаляем самоподписанный сертификат и certbot-артефакты перед запросом —
+    # nginx уже запущен и держит файлы в памяти, а certbot упадёт с
+    # CertStorageError если в live/<domain>/ лежат чужие файлы
+    rm -rf "${SSL_CERT_DIR}"
+    rm -rf docker/nginx/ssl/archive
+    rm -rf docker/nginx/ssl/renewal
+
     # --entrypoint "" сбрасывает entrypoint из docker-compose (бесконечный цикл renew),
     # позволяя выполнить certbot certonly напрямую
     docker compose -f docker-compose.prod.yml run --rm --entrypoint "" certbot \
@@ -154,6 +161,17 @@ if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
         }
 
     docker compose -f docker-compose.prod.yml stop nginx
+
+    # Если certbot не смог сохранить сертификат — генерируем самоподписанный как fallback
+    if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ] || [ ! -f "${SSL_CERT_DIR}/privkey.pem" ]; then
+        warn "Сертификат не найден после certbot. Генерация самоподписанного для запуска nginx..."
+        mkdir -p "${SSL_CERT_DIR}"
+        openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+            -keyout "${SSL_CERT_DIR}/privkey.pem" \
+            -out "${SSL_CERT_DIR}/fullchain.pem" \
+            -subj "/CN=${DOMAIN}" 2>/dev/null
+        cp "${SSL_CERT_DIR}/fullchain.pem" "${SSL_CERT_DIR}/chain.pem"
+    fi
 else
     info "SSL-сертификат найден: ${SSL_CERT_DIR}/fullchain.pem"
 fi
