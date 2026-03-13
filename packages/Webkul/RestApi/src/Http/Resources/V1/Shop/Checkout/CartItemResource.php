@@ -4,6 +4,7 @@ namespace Webkul\RestApi\Http\Resources\V1\Shop\Checkout;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Webkul\Product\Facades\ProductImage;
+use Webkul\Product\Repositories\ProductRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
 
 class CartItemResource extends JsonResource
@@ -30,7 +31,7 @@ class CartItemResource extends JsonResource
      */
     private function toMinimalArray($request): array
     {
-        return [
+        $data = [
             'id'                    => $this->id,
             'quantity'              => $this->quantity,
             'sku'                   => $this->sku,
@@ -47,10 +48,11 @@ class CartItemResource extends JsonResource
             // Минимальная информация о продукте - только ID, SKU, название и базовое изображение
             'product'               => $this->when($this->product_id, function () {
                 $product = $this->product;
-                if (!$product) {
+
+                if (! $product) {
                     return null;
                 }
-                
+
                 return [
                     'id'         => $product->id,
                     'sku'        => $product->sku,
@@ -59,6 +61,36 @@ class CartItemResource extends JsonResource
                 ];
             }),
         ];
+
+        // Структура additional может быть массивом или JSON-строкой.
+        $rawAdditional = $this->resource->additional ?? [];
+
+        if (! is_array($rawAdditional)) {
+            $decoded = json_decode($rawAdditional, true);
+            $additional = is_array($decoded) ? $decoded : [];
+        } else {
+            $additional = $rawAdditional;
+        }
+
+        // Для configurable и configurable_constructor добавляем выбранные модификации.
+        if (in_array($this->type, ['configurable', 'configurable_constructor'], true)) {
+            $modifications = $this->getModificationsSummary($additional);
+
+            if (! empty($modifications)) {
+                $data['modifications'] = $modifications;
+            }
+        }
+
+        // Для constructor и configurable_constructor добавляем выбранные ингредиенты.
+        if (in_array($this->type, ['constructor', 'configurable_constructor'], true)) {
+            $ingredients = $this->getIngredientsSummary($additional);
+
+            if (! empty($ingredients)) {
+                $data['ingredients'] = $ingredients;
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -105,5 +137,112 @@ class CartItemResource extends JsonResource
             'created_at'                     => $this->created_at,
             'updated_at'                     => $this->updated_at,
         ];
+    }
+
+    /**
+     * Сформировать краткую информацию о выбранных модификациях configurable товара.
+     *
+     * Ожидает структуру additional['attributes'] в виде:
+     *  { attribute_code: { attribute_name, option_id, option_label } }.
+     */
+    private function getModificationsSummary(array $additional): array
+    {
+        $attributes = $additional['attributes'] ?? [];
+
+        if (! is_array($attributes) || empty($attributes)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($attributes as $code => $attribute) {
+            if (! is_array($attribute)) {
+                continue;
+            }
+
+            $optionId = $attribute['option_id'] ?? null;
+            $optionLabel = $attribute['option_label'] ?? null;
+            $attributeName = $attribute['attribute_name'] ?? $code;
+
+            $result[] = [
+                'code'         => (string) $code,
+                'name'         => (string) $attributeName,
+                'option_id'    => $optionId !== null ? (int) $optionId : null,
+                'option_label' => $optionLabel !== null ? (string) $optionLabel : null,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Сформировать краткую информацию о выбранных ингредиентах конструктора.
+     *
+     * Ожидает структуру additional['constructor_options'] в виде:
+     *  { group_id: { product_id: qty, ... }, ... }.
+     */
+    private function getIngredientsSummary(array $additional): array
+    {
+        $constructorOptions = $additional['constructor_options'] ?? [];
+
+        if (! is_array($constructorOptions) || empty($constructorOptions)) {
+            return [];
+        }
+
+        // Суммируем количества по каждому продукту.
+        $productQuantities = [];
+
+        foreach ($constructorOptions as $groupId => $groupProducts) {
+            if (! is_array($groupProducts)) {
+                continue;
+            }
+
+            foreach ($groupProducts as $productId => $qty) {
+                if (! $qty) {
+                    continue;
+                }
+
+                $key = (int) $productId;
+
+                if (! isset($productQuantities[$key])) {
+                    $productQuantities[$key] = 0;
+                }
+
+                $productQuantities[$key] += (int) $qty;
+            }
+        }
+
+        if (empty($productQuantities)) {
+            return [];
+        }
+
+        $productIds = array_keys($productQuantities);
+
+        /** @var \Webkul\Product\Repositories\ProductRepository $productRepository */
+        $productRepository = app(ProductRepository::class);
+
+        $products = $productRepository->findWhereIn('id', $productIds);
+
+        $productsById = $products->keyBy('id');
+
+        $result = [];
+
+        foreach ($productQuantities as $productId => $qty) {
+            $product = $productsById->get($productId);
+
+            if (! $product) {
+                continue;
+            }
+
+            $result[] = [
+                'product_id' => (int) $productId,
+                'quantity'   => (int) $qty,
+                'name'       => (string) $product->name,
+                'sku'        => (string) $product->sku,
+                'base_image' => ProductImage::getProductBaseImage($product),
+            ];
+        }
+
+        return $result;
     }
 }

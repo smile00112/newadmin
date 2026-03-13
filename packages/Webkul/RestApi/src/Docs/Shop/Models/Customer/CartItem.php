@@ -235,7 +235,7 @@ class CartItem
     /**
      * @OA\Property(
      *     title="Additional Info About Cart Item",
-     *     description="selected_configurable_option, super_attribute, and attributes fields will use in case of configurable type product.",
+     *     description="selected_configurable_option, super_attribute, and attributes fields will use in case of configurable type product. constructor_options поле используется для товаров constructor и configurable_constructor и содержит выбранные ингредиенты.",
      *     type="array",
      *     example={
      *          "selected_configurable_option": 2,
@@ -317,6 +317,40 @@ class CartItem
      * )
      */
     private $additional;
+
+    /**
+     * @OA\Property(
+     *     title="Selected Modifications",
+     *     description="Нормализованный список выбранных модификаций для товаров типов configurable и configurable_constructor.",
+     *     type="array",
+     *     @OA\Items(
+     *         @OA\Property(property="code", type="string", example="size"),
+     *         @OA\Property(property="name", type="string", example="Size"),
+     *         @OA\Property(property="option_id", type="integer", example=8),
+     *         @OA\Property(property="option_label", type="string", example="L")
+     *     )
+     * )
+     *
+     * @var array|null
+     */
+    private $modifications;
+
+    /**
+     * @OA\Property(
+     *     title="Selected Ingredients",
+     *     description="Нормализованный список выбранных ингредиентов для товаров типов constructor и configurable_constructor.",
+     *     type="array",
+     *     @OA\Items(
+     *         @OA\Property(property="product_id", type="integer", example=10),
+     *         @OA\Property(property="quantity", type="integer", example=2),
+     *         @OA\Property(property="name", type="string", example="Mozzarella"),
+     *         @OA\Property(property="sku", type="string", example="INGR-MOZZA-001")
+     *     )
+     * )
+     *
+     * @var array|null
+     */
+    private $ingredients;
 
     /**
      * @OA\Property(
