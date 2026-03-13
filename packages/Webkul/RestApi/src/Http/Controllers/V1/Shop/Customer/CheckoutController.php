@@ -234,7 +234,7 @@ class CheckoutController extends CustomerController
     /**
      * Save order.
      */
-    public function saveOrder(OrderRepository $orderRepository): JsonResponse
+    public function saveOrder(OrderRepository $orderRepository)//: JsonResponse
     {
         try {
             if (Cart::hasError()) {
@@ -287,6 +287,7 @@ class CheckoutController extends CustomerController
 
             $order = $orderRepository->create($data);
 
+            //$cartErrors = Cart::getErrors();
             Cart::deActivateCart();
 
             $responseData = [
@@ -299,11 +300,21 @@ class CheckoutController extends CustomerController
                 $responseData['payment_url'] = $redirectUrl;
             }
 
-            return response()->json([
-                'data'    => $responseData,
-                'errors' => Cart::getErrors(),
-                'message' => trans('rest-api::app.shop.checkout.order-saved'),
-            ]);
+            return  json_encode(
+                [
+                    'data'    => $responseData,
+                    'errors' => [],
+                    'message' => trans('rest-api::app.shop.checkout.order-saved'),
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+
+
+//            return response()->json([
+//                'data'    => $responseData,
+//                'errors' => Cart::getErrors(),
+//                'message' => trans('rest-api::app.shop.checkout.order-saved'),
+//            ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message'   => $e->getMessage(),
