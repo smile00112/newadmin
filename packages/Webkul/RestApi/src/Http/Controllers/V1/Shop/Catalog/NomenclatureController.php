@@ -54,6 +54,8 @@ class NomenclatureController extends CatalogController
                 'ingredients' => NomenclatureIngredientResource::collection($ingredients)->resolve($request),
             ];
 
+            $data = ['options' => self::extractAttributeOptions($data)] + $data;
+
             return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         });
 
@@ -176,6 +178,8 @@ class NomenclatureController extends CatalogController
                 'products'    => NomenclatureProductResource::collection($products)->resolve($request),
                 'ingredients' => NomenclatureIngredientResource::collection($ingredients)->resolve($request),
             ];
+
+            $data = ['options' => self::extractAttributeOptions($data)] + $data;
 
             $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -329,5 +333,82 @@ class NomenclatureController extends CatalogController
                 'line'      => $e->getLine(),
             ]);
         }
+    }
+
+    /**
+     * Extract attribute options from products and ingredients into a shared dictionary.
+     *
+     * @param  array  $data
+     * @return array<int, array<string, mixed>>
+     */
+    private static function extractAttributeOptions(array &$data): array
+    {
+        $options = [];
+
+        $processItems = function (?array &$items) use (&$options): void {
+            if (! is_array($items)) {
+                return;
+            }
+
+            foreach ($items as &$item) {
+                if (! is_array($item) || empty($item['attributes']) || ! is_array($item['attributes'])) {
+                    continue;
+                }
+
+                foreach ($item['attributes'] as &$attribute) {
+                    if (! is_array($attribute)) {
+                        continue;
+                    }
+
+                    $rawOptions = $attribute['options'] ?? null;
+
+                    if (! is_array($rawOptions)) {
+                        $attribute['option_ids'] = [];
+                        unset($attribute['options']);
+
+                        continue;
+                    }
+
+                    $optionIds = [];
+
+                    foreach ($rawOptions as $option) {
+                        if (! is_array($option) || ! array_key_exists('id', $option)) {
+                            continue;
+                        }
+
+                        $id = (int) $option['id'];
+                        $optionIds[] = $id;
+
+                        if (! array_key_exists($id, $options)) {
+                            $adminName = $option['admin_name'] ?? ($option['code'] ?? null);
+                            $label = $option['label'] ?? $adminName;
+
+                            $options[$id] = [
+                                'id'           => $id,
+                                'admin_name'   => $adminName,
+                                'label'        => $label,
+                                'swatch_value' => $option['swatch_value'] ?? null,
+                            ];
+                        }
+                    }
+
+                    $attribute['option_ids'] = array_values(array_unique($optionIds));
+
+                    unset($attribute['options']);
+                }
+            }
+        };
+
+        if (array_key_exists('products', $data)) {
+            $processItems($data['products']);
+        }
+
+        if (array_key_exists('ingredients', $data)) {
+            $processItems($data['ingredients']);
+        }
+
+        ksort($options);
+
+        return $options;
     }
 }

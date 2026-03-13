@@ -50,9 +50,10 @@ trait ProductResourceFields
                 'current_value' => $currentValue,
                 'options'       => $attribute->options->map(function ($option) {
                     return [
-                        'id'    => $option->id,
-                        'code'  => $option->admin_name ?? $option->id,
-                        'label' => $option->label ?? $option->admin_name,
+                        'id'           => $option->id,
+                        'admin_name'   => $option->admin_name,
+                        'label'        => $option->label ?? $option->admin_name,
+                        'swatch_value' => $option->swatch_value,
                     ];
                 })->values()->toArray(),
             ];
