@@ -77,8 +77,8 @@
             </span>
         </v-notifications>
 
-        <!-- Sound Alert Toggle for New Orders -->
-        <v-sound-alert-toggle></v-sound-alert-toggle>
+        <!-- Sound Alert Toggle for New Orders (disabled) -->
+        {{-- <v-sound-alert-toggle></v-sound-alert-toggle> --}}
 
         <!-- AI Assistant Button -->
         <v-ai-assistant-header></v-ai-assistant-header>

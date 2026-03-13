@@ -166,6 +166,9 @@
                 
                 // Listen for external filter events
                 this.$emitter.on('datagrid:filter', this.filter);
+
+                // Listen for external refresh requests
+                this.$emitter.on('datagrid:refresh', () => this.get());
             },
 
             methods: {

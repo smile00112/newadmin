@@ -21,6 +21,8 @@ class CategoryDataGrid extends DataGrid
      */
     public function prepareQueryBuilder()
     {
+        $tablePrefix = DB::getTablePrefix();
+
         $queryBuilder = DB::table('categories')
             ->select(
                 'categories.id as category_id',
@@ -29,6 +31,7 @@ class CategoryDataGrid extends DataGrid
                 'categories.status',
                 'category_translations.locale',
             )
+            ->addSelect(DB::raw("(SELECT COUNT(*) FROM {$tablePrefix}product_categories WHERE category_id = {$tablePrefix}categories.id) as products_count"))
             ->leftJoin('category_translations', function ($join) {
                 $join->on('categories.id', '=', 'category_translations.category_id')
                     ->where('category_translations.locale', '=', app()->getLocale());
@@ -95,6 +98,17 @@ class CategoryDataGrid extends DataGrid
                 }
 
                 return '<span class="badge badge-md badge-danger">'.trans('admin::app.catalog.categories.index.datagrid.inactive').'</span>';
+            },
+        ]);
+
+        $this->addColumn([
+            'index'      => 'products_count',
+            'label'      => trans('admin::app.catalog.categories.index.datagrid.no-of-products'),
+            'type'       => 'integer',
+            'sortable'   => true,
+            'closure'    => function ($row) {
+                $url = route('admin.catalog.products.index', ['category' => $row->category_id]);
+                return '<a href="' . $url . '" class="inline-block min-w-[32px] rounded-md bg-violet-100 px-2 py-0.5 text-center text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:hover:bg-violet-900/50">' . (int) $row->products_count . '</a>';
             },
         ]);
     }

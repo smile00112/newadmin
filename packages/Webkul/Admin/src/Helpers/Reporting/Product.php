@@ -79,7 +79,7 @@ class Product extends AbstractReporting
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
             ->whereIn('orders.channel_id', $this->channelIds)
             ->whereBetween('order_items.created_at', [$startDate, $endDate])
-            ->value(DB::raw('SUM(qty_invoiced - qty_refunded)')) ?? 0;
+            ->value(DB::raw('SUM(qty_ordered)')) ?? 0;
     }
 
     /**
@@ -192,11 +192,11 @@ class Product extends AbstractReporting
             ->resetModel()
             ->with(['product', 'product.attribute_family', 'product.attribute_values', 'product.images'])
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
-            ->addSelect('*', DB::raw('SUM(base_total_invoiced - base_amount_refunded) as revenue'))
+            ->addSelect('*', DB::raw('SUM(base_total) as revenue'))
             ->whereNull('parent_id')
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('order_items.created_at', [$this->startDate, $this->endDate])
-            ->having(DB::raw('SUM(base_total_invoiced - base_amount_refunded)'), '>', 0)
+            ->having(DB::raw('SUM(base_total)'), '>', 0)
             ->groupBy('product_id')
             ->orderBy('revenue', 'DESC')
             ->limit($limit)
@@ -228,11 +228,11 @@ class Product extends AbstractReporting
             ->resetModel()
             ->with(['product', 'product.attribute_family', 'product.attribute_values', 'product.images'])
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
-            ->addSelect('*', DB::raw('SUM(qty_invoiced - qty_refunded) as total_qty_ordered'))
+            ->addSelect('*', DB::raw('SUM(qty_ordered) as total_qty_ordered'))
             ->whereNull('parent_id')
             ->whereIn('channel_id', $this->channelIds)
             ->whereBetween('order_items.created_at', [$this->startDate, $this->endDate])
-            ->having(DB::raw('SUM(qty_invoiced - qty_refunded)'), '>', 0)
+            ->having(DB::raw('SUM(qty_ordered)'), '>', 0)
             ->groupBy('product_id')
             ->orderBy('total_qty_ordered', 'DESC')
             ->limit($limit)

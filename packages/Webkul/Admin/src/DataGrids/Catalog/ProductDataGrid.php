@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Attribute\Repositories\AttributeFamilyRepository;
 use Webkul\Attribute\Repositories\AttributeRepository;
+use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\Core\Facades\ElasticSearch;
 use Webkul\DataGrid\DataGrid;
 use Webkul\Product\Helpers\Product;
@@ -27,7 +28,8 @@ class ProductDataGrid extends DataGrid
      */
     public function __construct(
         protected AttributeFamilyRepository $attributeFamilyRepository,
-        protected AttributeRepository $attributeRepository
+        protected AttributeRepository $attributeRepository,
+        protected CategoryRepository $categoryRepository
     ) {}
 
     /**
@@ -38,40 +40,19 @@ class ProductDataGrid extends DataGrid
     public function prepareQueryBuilder()
     {
         $tablePrefix = DB::getTablePrefix();
+        $locale = app()->getLocale();
+        $quotedLocale = DB::getPdo()->quote($locale);
         $manageStockAttribute = $this->attributeRepository->findOneByField('code', 'manage_stock');
         $manageStockAttributeId = $manageStockAttribute?->id;
 
         /**
-         * Query Builder to fetch records from `product_flat` table
+         * Query Builder — subqueries instead of JOINs to avoid cartesian product
          */
         $queryBuilder = DB::table('product_flat')
-            ->distinct()
             ->leftJoin('attribute_families as af', 'product_flat.attribute_family_id', '=', 'af.id')
-            ->leftJoin('product_inventories', 'product_flat.product_id', '=', 'product_inventories.product_id')
-            ->leftJoin('product_images', 'product_flat.product_id', '=', 'product_images.product_id')
-            ->leftJoin('product_categories as pc', 'product_flat.product_id', '=', 'pc.product_id')
-            ->leftJoin('product_constructor_group_products', 'product_flat.product_id', '=', 'product_constructor_group_products.parent_id')
-            ->leftJoin('category_translations as ct', function ($leftJoin) {
-                $leftJoin->on('pc.category_id', '=', 'ct.category_id')
-                    ->where('ct.locale', app()->getLocale());
-            })
-            // join для связи с товарами-ингредиентами
-            ->leftJoin('product_flat as ingredient_flat', 'product_constructor_group_products.product_id', '=', 'ingredient_flat.product_id');
-
-        if ($manageStockAttributeId) {
-            $queryBuilder->leftJoin('product_attribute_values as pav_manage_stock', function ($join) use ($manageStockAttributeId) {
-                $join->on('product_flat.product_id', '=', 'pav_manage_stock.product_id')
-                    ->on('pav_manage_stock.channel', '=', 'product_flat.channel')
-                    ->where('pav_manage_stock.attribute_id', '=', $manageStockAttributeId);
-            });
-        }
-
-        $queryBuilder->select(
+            ->select(
                 'product_flat.locale',
                 'product_flat.channel',
-                'product_images.path as base_image',
-                'pc.category_id',
-                'ct.name as category_name',
                 'product_flat.product_id',
                 'product_flat.sku',
                 'product_flat.name',
@@ -82,16 +63,18 @@ class ProductDataGrid extends DataGrid
                 'product_flat.visible_individually',
                 'af.name as attribute_family',
             )
-            ->addSelect(DB::raw('SUM(DISTINCT '.$tablePrefix.'product_inventories.qty) as quantity'))
-            ->addSelect(DB::raw('COUNT(DISTINCT '.$tablePrefix.'product_images.id) as images_count'))
-            // select для суммы цен ингредиентов
-            ->addSelect(DB::raw('COALESCE(SUM(ingredient_flat.price), 0) as selected_ingredients_sum'))
+            ->addSelect(DB::raw("(SELECT path FROM {$tablePrefix}product_images WHERE product_id = {$tablePrefix}product_flat.product_id LIMIT 1) as base_image"))
+            ->addSelect(DB::raw("(SELECT category_id FROM {$tablePrefix}product_categories WHERE product_id = {$tablePrefix}product_flat.product_id LIMIT 1) as category_id"))
+            ->addSelect(DB::raw("(SELECT ct2.name FROM {$tablePrefix}product_categories pc2 INNER JOIN {$tablePrefix}category_translations ct2 ON pc2.category_id = ct2.category_id AND ct2.locale = {$quotedLocale} WHERE pc2.product_id = {$tablePrefix}product_flat.product_id LIMIT 1) as category_name"))
+            ->addSelect(DB::raw("(SELECT COALESCE(SUM(qty), 0) FROM {$tablePrefix}product_inventories WHERE product_id = {$tablePrefix}product_flat.product_id) as quantity"))
+            ->addSelect(DB::raw("(SELECT COUNT(*) FROM {$tablePrefix}product_images WHERE product_id = {$tablePrefix}product_flat.product_id) as images_count"))
+            ->addSelect(DB::raw("(SELECT COALESCE(SUM(pf2.price), 0) FROM {$tablePrefix}product_constructor_group_products pcgp INNER JOIN {$tablePrefix}product_flat pf2 ON pcgp.product_id = pf2.product_id WHERE pcgp.parent_id = {$tablePrefix}product_flat.product_id) as selected_ingredients_sum"))
             ->addSelect(
                 $manageStockAttributeId
-                    ? DB::raw('COALESCE(MAX('.$tablePrefix.'pav_manage_stock.boolean_value), 0) as manage_stock')
+                    ? DB::raw("COALESCE((SELECT boolean_value FROM {$tablePrefix}product_attribute_values WHERE product_id = {$tablePrefix}product_flat.product_id AND (channel = {$tablePrefix}product_flat.channel OR channel IS NULL) AND attribute_id = " . (int) $manageStockAttributeId . " LIMIT 1), 0) as manage_stock")
                     : DB::raw('0 as manage_stock')
             )
-            ->where('product_flat.locale', app()->getLocale())
+            ->where('product_flat.locale', $locale)
             ->groupBy('product_flat.product_id');
 
         $this->addFilter('product_id', 'product_flat.product_id');
@@ -103,6 +86,26 @@ class ProductDataGrid extends DataGrid
         $this->addFilter('attribute_family', 'af.id');
 
         return $queryBuilder;
+    }
+
+    /**
+     * Process requested filters — override to handle category_name via subquery.
+     */
+    protected function processRequestedFilters(array $requestedFilters)
+    {
+        if (isset($requestedFilters['category_name'])) {
+            $categoryIds = (array) $requestedFilters['category_name'];
+
+            $this->queryBuilder->whereIn('product_flat.product_id', function ($sub) use ($categoryIds) {
+                $sub->select('product_id')
+                    ->from('product_categories')
+                    ->whereIn('category_id', $categoryIds);
+            });
+
+            unset($requestedFilters['category_name']);
+        }
+
+        parent::processRequestedFilters($requestedFilters);
     }
 
     /**
@@ -212,9 +215,19 @@ class ProductDataGrid extends DataGrid
         ]);
 
         $this->addColumn([
-            'index'      => 'category_name',
-            'label'      => trans('admin::app.catalog.products.index.datagrid.category'),
-            'type'       => 'string',
+            'index'              => 'category_name',
+            'label'              => trans('admin::app.catalog.products.index.datagrid.category'),
+            'type'               => 'string',
+            'filterable'         => true,
+            'filterable_type'    => 'dropdown',
+            'filterable_options' => $this->categoryRepository
+                ->all()
+                ->map(fn ($cat) => [
+                    'label' => $cat->translate(app()->getLocale())?->name ?? $cat->name,
+                    'value' => (string) $cat->id,
+                ])
+                ->values()
+                ->toArray(),
         ]);
 
         $this->addColumn([

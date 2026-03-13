@@ -102,6 +102,12 @@ Route::prefix('catalog')->group(function () {
 
         Route::get('edit/{id}', 'edit')->name('admin.catalog.products.edit');
 
+        Route::get('edit-panel/{id}', 'editPanel')->name('admin.catalog.products.edit_panel');
+
+        Route::put('edit-panel/{id}', 'updatePanel')->name('admin.catalog.products.update_panel');
+
+        Route::post('quick-update/{id}', 'quickUpdate')->name('admin.catalog.products.quick_update');
+
         Route::put('edit/{id}', 'update')->name('admin.catalog.products.update');
 
         Route::delete('edit/{id}', 'destroy')->name('admin.catalog.products.delete');
