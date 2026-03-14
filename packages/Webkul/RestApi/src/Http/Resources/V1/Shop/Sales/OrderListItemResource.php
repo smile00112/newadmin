@@ -3,9 +3,12 @@
 namespace Webkul\RestApi\Http\Resources\V1\Shop\Sales;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Webkul\RestApi\Http\Resources\Concerns\ConstructorIngredients;
 
 class OrderListItemResource extends JsonResource
 {
+    use ConstructorIngredients;
+
     /**
      * Transform the resource into an array.
      *
@@ -27,6 +30,8 @@ class OrderListItemResource extends JsonResource
 
         return [
             'id'               => $this->id,
+            'product_id'       => $this->product_id,
+            'type'             => $this->type,
             'name'             => $this->name,
             'sku'              => $this->sku,
             'qty_ordered'      => $this->qty_ordered,
@@ -36,6 +41,16 @@ class OrderListItemResource extends JsonResource
             'formatted_total'  => core()->formatPrice($this->total, $currencyCode),
             'base_image'       => $baseImage,
             'images'           => $images,
+            'ingredients'      => $this->when(
+                in_array($this->type, ['constructor', 'configurable_constructor'], true),
+                function () {
+                    $additional = is_array($this->resource->additional)
+                        ? $this->resource->additional
+                        : (array) json_decode($this->resource->additional ?? '{}', true);
+
+                    return $this->getIngredientsFromAdditional($additional);
+                }
+            ),
         ];
     }
 }

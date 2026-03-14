@@ -3,9 +3,11 @@
 namespace Webkul\RestApi\Http\Resources\V1\Admin\Sales;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Webkul\RestApi\Http\Resources\Concerns\ConstructorIngredients;
 
 class OrderItemResource extends JsonResource
 {
+    use ConstructorIngredients;
     /**
      * Transform the resource into an array.
      *
@@ -86,6 +88,16 @@ class OrderItemResource extends JsonResource
             'base_image'                         => $baseImage,
             'images'                             => $images,
             'downloadable_links'                 => $this->downloadable_link_purchased,
+            'ingredients'                        => $this->when(
+                in_array($this->type, ['constructor', 'configurable_constructor'], true),
+                function () {
+                    $additional = is_array($this->resource->additional)
+                        ? $this->resource->additional
+                        : (array) json_decode($this->resource->additional ?? '{}', true);
+
+                    return $this->getIngredientsFromAdditional($additional);
+                }
+            ),
             'additional'                         => is_array($this->resource->additional)
                 ? $this->resource->additional
                 : json_decode($this->resource->additional, true),
