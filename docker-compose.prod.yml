@@ -60,6 +60,7 @@ services:
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT_ALT:-2028}:443"
     logging:
       driver: "json-file"
       options:
