@@ -34,4 +34,11 @@ return [
         'jenssegers' => \Shetabit\Visitor\Drivers\JenssegersAgent::class,
         'UAParser'   => \Shetabit\Visitor\Drivers\UAParser::class,
     ],
+
+    'geoip' => false,
+    'resolver' => 'stevebauman',
+    'resolvers' => [
+        'stevebauman' => \Shetabit\Visitor\Resolvers\GeoIp\SteveBaumanResolver::class,
+        'null'        => \Shetabit\Visitor\Resolvers\GeoIp\NullResolver::class,
+    ],
 ];
