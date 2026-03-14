@@ -16,6 +16,8 @@ class VisitorServiceProvider extends BaseVisitorServiceProvider
      */
     public function register(): void
     {
+
+        parent::register();
         /**
          * Bind to service container.
          */
