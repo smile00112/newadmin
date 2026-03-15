@@ -19,6 +19,7 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
         \Webkul\Sales\Models\OrderAddress::class,
         \Webkul\Sales\Models\OrderComment::class,
         \Webkul\Sales\Models\OrderItem::class,
+        \Webkul\Sales\Models\OrderStatusHistory::class,
         \Webkul\Sales\Models\OrderPayment::class,
         \Webkul\Sales\Models\OrderTransaction::class,
         \Webkul\Sales\Models\Refund::class,
