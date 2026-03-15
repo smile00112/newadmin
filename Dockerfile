@@ -20,7 +20,9 @@ RUN apk add --no-cache \
     autoconf \
     g++ \
     make \
-    pcre-dev
+    pcre-dev \
+    nodejs \
+    npm
 
 # Установка PHP расширений
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \

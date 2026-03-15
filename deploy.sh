@@ -206,6 +206,13 @@ docker compose -f docker-compose.prod.yml up -d
 info "Ожидание готовности приложения..."
 sleep 15
 
+# Сборка фронтенда (если есть package.json)
+if [ -f package.json ]; then
+    info "Установка NPM-зависимостей и сборка фронтенда..."
+    docker compose -f docker-compose.prod.yml exec -T app npm ci --omit=dev 2>/dev/null || docker compose -f docker-compose.prod.yml exec -T app npm install --omit=dev
+    docker compose -f docker-compose.prod.yml exec -T app npm run build
+fi
+
 # Миграции
 info "Запуск миграций..."
 docker compose -f docker-compose.prod.yml exec -e RUN_MIGRATIONS=true app php artisan migrate --force
