@@ -40,12 +40,13 @@ services:
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis
       - QUEUE_CONNECTION=redis
-      - BROADCAST_DRIVER=${BROADCAST_DRIVER:-reverb}
+      - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
       - REVERB_APP_ID=${REVERB_APP_ID:-my-app-id}
       - REVERB_APP_KEY=${REVERB_APP_KEY:-my-app-key}
       - REVERB_APP_SECRET=${REVERB_APP_SECRET:-my-app-secret}
       - REVERB_HOST=reverb
       - REVERB_PORT=8080
+      - REVERB_SCHEME=http
       - RUN_MIGRATIONS=${RUN_MIGRATIONS:-false}
       - SESSION_LIFETIME=${SESSION_LIFETIME:-120}
       - FILESYSTEM_DISK=${FILESYSTEM_DISK:-public}
@@ -187,7 +188,8 @@ services:
       - REVERB_APP_ID=${REVERB_APP_ID:-my-app-id}
       - REVERB_APP_KEY=${REVERB_APP_KEY:-my-app-key}
       - REVERB_APP_SECRET=${REVERB_APP_SECRET:-my-app-secret}
-      - REVERB_HOST=0.0.0.0
+      - REVERB_SERVER_HOST=0.0.0.0
+      - REVERB_HOST=${DOMAIN:-sunrise-n.softnova.ru}
       - REVERB_PORT=8080
       - REVERB_SCHEME=http
       - REDIS_HOST=redis
@@ -244,12 +246,13 @@ services:
       - QUEUE_CONNECTION=redis
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis
-      - BROADCAST_DRIVER=${BROADCAST_DRIVER:-reverb}
+      - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
       - REVERB_APP_ID=${REVERB_APP_ID:-my-app-id}
       - REVERB_APP_KEY=${REVERB_APP_KEY:-my-app-key}
       - REVERB_APP_SECRET=${REVERB_APP_SECRET:-my-app-secret}
       - REVERB_HOST=reverb
       - REVERB_PORT=8080
+      - REVERB_SCHEME=http
     networks:
       - app-network
     depends_on:
