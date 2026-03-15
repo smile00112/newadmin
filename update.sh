@@ -96,6 +96,12 @@ if [ -f package.json ]; then
     docker compose -f docker-compose.prod.yml exec -T app npm run build
 fi
 
+# Сборка Admin (packages/Webkul/Admin)
+if [ -f packages/Webkul/Admin/package.json ]; then
+    info "Установка NPM-зависимостей и сборка Admin..."
+    docker compose -f docker-compose.prod.yml exec -T app sh -c "cd packages/Webkul/Admin && (npm ci --omit=dev 2>/dev/null || npm install --omit=dev) && npm run build"
+fi
+
 # Миграции в работающем новом контейнере
 info "Запуск миграций базы данных..."
 docker compose -f docker-compose.prod.yml exec app php artisan migrate --force
