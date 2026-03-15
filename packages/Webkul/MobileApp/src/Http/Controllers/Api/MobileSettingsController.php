@@ -5,7 +5,9 @@ namespace Webkul\MobileApp\Http\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Webkul\Attribute\Repositories\AttributeRepository;
+use Webkul\Core\Facades\Core;
 use Webkul\Core\Models\CoreConfig;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Payment;
@@ -160,6 +162,53 @@ class MobileSettingsController extends Controller
             $currentChannel = core()->getCurrentChannelCode();
             if ($currentChannel !== core()->getDefaultChannelCode()) {
                 Cache::forget(self::CACHE_PREFIX . ':' . $currentChannel);
+            }
+        }
+    }
+
+    /**
+     * Warm mobile-settings cache for all channels.
+     */
+    public static function warmCache(): void
+    {
+        $channels = Core::getAllChannels();
+
+        foreach ($channels as $channel) {
+            $channelCode = $channel->code ?? (string) $channel->id;
+            if (empty($channelCode)) {
+                continue;
+            }
+
+            try {
+                $controller = app(self::class);
+                $controller->warmChannel($channelCode);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to warm mobile-settings cache', [
+                    'channel' => $channelCode,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Build and cache mobile-settings data for a specific channel.
+     */
+    public function warmChannel(string $channelCode): void
+    {
+        $originalChannel = core()->getCurrentChannel();
+        $channel = Core::getAllChannels()->first(fn ($c) => ($c->code ?? (string) $c->id) === $channelCode);
+
+        if ($channel) {
+            core()->setCurrentChannel($channel);
+        }
+
+        try {
+            $data = $this->buildSettingsData($channelCode);
+            Cache::put($this->buildCacheKey($channelCode), $data, self::CACHE_TTL);
+        } finally {
+            if ($originalChannel) {
+                core()->setCurrentChannel($originalChannel);
             }
         }
     }

@@ -2,12 +2,6 @@
 
 set -e
 
-# Восстановление прав на скрипты после git pull / копирования (чтобы не требовался ручной chmod 755)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-for f in "$SCRIPT_DIR/deploy.sh" "$SCRIPT_DIR/update.sh"; do
-  [ -f "$f" ] && chmod +x "$f" 2>/dev/null || true
-done
-
 echo "=========================================="
 echo "  Bagisto Docker Update Script"
 echo "=========================================="
@@ -96,12 +90,6 @@ if [ -f package.json ]; then
     docker compose -f docker-compose.prod.yml exec -T app npm run build
 fi
 
-# Сборка Admin (packages/Webkul/Admin)
-if [ -f packages/Webkul/Admin/package.json ]; then
-    info "Установка NPM-зависимостей и сборка Admin..."
-    docker compose -f docker-compose.prod.yml exec -T app sh -c "cd packages/Webkul/Admin && (npm ci --omit=dev 2>/dev/null || npm install --omit=dev) && npm run build"
-fi
-
 # Миграции в работающем новом контейнере
 info "Запуск миграций базы данных..."
 docker compose -f docker-compose.prod.yml exec app php artisan migrate --force
@@ -109,6 +97,18 @@ docker compose -f docker-compose.prod.yml exec app php artisan migrate --force
 # Перезапуск queue worker
 info "Перезапуск queue worker..."
 docker compose -f docker-compose.prod.yml restart queue
+
+# Прогрев кеша nomenclature (чтобы первый запрос /api/v1/nomenclature не был медленным)
+info "Прогрев кеша nomenclature..."
+docker compose -f docker-compose.prod.yml exec app php artisan nomenclature:warm-cache || true
+
+# Прогрев кеша mobile-settings (чтобы первый запрос /api/v1/mobile-settings не был медленным)
+info "Прогрев кеша mobile-settings..."
+docker compose -f docker-compose.prod.yml exec app php artisan mobile-settings:warm-cache || true
+
+# Прогрев кеша catalog-v2 (чтобы первый запрос /api/v1/catalog-v2 не был медленным)
+info "Прогрев кеша catalog-v2..."
+docker compose -f docker-compose.prod.yml exec app php artisan catalog-v2:warm-cache || true
 
 # Перезапуск Nginx (если нужно)
 if git diff HEAD@{1} HEAD --name-only | grep -q "docker/nginx/"; then

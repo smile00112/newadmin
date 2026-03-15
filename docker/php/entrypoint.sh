@@ -47,6 +47,9 @@ if [ "$APP_ENV" = "production" ]; then
     run_artisan_optional route:cache
     run_artisan_optional view:cache
     run_artisan_optional event:cache
+    run_artisan_optional nomenclature:warm-cache
+    run_artisan_optional mobile-settings:warm-cache
+    run_artisan_optional catalog-v2:warm-cache
 fi
 
 # Выполнение миграций (если нужно)

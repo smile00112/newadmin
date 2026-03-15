@@ -2,7 +2,9 @@
 
 namespace Webkul\Product\Observers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Webkul\Core\Facades\Core;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
 use Webkul\RestApi\Jobs\WarmNomenclatureCacheJob;
@@ -65,10 +67,33 @@ class ProductObserver
         if (class_exists(NomenclatureController::class)) {
             NomenclatureController::clearNomenclatureCache();
 
+            // Synchronously warm default channel+locale so first request is fast
+            $this->warmNomenclatureDefault();
+
             // Only dispatch warm cache if queue is async; skip on sync to avoid blocking
             if (config('queue.default') !== 'sync') {
                 WarmNomenclatureCacheJob::dispatch();
             }
+        }
+    }
+
+    /**
+     * Warm nomenclature cache for default channel+locale only (sync, so first request is fast).
+     */
+    protected function warmNomenclatureDefault(): void
+    {
+        try {
+            $channel = Core::getDefaultChannel();
+            if ($channel && $channel->default_locale) {
+                $localeCode = is_object($channel->default_locale) ? $channel->default_locale->code : $channel->default_locale;
+                if (! empty($localeCode)) {
+                    NomenclatureController::warmCacheForChannelAndLocale($channel, $localeCode);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to warm nomenclature cache for default channel', [
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 }

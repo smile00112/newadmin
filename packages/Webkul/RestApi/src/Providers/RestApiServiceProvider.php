@@ -2,11 +2,13 @@
 
 namespace Webkul\RestApi\Providers;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Exceptions\Handler as BaseHandler;
 use Webkul\RestApi\Exceptions\Handler;
+use Webkul\RestApi\Console\Commands\WarmCatalogV2CacheCommand;
 use Webkul\RestApi\Console\Commands\WarmNomenclatureCacheCommand;
 use Webkul\RestApi\Listeners\InvalidateCustomerOrdersCache;
 use Webkul\Sales\Models\Order;
@@ -35,6 +37,8 @@ class RestApiServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->activateMiddlewareAliases();
+
+        $this->registerSchedule();
 
         $this->loadTranslationsFrom(__DIR__.'/../Resources/lang', 'rest-api');
 
@@ -105,7 +109,19 @@ class RestApiServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 WarmNomenclatureCacheCommand::class,
+                WarmCatalogV2CacheCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Register scheduled tasks (nomenclature and catalog-v2 cache warming).
+     */
+    protected function registerSchedule(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('nomenclature:warm-cache')->everyFiveMinutes();
+            $schedule->command('catalog-v2:warm-cache')->everyFiveMinutes();
+        });
     }
 }
