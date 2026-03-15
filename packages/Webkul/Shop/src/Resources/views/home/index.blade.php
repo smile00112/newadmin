@@ -22,7 +22,7 @@
 
 @push('scripts')
     <script>
-        localStorage.setItem('categories', JSON.stringify(@json($categories)));
+        localStorage.setItem('categories', JSON.stringify(@json($categories ?? [])));
     </script>
 @endpush
 

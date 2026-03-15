@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\Marketing\Repositories\URLRewriteRepository;
 use Webkul\Product\Repositories\ProductRepository;
+use Webkul\Shop\Http\Resources\CategoryTreeResource;
 use Webkul\Theme\Repositories\ThemeCustomizationRepository;
 
 class ProductsCategoriesProxyController extends Controller
@@ -47,9 +48,13 @@ class ProductsCategoriesProxyController extends Controller
             $customizations = $this->themeCustomizationRepository->orderBy('sort_order')->findWhere([
                 'status'     => self::STATUS,
                 'channel_id' => core()->getCurrentChannel()->id,
+                'theme_code' => core()->getCurrentChannel()->theme,
             ]);
 
-            return view('shop::home.index', compact('customizations'));
+            $categories = $this->categoryRepository->getVisibleCategoryTree(core()->getCurrentChannel()->root_category_id);
+            $categories = CategoryTreeResource::collection($categories);
+
+            return view('shop::home.index', compact('customizations', 'categories'));
         }
 
         $category = $this->categoryRepository->findBySlug($slugOrURLKey);
