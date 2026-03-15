@@ -3,6 +3,7 @@
 namespace Webkul\Bonus\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Webkul\Bonus\Models\BonusLevel;
 use Webkul\Bonus\Models\BonusTransaction;
 use Webkul\Bonus\Repositories\BonusLevelRepository;
@@ -280,6 +281,8 @@ class BonusService
             $order->bonus_amount_accrued = core()->convertPrice($amount, $order->base_currency_code, $order->order_currency_code);
             $order->save();
         });
+
+        Event::dispatch('bonus.balance.changed', $order->customer_id);
     }
 
     /**
@@ -361,6 +364,8 @@ class BonusService
             $order->bonus_amount_used = core()->convertPrice($bonusAmount, $order->base_currency_code, $order->order_currency_code);
             $order->save();
         });
+
+        Event::dispatch('bonus.balance.changed', $order->customer_id);
     }
 
     /**
@@ -449,6 +454,8 @@ class BonusService
                 $order->save();
             }
         });
+
+        Event::dispatch('bonus.balance.changed', $order->customer_id);
     }
 
     /**
@@ -530,7 +537,7 @@ class BonusService
         $expiryDays = (int) $this->config('expiry_days', 365);
         $expiresAt = $expiryDays > 0 ? now()->addDays($expiryDays) : null;
 
-        return DB::transaction(function () use ($customerId, $amount, $description, $currencyCode, $expiresAt) {
+        $transaction = DB::transaction(function () use ($customerId, $amount, $description, $currencyCode, $expiresAt) {
             // Create transaction
             $transaction = $this->bonusTransactionRepository->create([
                 'customer_id' => $customerId,
@@ -551,6 +558,10 @@ class BonusService
 
             return $transaction;
         });
+
+        Event::dispatch('bonus.balance.changed', $customerId);
+
+        return $transaction;
     }
 
     /**
@@ -623,6 +634,8 @@ class BonusService
                 $currencyCode
             );
         });
+
+        Event::dispatch('bonus.balance.changed', $customerId);
     }
 
     /**
@@ -694,6 +707,8 @@ class BonusService
 
                     $expiredCount++;
                 });
+
+                Event::dispatch('bonus.balance.changed', $transaction->customer_id);
             }
         }
 

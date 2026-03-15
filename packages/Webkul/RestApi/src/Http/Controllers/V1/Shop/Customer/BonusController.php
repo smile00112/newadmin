@@ -4,7 +4,9 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Webkul\Bonus\Models\BonusLevel;
+use Webkul\RestApi\Services\CustomerBonusesCache;
 use Webkul\Bonus\Repositories\BonusLevelRepository;
 use Webkul\Bonus\Repositories\BonusTransactionRepository;
 use Webkul\Bonus\Repositories\CustomerBonusRepository;
@@ -118,18 +120,32 @@ class BonusController extends CustomerController
             ]);
         }
 
+        $cacheKey = CustomerBonusesCache::key($customer->id);
+
+        $data = Cache::remember($cacheKey, CustomerBonusesCache::ttl(), function () use ($customer) {
+            return $this->buildBonusData($customer);
+        });
+
+        return response()->json($data);
+    }
+
+    /**
+     * Build bonus response data for a customer (used by controller and warmer).
+     *
+     * @param  \Webkul\Customer\Models\Customer  $customer
+     * @return array
+     */
+    public function buildBonusData($customer): array
+    {
         $currencyCode = core()->getCurrentCurrencyCode();
 
-        // Get bonus balance
         $pointsBalance = $this->bonusService->getAvailableBonuses($customer->id, $currencyCode);
         $totalBalance = $this->customerBonusRepository->getBalance($customer->id, $currencyCode);
 
-        // Get settings
         $calculationType = (string) core()->getConfigData('bonus.general.settings.calculation_type');
         $maxUsagePercent = (float) core()->getConfigData('bonus.general.settings.max_usage_percent');
         $showLevelsInfo = (bool) core()->getConfigData('bonus.general.settings.show_levels_info', false);
 
-        // Get customer statistics
         $ordersCount = $customer->orders()
             ->where('status', Order::STATUS_COMPLETED)
             ->count();
@@ -138,13 +154,9 @@ class BonusController extends CustomerController
             ->where('status', Order::STATUS_COMPLETED)
             ->sum('base_grand_total');
 
-        // Get current level
         $currentLevel = $this->bonusService->calculateCustomerLevel($customer, $calculationType);
-
-        // Get all active levels
         $allLevels = $this->bonusLevelRepository->getActiveLevels();
 
-        // Format levels info
         $levelsInfo = [];
         $nextLevel = null;
         $foundCurrent = false;
@@ -156,7 +168,6 @@ class BonusController extends CustomerController
                 $foundCurrent = true;
             }
 
-            // Format description based on calculation type
             $descriptionTop = 'Возвращаем ' . $level->cashback_percent . '% заказа.';
             $descriptionBottom = $this->formatLevelDescription($level, $calculationType, $allLevels);
 
@@ -170,27 +181,13 @@ class BonusController extends CustomerController
                 'is_current' => $isCurrent,
             ];
 
-            // Find next level (first level after current)
             if ($foundCurrent && ! $isCurrent && $nextLevel === null) {
                 $nextLevel = $level;
-//                $levelData['name'] = $level->name;
-
-                // Calculate remaining to next level
-                $currentValue = match ($calculationType) {
-                    BonusLevel::CALCULATION_TYPE_ORDERS_COUNT => $ordersCount,
-                    BonusLevel::CALCULATION_TYPE_TOTAL_SPENT => $spentSum,
-                    default => 0,
-                };
-
-//                if ($level->threshold_value > $currentValue) {
-//                    $levelData['rule_to_level'] = (float) ($level->threshold_value - $currentValue);
-//                }
             }
 
             $levelsInfo[] = $levelData;
         }
 
-        // Format next level info
         $remaining = 0;
         $nextLevelInfo = null;
         if ($nextLevel) {
@@ -200,7 +197,7 @@ class BonusController extends CustomerController
                 default => 0,
             };
 
-            $remaining = max(0, $nextLevel->threshold_value - $currentValue);
+            $remaining = max(0, (int) $nextLevel->threshold_value - $currentValue);
 
             if ($calculationType === BonusLevel::CALCULATION_TYPE_ORDERS_COUNT) {
                 $nextLevelInfo = [
@@ -215,7 +212,6 @@ class BonusController extends CustomerController
             }
         }
 
-        // Get bonus history (limit to 20 most recent)
         $transactions = $this->bonusTransactionRepository->getCustomerTransactions($customer->id)
             ->take(20);
 
@@ -231,9 +227,9 @@ class BonusController extends CustomerController
             ];
         })->toArray();
 
-        $data = [
-            'points_balance' => (float) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN ),
-            'balance' => (float) round($totalBalance, 0, PHP_ROUND_HALF_DOWN ),
+        return [
+            'points_balance' => (float) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN),
+            'balance' => (float) round($totalBalance, 0, PHP_ROUND_HALF_DOWN),
             'spent_sum' => (float) round($spentSum),
             'orders_count' => (int) $ordersCount,
             'remaining' => (int) $remaining,
@@ -245,8 +241,6 @@ class BonusController extends CustomerController
             'next_level_info' => $nextLevelInfo,
             'bonus_history' => $bonusHistory,
         ];
-
-        return response()->json($data);
     }
 
     /**

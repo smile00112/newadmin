@@ -10,6 +10,7 @@ use Webkul\Core\Exceptions\Handler as BaseHandler;
 use Webkul\RestApi\Exceptions\Handler;
 use Webkul\RestApi\Console\Commands\WarmCatalogV2CacheCommand;
 use Webkul\RestApi\Console\Commands\WarmNomenclatureCacheCommand;
+use Webkul\RestApi\Listeners\InvalidateCustomerBonusesCache;
 use Webkul\RestApi\Listeners\InvalidateCustomerOrdersCache;
 use Webkul\Sales\Models\Order;
 
@@ -48,6 +49,9 @@ class RestApiServiceProvider extends ServiceProvider
 
         $this->app->bind(BaseHandler::class, Handler::class);
 
+        $this->registerOrderCacheInvalidation();
+        $this->registerBonusCacheInvalidation();
+
         // Load helpers
         require_once __DIR__.'/../Http/helpers.php';
     }
@@ -63,6 +67,15 @@ class RestApiServiceProvider extends ServiceProvider
         Event::listen('sales.order.update-status.after', [$listener, 'onOrderStatusUpdated']);
         Event::listen('sales.order.cancel.after', [$listener, 'onOrderCanceled']);
         Event::listen('eloquent.deleted: '.Order::class, [$listener, 'onOrderDeleted']);
+    }
+
+    /**
+     * Register event listeners for customer bonuses cache invalidation and warming.
+     */
+    protected function registerBonusCacheInvalidation(): void
+    {
+        $listener = InvalidateCustomerBonusesCache::class;
+        Event::listen('bonus.balance.changed', [$listener, 'onBalanceChanged']);
     }
 
     /**

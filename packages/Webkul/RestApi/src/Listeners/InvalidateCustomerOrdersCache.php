@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Listeners;
 
 use Illuminate\Database\Eloquent\Model;
+use Webkul\RestApi\Jobs\WarmCustomerOrdersCacheJob;
 use Webkul\RestApi\Services\CustomerOrdersCache;
 use Webkul\Sales\Models\Order;
 
@@ -14,6 +15,7 @@ class InvalidateCustomerOrdersCache
     public function onOrderCreated(Order $order): void
     {
         $this->invalidateForOrder($order);
+        $this->dispatchWarmJob($order);
     }
 
     /**
@@ -22,6 +24,7 @@ class InvalidateCustomerOrdersCache
     public function onOrderStatusUpdated(Order $order): void
     {
         $this->invalidateForOrder($order);
+        $this->dispatchWarmJob($order);
     }
 
     /**
@@ -30,6 +33,7 @@ class InvalidateCustomerOrdersCache
     public function onOrderCanceled(Order $order): void
     {
         $this->invalidateForOrder($order);
+        $this->dispatchWarmJob($order);
     }
 
     /**
@@ -39,6 +43,7 @@ class InvalidateCustomerOrdersCache
     {
         if ($model instanceof Order) {
             $this->invalidateForOrder($model);
+            $this->dispatchWarmJob($model);
         }
     }
 
@@ -52,5 +57,21 @@ class InvalidateCustomerOrdersCache
         if ($customerId !== null) {
             CustomerOrdersCache::invalidate((int) $customerId);
         }
+    }
+
+    /**
+     * Dispatch job to warm customer orders cache (active + completed) via queue.
+     */
+    protected function dispatchWarmJob(Order $order): void
+    {
+        if ($order->customer_id === null) {
+            return;
+        }
+
+        $order->loadMissing('channel');
+        $channelCode = (string) ($order->channel?->code ?? core()->getDefaultChannelCode() ?? '');
+
+        WarmCustomerOrdersCacheJob::dispatch((int) $order->customer_id, $channelCode)
+            ->delay(now()->addSeconds(2));
     }
 }
