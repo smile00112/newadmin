@@ -2,6 +2,12 @@
 
 set -e
 
+# Восстановление прав на скрипты после git pull / копирования (чтобы не требовался ручной chmod 755)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+for f in "$SCRIPT_DIR/deploy.sh" "$SCRIPT_DIR/update.sh"; do
+  [ -f "$f" ] && chmod +x "$f" 2>/dev/null || true
+done
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
