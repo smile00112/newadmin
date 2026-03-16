@@ -247,7 +247,7 @@ class OrderController extends CustomerController
                 Order::STATUS_PENDING_PAYMENT,
                 Order::STATUS_PROCESSING,
                 Order::STATUS_PREPARING,
-                Order::STATUS_READY,
+                //Order::STATUS_READY,
             ];
         } else {
             $statuses = is_array($statuses) ? $statuses : explode(',', $statuses);
@@ -270,6 +270,7 @@ class OrderController extends CustomerController
             $statuses = [
                 Order::STATUS_COMPLETED,
                 Order::STATUS_CLOSED,
+                Order::STATUS_READY,
             ];
         } else {
             $statuses = is_array($statuses) ? $statuses : explode(',', $statuses);

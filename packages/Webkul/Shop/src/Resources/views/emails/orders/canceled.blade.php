@@ -112,7 +112,11 @@
                 @foreach ($order->items as $item)
                     <tr style="vertical-align: text-top;">
                         <td style="text-align: left;padding: 15px">
-                            {{ $item->getTypeInstance()->getOrderedItem($item)->sku }}
+                            @php
+                                $orderedItem = $item->getTypeInstance()->getOrderedItem($item);
+                            @endphp
+
+                            {{ $orderedItem?->sku ?? $item->sku }}
                         </td>
 
                         <td style="text-align: left;padding: 15px">
