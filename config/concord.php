@@ -44,7 +44,7 @@ return [
         \Webkul\User\Providers\ModuleServiceProvider::class,
         \Webkul\MobileApp\Providers\ModuleServiceProvider::class,
         \Webkul\Bonus\Providers\ModuleServiceProvider::class,
-        // \Webkul\PushNotification\Providers\ModuleServiceProvider::class, // TODO: Fix module registration
+        \Webkul\PushNotification\Providers\ModuleServiceProvider::class,
 
     ],
 
