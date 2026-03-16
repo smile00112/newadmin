@@ -1,5 +1,5 @@
 
-<template v-if="isLoading">
+<template v-if="isLoading && !isFilterLoading">
     <x-admin::shimmer.datagrid.toolbar />
 </template>
 

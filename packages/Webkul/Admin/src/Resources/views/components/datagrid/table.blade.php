@@ -2,6 +2,7 @@
 
 <v-datagrid-table
     :is-loading="isLoading"
+    :is-filter-loading="isFilterLoading"
     :available="available"
     :applied="applied"
     @selectAll="selectAll"
@@ -17,10 +18,34 @@
         id="v-datagrid-table-template"
     >
         <div class="w-full">
-            <div class="table-responsive box-shadow grid w-full overflow-x-auto rounded-2xl bg-white dark:bg-gray-900">
+            <div class="table-responsive box-shadow relative grid w-full overflow-x-auto rounded-2xl bg-white dark:bg-gray-900">
+                <!-- Filter Loading Overlay -->
+                <transition
+                    enter-active-class="transition-opacity duration-200"
+                    enter-from-class="opacity-0"
+                    enter-to-class="opacity-100"
+                    leave-active-class="transition-opacity duration-150"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                >
+                    <div
+                        v-if="isFilterLoading"
+                        class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 backdrop-blur-[1px] dark:bg-gray-900/60"
+                    >
+                        <div class="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 shadow-lg dark:bg-gray-800">
+                            <svg class="h-5 w-5 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm font-medium text-gray-600 dark:text-gray-300">@lang('admin::app.components.datagrid.toolbar.filter.title')...</span>
+                        </div>
+                    </div>
+                </transition>
+
                 <slot
                     name="header"
                     :is-loading="isLoading"
+                    :is-filter-loading="isFilterLoading"
                     :available="available"
                     :applied="applied"
                     :select-all="selectAll"
@@ -92,6 +117,7 @@
                 <slot
                     name="body"
                     :is-loading="isLoading"
+                    :is-filter-loading="isFilterLoading"
                     :available="available"
                     :applied="applied"
                     :select-all="selectAll"
@@ -173,7 +199,7 @@
         app.component('v-datagrid-table', {
             template: '#v-datagrid-table-template',
 
-            props: ['isLoading', 'available', 'applied'],
+            props: ['isLoading', 'isFilterLoading', 'available', 'applied'],
 
             computed: {
                 gridsCount() {

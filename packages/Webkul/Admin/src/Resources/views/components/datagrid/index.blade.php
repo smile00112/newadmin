@@ -17,6 +17,7 @@
                 <x-admin::datagrid.table :isMultiRow="$isMultiRow">
                     <template #header="{
                         isLoading,
+                        isFilterLoading,
                         available,
                         applied,
                         selectAll,
@@ -26,6 +27,7 @@
                         <slot
                             name="header"
                             :is-loading="isLoading"
+                            :is-filter-loading="isFilterLoading"
                             :available="available"
                             :applied="applied"
                             :select-all="selectAll"
@@ -37,6 +39,7 @@
 
                     <template #body="{
                         isLoading,
+                        isFilterLoading,
                         available,
                         applied,
                         selectAll,
@@ -46,6 +49,7 @@
                         <slot
                             name="body"
                             :is-loading="isLoading"
+                            :is-filter-loading="isFilterLoading"
                             :available="available"
                             :applied="applied"
                             :select-all="selectAll"
@@ -89,6 +93,8 @@
             data() {
                 return {
                     isLoading: false,
+
+                    isFilterLoading: false,
 
                     available: {
                         id: null,
@@ -220,7 +226,7 @@
                  *
                  * @returns {void}
                  */
-                get(extraParams = {}) {
+                get(extraParams = {}, softLoad = false) {
                     let params = {
                         pagination: {
                             page: this.applied.pagination.page,
@@ -247,16 +253,17 @@
 
                     urlParams.forEach((param, key) => params[key] = param);
 
-                    this.isLoading = true;
+                    if (softLoad) {
+                        this.isFilterLoading = true;
+                    } else {
+                        this.isLoading = true;
+                    }
 
                     this.$axios
                         .get(this.src, {
                             params: { ...params, ...extraParams }
                         })
                         .then((response) => {
-                            /**
-                             * Precisely taking all the keys to the data prop to avoid adding any extra keys from the response.
-                             */
                             const {
                                 id,
                                 columns,
@@ -279,6 +286,7 @@
                             this.available.meta = meta;
 
                             this.isLoading = false;
+                            this.isFilterLoading = false;
                         });
                 },
 
@@ -354,7 +362,7 @@
                      */
                     this.applied.pagination.page = 1;
 
-                    this.get();
+                    this.get({}, true);
                 },
 
                 /**
@@ -385,7 +393,7 @@
                      */
                     this.applied.pagination.page = 1;
 
-                    this.get();
+                    this.get({}, true);
                 },
 
                 /**
@@ -405,7 +413,7 @@
 
                     this.applied.savedFilterId = filter.id;
 
-                    this.get();
+                    this.get({}, true);
                 },
 
                 /**
