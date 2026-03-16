@@ -809,30 +809,41 @@ class OrderController extends Controller
             Order::STATUS_PENDING,
             Order::STATUS_PENDING_PAYMENT,
         ];
-        
-        $orders = $this->orderRepository
+
+        $orders = Order::select([
+                'id',
+                'increment_id',
+                'status',
+                'customer_first_name',
+                'customer_last_name',
+                'customer_email',
+                'grand_total',
+                'created_at',
+            ])
+            ->withCount('items')
             ->whereIn('status', $pendingStatuses)
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
             ->limit(10)
-            ->get()
-            ->map(function ($order) {
-                return [
-                    'id' => $order->id,
-                    'increment_id' => $order->increment_id,
-                    'status' => $order->status,
-                    'customer_name' => $order->customer_first_name . ' ' . $order->customer_last_name,
-                    'customer_email' => $order->customer_email,
-                    'grand_total' => $order->grand_total,
-                    'formatted_grand_total' => core()->formatPrice($order->grand_total),
-                    'items_count' => $order->items->count(),
-                    'created_at' => $order->created_at->toISOString(),
-                ];
-            });
-        
+            ->get();
+
+        $formattedOrders = $orders->map(function ($order) {
+            return [
+                'id'                    => $order->id,
+                'increment_id'          => $order->increment_id,
+                'status'                => $order->status,
+                'customer_name'         => $order->customer_first_name . ' ' . $order->customer_last_name,
+                'customer_email'        => $order->customer_email,
+                'grand_total'           => $order->grand_total,
+                'formatted_grand_total' => core()->formatPrice($order->grand_total),
+                'items_count'           => $order->items_count,
+                'created_at'            => $order->created_at->toISOString(),
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'count' => $orders->count(),
-            'orders' => $orders,
+            'count'   => $formattedOrders->count(),
+            'orders'  => $formattedOrders,
         ]);
     }
 }

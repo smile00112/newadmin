@@ -7,7 +7,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
         body { background: #f8f9fb !important; }
-        body.in-iframe .panel-header-block { display: none !important; }
+        .panel-header-block { display: none !important; }
         body.in-iframe { padding: 0 !important; margin: 0 !important; }
         body.in-iframe > div { padding: 8px 16px !important; min-height: auto !important; }
     </style>
@@ -80,6 +80,21 @@
             </div>
 
             <div style="display:flex; align-items:center; gap:8px;">
+                <!-- Delete Button -->
+                <button
+                    type="button"
+                    onclick="confirmDeleteProduct({{ $product->id }})"
+                    style="display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; font-size:13px; font-weight:600; color:#ef4444; background:#fef2f2; border:1px solid #fecaca; cursor:pointer; transition:all 0.15s;"
+                    onmouseenter="this.style.background='#fee2e2'; this.style.borderColor='#fca5a5'"
+                    onmouseleave="this.style.background='#fef2f2'; this.style.borderColor='#fecaca'"
+                    title="Удалить товар"
+                >
+                    <svg style="width:15px; height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Удалить
+                </button>
+
                 @if ($product->status && $product->visible_individually && $product->url_key)
                     <a
                         href="{{ route('shop.product_or_category.index', $product->url_key) }}"
@@ -312,6 +327,7 @@
 
             @endforeach
         </div>
+
     </x-admin::form>
 
     {!! view_render_event('bagisto.admin.catalog.product.edit.after', ['product' => $product]) !!}
@@ -320,7 +336,6 @@
         <script>
             // Notify parent when product is saved (form submit intercept)
             document.addEventListener('DOMContentLoaded', function() {
-                // After successful save, the page reloads inside iframe — notify parent
                 @if(session('success'))
                     if (window !== window.parent) {
                         window.parent.postMessage({type: 'product-updated'}, '*');
@@ -363,7 +378,6 @@
                     if (data.success) {
                         document.getElementById('panel-type-label').textContent = newLabel;
                         document.getElementById('panel-type-dropdown').classList.add('hidden');
-                        // Reload panel to apply new type-specific views
                         window.location.reload();
                     }
                 })
@@ -371,6 +385,39 @@
                     alert('Ошибка смены типа товара');
                 });
             }
+            // Delete product with confirm modal
+            function confirmDeleteProduct(productId) {
+                const emitter = document.getElementById('app')?.__vue_app__?.config?.globalProperties?.$emitter;
+                if (emitter) {
+                    emitter.emit('open-confirm-modal', {
+                        agree: () => {
+                            const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+                                       || document.querySelector('input[name="_token"]')?.value;
+                            fetch('/admin/catalog/products/edit/' + productId, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': csrf,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            })
+                            .then(r => r.json())
+                            .then(data => {
+                                emitter.emit('add-flash', { type: 'success', message: data.message || 'Товар удалён' });
+                                if (window !== window.parent) {
+                                    window.parent.postMessage({ type: 'product-deleted' }, '*');
+                                } else {
+                                    window.location.href = '{{ route("admin.catalog.products.index") }}';
+                                }
+                            })
+                            .catch(() => {
+                                emitter.emit('add-flash', { type: 'error', message: 'Ошибка удаления' });
+                            });
+                        }
+                    });
+                }
+            }
         </script>
+
+
     @endPushOnce
 </x-admin::layouts>
