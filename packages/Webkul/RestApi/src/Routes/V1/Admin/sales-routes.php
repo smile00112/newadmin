@@ -12,15 +12,25 @@ Route::group([
     'middleware' => ['auth:sanctum', 'sanctum.admin'],
     'prefix'     => 'sales',
 ], function () {
+    Route::controller(OrderController::class)->prefix('orders')->group(function () {
+        Route::post('bind-table', 'bindTable');
+
+        Route::delete('bind-table', 'unbindTable');
+    });
+
+});
+
+Route::group([
+    'middleware' => ['auth:sanctum', 'sanctum.admin'],
+    'prefix'     => 'sales',
+], function () {
     /**
      * Order routes.
      */
     Route::controller(OrderController::class)->prefix('orders')->group(function () {
         Route::get('', 'allResources');
 
-        Route::post('bind-table', 'bindTable');
 
-        Route::delete('bind-table', 'unbindTable');
 
         Route::get('{id}', 'getResource');
 
