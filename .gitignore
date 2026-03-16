@@ -35,6 +35,7 @@ yarn-error.log
 *access.log*
 *error.log*
 /docker/nginx/logs
-/docker/nginx/ssl-logs/*
-/storage/app/public/category/*
-/storage/app/public/product/*
+/docker/nginx/ssl-logs
+/storage/app/public/category
+/storage/app/public/product
+/public/build/assets
