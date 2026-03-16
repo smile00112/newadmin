@@ -72,6 +72,7 @@ class InvalidateCustomerOrdersCache
         $channelCode = (string) ($order->channel?->code ?? core()->getDefaultChannelCode() ?? '');
 
         WarmCustomerOrdersCacheJob::dispatch((int) $order->customer_id, $channelCode)
-            ->delay(now()->addSeconds(2));
+            //>delay(now()->addSeconds(2))
+            ;
     }
 }

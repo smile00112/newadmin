@@ -1,4 +1,4 @@
- <?php
+<?php
 
 namespace Webkul\RestApi\Jobs;
 
