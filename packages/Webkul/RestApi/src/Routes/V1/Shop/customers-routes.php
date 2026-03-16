@@ -17,6 +17,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\SavedCardController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\ShipmentController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\TransactionController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\WishlistController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Public\OrderController as PublicOrderController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\TelegramWebhookController;
 
 /**
@@ -28,6 +29,13 @@ Route::controller(AuthController::class)->prefix('customer')->group(function () 
     Route::post('register', 'register');
 
     Route::post('forgot-password', 'forgotPassword');
+});
+
+/**
+ * Public orders routes (no auth, all customers).
+ */
+Route::controller(PublicOrderController::class)->prefix('public')->group(function () {
+    Route::get('orders', 'index');
 });
 
 /**
