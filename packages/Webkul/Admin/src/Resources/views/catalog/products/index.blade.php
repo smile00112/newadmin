@@ -717,12 +717,12 @@
                         :style="{ transform: panelVisible ? 'translateX(0)' : 'translateX(100%)' }"
                     >
                         <!-- Drawer Header -->
-                        <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 24px; background:white; border-bottom:1px solid #e5e7eb; flex-shrink:0; overflow:hidden;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 24px; background:white; border-bottom:1px solid #e5e7eb; flex-shrink:0; overflow:visible; z-index:10; position:relative;">
                             <div style="display:flex; align-items:center; gap:14px; min-width:0; flex:1; overflow:hidden;">
                                 <!-- Close Button -->
                                 <button
                                     @click="closeDrawer"
-                                    style="display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:12px; background:#f3f4f6; border:none; cursor:pointer; transition:all 0.2s;"
+                                    style="display:flex; align-items:center; justify-content:center; width:38px; height:38px; min-width:38px; border-radius:12px; background:#f3f4f6; border:none; cursor:pointer; transition:all 0.2s;"
                                     @mouseenter="$event.currentTarget.style.background='#e5e7eb'; $event.currentTarget.style.transform='scale(1.05)'"
                                     @mouseleave="$event.currentTarget.style.background='#f3f4f6'; $event.currentTarget.style.transform='scale(1)'"
                                     title="Закрыть (Esc)"
@@ -740,7 +740,7 @@
                                         </svg>
                                     </div>
                                     <div style="min-width:0;">
-                                        <span style="font-size:16px; font-weight:800; color:#1f2937; letter-spacing:-0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; max-width:400px;">
+                                        <span style="font-size:16px; font-weight:800; color:#1f2937; letter-spacing:-0.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; max-width:300px;">
                                             @{{ productRecord.name || 'Товар' }}
                                         </span>
                                         <span style="font-size:12px; color:#9ca3af; display:block;">
@@ -750,18 +750,34 @@
                                 </div>
                             </div>
 
-                            <!-- Open Full Page -->
-                            <a
-                                :href="`/admin/catalog/products/edit/${productRecord.product_id}`"
-                                style="display:flex; align-items:center; gap:6px; padding:8px 16px; font-size:13px; font-weight:700; color:white; background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius:12px; text-decoration:none; box-shadow:0 2px 8px rgba(245,158,11,0.3); transition:all 0.2s; flex-shrink:0; white-space:nowrap;"
-                                @mouseenter="$event.currentTarget.style.boxShadow='0 4px 16px rgba(245,158,11,0.4)'"
-                                @mouseleave="$event.currentTarget.style.boxShadow='0 2px 8px rgba(245,158,11,0.3)'"
-                            >
-                                <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                                Открыть
-                            </a>
+                            <div style="display:flex; align-items:center; gap:8px; flex-shrink:0; margin-left:12px;">
+                                <!-- Delete Button -->
+                                <button
+                                    @click="deleteProduct"
+                                    style="display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:10px; background:#fef2f2; border:1px solid #fecaca; cursor:pointer; transition:all 0.2s; font-size:13px; font-weight:600; color:#ef4444;"
+                                    @mouseenter="$event.currentTarget.style.background='#fee2e2'; $event.currentTarget.style.borderColor='#fca5a5'"
+                                    @mouseleave="$event.currentTarget.style.background='#fef2f2'; $event.currentTarget.style.borderColor='#fecaca'"
+                                    title="Удалить товар"
+                                >
+                                    <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Удалить
+                                </button>
+
+                                <!-- Open Full Page -->
+                                <a
+                                    :href="`/admin/catalog/products/edit/${productRecord.product_id}`"
+                                    style="display:flex; align-items:center; gap:6px; padding:8px 16px; font-size:13px; font-weight:700; color:white; background:linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius:12px; text-decoration:none; box-shadow:0 2px 8px rgba(245,158,11,0.3); transition:all 0.2s; white-space:nowrap;"
+                                    @mouseenter="$event.currentTarget.style.boxShadow='0 4px 16px rgba(245,158,11,0.4)'"
+                                    @mouseleave="$event.currentTarget.style.boxShadow='0 2px 8px rgba(245,158,11,0.3)'"
+                                >
+                                    <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    Открыть
+                                </a>
+                            </div>
                         </div>
 
                         <!-- Loading Overlay -->
@@ -865,6 +881,10 @@
                             case 'product-updated':
                                 this.$emitter.emit('datagrid:refresh');
                                 break;
+                            case 'product-deleted':
+                                this.closeDrawer();
+                                this.$emitter.emit('datagrid:refresh');
+                                break;
                         }
                     },
 
@@ -881,6 +901,24 @@
                             sidebar.style.filter = blur ? 'blur(4px)' : 'none';
                             sidebar.style.pointerEvents = blur ? 'none' : '';
                         }
+                    },
+
+                    deleteProduct() {
+                        if (!this.productRecord?.product_id) return;
+
+                        this.$emitter.emit('open-confirm-modal', {
+                            agree: () => {
+                                this.$axios.delete(`/admin/catalog/products/edit/${this.productRecord.product_id}`)
+                                    .then(response => {
+                                        this.$emitter.emit('add-flash', { type: 'success', message: response.data.message });
+                                        this.closeDrawer();
+                                        this.$emitter.emit('datagrid:refresh');
+                                    })
+                                    .catch(error => {
+                                        this.$emitter.emit('add-flash', { type: 'error', message: error.response?.data?.message || 'Ошибка удаления' });
+                                    });
+                            }
+                        });
                     },
                 },
             });

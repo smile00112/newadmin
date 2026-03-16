@@ -76,6 +76,18 @@
                         </a>
                     @endif
 
+                    <!-- Delete Button -->
+                    <button
+                        type="button"
+                        onclick="deleteProduct()"
+                        style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; font-size:13px; font-weight:600; color:#ef4444; background:#fef2f2; border:1px solid #fecaca; cursor:pointer; transition:all 0.15s;"
+                        onmouseenter="this.style.background='#fee2e2'; this.style.borderColor='#fca5a5'"
+                        onmouseleave="this.style.background='#fef2f2'; this.style.borderColor='#fecaca'"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        Удалить
+                    </button>
+
                     <!-- Save Button -->
                     <button class="primary-button">
                         @lang('admin::app.catalog.products.edit.save-btn')
@@ -460,6 +472,57 @@
                 .catch(function() {
                     alert('Ошибка смены типа товара');
                 });
+            }
+            // Delete product
+            function deleteProduct() {
+                // Find the Vue app instance to use emitter
+                var vueApp = document.getElementById('app')?.__vue_app__;
+                var emitter = vueApp?.config?.globalProperties?.$emitter;
+
+                if (emitter) {
+                    emitter.emit('open-confirm-modal', {
+                        agree: function() {
+                            var csrf = document.querySelector('meta[name="csrf-token"]')?.content
+                                     || document.querySelector('input[name="_token"]')?.value;
+
+                            fetch('/admin/catalog/products/edit/{{ $product->id }}', {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': csrf,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            })
+                            .then(function(r) { return r.json(); })
+                            .then(function(data) {
+                                window.location.href = '{{ route("admin.catalog.products.index") }}';
+                            })
+                            .catch(function() {
+                                emitter.emit('add-flash', { type: 'error', message: 'Ошибка удаления товара' });
+                            });
+                        }
+                    });
+                } else {
+                    // Fallback
+                    if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
+
+                    var csrf = document.querySelector('meta[name="csrf-token"]')?.content
+                             || document.querySelector('input[name="_token"]')?.value;
+
+                    fetch('/admin/catalog/products/edit/{{ $product->id }}', {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrf,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        window.location.href = '{{ route("admin.catalog.products.index") }}';
+                    })
+                    .catch(function() {
+                        alert('Ошибка удаления товара');
+                    });
+                }
             }
         </script>
     @endPushOnce
