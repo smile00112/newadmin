@@ -4,6 +4,7 @@ namespace Webkul\Admin\Http\Controllers\Sales;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Webkul\Admin\DataGrids\Sales\OrderDataGrid;
@@ -805,45 +806,47 @@ class OrderController extends Controller
      */
     public function getPendingOrders()
     {
-        $pendingStatuses = [
-            Order::STATUS_PENDING,
-            Order::STATUS_PENDING_PAYMENT,
-        ];
-
-        $orders = Order::select([
-                'id',
-                'increment_id',
-                'status',
-                'customer_first_name',
-                'customer_last_name',
-                'customer_email',
-                'grand_total',
-                'created_at',
-            ])
-            ->withCount('items')
-            ->whereIn('status', $pendingStatuses)
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
-
-        $formattedOrders = $orders->map(function ($order) {
-            return [
-                'id'                    => $order->id,
-                'increment_id'          => $order->increment_id,
-                'status'                => $order->status,
-                'customer_name'         => $order->customer_first_name . ' ' . $order->customer_last_name,
-                'customer_email'        => $order->customer_email,
-                'grand_total'           => $order->grand_total,
-                'formatted_grand_total' => core()->formatPrice($order->grand_total),
-                'items_count'           => $order->items_count,
-                'created_at'            => $order->created_at->toISOString(),
+        return Cache::remember('pending_orders_notification', 15, function () {
+            $pendingStatuses = [
+                Order::STATUS_PENDING,
+                Order::STATUS_PENDING_PAYMENT,
             ];
-        });
 
-        return response()->json([
-            'success' => true,
-            'count'   => $formattedOrders->count(),
-            'orders'  => $formattedOrders,
-        ]);
+            $orders = Order::select([
+                    'id',
+                    'increment_id',
+                    'status',
+                    'customer_first_name',
+                    'customer_last_name',
+                    'customer_email',
+                    'grand_total',
+                    'created_at',
+                ])
+                ->withCount('items')
+                ->whereIn('status', $pendingStatuses)
+                ->orderByDesc('created_at')
+                ->limit(10)
+                ->get();
+
+            $formattedOrders = $orders->map(function ($order) {
+                return [
+                    'id'                    => $order->id,
+                    'increment_id'          => $order->increment_id,
+                    'status'                => $order->status,
+                    'customer_name'         => $order->customer_first_name . ' ' . $order->customer_last_name,
+                    'customer_email'        => $order->customer_email,
+                    'grand_total'           => $order->grand_total,
+                    'formatted_grand_total' => core()->formatPrice($order->grand_total),
+                    'items_count'           => $order->items_count,
+                    'created_at'            => $order->created_at->toISOString(),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'count'   => $formattedOrders->count(),
+                'orders'  => $formattedOrders,
+            ]);
+        });
     }
 }

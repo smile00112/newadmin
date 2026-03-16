@@ -52,4 +52,12 @@ $response = $kernel->handle(
     $request = Request::capture(),
 )->send();
 
+// Закрываем HTTP-соединение ДО запуска terminating-коллбэков (индексация товаров).
+// Браузер получит ответ мгновенно, а тяжёлые джобы доработают в фоне PHP-процесса.
+if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+} elseif (function_exists('litespeed_finish_request')) {
+    litespeed_finish_request();
+}
+
 $kernel->terminate($request, $response);
