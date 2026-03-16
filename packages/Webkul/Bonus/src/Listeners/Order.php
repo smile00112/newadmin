@@ -57,8 +57,15 @@ class Order
                 }
             }
             
-            // Accrue bonuses when order is completed
-            if ($status === \Webkul\Sales\Models\Order::STATUS_COMPLETED) {
+            // Accrue bonuses when order reaches configured status
+            $accrualStatus = core()->getConfigData('bonus.general.settings.accrual_status');
+
+            // Fallback to completed status if not configured
+            if (! $accrualStatus) {
+                $accrualStatus = \Webkul\Sales\Models\Order::STATUS_COMPLETED;
+            }
+
+            if ($status === $accrualStatus) {
                 $this->bonusService->accrueBonuses($order);
             }
         } catch (\Exception $e) {
