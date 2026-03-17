@@ -20,6 +20,7 @@ class IikoPaymentType extends Model implements IikoPaymentTypeContract
         'iiko_id',
         'name',
         'kind',
+        'payment_method_code',
         'is_active',
         'payment_type_data',
         'synced_at',

@@ -6,6 +6,7 @@ use App\Repositories\ApplicationErrorRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Webkul\RestApi\Http\Controllers\RestApiController;
+use App\Models\ApplicationError;
 
 class ErrorReportController extends RestApiController
 {
@@ -26,19 +27,24 @@ class ErrorReportController extends RestApiController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'message' => 'required|string|max:65535',
-            'code'    => 'nullable|string|max:255',
-            'file'    => 'nullable|string|max:2048',
-            'line'    => 'nullable|integer|min:0',
-            'trace'   => 'nullable',
-            'context' => 'nullable|array',
-            'source'  => 'nullable|string|max:255',
+            'message'  => 'required|string|max:65535',
+            'code'     => 'nullable|string|max:255',
+            'file'     => 'nullable|string|max:2048',
+            'line'     => 'nullable|integer|min:0',
+            'trace'    => 'nullable',
+            'context'  => 'nullable|array',
+            'source'   => 'nullable|string|max:255',
+            'level'    => 'nullable|string|max:50',
+            'platform' => 'nullable|string|max:50',
         ]);
 
         $trace = $validated['trace'] ?? null;
+
         if (is_array($trace)) {
             $validated['trace'] = json_encode($trace);
         }
+
+        $validated = ApplicationError::classifyError($validated);
 
         $error = $this->applicationErrorRepository->create($validated);
 

@@ -92,8 +92,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Right: Role, Status, Avatar -->
-                                <div style="width:340px; max-width:100%; flex-shrink:0;">
+                                <!-- Right: Role, Status, Avatar, Tokens -->
+                                <div style="width:360px; max-width:100%; flex-shrink:0;">
                                     <!-- Role & Status -->
                                     <div style="background:white; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #f3f4f6; overflow:hidden;">
                                         <div style="padding:16px 20px; border-bottom:1px solid #f3f4f6;">
@@ -141,6 +141,40 @@
                                             </p>
                                         </div>
                                     </div>
+
+                                    <!-- Customer Tokens -->
+                                    <div style="background:white; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #f3f4f6; overflow:hidden; margin-top:16px;">
+                                        <div style="padding:16px 20px; border-bottom:1px solid #f3f4f6;">
+                                            <p style="font-size:14px; font-weight:600; color:#111827; margin:0;">Выданные клиентские токены</p>
+                                            <p style="font-size:12px; color:#6b7280; margin:4px 0 0;">Список токенов Sanctum для клиентов (только просмотр).</p>
+                                        </div>
+                                        <div style="padding:12px 16px; max-height:260px; overflow:auto;">
+                                            <template v-if="loadingTokens">
+                                                <p style="font-size:12px; color:#6b7280;">Загрузка токенов...</p>
+                                            </template>
+                                            <template v-else-if="tokenLogs.length === 0">
+                                                <p style="font-size:12px; color:#6b7280;">Токены еще не выдавались.</p>
+                                            </template>
+                                            <template v-else>
+                                                <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                                                    <thead>
+                                                        <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
+                                                            <th style="padding:4px 6px; white-space:nowrap;">Дата</th>
+                                                            <th style="padding:4px 6px; white-space:nowrap;">Имя</th>
+                                                            <th style="padding:4px 6px; white-space:nowrap;">IP</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr v-for="log in tokenLogs" :key="log.id" style="border-bottom:1px solid #f3f4f6;">
+                                                            <td style="padding:4px 6px; white-space:nowrap;">@{{ formatDate(log.issued_at || log.created_at) }}</td>
+                                                            <td style="padding:4px 6px; white-space:nowrap;">@{{ log.token_name || '—' }}</td>
+                                                            <td style="padding:4px 6px; white-space:nowrap;">@{{ log.ip_address || '—' }}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <!-- Buttons -->
@@ -164,9 +198,25 @@
                     return {
                         isLoading: false,
                         images: @json($uploadedImages ?? []),
+                        tokenLogs: [],
+                        loadingTokens: false,
                     };
                 },
                 methods: {
+                    loadTokenLogs() {
+                        this.loadingTokens = true;
+
+                        // На данный момент у Admin нет прямой связи с Customer,
+                        // поэтому грузим агрегированный список токенов всех клиентов.
+                        this.$axios.get('/api/v1/admin/customers/0/token-logs')
+                            .then(response => {
+                                this.tokenLogs = response.data?.data || [];
+                                this.loadingTokens = false;
+                            })
+                            .catch(() => {
+                                this.loadingTokens = false;
+                            });
+                    },
                     save(params, { setErrors }) {
                         this.isLoading = true;
                         let formData = new FormData(this.$refs.panelForm);
@@ -191,6 +241,9 @@
                         });
                     },
                     cancel() { if (window.parent !== window) window.parent.postMessage({ type: 'panel-closed' }, '*'); },
+                },
+                mounted() {
+                    this.loadTokenLogs();
                 },
             });
         </script>

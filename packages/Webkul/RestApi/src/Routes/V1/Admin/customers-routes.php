@@ -84,6 +84,11 @@ Route::group([
         Route::get('{id}/invoices', 'invoices');
 
         /**
+         * Customer's API token logs.
+         */
+        Route::get('{id}/token-logs', 'tokenLogs');
+
+        /**
          * Customer's note routes.
          */
         Route::post('{id}/notes', 'storeNote');

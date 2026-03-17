@@ -16,7 +16,7 @@ return [
     [
         'key'   => 'iiko.settings',
         'name'  => 'iiko-integration::app.acl.settings',
-        'route' => 'admin.iiko.settings',
+        'route' => 'admin.iiko.settings.index',
         'sort'  => 2,
     ],
 ];

@@ -17,6 +17,7 @@ use Webkul\Core\Rules\PhoneNumber;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Customer\CustomerResource;
+use Webkul\RestApi\Services\Auth\CustomerTokenLogService;
 use Webkul\Shop\Http\Requests\Customer\RegistrationRequest;
 
 class AuthController extends CustomerController
@@ -31,7 +32,8 @@ class AuthController extends CustomerController
     public function __construct(
         protected CustomerRepository $customerRepository,
         protected CustomerGroupRepository $customerGroupRepository,
-        protected SubscribersListRepository $subscriptionRepository
+        protected SubscribersListRepository $subscriptionRepository,
+        protected CustomerTokenLogService $customerTokenLogService
     ) {}
 
     /**
@@ -86,6 +88,19 @@ class AuthController extends CustomerController
              */
             $customer->tokens()->delete();
 
+            $tokenName = $request->device_name;
+            $abilities = ['role:customer'];
+
+            $plainTextToken = $customer->createToken($tokenName, $abilities)->plainTextToken;
+
+            $this->customerTokenLogService->logToken(
+                $customer,
+                $tokenName,
+                $abilities,
+                null,
+                $request
+            );
+
             /**
              * Event passed to prepare cart after login.
              */
@@ -94,7 +109,7 @@ class AuthController extends CustomerController
             return response([
                 'data'    => new CustomerResource($customer),
                 'message' => trans('rest-api::app.shop.customer.accounts.logged-in-success'),
-                'token'   => $customer->createToken($request->device_name, ['role:customer'])->plainTextToken,
+                'token'   => $plainTextToken,
             ]);
 
         }

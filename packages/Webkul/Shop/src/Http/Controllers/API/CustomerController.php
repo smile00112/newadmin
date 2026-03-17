@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Webkul\Customer\Models\Customer;
 use Webkul\Shop\Http\Requests\Customer\LoginRequest;
+use Webkul\RestApi\Services\Auth\CustomerTokenLogService;
 use Webkul\Shop\Services\SmsService;
 use Webkul\Shop\Services\InMemoryVerificationService;
 use Webkul\Shop\Models\PhoneVerificationCode;
@@ -18,9 +19,12 @@ class CustomerController extends APIController
 {
     protected $smsService;
 
-    public function __construct(SmsService $smsService)
+    protected CustomerTokenLogService $customerTokenLogService;
+
+    public function __construct(SmsService $smsService, CustomerTokenLogService $customerTokenLogService)
     {
         $this->smsService = $smsService;
+        $this->customerTokenLogService = $customerTokenLogService;
     }
 
     /**
@@ -159,7 +163,19 @@ class CustomerController extends APIController
         }
 
         // Create API token
-        $token = $customer->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
+        $expiresAt = now()->addDays(30);
+        $tokenName = 'api-token';
+        $abilities = ['*'];
+
+        $token = $customer->createToken($tokenName, $abilities, $expiresAt)->plainTextToken;
+
+        $this->customerTokenLogService->logToken(
+            $customer,
+            $tokenName,
+            $abilities,
+            $expiresAt,
+            $request
+        );
 
         // Dispatch login event
         Event::dispatch('customer.after.login', $customer);
@@ -228,7 +244,19 @@ class CustomerController extends APIController
         $request->user()->currentAccessToken()->delete();
 
         // Create new token
-        $token = $user->createToken('api-token', ['*'], now()->addDays(30))->plainTextToken;
+        $expiresAt = now()->addDays(30);
+        $tokenName = 'api-token';
+        $abilities = ['*'];
+
+        $token = $user->createToken($tokenName, $abilities, $expiresAt)->plainTextToken;
+
+        $this->customerTokenLogService->logToken(
+            $user,
+            $tokenName,
+            $abilities,
+            $expiresAt,
+            $request
+        );
 
         return response()->json([
             'success' => true,

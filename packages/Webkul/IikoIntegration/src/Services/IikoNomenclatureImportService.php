@@ -4,10 +4,22 @@ namespace Webkul\IikoIntegration\Services;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
+use Intervention\Image\ImageManager;
 use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Product\Repositories\ProductGroupedProductRepository;
+use Webkul\Product\Repositories\ProductConstructorRepository;
+use Webkul\Product\Repositories\ProductImageRepository;
+use Webkul\Product\Repositories\ProductAttributeValueRepository;
+use Webkul\Product\Repositories\ProductInventoryRepository;
 use Webkul\Attribute\Repositories\AttributeFamilyRepository;
+use Webkul\Product\Helpers\Indexers\Flat as FlatIndexer;
+use Webkul\IikoIntegration\Repositories\IikoSettingRepository;
+use Webkul\IikoIntegration\Models\IikoSetting;
 
 class IikoNomenclatureImportService
 {
@@ -18,7 +30,13 @@ class IikoNomenclatureImportService
         protected CategoryRepository $categoryRepository,
         protected ProductRepository $productRepository,
         protected ProductGroupedProductRepository $productGroupedProductRepository,
-        protected AttributeFamilyRepository $attributeFamilyRepository
+        protected ProductConstructorRepository $productConstructorRepository,
+        protected ProductImageRepository $productImageRepository,
+        protected ProductAttributeValueRepository $productAttributeValueRepository,
+        protected ProductInventoryRepository $productInventoryRepository,
+        protected AttributeFamilyRepository $attributeFamilyRepository,
+        protected FlatIndexer $flatIndexer,
+        protected IikoSettingRepository $settingRepository
     ) {}
 
     /**
@@ -26,9 +44,10 @@ class IikoNomenclatureImportService
      *
      * @param  string  $organizationId
      * @param  array  $nomenclatureData
+     * @param  array|null  $selectedGroupIds
      * @return array
      */
-    public function importNomenclature(string $organizationId, array $nomenclatureData): array
+    public function importNomenclature(string $organizationId, array $nomenclatureData, ?array $selectedGroupIds = null): array
     {
         try {
             // Validate nomenclature data structure
@@ -44,12 +63,53 @@ class IikoNomenclatureImportService
                 'products_created' => 0,
                 'products_updated' => 0,
                 'grouped_products_created' => 0,
+                'constructor_products_created' => 0,
             ];
 
             // Extract categories and items from nomenclature data
-            // iiko API may return 'groups' for categories and 'items' for products
+            // Support both old format (groups/items) and new format (itemCategories with nested items)
+            // New format is normalized in IikoNomenclatureService, but we handle both for safety
             $categories = $nomenclatureData['groups'] ?? $nomenclatureData['categories'] ?? [];
             $items = $nomenclatureData['items'] ?? $nomenclatureData['products'] ?? [];
+
+            // If no groups/items found, try to extract from itemCategories (new API format)
+            if (empty($categories) && isset($nomenclatureData['itemCategories']) && is_array($nomenclatureData['itemCategories'])) {
+                foreach ($nomenclatureData['itemCategories'] as $category) {
+                    $categories[] = [
+                        'id' => $category['id'] ?? null,
+                        'name' => $category['name'] ?? 'Unnamed Category',
+                        'description' => $category['description'] ?? null,
+                        'parentGroup' => null,
+                    ];
+                }
+            }
+
+            if (empty($items) && isset($nomenclatureData['itemCategories']) && is_array($nomenclatureData['itemCategories'])) {
+                foreach ($nomenclatureData['itemCategories'] as $category) {
+                    $categoryId = $category['id'] ?? null;
+                    if (isset($category['items']) && is_array($category['items'])) {
+                        foreach ($category['items'] as $item) {
+                            $item['groupId'] = $categoryId;
+                            $items[] = $item;
+                        }
+                    }
+                }
+            }
+
+            // Filter by selected group IDs if provided
+            if (!empty($selectedGroupIds) && is_array($selectedGroupIds)) {
+                // Filter categories - only include groups with IDs in selectedGroupIds
+                $categories = array_filter($categories, function ($category) use ($selectedGroupIds) {
+                    $categoryId = $category['id'] ?? null;
+                    return $categoryId && in_array($categoryId, $selectedGroupIds);
+                });
+
+                // Filter items - only include products with groupId in selectedGroupIds
+                $items = array_filter($items, function ($item) use ($selectedGroupIds) {
+                    $groupId = $item['groupId'] ?? null;
+                    return $groupId && in_array($groupId, $selectedGroupIds);
+                });
+            }
 
             // Import categories first
             if (!empty($categories)) {
@@ -73,6 +133,7 @@ class IikoNomenclatureImportService
                     $stats['products_created'] = $productStats['created'];
                     $stats['products_updated'] = $productStats['updated'];
                     $stats['grouped_products_created'] = $productStats['grouped_created'] ?? 0;
+                    $stats['constructor_products_created'] = $productStats['constructor_created'] ?? 0;
                 } catch (\Exception $e) {
                     Log::error('iiko: Error importing products', [
                         'organization_id' => $organizationId,
@@ -125,25 +186,25 @@ class IikoNomenclatureImportService
         usort($categories, function ($a, $b) {
             $aParent = $a['parentGroup'] ?? null;
             $bParent = $b['parentGroup'] ?? null;
-            
+
             if ($aParent === $bParent) {
                 return 0;
             }
-            
+
             if ($aParent === null) {
                 return -1;
             }
-            
+
             if ($bParent === null) {
                 return 1;
             }
-            
+
             return strcmp($aParent, $bParent);
         });
 
         foreach ($categories as $categoryData) {
             $iikoId = $categoryData['id'] ?? null;
-            
+
             if (!$iikoId) {
                 continue;
             }
@@ -153,11 +214,15 @@ class IikoNomenclatureImportService
 
             $categoryName = $categoryData['name'] ?? 'Unnamed Category';
             $parentIikoId = $categoryData['parentGroup'] ?? null;
-            $parentId = null;
 
             // Find parent category if exists
+            $parentId = null;
             if ($parentIikoId && isset($categoryMap[$parentIikoId])) {
-                $parentId = $categoryMap[$parentIikoId];
+                $parentCategoryId = $categoryMap[$parentIikoId];
+                // Ensure parentCategoryId is an integer and not null
+                if (is_numeric($parentCategoryId) && $parentCategoryId > 0) {
+                    $parentId = (int) $parentCategoryId;
+                }
             }
 
             $categoryDataToSave = [
@@ -173,7 +238,8 @@ class IikoNomenclatureImportService
             // Set translations for all locales
             $locales = core()->getAllLocales();
             foreach ($locales as $locale) {
-                $categoryDataToSave[$locale->code] = [
+                $localeCode = is_string($locale->code) ? $locale->code : (string) $locale->code;
+                $categoryDataToSave[$localeCode] = [
                     'name' => $categoryName,
                     'slug' => \Illuminate\Support\Str::slug($categoryName),
                     'description' => $categoryData['description'] ?? null,
@@ -182,13 +248,29 @@ class IikoNomenclatureImportService
 
             if ($existingCategory) {
                 // Update existing category
+                Log::info([
+                    'type' => 'update category',
+                    '$categoryDataToSave' => $categoryDataToSave,
+                    '$existingCategory->id' => $existingCategory->id,
+                ]);
                 $this->categoryRepository->update($categoryDataToSave, $existingCategory->id);
-                $categoryMap[$iikoId] = $existingCategory->id;
+                $categoryId = $existingCategory->id;
+                // Ensure categoryId is an integer before storing in map
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $categoryMap[$iikoId] = (int) $categoryId;
+                }
                 $stats['updated']++;
             } else {
                 // Create new category
+                // Ensure status is integer, not boolean
+                $categoryDataToSave['status'] = (int) ($categoryDataToSave['status'] ?? 1);
+
                 $category = $this->categoryRepository->create($categoryDataToSave);
-                $categoryMap[$iikoId] = $category->id;
+                $categoryId = $category->id;
+                // Ensure categoryId is an integer before storing in map
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $categoryMap[$iikoId] = (int) $categoryId;
+                }
                 $stats['created']++;
             }
         }
@@ -204,18 +286,49 @@ class IikoNomenclatureImportService
      */
     protected function importProducts(array $items): array
     {
-        $stats = ['created' => 0, 'updated' => 0, 'grouped_created' => 0];
+        $stats = ['created' => 0, 'updated' => 0, 'grouped_created' => 0, 'constructor_created' => 0];
         $categoryMap = $this->buildCategoryMap();
 
         foreach ($items as $item) {
-            $iikoId = $item['id'] ?? null;
-            
+            // Support both 'id' and 'itemId' from new API format
+            $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+
             if (!$iikoId) {
                 continue;
             }
 
-            $productType = $this->mapIikoProductType($item['type'] ?? 'Dish');
+            // Handle products with itemModifierGroups (constructor products) - highest priority
+            if ($this->hasItemModifierGroups($item)) {
+                $result = $this->handleConstructorProduct($item, $categoryMap);
+                if ($result) {
+                    $stats['constructor_created']++;
+                    if ($result === 'created') {
+                        $stats['created']++;
+                    } else {
+                        $stats['updated']++;
+                    }
+                }
+                continue;
+            }
+
+            $productType = $this->mapIikoProductType($item['type'] ?? 'DISH');
+
+            // Extract prices from sizePrices or itemSizes (new API format)
             $prices = $item['sizePrices'] ?? [];
+            if (empty($prices) && isset($item['itemSizes']) && is_array($item['itemSizes'])) {
+                foreach ($item['itemSizes'] as $size) {
+                    $sizePrice = 0;
+                    if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
+                        $sizePrice = $size['prices'][0]['price'] ?? 0;
+                    }
+                    $prices[] = [
+                        'sizeId' => $size['sizeId'] ?? null,
+                        'sizeName' => $size['sizeName'] ?? null,
+                        'sizeCode' => $size['sizeCode'] ?? null,
+                        'price' => $sizePrice,
+                    ];
+                }
+            }
 
             // Handle products with multiple prices
             if (count($prices) > 1) {
@@ -226,8 +339,14 @@ class IikoNomenclatureImportService
                 }
             } else {
                 // Handle single price product
+                $sku = 'iiko_' . $iikoId;
                 $existingProduct = $this->findProductByIikoId($iikoId);
-                
+
+                // If not found by iiko_id, check by SKU
+                if (!$existingProduct) {
+                    $existingProduct = $this->findProductBySku($sku);
+                }
+
                 if ($existingProduct) {
                     $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
                     $stats['updated']++;
@@ -242,6 +361,27 @@ class IikoNomenclatureImportService
     }
 
     /**
+     * Check if item has itemModifierGroups (for constructor product).
+     *
+     * @param  array  $item
+     * @return bool
+     */
+    protected function hasItemModifierGroups(array $item): bool
+    {
+        if (isset($item['itemModifierGroups']) && is_array($item['itemModifierGroups']) && count($item['itemModifierGroups']) > 0) {
+            return true;
+        }
+        if (isset($item['itemSizes']) && is_array($item['itemSizes'])) {
+            foreach ($item['itemSizes'] as $size) {
+                if (isset($size['itemModifierGroups']) && is_array($size['itemModifierGroups']) && count($size['itemModifierGroups']) > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Map iiko product type to our product type.
      *
      * @param  string  $iikoType
@@ -249,10 +389,13 @@ class IikoNomenclatureImportService
      */
     protected function mapIikoProductType(string $iikoType): string
     {
-        return match ($iikoType) {
-            'Dish' => 'simple',
-            'Modifier' => 'ingredient',
-            'Group' => 'grouped',
+        // Normalize to lowercase for comparison
+        $normalizedType = strtolower(trim($iikoType));
+
+        return match ($normalizedType) {
+            'dish', 'product' => 'simple',
+            'modifier' => 'ingredient',
+            'group', 'grouped' => 'grouped',
             default => 'simple',
         };
     }
@@ -267,8 +410,26 @@ class IikoNomenclatureImportService
     protected function handleMultiPriceProduct(array $item, array $categoryMap): ?array
     {
         try {
-            $iikoId = $item['id'] ?? null;
+            // Support both 'id' and 'itemId' from new API format
+            $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+
+            // Extract prices from sizePrices or itemSizes (new API format)
             $prices = $item['sizePrices'] ?? [];
+            if (empty($prices) && isset($item['itemSizes']) && is_array($item['itemSizes'])) {
+                foreach ($item['itemSizes'] as $size) {
+                    $sizePrice = 0;
+                    if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
+                        $sizePrice = $size['prices'][0]['price'] ?? 0;
+                    }
+                    $prices[] = [
+                        'sizeId' => $size['sizeId'] ?? null,
+                        'sizeName' => $size['sizeName'] ?? null,
+                        'sizeCode' => $size['sizeCode'] ?? null,
+                        'price' => $sizePrice,
+                    ];
+                }
+            }
+
             $categoryIikoId = $item['groupId'] ?? null;
 
             // Get or create category for price variants
@@ -277,32 +438,68 @@ class IikoNomenclatureImportService
             // Get default attribute family
             $attributeFamily = $this->getDefaultAttributeFamily();
 
-            // Create main grouped product
-            $mainProductData = [
-                'type' => 'grouped',
-                'sku' => 'iiko_' . $iikoId,
-                'attribute_family_id' => $attributeFamily->id,
-                'additional' => ['iiko_id' => $iikoId],
-                'channels' => [core()->getDefaultChannel()->id],
-            ];
-
-            // Set translations
-            $productName = $item['name'] ?? 'Unnamed Product';
-            $locales = core()->getAllLocales();
-            foreach ($locales as $locale) {
-                $mainProductData[$locale->code] = [
-                    'name' => $productName,
-                    'short_description' => $item['description'] ?? null,
-                    'description' => $item['description'] ?? null,
-                ];
+            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+            $channels = [];
+            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                $channels[] = (int) $defaultChannelId;
             }
 
-            $mainProduct = $this->productRepository->create($mainProductData);
+            // Check if main grouped product already exists by SKU
+            $mainSku = 'iiko_' . $iikoId;
+            $mainProduct = $this->findProductBySku($mainSku);
+
+            if (!$mainProduct) {
+                // Create main grouped product
+                $mainProductData = [
+                    'type' => 'grouped',
+                    'sku' => $mainSku,
+                    'attribute_family_id' => $attributeFamily->id,
+                    'additional' => ['iiko_id' => $iikoId],
+                    'channels' => $channels,
+                    'status' => 1,
+                    'visible_individually' => 1,
+                ];
+
+                $mainProduct = $this->productRepository->create($mainProductData);
+                $mainProduct->refresh();
+
+                // Save attribute values for each locale separately
+                $productName = $item['name'] ?? 'Unnamed Product';
+                $locales = core()->getAllLocales();
+                $defaultChannelCode = core()->getDefaultChannelCode();
+                $attributeFamily = $mainProduct->attribute_family;
+                $customAttributes = $attributeFamily->custom_attributes;
+
+                foreach ($locales as $locale) {
+                    $localeData = [
+                        'name' => $productName,
+                        'short_description' => $item['description'] ?? null,
+                        'description' => $item['description'] ?? null,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
+                    ];
+
+                    $this->productAttributeValueRepository->saveValues($localeData, $mainProduct, $customAttributes);
+                }
+
+                // Ensure inventory exists for main product
+                $this->ensureProductInventory($mainProduct);
+
+                // Refresh product_flat index for main product
+                $this->flatIndexer->refresh($mainProduct);
+            } else {
+                $productName = $item['name'] ?? 'Unnamed Product';
+            }
 
             // Set categories for main product
             $mainCategories = [];
             if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-                $mainCategories[] = $categoryMap[$categoryIikoId];
+                $categoryId = $categoryMap[$categoryIikoId];
+                // Ensure categoryId is an integer and not null
+                if (is_numeric($categoryId) && $categoryId > 0) {
+                    $mainCategories[] = (int) $categoryId;
+                }
             }
             $mainProduct->categories()->sync($mainCategories);
 
@@ -316,37 +513,73 @@ class IikoNomenclatureImportService
                 $priceName = $price['sizeName'] ?? '';
 
                 $variantSku = 'iiko_' . $iikoId . '_price_' . $priceId;
-                $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
 
-                $variantData = [
-                    'type' => 'simple',
-                    'sku' => $variantSku,
-                    'attribute_family_id' => $attributeFamily->id,
-                    'parent_id' => $mainProduct->id,
-                    'additional' => [
-                        'iiko_id' => $iikoId . '_price_' . $priceId,
-                        'iiko_main_id' => $iikoId,
-                    ],
-                    'channels' => [core()->getDefaultChannel()->id],
-                ];
+                // Check if variant already exists by SKU
+                $variantProduct = $this->findProductBySku($variantSku);
 
-                // Set translations
-                foreach ($locales as $locale) {
-                    $variantData[$locale->code] = [
-                        'name' => $variantName,
-                        'short_description' => $item['description'] ?? null,
-                        'description' => $item['description'] ?? null,
-                        'price' => $priceValue,
+                if (!$variantProduct) {
+                    $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
+
+                    $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+                    $variantChannels = [];
+                    if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                        $variantChannels[] = (int) $defaultChannelId;
+                    }
+
+                    $variantData = [
+                        'type' => 'simple',
+                        'sku' => $variantSku,
+                        'attribute_family_id' => $attributeFamily->id,
+                        'parent_id' => $mainProduct->id,
+                        'additional' => [
+                            'iiko_id' => $iikoId . '_price_' . $priceId,
+                            'iiko_main_id' => $iikoId,
+                        ],
+                        'channels' => $variantChannels,
+                        'status' => 1,
+                        'visible_individually' => 0,
                     ];
+
+                    $variantProduct = $this->productRepository->create($variantData);
+                    $variantProduct->refresh();
+
+                    // Save attribute values for each locale separately
+                    $defaultChannelCode = core()->getDefaultChannelCode();
+                    $attributeFamily = $variantProduct->attribute_family;
+                    $customAttributes = $attributeFamily->custom_attributes;
+
+                    foreach ($locales as $locale) {
+                        $localeData = [
+                            'name' => $variantName,
+                            'short_description' => $item['description'] ?? null,
+                            'description' => $item['description'] ?? null,
+                            'price' => $priceValue,
+                            'status' => 1,
+                            'locale' => $locale->code,
+                            'channel' => $defaultChannelCode,
+                        ];
+
+                        $this->productAttributeValueRepository->saveValues($localeData, $variantProduct, $customAttributes);
+                    }
+
+                    // Ensure inventory exists for variant
+                    $this->ensureProductInventory($variantProduct);
+
+                    // Refresh product_flat index for variant
+                    $this->flatIndexer->refresh($variantProduct);
+
+                    // Set category for variant
+                    $priceVariantCategoryId = $priceVariantsCategory->id ?? null;
+                    $variantCategories = [];
+                    if ($priceVariantCategoryId && is_numeric($priceVariantCategoryId) && $priceVariantCategoryId > 0) {
+                        $variantCategories[] = (int) $priceVariantCategoryId;
+                    }
+                    $variantProduct->categories()->sync($variantCategories);
+
+                    $variantsCreated++;
                 }
 
-                $variantProduct = $this->productRepository->create($variantData);
-                
-                // Set category for variant
-                $variantProduct->categories()->sync([$priceVariantsCategory->id]);
-                
                 $variantProducts[] = $variantProduct;
-                $variantsCreated++;
             }
 
             // Link variants to grouped product using saveGroupedProducts format
@@ -364,16 +597,594 @@ class IikoNomenclatureImportService
                 $mainProduct
             );
 
+            // Refresh main product again after linking variants
+            $mainProduct->refresh();
+            $this->flatIndexer->refresh($mainProduct);
+
             return [
                 'variants_created' => $variantsCreated,
             ];
         } catch (\Exception $e) {
             Log::error('iiko: Error handling multi-price product', [
-                'item_id' => $item['id'] ?? null,
+                'item_id' => $item['id'] ?? $item['itemId'] ?? null,
                 'message' => $e->getMessage(),
             ]);
             return null;
         }
+    }
+
+    /**
+     * Handle product with itemModifierGroups (constructor product).
+     *
+     * @param  array  $item
+     * @param  array  $categoryMap
+     * @return string|null 'created'|'updated' on success, null on failure
+     */
+    protected function handleConstructorProduct(array $item, array $categoryMap): ?string
+    {
+        try {
+            $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+            if (!$iikoId) {
+                return null;
+            }
+
+            $modifierGroups = $this->extractItemModifierGroups($item);
+            if (empty($modifierGroups)) {
+                return null;
+            }
+
+            $sku = 'iiko_' . $iikoId;
+            $existingProduct = $this->findProductByIikoId($iikoId);
+            if (!$existingProduct) {
+                $existingProduct = $this->findProductBySku($sku);
+            }
+
+            $attributeFamily = $this->getDefaultAttributeFamily();
+            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+            $channels = [];
+            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+                $channels[] = (int) $defaultChannelId;
+            }
+
+            $productName = $item['name'] ?? 'Unnamed Product';
+            $price = 0;
+            if (!empty($item['sizePrices'])) {
+                $price = $item['sizePrices'][0]['price'] ?? 0;
+            } elseif (!empty($item['price'])) {
+                $price = $item['price'];
+            }
+
+            if ($existingProduct) {
+                $productData = [
+                    'type' => 'constructor',
+                    'additional' => array_merge($existingProduct->additional ?? [], ['iiko_id' => $iikoId]),
+                    'channels' => $channels,
+                ];
+
+                $categoryIikoId = $item['groupId'] ?? null;
+                $categories = [];
+                if ($categoryIikoId && isset($categoryMap[$categoryIikoId]) && is_numeric($categoryMap[$categoryIikoId]) && $categoryMap[$categoryIikoId] > 0) {
+                    $categories[] = (int) $categoryMap[$categoryIikoId];
+                }
+                $productData['categories'] = $categories;
+
+                // Update basic product data first
+                $this->productRepository->update($productData, $existingProduct->id);
+                $product = $existingProduct->refresh();
+
+                // Save attribute values for each locale separately
+                $locales = core()->getAllLocales();
+                $defaultChannelCode = core()->getDefaultChannelCode();
+                $attributeFamily = $product->attribute_family;
+                $customAttributes = $attributeFamily->custom_attributes;
+
+                foreach ($locales as $locale) {
+                    $localeData = [
+                        'name' => $productName,
+                        'short_description' => $item['description'] ?? null,
+                        'description' => $item['description'] ?? null,
+                        'price' => $price,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
+                    ];
+
+                    $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+                }
+
+                // Ensure inventory exists
+                $this->ensureProductInventory($product);
+
+                $result = 'updated';
+            } else {
+
+                Log::info('iiko: create product', [
+                    '$productName' => $productName,
+                    '$item' => $item,
+                ]);
+
+                $productData = [
+                    'type' => 'constructor',
+                    'sku' => $sku,
+                    'attribute_family_id' => $attributeFamily->id,
+                    'additional' => ['iiko_id' => $iikoId],
+                    'channels' => $channels,
+                    'status' => 1,
+                    'visible_individually' => 1,
+                ];
+
+                $product = $this->productRepository->create($productData);
+                $product->refresh();
+
+                // Save attribute values for each locale separately
+                $locales = core()->getAllLocales();
+                $defaultChannelCode = core()->getDefaultChannelCode();
+                $attributeFamily = $product->attribute_family;
+                $customAttributes = $attributeFamily->custom_attributes;
+
+                foreach ($locales as $locale) {
+                    $localeData = [
+                        'name' => $productName,
+                        'short_description' => $item['description'] ?? null,
+                        'description' => $item['description'] ?? null,
+                        'price' => $price,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
+                    ];
+
+                    $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+                }
+
+                $categoryIikoId = $item['groupId'] ?? null;
+                $categories = [];
+                if ($categoryIikoId && isset($categoryMap[$categoryIikoId]) && is_numeric($categoryMap[$categoryIikoId]) && $categoryMap[$categoryIikoId] > 0) {
+                    $categories[] = (int) $categoryMap[$categoryIikoId];
+                }
+                $product->categories()->sync($categories);
+                $product->refresh();
+
+                // Ensure inventory exists
+                $this->ensureProductInventory($product);
+
+                $result = 'created';
+            }
+
+            $constructorData = $this->processModifierGroups($modifierGroups, $product->id);
+            if (!empty($constructorData)) {
+                $this->productConstructorRepository->saveConstructor($constructorData, $product);
+            }
+
+            $this->flatIndexer->refresh($product);
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('iiko: Error handling constructor product', [
+                'item_id' => $item['id'] ?? $item['itemId'] ?? null,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Extract itemModifierGroups from item (from item or from first itemSize).
+     *
+     * @param  array  $item
+     * @return array
+     */
+    protected function extractItemModifierGroups(array $item): array
+    {
+        if (isset($item['itemModifierGroups']) && is_array($item['itemModifierGroups']) && count($item['itemModifierGroups']) > 0) {
+            return $item['itemModifierGroups'];
+        }
+        if (isset($item['itemSizes']) && is_array($item['itemSizes']) && count($item['itemSizes']) > 0) {
+            $firstSize = $item['itemSizes'][0];
+            if (isset($firstSize['itemModifierGroups']) && is_array($firstSize['itemModifierGroups'])) {
+                return $firstSize['itemModifierGroups'];
+            }
+        }
+        return [];
+    }
+
+    /**
+     * Process modifier groups and build constructor data for saveConstructor.
+     *
+     * @param  array  $modifierGroups
+     * @param  int  $parentProductId
+     * @return array
+     */
+    protected function processModifierGroups(array $modifierGroups, int $parentProductId): array
+    {
+        $constructorGroups = [];
+        $sortOrder = 0;
+
+        foreach ($modifierGroups as $modGroup) {
+            $items = $modGroup['items'] ?? [];
+            if (empty($items)) {
+                continue;
+            }
+
+            $restrictions = $modGroup['restrictions'] ?? [];
+            $minQty = (int) ($restrictions['minQuantity'] ?? 0);
+            $maxQty = (int) ($restrictions['maxQuantity'] ?? 0);
+            $byDefault = (int) ($restrictions['byDefault'] ?? 0);
+            $hideIfDefault = (bool) ($restrictions['hideIfDefaultQuantity'] ?? false);
+
+            $maxQtySingle = 1;
+            foreach ($items as $modItem) {
+                $itemRestrictions = $modItem['restrictions'] ?? [];
+                $itemMax = (int) ($itemRestrictions['maxQuantity'] ?? 1);
+                if ($itemMax > $maxQtySingle) {
+                    $maxQtySingle = $itemMax;
+                }
+            }
+
+            $fieldType = $maxQtySingle > 1 ? 'checkbox' : 'radio';
+            $checkedType = $maxQty > 1 ? 'multiple' : 'once';
+            $required = $minQty > 0 || $byDefault > 0;
+
+            $groupProducts = [];
+            $productSort = 0;
+            foreach ($items as $modItem) {
+                $ingredientProduct = $this->findOrCreateIngredient($modItem);
+                if (!$ingredientProduct) {
+                    continue;
+                }
+                $itemRestrictions = $modItem['restrictions'] ?? [];
+                $byDefaultItem = (int) ($itemRestrictions['byDefault'] ?? 0);
+                $position = (int) ($modItem['position'] ?? $productSort);
+                $groupProducts[] = [
+                    'id' => $ingredientProduct->id,
+                    'sort' => $position,
+                    'default' => $byDefaultItem > 0,
+                ];
+                $productSort++;
+            }
+
+            if (empty($groupProducts)) {
+                continue;
+            }
+
+            $constructorGroups[] = [
+                'name' => $modGroup['name'] ?? 'Unnamed Group',
+                'field_type' => $fieldType,
+                'checked_type' => $checkedType,
+                'quantity_min' => $minQty,
+                'quantity_max' => $maxQty,
+                'show_title' => true,
+                'opened_by_default' => !$hideIfDefault,
+                'zero_price' => false,
+                'required' => $required,
+                'hidden' => (bool) ($modGroup['isHidden'] ?? false),
+                'sort' => $sortOrder,
+                'products' => $groupProducts,
+            ];
+            $sortOrder++;
+        }
+
+        if (empty($constructorGroups)) {
+            return [];
+        }
+
+        return [
+            'constructor' => [
+                [
+                    'visible' => true,
+                    'required' => false,
+                    'combo' => false,
+                    'discount' => false,
+                    'design' => 'category',
+                    'groups' => $constructorGroups,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Download image from URL and save it for product.
+     *
+     * @param  string  $imageUrl
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @return bool
+     */
+    protected function downloadAndSaveImage(string $imageUrl, $product): bool
+    {
+        try {
+            if (empty($imageUrl) || !filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                return false;
+            }
+
+            // Download image
+            $response = Http::timeout(10)->get($imageUrl);
+
+            if (!$response->successful()) {
+                Log::warning('iiko: Failed to download image', [
+                    'url' => $imageUrl,
+                    'status' => $response->status(),
+                ]);
+                return false;
+            }
+
+            $imageContent = $response->body();
+            if (empty($imageContent)) {
+                return false;
+            }
+
+            // Create temporary file
+            $tempFile = tempnam(sys_get_temp_dir(), 'iiko_image_');
+            if ($tempFile === false) {
+                return false;
+            }
+
+            file_put_contents($tempFile, $imageContent);
+
+            // Create UploadedFile instance
+            $uploadedFile = new UploadedFile(
+                $tempFile,
+                basename($imageUrl),
+                mime_content_type($tempFile) ?: 'image/jpeg',
+                null,
+                true
+            );
+
+            // Process image with ImageManager
+            $imageManager = new ImageManager();
+            $image = $imageManager->make($uploadedFile)->encode('webp');
+
+            // Get product directory
+            $imageDirectory = $this->productImageRepository->getProductDirectory($product);
+            $path = $imageDirectory . '/' . Str::random(40) . '.webp';
+
+            // Save image
+            Storage::put($path, $image);
+
+            // Get next position for the image
+            $maxPosition = $this->productImageRepository
+                ->where('product_id', $product->id)
+                ->where('type', 'images')
+                ->max('position') ?? 0;
+            $nextPosition = $maxPosition + 1;
+
+            // Create product image record
+            $this->productImageRepository->create([
+                'type' => 'images',
+                'path' => $path,
+                'product_id' => $product->id,
+                'position' => $nextPosition,
+            ]);
+
+            // Clean up temporary file
+            @unlink($tempFile);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('iiko: Error downloading and saving image', [
+                'url' => $imageUrl,
+                'product_id' => $product->id ?? null,
+                'message' => $e->getMessage(),
+            ]);
+
+            // Clean up temporary file if exists
+            if (isset($tempFile) && file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * Find or create ingredient product from modifier item.
+     *
+     * @param  array  $modItem
+     * @return \Webkul\Product\Contracts\Product|null
+     */
+    protected function findOrCreateIngredient(array $modItem)
+    {
+        $ingredientData = $this->extractIngredientData($modItem);
+
+        Log::info('iiko: findOrCreateIngredient', [
+            '$ingredientData' => $ingredientData,
+        ]);
+
+        if (!$ingredientData['sku']) {
+            return null;
+        }
+
+        // Try to find existing ingredient
+        $existing = $this->findIngredientProduct($ingredientData['iikoId'], $ingredientData['ingredientSku']);
+
+        if ($existing) {
+            return $this->updateIngredient($existing, $ingredientData);
+        }
+
+        // Try to create new ingredient
+        try {
+            return $this->createIngredient($ingredientData);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle race condition: product was created by another process
+            if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'Duplicate entry')) {
+                $existing = $this->findProductBySku($ingredientData['sku']);
+                if ($existing) {
+                    return $this->updateIngredient($existing, $ingredientData);
+                }
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Extract ingredient data from modifier item.
+     *
+     * @param  array  $modItem
+     * @return array
+     */
+    protected function extractIngredientData(array $modItem): array
+    {
+        $itemId = $modItem['itemId'] ?? null;
+        $sku = $modItem['sku'] ?? null;
+        $ingredientSku = $itemId ? 'iiko_' . $itemId : ($sku ? 'iiko_' . $sku : null);
+
+        $price = 0;
+        if (isset($modItem['prices']) && is_array($modItem['prices']) && count($modItem['prices']) > 0) {
+            $price = (float) ($modItem['prices'][0]['price'] ?? 0);
+        }
+
+        return [
+            'itemId' => $itemId,
+            'sku' => $sku,
+            'ingredientSku' => $ingredientSku,
+            'iikoId' => $itemId ?? $sku,
+            'name' => $modItem['name'] ?? 'Unnamed Ingredient',
+            'description' => $modItem['description'] ?? null,
+            'price' => $price,
+            'buttonImageUrl' => $modItem['buttonImageUrl'] ?? null,
+        ];
+    }
+
+    /**
+     * Find ingredient product by iiko_id or SKU.
+     *
+     * @param  string|null  $itemId
+     * @param  string  $sku
+     * @return \Webkul\Product\Contracts\Product|null
+     */
+    protected function findIngredientProduct(?string $itemId, string $sku)
+    {
+        if ($itemId) {
+            $product = $this->findProductByIikoId($itemId);
+            if ($product) {
+                return $product;
+            }
+        }
+
+        return $this->findProductBySku($sku);
+    }
+
+    /**
+     * Update existing ingredient product.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  array  $ingredientData
+     * @return \Webkul\Product\Contracts\Product
+     */
+    protected function updateIngredient($product, array $ingredientData)
+    {
+        $channels = $this->getDefaultChannels();
+
+        $productData = [
+            'additional' => array_merge($product->additional ?? [], ['iiko_id' => $ingredientData['iikoId']]),
+            'channels' => $channels,
+        ];
+
+        $this->productRepository->update($productData, $product->id);
+        $product->refresh();
+
+        $this->saveIngredientAttributes($product, $ingredientData);
+        $this->handleIngredientImage($product, $ingredientData['buttonImageUrl']);
+
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
+
+        $this->flatIndexer->refresh($product);
+
+        return $product;
+    }
+
+    /**
+     * Create new ingredient product.
+     *
+     * @param  array  $ingredientData
+     * @return \Webkul\Product\Contracts\Product
+     */
+    protected function createIngredient(array $ingredientData)
+    {
+        $attributeFamily = $this->getDefaultAttributeFamily();
+        $channels = $this->getDefaultChannels();
+
+        $productData = [
+            'type' => 'ingredient',
+            'sku' => $ingredientData['ingredientSku'],
+            'attribute_family_id' => $attributeFamily->id,
+            'additional' => ['iiko_id' => $ingredientData['iikoId']],
+            'channels' => $channels,
+            'status' => 1,
+            'visible_individually' => 0,
+        ];
+
+        $product = $this->productRepository->create($productData);
+        $product->refresh();
+
+        $this->saveIngredientAttributes($product, $ingredientData);
+        $this->handleIngredientImage($product, $ingredientData['buttonImageUrl']);
+
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
+
+        $this->flatIndexer->refresh($product);
+
+        return $product;
+    }
+
+    /**
+     * Save ingredient product attributes for all locales.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  array  $ingredientData
+     * @return void
+     */
+    protected function saveIngredientAttributes($product, array $ingredientData): void
+    {
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        foreach ($locales as $locale) {
+            $localeData = [
+                'name' => $ingredientData['name'],
+                'short_description' => $ingredientData['description'],
+                'description' => $ingredientData['description'],
+                'price' => $ingredientData['price'],
+                'status' => 1,
+                'locale' => $locale->code,
+                'channel' => $defaultChannelCode,
+            ];
+
+            $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+        }
+    }
+
+    /**
+     * Handle ingredient image download and save.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  string|null  $imageUrl
+     * @return void
+     */
+    protected function handleIngredientImage($product, ?string $imageUrl): void
+    {
+        if (!empty($imageUrl)) {
+            $this->downloadAndSaveImage($imageUrl, $product);
+        }
+    }
+
+    /**
+     * Get default channels array.
+     *
+     * @return array
+     */
+    protected function getDefaultChannels(): array
+    {
+        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+        $channels = [];
+
+        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+            $channels[] = (int) $defaultChannelId;
+        }
+
+        return $channels;
     }
 
     /**
@@ -387,39 +1198,79 @@ class IikoNomenclatureImportService
      */
     protected function createProduct(array $item, string $productType, array $categoryMap, array $prices): void
     {
-        $iikoId = $item['id'] ?? null;
+        // Support both 'id' and 'itemId' from new API format
+        $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+        $sku = 'iiko_' . $iikoId;
+
+        // Check if product already exists by SKU
+        $existingProduct = $this->findProductBySku($sku);
+        if ($existingProduct) {
+            // Update existing product instead of creating new one
+            $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
+            return;
+        }
+
         $attributeFamily = $this->getDefaultAttributeFamily();
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
 
-            $productData = [
-                'type' => $productType,
-                'sku' => 'iiko_' . $iikoId,
-                'attribute_family_id' => $attributeFamily->id,
-                'additional' => ['iiko_id' => $iikoId],
-                'channels' => [core()->getDefaultChannel()->id],
+        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+        $channels = [];
+        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+            $channels[] = (int) $defaultChannelId;
+        }
+
+        $productData = [
+            'type' => $productType,
+            'sku' => $sku,
+            'attribute_family_id' => $attributeFamily->id,
+            'additional' => ['iiko_id' => $iikoId],
+            'channels' => $channels,
+            'status' => 1,
+            'visible_individually' => 1,
+        ];
+
+        $product = $this->productRepository->create($productData);
+        $product->refresh();
+
+        // Save attribute values for each locale separately
+        $productName = $item['name'] ?? 'Unnamed Product';
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        foreach ($locales as $locale) {
+            $localeData = [
+                'name' => $productName,
+                'short_description' => $item['description'] ?? null,
+                'description' => $item['description'] ?? null,
+                'price' => $price,
+                'status' => 1,
+                'locale' => $locale->code,
+                'channel' => $defaultChannelCode,
             ];
 
-            // Set translations
-            $productName = $item['name'] ?? 'Unnamed Product';
-            $locales = core()->getAllLocales();
-            foreach ($locales as $locale) {
-                $productData[$locale->code] = [
-                    'name' => $productName,
-                    'short_description' => $item['description'] ?? null,
-                    'description' => $item['description'] ?? null,
-                    'price' => $price,
-                ];
-            }
+            $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+        }
 
-            $product = $this->productRepository->create($productData);
-
-            // Set categories
-            $categoryIikoId = $item['groupId'] ?? null;
-            $categories = [];
-            if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-                $categories[] = $categoryMap[$categoryIikoId];
+        // Set categories
+        $categoryIikoId = $item['groupId'] ?? null;
+        $categories = [];
+        if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
+            $categoryId = $categoryMap[$categoryIikoId];
+            // Ensure categoryId is an integer and not null
+            if (is_numeric($categoryId) && $categoryId > 0) {
+                $categories[] = (int) $categoryId;
             }
-            $product->categories()->sync($categories);
+        }
+        $product->categories()->sync($categories);
+
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
+
+        // Refresh product_flat index after creating product and setting categories
+        $product->refresh();
+        $this->flatIndexer->refresh($product);
     }
 
     /**
@@ -434,35 +1285,169 @@ class IikoNomenclatureImportService
      */
     protected function updateProduct($product, array $item, string $productType, array $categoryMap, array $prices): void
     {
+        // Get import settings
+        $channelCode = core()->getDefaultChannelCode();
+        $settings = $this->settingRepository->getAllSettings(IikoSetting::CHANNEL, $channelCode);
+
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
         $productName = $item['name'] ?? 'Unnamed Product';
 
+        // Support both 'id' and 'itemId' from new API format
+        $itemId = $item['id'] ?? $item['itemId'] ?? null;
+        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
+        $channels = [];
+        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
+            $channels[] = (int) $defaultChannelId;
+        }
+
         $productData = [
             'type' => $productType,
-            'additional' => array_merge($product->additional ?? [], ['iiko_id' => $item['id'] ?? null]),
-            'channels' => [core()->getDefaultChannel()->id],
+            'additional' => array_merge($product->additional ?? [], ['iiko_id' => $itemId]),
+            'channels' => $channels,
         ];
-
-        // Set translations
-        $locales = core()->getAllLocales();
-        foreach ($locales as $locale) {
-            $productData[$locale->code] = [
-                'name' => $productName,
-                'short_description' => $item['description'] ?? null,
-                'description' => $item['description'] ?? null,
-                'price' => $price,
-            ];
-        }
 
         // Set categories
         $categoryIikoId = $item['groupId'] ?? null;
         $categories = [];
         if ($categoryIikoId && isset($categoryMap[$categoryIikoId])) {
-            $categories[] = $categoryMap[$categoryIikoId];
+            $categoryId = $categoryMap[$categoryIikoId];
+            // Ensure categoryId is an integer and not null
+            if (is_numeric($categoryId) && $categoryId > 0) {
+                $categories[] = (int) $categoryId;
+            }
         }
         $productData['categories'] = $categories;
 
+        // Update basic product data first
         $this->productRepository->update($productData, $product->id);
+        $product->refresh();
+
+        // Save attribute values for each locale separately
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        foreach ($locales as $locale) {
+            $localeData = [
+                'status' => 1,
+                'locale' => $locale->code,
+                'channel' => $defaultChannelCode,
+            ];
+
+            // Update product name if setting allows
+            if ($settings['update_product_name'] ?? true) {
+                $localeData['name'] = $productName;
+            }
+
+            // Update product description if setting allows
+            if ($settings['update_product_description'] ?? true) {
+                $localeData['short_description'] = $item['description'] ?? null;
+                $localeData['description'] = $item['description'] ?? null;
+            }
+
+            // Update product price if setting allows
+            if ($settings['update_product_price'] ?? true) {
+                $localeData['price'] = $price;
+            }
+
+            $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+        }
+
+        // Update product image if setting allows
+        if (($settings['update_product_image'] ?? true) && !empty($item['imageUrl'])) {
+            $this->downloadAndSaveImage($item['imageUrl'], $product);
+        }
+
+        // Update nutritional values (КЖБУ) if setting allows
+        if ($settings['update_product_nutritional'] ?? true) {
+            $this->updateProductNutritional($product, $item);
+        }
+
+        // Ensure inventory exists
+        $this->ensureProductInventory($product);
+
+        // Refresh product_flat index after updating product
+        $product->refresh();
+        $this->flatIndexer->refresh($product);
+    }
+
+    /**
+     * Update product nutritional values (КЖБУ).
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @param  array  $item
+     * @return void
+     */
+    protected function updateProductNutritional($product, array $item): void
+    {
+        $locales = core()->getAllLocales();
+        $defaultChannelCode = core()->getDefaultChannelCode();
+        $attributeFamily = $product->attribute_family;
+        $customAttributes = $attributeFamily->custom_attributes;
+
+        // Extract nutritional values from item data
+        // Try different possible field names from iiko API
+        $nutritionalData = [];
+
+        // Calories (калории)
+        $calories = $item['calories'] 
+            ?? $item['energy'] 
+            ?? $item['energyValue'] 
+            ?? $item['nutritionalInfo']['calories'] 
+            ?? $item['nutritionalInfo']['energy'] 
+            ?? null;
+        
+        if ($calories !== null && is_numeric($calories)) {
+            $nutritionalData['calories'] = (float) $calories;
+        }
+
+        // Proteins (белки)
+        $proteins = $item['proteins'] 
+            ?? $item['protein'] 
+            ?? $item['nutritionalInfo']['proteins'] 
+            ?? $item['nutritionalInfo']['protein'] 
+            ?? null;
+        
+        if ($proteins !== null && is_numeric($proteins)) {
+            $nutritionalData['proteins'] = (float) $proteins;
+        }
+
+        // Fats (жиры)
+        $fats = $item['fats'] 
+            ?? $item['fat'] 
+            ?? $item['nutritionalInfo']['fats'] 
+            ?? $item['nutritionalInfo']['fat'] 
+            ?? null;
+        
+        if ($fats !== null && is_numeric($fats)) {
+            $nutritionalData['fats'] = (float) $fats;
+        }
+
+        // Carbohydrates (углеводы)
+        $carbs = $item['carbs'] 
+            ?? $item['carbohydrates'] 
+            ?? $item['carbohydrate'] 
+            ?? $item['nutritionalInfo']['carbs'] 
+            ?? $item['nutritionalInfo']['carbohydrates'] 
+            ?? $item['nutritionalInfo']['carbohydrate'] 
+            ?? null;
+        
+        if ($carbs !== null && is_numeric($carbs)) {
+            $nutritionalData['carbs'] = (float) $carbs;
+        }
+
+        // Update nutritional attributes if we have any data
+        if (!empty($nutritionalData)) {
+            foreach ($locales as $locale) {
+                $localeData = array_merge($nutritionalData, [
+                    'locale' => $locale->code,
+                    'channel' => $defaultChannelCode,
+                ]);
+
+                $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+            }
+        }
     }
 
     /**
@@ -494,6 +1479,18 @@ class IikoNomenclatureImportService
     }
 
     /**
+     * Find product by SKU.
+     *
+     * @param  string  $sku
+     * @return \Webkul\Product\Contracts\Product|null
+     */
+    protected function findProductBySku(string $sku)
+    {
+        return $this->productRepository
+            ->findOneByField('sku', $sku);
+    }
+
+    /**
      * Build category map (iiko_id => category_id).
      *
      * @return array
@@ -508,8 +1505,10 @@ class IikoNomenclatureImportService
         $map = [];
         foreach ($categories as $category) {
             $iikoId = $category->additional['iiko_id'] ?? null;
-            if ($iikoId) {
-                $map[$iikoId] = $category->id;
+            $categoryId = $category->id ?? null;
+            // Ensure both iikoId and categoryId are valid
+            if ($iikoId && $categoryId && is_numeric($categoryId) && $categoryId > 0) {
+                $map[$iikoId] = (int) $categoryId;
             }
         }
 
@@ -524,7 +1523,7 @@ class IikoNomenclatureImportService
     protected function getOrCreatePriceVariantsCategory()
     {
         $categoryName = 'Варианты цен iiko';
-        
+
         // Try to find existing category
         $existing = $this->categoryRepository
             ->getModel()
@@ -545,7 +1544,8 @@ class IikoNomenclatureImportService
         ];
 
         foreach ($locales as $locale) {
-            $categoryData[$locale->code] = [
+            $localeCode = is_string($locale->code) ? $locale->code : (string) $locale->code;
+            $categoryData[$localeCode] = [
                 'name' => $categoryName,
                 'slug' => \Illuminate\Support\Str::slug($categoryName),
             ];
@@ -562,7 +1562,7 @@ class IikoNomenclatureImportService
     protected function getDefaultAttributeFamily()
     {
         $family = $this->attributeFamilyRepository->findWhere(['code' => 'default'])->first();
-        
+
         if (!$family) {
             $family = $this->attributeFamilyRepository->first();
         }
@@ -572,5 +1572,37 @@ class IikoNomenclatureImportService
         }
 
         return $family;
+    }
+
+    /**
+     * Ensure product has inventory record.
+     *
+     * @param  \Webkul\Product\Contracts\Product  $product
+     * @return void
+     */
+    protected function ensureProductInventory($product): void
+    {
+        // Load inventories relationship if not already loaded
+        if (!$product->relationLoaded('inventories')) {
+            $product->load('inventories');
+        }
+
+        // Check if product has any inventory records
+        if ($product->inventories->count() == 0) {
+            // Create a default inventory record
+            $this->productInventoryRepository->create([
+                'product_id' => $product->id,
+                'vendor_id' => 0,
+                'inventory_source_id' => 1, // Default inventory source
+                'qty' => 999, // High quantity to show as available
+            ]);
+        } else {
+            // Update existing inventory record to ensure it shows as available
+            foreach ($product->inventories as $inventory) {
+                if ($inventory->qty <= 0) {
+                    $inventory->update(['qty' => 999]);
+                }
+            }
+        }
     }
 }

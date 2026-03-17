@@ -26,6 +26,10 @@ class ApplicationError extends Model
         'trace',
         'context',
         'source',
+        'level',
+        'platform',
+        'is_read',
+        'assigned_to',
     ];
 
     /**
@@ -36,5 +40,32 @@ class ApplicationError extends Model
     protected $casts = [
         'context' => 'array',
         'line'    => 'integer',
+        'is_read' => 'boolean',
     ];
+
+    /**
+     * Classify error meta data (e.g. who should handle it).
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    public static function classifyError(array $attributes): array
+    {
+        $platform = $attributes['platform'] ?? null;
+        $code     = $attributes['code'] ?? null;
+        $source   = $attributes['source'] ?? null;
+
+        $isMobilePlatform = in_array($platform, ['ios', 'android'], true);
+
+        $isFlutterRelated = str_contains(strtolower((string) $code), 'flutter')
+            || str_contains(strtolower((string) $source), 'flutter');
+
+        $assignedTo = ($isMobilePlatform || $isFlutterRelated)
+            ? 'developer'
+            : 'manager';
+
+        $attributes['assigned_to'] = $assignedTo;
+
+        return $attributes;
+    }
 }

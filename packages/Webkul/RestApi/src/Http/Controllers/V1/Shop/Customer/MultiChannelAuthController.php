@@ -21,6 +21,7 @@ use Webkul\RestApi\Services\Auth\VerificationService;
 use Webkul\RestApi\Services\Auth\SmsService;
 use Webkul\RestApi\Services\Auth\WhatsAppService;
 use Webkul\RestApi\Services\Auth\TelegramService;
+use Webkul\RestApi\Services\Auth\CustomerTokenLogService;
 use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
@@ -42,7 +43,8 @@ class MultiChannelAuthController extends ShopController
         protected SmsService $smsService,
         protected WhatsAppService $whatsappService,
         protected TelegramService $telegramService,
-        protected AuthChannelSettingRepository $authChannelSettingRepository
+        protected AuthChannelSettingRepository $authChannelSettingRepository,
+        protected CustomerTokenLogService $customerTokenLogService
     ) {}
 
     /**
@@ -350,8 +352,19 @@ class MultiChannelAuthController extends ShopController
         // Prevent multiple token creation
         $customer->tokens()->delete();
 
+        $tokenName = $request->device_name ?? 'mobile-app';
+        $abilities = ['role:customer'];
+
         // Create new token
-        $token = $customer->createToken($request->device_name ?? 'mobile-app', ['role:customer'])->plainTextToken;
+        $token = $customer->createToken($tokenName, $abilities)->plainTextToken;
+
+        $this->customerTokenLogService->logToken(
+            $customer,
+            $tokenName,
+            $abilities,
+            null,
+            $request
+        );
 
         // Dispatch login event
         Event::dispatch('customer.after.login', $customer);
@@ -494,8 +507,19 @@ class MultiChannelAuthController extends ShopController
         // Revoke all existing tokens
         $customer->tokens()->delete();
 
+        $tokenName = 'token-reset';
+        $abilities = ['role:customer'];
+
         // Create new token
-        $token = $customer->createToken('token-reset', ['role:customer'])->plainTextToken;
+        $token = $customer->createToken($tokenName, $abilities)->plainTextToken;
+
+        $this->customerTokenLogService->logToken(
+            $customer,
+            $tokenName,
+            $abilities,
+            null,
+            $request
+        );
 
         // Clean up verification data
         $this->verificationService->cleanupVerification($request->verification_token);

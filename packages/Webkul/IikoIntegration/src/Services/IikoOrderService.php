@@ -6,9 +6,12 @@ use Illuminate\Support\Facades\Log;
 use Webkul\IikoIntegration\Models\IikoOrderSync;
 use Webkul\IikoIntegration\Models\IikoSyncLog;
 use Webkul\IikoIntegration\Repositories\IikoOrderSyncRepository;
+use Webkul\IikoIntegration\Repositories\IikoPaymentTypeRepository;
 use Webkul\IikoIntegration\Repositories\IikoSettingRepository;
 use Webkul\IikoIntegration\Repositories\IikoSyncLogRepository;
+use Webkul\Inventory\Models\InventorySource;
 use Webkul\Sales\Models\Order;
+use Webkul\Sales\Repositories\OrderRepository;
 
 class IikoOrderService
 {
@@ -19,7 +22,9 @@ class IikoOrderService
         protected IikoApiService $apiService,
         protected IikoOrderSyncRepository $orderSyncRepository,
         protected IikoSettingRepository $settingRepository,
-        protected IikoSyncLogRepository $syncLogRepository
+        protected IikoSyncLogRepository $syncLogRepository,
+        protected OrderRepository $orderRepository,
+        protected IikoPaymentTypeRepository $paymentTypeRepository
     ) {}
 
     /**
@@ -79,6 +84,16 @@ class IikoOrderService
                     'synced_at'       => now(),
                     'error_message'   => null,
                 ], $sync->id);
+
+                // Set order status to active (processing) after successful sync
+                if ($order->status !== Order::STATUS_PROCESSING) {
+                    $this->orderRepository->updateOrderStatus($order, Order::STATUS_PROCESSING);
+                    
+                    Log::info('iiko: Order status set to processing after sync', [
+                        'order_id'      => $order->id,
+                        'iiko_order_id' => $response['orderId'],
+                    ]);
+                }
 
                 // Update log
                 $this->syncLogRepository->create([
@@ -140,12 +155,79 @@ class IikoOrderService
     }
 
     /**
+     * Get inventory source for order.
+     * Priority:
+     * 1. From shipment if exists
+     * 2. First active inventory source from channel with iiko fields filled
+     * 3. Fallback to env/config
+     */
+    protected function getInventorySourceForOrder(Order $order): ?InventorySource
+    {
+        // Try to get from shipment first
+        $shipment = $order->shipments()->first();
+        if ($shipment && $shipment->inventory_source_id) {
+            $inventorySource = InventorySource::find($shipment->inventory_source_id);
+            if ($inventorySource 
+                && !empty($inventorySource->iiko_organization_id) 
+                && !empty($inventorySource->iiko_terminal_id)) {
+                return $inventorySource;
+            }
+        }
+
+        // Try to get from channel inventory sources
+        if ($order->channel) {
+            $inventorySources = $order->channel->inventory_sources;
+            if ($inventorySources) {
+                foreach ($inventorySources as $inventorySource) {
+                    if (($inventorySource->status ?? 1) == 1 
+                        && !empty($inventorySource->iiko_organization_id) 
+                        && !empty($inventorySource->iiko_terminal_id)) {
+                        return $inventorySource;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get organization ID from inventory source or fallback to config.
+     */
+    protected function getOrganizationId(Order $order, ?string $channelCode = null): ?string
+    {
+        $inventorySource = $this->getInventorySourceForOrder($order);
+        
+        if ($inventorySource && $inventorySource->iiko_organization_id) {
+            return $inventorySource->iiko_organization_id;
+        }
+
+        // Fallback to env/config
+        return $this->settingRepository->getSettingWithFallback('organization_id', $channelCode);
+    }
+
+    /**
+     * Get terminal group ID from inventory source or fallback to config.
+     */
+    protected function getTerminalGroupId(Order $order, ?string $channelCode = null): ?string
+    {
+        $inventorySource = $this->getInventorySourceForOrder($order);
+        
+        if ($inventorySource && $inventorySource->iiko_terminal_id) {
+            return $inventorySource->iiko_terminal_id;
+        }
+
+        // Fallback to env/config
+        return $this->settingRepository->getSettingWithFallback('terminal_group_id', $channelCode);
+    }
+
+    /**
      * Prepare order data for iiko API.
      */
     protected function prepareOrderData(Order $order, ?string $channelCode = null): array
     {
-        $organizationId = $this->settingRepository->getSettingWithFallback('organization_id', $channelCode);
-        $terminalGroupId = $this->settingRepository->getSettingWithFallback('terminal_group_id', $channelCode);
+        $organizationId = $this->getOrganizationId($order, $channelCode);
+        $terminalGroupId = $this->getTerminalGroupId($order, $channelCode);
 
         // Get shipping address
         $shippingAddress = $order->shipping_address;
@@ -198,10 +280,12 @@ class IikoOrderService
         // Prepare payment
         $payment = [];
         if ($order->payment) {
+            $paymentTypeId = $this->getPaymentTypeId($order->payment->method, $organizationId);
+            
             $payment = [
                 'paymentTypeKind' => $this->mapPaymentMethod($order->payment->method),
                 'sum'             => (float) $order->grand_total,
-                'paymentTypeId'   => null, // Should be fetched from payment types dictionary
+                'paymentTypeId'   => $paymentTypeId,
                 'prepaid'         => false,
             ];
         }
@@ -242,6 +326,39 @@ class IikoOrderService
     }
 
     /**
+     * Get payment type ID from iiko by payment method code.
+     */
+    protected function getPaymentTypeId(string $paymentMethodCode, string $organizationId): ?string
+    {
+        try {
+            $paymentType = $this->paymentTypeRepository->findWhere([
+                'organization_id'      => $organizationId,
+                'payment_method_code'  => $paymentMethodCode,
+                'is_active'            => true,
+            ])->first();
+
+            if ($paymentType) {
+                return $paymentType->iiko_id;
+            }
+
+            Log::warning('iiko: Payment method mapping not found', [
+                'payment_method_code' => $paymentMethodCode,
+                'organization_id'    => $organizationId,
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('iiko: Exception getting payment type ID', [
+                'payment_method_code' => $paymentMethodCode,
+                'organization_id'    => $organizationId,
+                'message'            => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * Cancel order in iiko.
      */
     public function cancelOrderInIiko(Order $order, ?string $reason = null, ?string $channelCode = null): bool
@@ -256,7 +373,7 @@ class IikoOrderService
 
             $cancelData = [
                 'orderId' => $sync->iiko_order_id,
-                'organizationId' => $this->settingRepository->getSettingWithFallback('organization_id', $channelCode),
+                'organizationId' => $this->getOrganizationId($order, $channelCode),
             ];
 
             if ($reason) {

@@ -318,17 +318,14 @@ class IikoApiService
     /**
      * Get nomenclature for organization.
      */
-    public function getNomenclature(string $organizationId, ?string $channelCode = null, ?string $externalMenuId = null): ?array
+    public function getNomenclature(array $organizationIds, string $externalMenuId, ?string $channelCode = null): ?array
     {
         $data = [
-            'organizationId' => $organizationId,
+            'externalMenuId' => $externalMenuId,
+            'organizationIds' => $organizationIds,
         ];
 
-        if ($externalMenuId) {
-            $data['externalMenuId'] = $externalMenuId;
-        }
-
-        return $this->makeRequest('/api/1/nomenclature', 'POST', $data, $channelCode);
+        return $this->makeRequest('/api/2/menu/by_id', 'POST', $data, $channelCode);
     }
 
     /**

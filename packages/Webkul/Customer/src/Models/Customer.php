@@ -15,6 +15,7 @@ use Webkul\Core\Models\SubscribersListProxy;
 use Webkul\Customer\Contracts\Customer as CustomerContract;
 use Webkul\Customer\Database\Factories\CustomerFactory;
 use Webkul\Product\Models\ProductReviewProxy;
+use Webkul\RestApi\Models\CustomerTokenLog;
 use Webkul\Sales\Models\InvoiceProxy;
 use Webkul\Sales\Models\OrderProxy;
 use Webkul\Shop\Mail\Customer\ResetPasswordNotification;
@@ -281,6 +282,16 @@ class Customer extends Authenticatable implements CustomerContract
     public function subscription()
     {
         return $this->hasOne(SubscribersListProxy::modelClass(), 'customer_id');
+    }
+
+    /**
+     * Get all API token log entries for the customer.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function tokenLogs()
+    {
+        return $this->hasMany(CustomerTokenLog::class, 'customer_id');
     }
 
     /**

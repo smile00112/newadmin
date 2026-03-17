@@ -5336,16 +5336,75 @@ return [
     'application_errors' => [
         'index' => [
             'title'    => 'Ошибки приложения',
+            'subtitle' => 'Логи ошибок мобильного приложения',
             'empty'    => 'Ошибок пока нет.',
-            'datagrid' => [
-                'id'         => 'ID',
-                'message'    => 'Сообщение',
-                'code'       => 'Код',
-                'source'     => 'Источник',
-                'created_at' => 'Дата',
-                'view'       => 'Просмотр',
+
+            'stats'    => [
+                'total'    => 'Всего',
+                'unread'   => 'Непрочитанных',
+                'today'    => 'Сегодня',
+                'critical' => 'Критических',
+            ],
+
+            'filters'  => [
+                'search_placeholder' => 'Поиск по тексту ошибки',
+                'all_levels'         => 'Все уровни',
+                'all_platforms'      => 'Все платформы',
+                'all_statuses'       => 'Все',
+                'read'               => 'Прочитанные',
+                'unread'             => 'Непрочитанные',
+                'search'             => 'Найти',
+                'reset'              => 'Сбросить',
+            ],
+
+            'tabs'     => [
+                'all'       => 'Все',
+                'manager'   => 'Менеджер',
+                'developer' => 'Разработчик',
+            ],
+
+            'table'    => [
+                'error'      => 'Ошибка',
+                'assigned_to'=> 'Кто исправит',
+                'level'      => 'Уровень',
+                'platform'   => 'Платформа',
+                'time'       => 'Время',
+                'found'      => 'Найдено:',
+                'clear_all'  => 'Очистить',
+            ],
+
+            'level'    => [
+                'error'    => 'Error',
+                'warning'  => 'Warning',
+                'critical' => 'Critical',
+                'info'     => 'Info',
+            ],
+
+            'classification' => [
+                'developer'       => 'Разработчик',
+                'manager'         => 'Менеджер',
+                'description'     => 'Ошибка в работе приложения.',
+                'recommendation'  => 'Если повторяется 3+ раз — передать разработчику.',
+                'should_fix'      => 'Стоит исправить',
+                'needs_developer' => 'Нужна помощь разработчика',
+                'what_to_do'      => 'Что делать: ',
+            ],
+
+            'modal' => [
+                'error_label' => 'Ошибка:',
+                'context'     => 'Контекст:',
+            ],
+
+            'mark_read'        => 'Отметить как прочитанное',
+            'loading'          => 'Загружаем ошибки…',
+            'confirm_delete'   => 'Удалить эту ошибку?',
+            'confirm_clear_all'=> 'Очистить все найденные ошибки?',
+
+            'pagination' => [
+                'label' => 'Страница :from из :to',
             ],
         ],
+
         'show' => [
             'title'    => 'Ошибка #:id',
             'back'     => 'Назад к списку',
@@ -5353,6 +5412,9 @@ return [
             'file'     => 'Файл',
             'trace'    => 'Стек вызовов',
             'context'  => 'Контекст',
+            'os'       => 'ОС',
+            'ip'       => 'IP',
+            'app_name' => 'Приложение',
         ],
     ],
 

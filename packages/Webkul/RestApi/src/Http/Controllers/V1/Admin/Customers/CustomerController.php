@@ -13,6 +13,7 @@ use Webkul\RestApi\Http\Resources\V1\Admin\Customer\CustomerResource;
 use Webkul\RestApi\Http\Resources\V1\Admin\Sales\InvoiceResource;
 use Webkul\RestApi\Http\Resources\V1\Admin\Sales\OrderResource;
 use Webkul\Sales\Repositories\InvoiceRepository;
+use Webkul\RestApi\Models\CustomerTokenLog;
 
 class CustomerController extends BaseController
 {
@@ -235,6 +236,23 @@ class CustomerController extends BaseController
 
         return response([
             'data' => InvoiceResource::collection($this->invoiceRepository->findWhereIn('order_id', $orderIds)),
+        ]);
+    }
+
+    /**
+     * Retrieve API token logs for customer.
+     */
+    public function tokenLogs(int $id): Response
+    {
+        $customer = $this->getRepositoryInstance()->findOrFail($id);
+
+        $logs = CustomerTokenLog::where('customer_id', $customer->id)
+            ->orderByDesc('issued_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response([
+            'data' => $logs,
         ]);
     }
 

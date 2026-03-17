@@ -5317,16 +5317,75 @@ return [
     'application_errors' => [
         'index' => [
             'title'    => 'Application Errors',
+            'subtitle' => 'Mobile application error log',
             'empty'    => 'No errors recorded yet.',
-            'datagrid' => [
-                'id'         => 'ID',
-                'message'    => 'Message',
-                'code'       => 'Code',
-                'source'     => 'Source',
-                'created_at' => 'Created At',
-                'view'       => 'View',
+
+            'stats'    => [
+                'total'    => 'Total',
+                'unread'   => 'Unread',
+                'today'    => 'Today',
+                'critical' => 'Critical',
+            ],
+
+            'filters'  => [
+                'search_placeholder' => 'Search by error text',
+                'all_levels'         => 'All levels',
+                'all_platforms'      => 'All platforms',
+                'all_statuses'       => 'All',
+                'read'               => 'Read',
+                'unread'             => 'Unread',
+                'search'             => 'Search',
+                'reset'              => 'Reset',
+            ],
+
+            'tabs'     => [
+                'all'       => 'All',
+                'manager'   => 'Manager',
+                'developer' => 'Developer',
+            ],
+
+            'table'    => [
+                'error'      => 'Error',
+                'assigned_to'=> 'Who will fix',
+                'level'      => 'Level',
+                'platform'   => 'Platform',
+                'time'       => 'Time',
+                'found'      => 'Found:',
+                'clear_all'  => 'Clear',
+            ],
+
+            'level'    => [
+                'error'    => 'Error',
+                'warning'  => 'Warning',
+                'critical' => 'Critical',
+                'info'     => 'Info',
+            ],
+
+            'classification' => [
+                'developer'       => 'Developer',
+                'manager'         => 'Manager',
+                'description'     => 'Application error.',
+                'recommendation'  => 'If the error repeats 3+ times, escalate to a developer.',
+                'should_fix'      => 'Should fix',
+                'needs_developer' => 'Needs developer help',
+                'what_to_do'      => 'What to do: ',
+            ],
+
+            'modal' => [
+                'error_label' => 'Error:',
+                'context'     => 'Context:',
+            ],
+
+            'mark_read'        => 'Mark as read',
+            'loading'          => 'Loading errors…',
+            'confirm_delete'   => 'Delete this error?',
+            'confirm_clear_all'=> 'Clear all found errors?',
+
+            'pagination' => [
+                'label' => 'Page :from of :to',
             ],
         ],
+
         'show' => [
             'title'    => 'Error #:id',
             'back'     => 'Back to list',
@@ -5334,6 +5393,9 @@ return [
             'file'     => 'File',
             'trace'    => 'Stack trace',
             'context'  => 'Context',
+            'os'       => 'OS',
+            'ip'       => 'IP',
+            'app_name' => 'Application',
         ],
     ],
 
