@@ -67,11 +67,12 @@ COPY composer.json composer.lock ./
 
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
 
-COPY docker/php/php.ini /usr/local/etc/php/php.ini
-
 COPY . .
 
 RUN composer dump-autoload --optimize --no-dev
+
+COPY docker/php/php.ini /usr/local/etc/php/php.ini
+
 RUN php artisan package:discover --ansi || true
 
 # Установка RoadRunner
