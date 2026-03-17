@@ -62,6 +62,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+COPY docker/php/php.ini /usr/local/etc/php/php.ini
+
 COPY composer.json composer.lock ./
 
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
