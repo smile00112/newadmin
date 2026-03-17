@@ -19,7 +19,7 @@ class GDPRController extends CustomerController
     public function __construct(
         protected GDPRDataRequestRepository $gdprDataRequestRepository,
     ) {
-        if (! core()->getConfigData('general.gdpr.settings.enabled')) {
+        if (! app()->runningInConsole() && ! core()->getConfigData('general.gdpr.settings.enabled')) {
             abort(404);
         }
     }
