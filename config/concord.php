@@ -45,6 +45,8 @@ return [
         \Webkul\MobileApp\Providers\ModuleServiceProvider::class,
         \Webkul\Bonus\Providers\ModuleServiceProvider::class,
         \Webkul\PushNotification\Providers\ModuleServiceProvider::class,
+        \Webkul\IikoIntegration\Providers\ModuleServiceProvider::class,
+
 
     ],
 

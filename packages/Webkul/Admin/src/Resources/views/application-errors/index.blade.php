@@ -39,7 +39,11 @@
                 <!-- Stats cards -->
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="box-shadow relative overflow-hidden rounded-2xl bg-white/80 p-4 dark:bg-gray-900">
-                        <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-300">
+                                <span class="icon-information text-xl"></span>
+                            </div>
+
                             <div>
                                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     @lang('admin::app.application_errors.index.stats.total')
@@ -49,15 +53,15 @@
                                     @{{ stats.total }}
                                 </p>
                             </div>
-
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-100 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-300">
-                                <span class="icon-bug text-xl"></span>
-                            </div>
                         </div>
                     </div>
 
                     <div class="box-shadow relative overflow-hidden rounded-2xl bg-white/80 p-4 dark:bg-gray-900">
-                        <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">
+                                <span class="icon-mail text-xl"></span>
+                            </div>
+
                             <div>
                                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     @lang('admin::app.application_errors.index.stats.unread')
@@ -67,15 +71,15 @@
                                     @{{ stats.unread }}
                                 </p>
                             </div>
-
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
-                                <span class="icon-email text-xl"></span>
-                            </div>
                         </div>
                     </div>
 
                     <div class="box-shadow relative overflow-hidden rounded-2xl bg-white/80 p-4 dark:bg-gray-900">
-                        <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">
+                                <span class="icon-flame text-xl"></span>
+                            </div>
+
                             <div>
                                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     @lang('admin::app.application_errors.index.stats.today')
@@ -85,15 +89,15 @@
                                     @{{ stats.today }}
                                 </p>
                             </div>
-
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">
-                                <span class="icon-flame text-xl"></span>
-                            </div>
                         </div>
                     </div>
 
                     <div class="box-shadow relative overflow-hidden rounded-2xl bg-white/80 p-4 dark:bg-gray-900">
-                        <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">
+                                <span class="icon-lightning text-xl"></span>
+                            </div>
+
                             <div>
                                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
                                     @lang('admin::app.application_errors.index.stats.critical')
@@ -102,10 +106,6 @@
                                 <p class="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
                                     @{{ stats.critical }}
                                 </p>
-                            </div>
-
-                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">
-                                <span class="icon-lightning text-xl"></span>
                             </div>
                         </div>
                     </div>
@@ -184,30 +184,33 @@
                     <div class="inline-flex items-center gap-1 rounded-full bg-gray-100 p-1 text-xs font-medium text-gray-600 dark:bg-gray-900 dark:text-gray-300">
                         <button
                             type="button"
-                            class="rounded-full px-3 py-1 transition"
+                            class="inline-flex items-center gap-1 rounded-full px-3 py-1 transition"
                             :class="tab === 'all' ? 'bg-white shadow-sm dark:bg-gray-800 text-gray-900 dark:text-white' : 'bg-transparent'"
                             @click="setTab('all')"
                         >
+                            <span class="icon-menu text-sm"></span>
                             @lang('admin::app.application_errors.index.tabs.all')
                             <span class="ml-1 rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] text-gray-700 dark:bg-gray-800 dark:text-gray-200">@{{ counts.all }}</span>
                         </button>
 
                         <button
                             type="button"
-                            class="rounded-full px-3 py-1 transition"
+                            class="inline-flex items-center gap-1 rounded-full px-3 py-1 transition"
                             :class="tab === 'manager' ? 'bg-white shadow-sm dark:bg-gray-800 text-amber-700 dark:text-amber-300' : 'bg-transparent'"
                             @click="setTab('manager')"
                         >
+                            <span class="icon-settings text-sm"></span>
                             @lang('admin::app.application_errors.index.tabs.manager')
                             <span class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-900/60 dark:text-amber-200">@{{ counts.manager }}</span>
                         </button>
 
                         <button
                             type="button"
-                            class="rounded-full px-3 py-1 transition"
+                            class="inline-flex items-center gap-1 rounded-full px-3 py-1 transition"
                             :class="tab === 'developer' ? 'bg-white shadow-sm dark:bg-gray-800 text-indigo-700 dark:text-indigo-300' : 'bg-transparent'"
                             @click="setTab('developer')"
                         >
+                            <span class="icon-code text-sm"></span>
                             @lang('admin::app.application_errors.index.tabs.developer')
                             <span class="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-200">@{{ counts.developer }}</span>
                         </button>
@@ -337,7 +340,7 @@
 
                                     <!-- Time -->
                                     <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 sm:mt-0 sm:text-right">
-                                        @{{ item.created_at }}
+                                        @{{ formatDate(item.created_at) }}
                                     </div>
 
                                     <!-- Actions -->
@@ -457,7 +460,7 @@
                                 </span>
 
                                 <span class="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                                    @{{ selected.created_at }}
+                                    @{{ formatDate(selected.created_at) }}
                                 </span>
                             </div>
 
@@ -797,6 +800,22 @@
                         } catch (error) {
                             console.error(error);
                         }
+                    },
+
+                    formatDate(dateStr) {
+                        if (!dateStr) return '—';
+
+                        const d = new Date(dateStr);
+
+                        if (isNaN(d.getTime())) return dateStr;
+
+                        const dd = String(d.getDate()).padStart(2, '0');
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        const yyyy = d.getFullYear();
+                        const hh = String(d.getHours()).padStart(2, '0');
+                        const mi = String(d.getMinutes()).padStart(2, '0');
+
+                        return `${dd}.${mm}.${yyyy} ${hh}:${mi}`;
                     },
 
                     async confirmClearAll() {
