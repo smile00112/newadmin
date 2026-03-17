@@ -38,7 +38,7 @@ namespace Webkul\RestApi\Docs\Shop\Controllers;
  *      ### Authentication for Private Channels
  *      
  *      Private channels require authentication. The authorization endpoint is:
- *      - **POST** `/api/v1/customer/broadcasting/auth`
+ *      - **POST** `/api/v1/broadcasting/auth`
  *      
  *      This endpoint requires authentication token in the Authorization header.
  *      
@@ -56,7 +56,7 @@ namespace Webkul\RestApi\Docs\Shop\Controllers;
  *          wsPath: '/app',
  *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
  *          enabledTransports: ['ws', 'wss'],
- *          authEndpoint: '/api/v1/customer/broadcasting/auth',
+ *          authEndpoint: '/api/v1/broadcasting/auth',
  *          auth: {
  *              headers: {
  *                  Authorization: 'Bearer ' + yourAuthToken
@@ -240,7 +240,7 @@ namespace Webkul\RestApi\Docs\Shop\Controllers;
  *                  @OA\Property(
  *                      property="url",
  *                      type="string",
- *                      example="/api/v1/customer/broadcasting/auth"
+ *                      example="/api/v1/broadcasting/auth"
  *                  ),
  *                  @OA\Property(
  *                      property="method",
@@ -372,7 +372,7 @@ class WebSocketController
 
     /**
      * @OA\Post(
-     *      path="/api/v1/customer/broadcasting/auth",
+     *      path="/api/v1/broadcasting/auth",
      *      operationId="authorizeBroadcastingChannel",
      *      tags={"WebSocket Notifications"},
      *      summary="Authorize private WebSocket channel",
