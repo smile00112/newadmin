@@ -33,7 +33,7 @@ class WhatsAppService
                 Log::info("WhatsApp message sending skipped for test phone number: {$phoneNumber}");
                 return true;
             }
-            
+
             // Check if WhatsApp channel is enabled
             if (!$this->settingRepository->isChannelEnabled('whatsapp', $channelCode)) {
                 Log::warning("WhatsApp channel is disabled for channel: {$channelCode}");
@@ -55,13 +55,13 @@ class WhatsAppService
 
             // Prepare message
             $message = "Ваш код подтверждения: {$code}";
-            
+
             // Format phone number (remove + if present, Green API expects format without +)
             $formattedPhone = str_replace('+', '', $phoneNumber);
 
             // Send message via Green API
             $apiUrl = rtrim($url, '/') . "/waInstance{$idInstance}/sendMessage/{$apiTokenInstance}";
-            
+
             $response = Http::post($apiUrl, [
                 'chatId' => $formattedPhone . '@c.us',
                 'message' => $message,
@@ -69,7 +69,7 @@ class WhatsAppService
 
             if ($response->successful()) {
                 $responseData = $response->json();
-                
+
                 // Green API returns idMessage on success
                 if (isset($responseData['idMessage'])) {
                     Log::info("WhatsApp message sent successfully to {$phoneNumber}");

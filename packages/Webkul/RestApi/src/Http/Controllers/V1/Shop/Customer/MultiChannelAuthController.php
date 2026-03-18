@@ -83,7 +83,7 @@ class MultiChannelAuthController extends ShopController
 
         // Use firstOrCreate to prevent duplicate entries
         $email = $phoneNumber . '@test.com';
-        
+
         $customer = $this->customerRepository->firstOrCreate(
             ['phone' => $phoneNumber],
             [
@@ -102,7 +102,7 @@ class MultiChannelAuthController extends ShopController
             $customer->email = $email;
             $customer->save();
         }
-        
+
         if ($customer->wasRecentlyCreated) {
             Event::dispatch('customer.registration.after', $customer);
         }
@@ -142,7 +142,7 @@ class MultiChannelAuthController extends ShopController
 
         // Use firstOrCreate to prevent duplicate entries
         $email = $phoneNumber . '@test.com';
-        
+
         $customer = $this->customerRepository->firstOrCreate(
             ['phone' => $phoneNumber],
             [
@@ -161,7 +161,7 @@ class MultiChannelAuthController extends ShopController
             $customer->email = $email;
             $customer->save();
         }
-        
+
         if ($customer->wasRecentlyCreated) {
             Event::dispatch('customer.registration.after', $customer);
         }

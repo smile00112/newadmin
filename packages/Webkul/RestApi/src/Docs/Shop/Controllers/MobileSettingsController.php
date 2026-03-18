@@ -292,30 +292,6 @@ class MobileSettingsController
      *                          nullable=true
      *                      )
      *                  )
- *                  ,
- *                  @OA\Property(
- *                      property="push",
- *                      type="object",
- *                      description="Push notifications configuration for the mobile app (client-safe, no secrets)",
- *                      @OA\Property(
- *                          property="provider",
- *                          type="string",
- *                          example="fcm",
- *                          description="Push provider identifier"
- *                      ),
- *                      @OA\Property(
- *                          property="enabled",
- *                          type="boolean",
- *                          example=true,
- *                          description="Whether push notifications are enabled on the server"
- *                      ),
- *                      @OA\Property(
- *                          property="statuses",
- *                          type="array",
- *                          description="Order statuses that should trigger push notifications",
- *                          @OA\Items(type="string", example="processing")
- *                      )
- *                  ),
  *                  @OA\Property(
  *                      property="sockets",
  *                      type="object",

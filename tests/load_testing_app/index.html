@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Load Tester</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+    <!-- Header -->
+    <header class="app-header">
+        <h1>⚡ API Load Tester</h1>
+        <span id="statusBadge" class="status-badge idle">Ожидание</span>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <!-- Connection -->
+        <div class="panel">
+            <h2>Подключение</h2>
+            <div class="form-group">
+                <label for="baseUrl">API Base URL</label>
+                <input type="text" id="baseUrl" placeholder="https://example.com/api/v1" value="">
+            </div>
+        </div>
+
+        <!-- Auth -->
+        <div class="panel">
+            <h2>Авторизация</h2>
+            <div class="form-group">
+                <label for="phones">Телефоны (по одному на строку, формат: КодСтраны:Номер)</label>
+                <textarea id="phones" placeholder="RU:9991234567&#10;RU:9997654321"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="verifyCode">Код верификации</label>
+                <input type="text" id="verifyCode" value="123456" placeholder="123456">
+            </div>
+            <button class="btn btn-primary btn-block" id="btnAuth">Авторизовать</button>
+            <div id="authLog" class="auth-log"></div>
+        </div>
+
+        <!-- Tokens -->
+        <div class="panel">
+            <h2>Токены</h2>
+            <ul id="tokenList" class="token-list">
+                <li class="token-empty">Нет сохранённых токенов</li>
+            </ul>
+            <button class="btn btn-ghost btn-sm btn-block" id="btnClearTokens" style="margin-top: 8px;">Очистить токены</button>
+        </div>
+
+        <!-- Settings -->
+        <div class="panel">
+            <h2>Настройки</h2>
+            <div class="form-group">
+                <label>Параллельных потоков</label>
+                <div class="stream-control">
+                    <input type="range" id="streamCount" min="1" max="5" value="3">
+                    <span class="stream-count" id="streamCountDisplay">3</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="thinkDelay">Задержка между сценариями (мс)</label>
+                <div class="form-row">
+                    <input type="number" id="thinkDelayMin" value="1000" min="0" step="100">
+                    <span style="color: var(--text-dim); flex: 0;">—</span>
+                    <input type="number" id="thinkDelayMax" value="3000" min="0" step="100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-row">
+                    <input type="checkbox" id="includeCheckout">
+                    Включить оформление заказа
+                </label>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="panel">
+            <div class="btn-group">
+                <button class="btn btn-success" id="btnStart">▶ Старт</button>
+                <button class="btn btn-danger" id="btnStop" disabled>■ Стоп</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value accent" id="statTotal">0</div>
+                <div class="stat-label">Запросов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value green" id="statAvg">0</div>
+                <div class="stat-label">Среднее (мс)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value green" id="statMin">—</div>
+                <div class="stat-label">Мин (мс)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value yellow" id="statMax">0</div>
+                <div class="stat-label">Макс (мс)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value red" id="statErrors">0</div>
+                <div class="stat-label">Ошибки</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value accent" id="statRps">0</div>
+                <div class="stat-label">Запр/сек</div>
+            </div>
+        </div>
+
+        <!-- Request log -->
+        <div class="log-panel">
+            <div class="log-header">
+                <h2>Лог запросов</h2>
+                <button class="btn btn-ghost btn-sm" id="btnClearLog">Очистить</button>
+            </div>
+            <div class="log-body" id="logBody">
+                <div class="log-empty">Нажмите «Старт» для начала тестирования</div>
+            </div>
+        </div>
+
+        <!-- Endpoint breakdown -->
+        <div class="breakdown-panel">
+            <h2>Статистика по эндпоинтам</h2>
+            <div class="breakdown-table-wrap">
+                <table class="breakdown-table">
+                    <thead>
+                        <tr>
+                            <th>Метод</th>
+                            <th>Эндпоинт</th>
+                            <th>Кол-во</th>
+                            <th>Сред. (мс)</th>
+                            <th>Мин</th>
+                            <th>Макс</th>
+                            <th>Ошибки</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdownBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
