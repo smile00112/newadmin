@@ -23,10 +23,10 @@ class SmsService
      * @param string $code
      * @return bool
      */
-    public function sendVerificationCode(string $phoneNumber, string $code): bool
+    public function sendVerificationCode(string $phoneNumber, string $code, ?string $channelCode = null): bool
     {
         try {
-            $channelCode = core()->getCurrentChannelCode();
+            $channelCode = $channelCode ?? core()->getCurrentChannelCode();
 
             // Check if this is a test phone number - skip sending SMS
             if ($this->testUserService->isTestUser($phoneNumber, 'sms')) {

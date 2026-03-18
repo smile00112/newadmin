@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Illuminate\Support\Facades\Cache;
 use Webkul\RestApi\Http\Controllers\V1\Shop\ShopController;
 use Webkul\RestApi\Http\Requests\Auth\SmsAuthRequest;
 use Webkul\RestApi\Http\Requests\Auth\WhatsAppAuthRequest;
@@ -23,6 +24,7 @@ use Webkul\RestApi\Services\Auth\WhatsAppService;
 use Webkul\RestApi\Services\Auth\TelegramService;
 use Webkul\RestApi\Services\Auth\CustomerTokenLogService;
 use Webkul\RestApi\Repositories\AuthChannelSettingRepository;
+use Webkul\RestApi\Jobs\SendVerificationCodeJob;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Customer\Repositories\CustomerGroupRepository;
 use Webkul\Core\Repositories\SubscribersListRepository;
@@ -45,7 +47,19 @@ class MultiChannelAuthController extends ShopController
         protected TelegramService $telegramService,
         protected AuthChannelSettingRepository $authChannelSettingRepository,
         protected CustomerTokenLogService $customerTokenLogService
-    ) {}
+    ) {
+        $this->authChannelSettingRepository->preloadAllAuthChannels();
+    }
+
+    /**
+     * Get cached default customer group ID.
+     */
+    protected function getDefaultCustomerGroupId(): int
+    {
+        return Cache::remember('customer_group_general_id', 3600, function () {
+            return $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1;
+        });
+    }
 
     /**
      * Initiate SMS authentication.
@@ -70,8 +84,6 @@ class MultiChannelAuthController extends ShopController
         // Use firstOrCreate to prevent duplicate entries
         $email = $phoneNumber . '@test.com';
         
-        Event::dispatch('customer.registration.before');
-        
         $customer = $this->customerRepository->firstOrCreate(
             ['phone' => $phoneNumber],
             [
@@ -81,7 +93,7 @@ class MultiChannelAuthController extends ShopController
                 'password' => bcrypt(Str::random(16)),
                 'is_verified' => 1,
                 'channel_id' => core()->getCurrentChannel()->id,
-                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+                'customer_group_id' => $this->getDefaultCustomerGroupId(),
             ]
         );
 
@@ -91,17 +103,15 @@ class MultiChannelAuthController extends ShopController
             $customer->save();
         }
         
-        Event::dispatch('customer.registration.after', $customer);
+        if ($customer->wasRecentlyCreated) {
+            Event::dispatch('customer.registration.after', $customer);
+        }
 
         // Generate verification code
         $verificationData = $this->verificationService->generateVerificationCode($phoneNumber, 'sms');
 
-        // Send SMS
-        if (!$this->smsService->sendVerificationCode($phoneNumber, $verificationData['verification_code'])) {
-            return response([
-                'message' => 'Failed to send verification code.',
-            ], 500);
-        }
+        // Send SMS asynchronously
+        SendVerificationCodeJob::dispatch('sms', $phoneNumber, $verificationData['verification_code'], core()->getCurrentChannelCode());
 
         return response([
             'message' => 'Verification code sent to your phone.',
@@ -133,8 +143,6 @@ class MultiChannelAuthController extends ShopController
         // Use firstOrCreate to prevent duplicate entries
         $email = $phoneNumber . '@test.com';
         
-        Event::dispatch('customer.registration.before');
-        
         $customer = $this->customerRepository->firstOrCreate(
             ['phone' => $phoneNumber],
             [
@@ -144,7 +152,7 @@ class MultiChannelAuthController extends ShopController
                 'password' => bcrypt(Str::random(16)),
                 'is_verified' => 1,
                 'channel_id' => core()->getCurrentChannel()->id,
-                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+                'customer_group_id' => $this->getDefaultCustomerGroupId(),
             ]
         );
 
@@ -154,17 +162,15 @@ class MultiChannelAuthController extends ShopController
             $customer->save();
         }
         
-        Event::dispatch('customer.registration.after', $customer);
+        if ($customer->wasRecentlyCreated) {
+            Event::dispatch('customer.registration.after', $customer);
+        }
 
         // Generate verification code
         $verificationData = $this->verificationService->generateVerificationCode($phoneNumber, 'whatsapp');
 
-        // Send WhatsApp message
-        if (!$this->whatsappService->sendVerificationCode($phoneNumber, $verificationData['verification_code'])) {
-            return response([
-                'message' => 'Failed to send verification code.',
-            ], 500);
-        }
+        // Send WhatsApp message asynchronously
+        SendVerificationCodeJob::dispatch('whatsapp', $phoneNumber, $verificationData['verification_code'], core()->getCurrentChannelCode());
 
         return response([
             'message' => 'Verification code sent to your WhatsApp.',
@@ -194,8 +200,6 @@ class MultiChannelAuthController extends ShopController
         if (!$customer) {
             $email = $phoneNumber . '@telegram.user';
 
-            Event::dispatch('customer.registration.before');
-
             $customer = $this->customerRepository->create([
                 'first_name'        => 'Аноним',
                 'last_name'         => 'Аноним',
@@ -204,7 +208,7 @@ class MultiChannelAuthController extends ShopController
                 'password'          => bcrypt(Str::random(16)),
                 'is_verified'       => 1,
                 'channel_id'        => core()->getCurrentChannel()->id,
-                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+                'customer_group_id' => $this->getDefaultCustomerGroupId(),
             ]);
 
             Event::dispatch('customer.registration.after', $customer);
@@ -235,12 +239,8 @@ class MultiChannelAuthController extends ShopController
         // Customer has telegram_id - send verification code
         $verificationData = $this->verificationService->generateVerificationCode($customer->telegram_id, 'telegram');
 
-        // Send Telegram message
-        if (!$this->telegramService->sendVerificationCode($customer->telegram_id, $verificationData['verification_code'])) {
-            return response([
-                'message' => 'Failed to send verification code.',
-            ], 500);
-        }
+        // Send Telegram message asynchronously
+        SendVerificationCodeJob::dispatch('telegram', $customer->telegram_id, $verificationData['verification_code'], core()->getCurrentChannelCode());
 
         return response([
             'need_telegram_registration' => false,
@@ -272,8 +272,6 @@ class MultiChannelAuthController extends ShopController
         // Use firstOrCreate to prevent duplicate entries
         $email = $request->telegram_id . '@test.com';
 
-        Event::dispatch('customer.registration.before');
-
         $customer = $this->customerRepository->firstOrCreate(
             ['telegram_id' => $request->telegram_id],
             [
@@ -283,7 +281,7 @@ class MultiChannelAuthController extends ShopController
                 'password'          => bcrypt(Str::random(16)),
                 'is_verified'       => 1,
                 'channel_id'        => core()->getCurrentChannel()->id,
-                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id ?? 1,
+                'customer_group_id' => $this->getDefaultCustomerGroupId(),
             ]
         );
 
@@ -293,17 +291,15 @@ class MultiChannelAuthController extends ShopController
             $customer->save();
         }
 
-        Event::dispatch('customer.registration.after', $customer);
+        if ($customer->wasRecentlyCreated) {
+            Event::dispatch('customer.registration.after', $customer);
+        }
 
         // Generate verification code
         $verificationData = $this->verificationService->generateVerificationCode($request->telegram_id, 'telegram');
 
-        // Send Telegram message
-        if (!$this->telegramService->sendVerificationCode($request->telegram_id, $verificationData['verification_code'])) {
-            return response([
-                'message' => 'Failed to send verification code.',
-            ], 500);
-        }
+        // Send Telegram message asynchronously
+        SendVerificationCodeJob::dispatch('telegram', $request->telegram_id, $verificationData['verification_code'], core()->getCurrentChannelCode());
 
         return response([
             'message'            => 'Verification code sent to your Telegram.',
@@ -333,15 +329,12 @@ class MultiChannelAuthController extends ShopController
 
         // Find customer based on channel
         $customer = null;
-        switch ($verifiedData['channel']) {
-            case 'sms':
-            case 'whatsapp':
-                $customer = $this->customerRepository->where('phone', $verifiedData['identifier'])->first();
-                break;
-            case 'telegram':
-                $customer = $this->customerRepository->where('telegram_id', $verifiedData['identifier'])->first();
-                break;
-        }
+        $query = match ($verifiedData['channel']) {
+            'sms', 'whatsapp' => $this->customerRepository->where('phone', $verifiedData['identifier']),
+            'telegram'        => $this->customerRepository->where('telegram_id', $verifiedData['identifier']),
+            default           => null,
+        };
+        $customer = $query?->with('group')->first();
 
         if (!$customer) {
             return response([
@@ -433,28 +426,9 @@ class MultiChannelAuthController extends ShopController
         $identifier = $request->phone_number ?? $request->telegram_id ?? $request->email;
         $verificationData = $this->verificationService->generateVerificationCode($identifier, $channel);
 
-        // Send verification code based on channel
-        $sent = false;
-        switch ($channel) {
-            case 'sms':
-                $sent = $this->smsService->sendVerificationCode($request->phone_number, $verificationData['verification_code']);
-                break;
-            case 'whatsapp':
-                $sent = $this->whatsappService->sendVerificationCode($request->phone_number, $verificationData['verification_code']);
-                break;
-            case 'telegram':
-                $sent = $this->telegramService->sendVerificationCode($request->telegram_id, $verificationData['verification_code']);
-                break;
-            case 'email':
-                // TODO: Implement email verification
-                $sent = true; // Placeholder
-                break;
-        }
-
-        if (!$sent) {
-            return response([
-                'message' => 'Failed to send verification code.',
-            ], 500);
+        // Send verification code asynchronously
+        if ($channel !== 'email') {
+            SendVerificationCodeJob::dispatch($channel, $identifier, $verificationData['verification_code'], core()->getCurrentChannelCode());
         }
 
         return response([
@@ -485,18 +459,13 @@ class MultiChannelAuthController extends ShopController
 
         // Find customer based on verified data
         $customer = null;
-        switch ($verifiedData['channel']) {
-            case 'sms':
-            case 'whatsapp':
-                $customer = $this->customerRepository->where('phone', $verifiedData['identifier'])->first();
-                break;
-            case 'telegram':
-                $customer = $this->customerRepository->where('telegram_id', $verifiedData['identifier'])->first();
-                break;
-            case 'email':
-                $customer = $this->customerRepository->where('email', $verifiedData['identifier'])->first();
-                break;
-        }
+        $query = match ($verifiedData['channel']) {
+            'sms', 'whatsapp' => $this->customerRepository->where('phone', $verifiedData['identifier']),
+            'telegram'        => $this->customerRepository->where('telegram_id', $verifiedData['identifier']),
+            'email'           => $this->customerRepository->where('email', $verifiedData['identifier']),
+            default           => null,
+        };
+        $customer = $query?->with('group')->first();
 
         if (!$customer) {
             return response([

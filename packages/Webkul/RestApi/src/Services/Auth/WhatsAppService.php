@@ -23,10 +23,10 @@ class WhatsAppService
      * @param string $code
      * @return bool
      */
-    public function sendVerificationCode(string $phoneNumber, string $code): bool
+    public function sendVerificationCode(string $phoneNumber, string $code, ?string $channelCode = null): bool
     {
         try {
-            $channelCode = core()->getCurrentChannelCode();
+            $channelCode = $channelCode ?? core()->getCurrentChannelCode();
 
             // Check if this is a test phone number - skip sending WhatsApp message
             if ($this->testUserService->isTestUser($phoneNumber, 'whatsapp')) {

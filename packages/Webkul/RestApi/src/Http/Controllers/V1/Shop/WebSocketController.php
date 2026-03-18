@@ -4,9 +4,9 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use Webkul\Core\Repositories\CoreConfigRepository;
 use Webkul\RestApi\Http\Resources\V1\Shop\Core\ConfigurationResource;
+use Webkul\RestApi\Support\WebSocketConfig;
 
 class WebSocketController extends ShopController
 {
@@ -39,7 +39,7 @@ class WebSocketController extends ShopController
      */
     public function info(Request $request): JsonResponse
     {
-        $server = $this->getWebSocketServerConfig($request);
+        $server = WebSocketConfig::server($request);
 
         $channels = [
             [
@@ -211,58 +211,5 @@ class WebSocketController extends ShopController
         ]);
     }
 
-    /**
-     * Get WebSocket server configuration from config or env.
-     */
-    protected function getWebSocketServerConfig(Request $request): array
-    {
-        $key = Config::get('reverb.apps.0.key')
-            ?? env('REVERB_APP_KEY')
-            ?? env('PUSHER_APP_KEY')
-            ?? 'your-app-key';
-
-        $host = Config::get('reverb.apps.0.host')
-            ?? env('REVERB_HOST')
-            ?? $this->parseHostFromAppUrl()
-            ?? $request->getHost();
-
-        $port = Config::get('reverb.apps.0.port')
-            ?? env('REVERB_PORT')
-            ?? ($request->secure() ? 443 : 80);
-
-        $scheme = Config::get('reverb.apps.0.scheme')
-            ?? env('REVERB_SCHEME')
-            ?? ($request->secure() ? 'https' : 'http');
-
-        $path = '/app';
-
-        $wsScheme = $scheme === 'https' ? 'wss' : 'ws';
-        $portPart = in_array((int) $port, [80, 443], true) ? '' : ":{$port}";
-        $url = "{$wsScheme}://{$host}{$portPart}{$path}";
-
-        return [
-            'url'      => $url,
-            'protocol' => 'pusher',
-            'key'      => $key,
-            'host'     => $host,
-            'port'     => (int) $port,
-            'path'     => $path,
-        ];
-    }
-
-    /**
-     * Parse host from APP_URL env variable.
-     */
-    protected function parseHostFromAppUrl(): ?string
-    {
-        $appUrl = env('APP_URL');
-
-        if (empty($appUrl)) {
-            return null;
-        }
-
-        $parsed = parse_url($appUrl);
-
-        return $parsed['host'] ?? null;
-    }
+    // WebSocket server config is shared via WebSocketConfig helper.
 }

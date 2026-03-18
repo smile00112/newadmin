@@ -3,6 +3,7 @@
 namespace Webkul\MobileApp\Http\Controllers\Api;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,7 @@ use Webkul\Core\Models\CoreConfig;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Payment;
 use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Support\WebSocketConfig;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\ProductReviewResource;
 use Webkul\Sales\Models\Order;
@@ -134,6 +136,32 @@ class MobileSettingsController extends Controller
             'privacy_policy' => $privacyPolicyId
                 ? url('/api/v1/cms/' . $privacyPolicyId . '/html')
                 : '',
+        ];
+
+        $pushEnabled = (bool) core()->getConfigData('mobile_app.push_notifications.settings.enabled');
+        $pushStatuses = core()->getConfigData('mobile_app.push_notifications.settings.statuses');
+
+        if (is_string($pushStatuses)) {
+            $pushStatuses = array_filter(array_map('trim', explode(',', $pushStatuses)));
+        }
+
+        if (! is_array($pushStatuses)) {
+            $pushStatuses = [];
+        }
+
+        $settings['push'] = [
+            'provider' => 'fcm',
+            'enabled'  => $pushEnabled,
+            'statuses' => array_values(Arr::flatten($pushStatuses)),
+        ];
+
+        $settings['sockets'] = [
+            'server'        => WebSocketConfig::server(request()),
+            'auth_endpoint' => [
+                'url'           => url('/api/v1/broadcasting/auth'),
+                'method'        => 'POST',
+                'requires_auth' => true,
+            ],
         ];
 
         return $settings;
