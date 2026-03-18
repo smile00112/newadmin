@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Webkul\Category\Repositories\CategoryRepository;
+use Webkul\Core\Facades\Core;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\CatalogResource;
 use Webkul\RestApi\Traits\ProvideApiCache;
 
@@ -61,77 +62,149 @@ class CatalogCategoryController extends CatalogController
         $cacheKey = self::CACHE_PREFIX . ":{$channelId}:{$locale}:page_{$page}:limit_{$limit}:paginated_" . ($usePagination ? '1' : '0');
 
         $jsonResponse = Cache::remember($cacheKey, $this->cacheTtl, function () use ($request, $usePagination, $limit) {
-
-            $query = $this->getRepositoryInstance()
-                ->with([
-                    'translations',
-                    'products' => function ($query) {
-                        $query->with([
-                            'images',
-                            'videos',
-                            'half_portion_pair_product',
-                            'attribute_family.attribute_groups.custom_attributes.options',
-                            'super_attributes',
-                            'constructor.groups.products' => function ($query) {
-                                $query->with(['images', 'half_portion_pair_product']);
-                            },
-                            'grouped_products.associated_product',
-                            'variants',
-                            'downloadable_links',
-                            'downloadable_samples',
-                            'booking_products',
-                            'bundle_options',
-                            'up_sells',
-                            'cross_sells',
-                            'drinks' => function ($query) {
-                                $query->with('images')
-                                    ->orderByPivot('sort', 'asc');
-                            },
-                        ]);
-                    },
-                ])
-                ->where('status', 1)
-                ->orderBy('position', 'asc');
-
-            if ($usePagination) {
-                $paginator = $query->paginate($limit);
-
-                $data = [
-                    'data'  => CatalogResource::collection($paginator->items())->resolve($request),
-                    'links' => [
-                        'first' => $paginator->url(1),
-                        'last'  => $paginator->url($paginator->lastPage()),
-                        'prev'  => $paginator->previousPageUrl(),
-                        'next'  => $paginator->nextPageUrl(),
-                    ],
-                    'meta'  => [
-                        'current_page' => $paginator->currentPage(),
-                        'from'         => $paginator->firstItem(),
-                        'last_page'    => $paginator->lastPage(),
-                        'links'        => $paginator->linkCollection()->toArray(),
-                        'path'         => $paginator->path(),
-                        'per_page'     => $paginator->perPage(),
-                        'to'           => $paginator->lastItem(),
-                        'total'        => $paginator->total(),
-                    ],
-                ];
-
-                return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            }
-
-            $categories = $query->get();
-
-            $data = [
-                'data' => CatalogResource::collection($categories)->resolve($request),
-            ];
-
-            return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            return $this->buildCatalogJson($request, $usePagination, $limit);
         });
 
         // Используем helper функцию для быстрого возврата JSON через stream
         return api_stream_json($jsonResponse, 'catalog.json', [
             'Cache-Control' => 'public, max-age=' . $this->cacheTtl,
         ]);
+    }
+
+    /**
+     * Build catalog JSON response (used by allResources and warm cache).
+     */
+    protected function buildCatalogJson(Request $request, bool $usePagination, int $limit): string
+    {
+        $query = $this->getRepositoryInstance()
+            ->with([
+                'translations',
+                'products' => function ($query) {
+                    $query->with([
+                        'images',
+                        'videos',
+                        'half_portion_pair_product',
+                        'attribute_family.attribute_groups.custom_attributes.options',
+                        'super_attributes',
+                        'constructor.groups.products' => function ($query) {
+                            $query->with(['images', 'half_portion_pair_product']);
+                        },
+                        'grouped_products.associated_product',
+                        'variants',
+                        'downloadable_links',
+                        'downloadable_samples',
+                        'booking_products',
+                        'bundle_options',
+                        'up_sells',
+                        'cross_sells',
+                        'drinks' => function ($query) {
+                            $query->with('images')
+                                ->orderByPivot('sort', 'asc');
+                        },
+                    ]);
+                },
+            ])
+            ->where('status', 1)
+            ->orderBy('position', 'asc');
+
+        if ($usePagination) {
+            $paginator = $query->paginate($limit);
+
+            $data = [
+                'data'  => CatalogResource::collection($paginator->items())->resolve($request),
+                'links' => [
+                    'first' => $paginator->url(1),
+                    'last'  => $paginator->url($paginator->lastPage()),
+                    'prev'  => $paginator->previousPageUrl(),
+                    'next'  => $paginator->nextPageUrl(),
+                ],
+                'meta'  => [
+                    'current_page' => $paginator->currentPage(),
+                    'from'         => $paginator->firstItem(),
+                    'last_page'    => $paginator->lastPage(),
+                    'links'        => $paginator->linkCollection()->toArray(),
+                    'path'         => $paginator->path(),
+                    'per_page'     => $paginator->perPage(),
+                    'to'           => $paginator->lastItem(),
+                    'total'        => $paginator->total(),
+                ],
+            ];
+
+            return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+
+        $categories = $query->get();
+
+        $data = [
+            'data' => CatalogResource::collection($categories)->resolve($request),
+        ];
+
+        return json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Warm catalog cache for all channel+locale combinations.
+     */
+    public static function warmCache(): void
+    {
+        $channels = Core::getAllChannels();
+
+        foreach ($channels as $channel) {
+            $locales = $channel->locales ?? collect([$channel->default_locale])->filter();
+
+            foreach ($locales as $locale) {
+                $localeCode = is_object($locale) ? $locale->code : $locale;
+
+                if (empty($localeCode)) {
+                    continue;
+                }
+
+                try {
+                    self::warmCacheForChannelAndLocale($channel, $localeCode);
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to warm catalog cache', [
+                        'channel_id' => $channel->id,
+                        'locale'     => $localeCode,
+                        'message'    => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Build and cache catalog for a specific channel and locale (page 1, limit 10).
+     */
+    public static function warmCacheForChannelAndLocale($channel, string $localeCode): void
+    {
+        $channelId = $channel->id;
+        $limit = 10;
+        $originalChannel = core()->getCurrentChannel();
+        $originalRequest = request();
+
+        core()->setCurrentChannel($channel);
+
+        $request = Request::create(
+            '/api/v1/catalog?page=1&limit=' . $limit . '&locale=' . $localeCode,
+            'GET'
+        );
+        app()->instance('request', $request);
+
+        try {
+            $controller = app(self::class);
+            $ttl = $controller->cacheTtl;
+
+            foreach ([true, false] as $usePagination) {
+                $cacheKey = self::CACHE_PREFIX . ":{$channelId}:{$localeCode}:page_1:limit_{$limit}:paginated_" . ($usePagination ? '1' : '0');
+                $jsonResponse = $controller->buildCatalogJson($request, $usePagination, $limit);
+                Cache::put($cacheKey, $jsonResponse, $ttl);
+            }
+        } finally {
+            if ($originalChannel) {
+                core()->setCurrentChannel($originalChannel);
+            }
+            app()->instance('request', $originalRequest);
+        }
     }
 
     /**

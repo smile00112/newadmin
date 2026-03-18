@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Webkul\Core\Facades\Core;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
+use Webkul\RestApi\Jobs\WarmCatalogCacheJob;
 use Webkul\RestApi\Jobs\WarmNomenclatureCacheJob;
 
 class ProductObserver
@@ -62,6 +63,14 @@ class ProductObserver
     {
         if (class_exists(CatalogCategoryController::class)) {
             CatalogCategoryController::clearCatalogCache();
+
+            // Synchronously warm default channel+locale so first request is fast
+            $this->warmCatalogDefault();
+
+            // Only dispatch warm cache if queue is async; skip on sync to avoid blocking
+            if (config('queue.default') !== 'sync') {
+                WarmCatalogCacheJob::dispatch();
+            }
         }
 
         if (class_exists(NomenclatureController::class)) {
@@ -74,6 +83,26 @@ class ProductObserver
             if (config('queue.default') !== 'sync') {
                 WarmNomenclatureCacheJob::dispatch();
             }
+        }
+    }
+
+    /**
+     * Warm catalog cache for default channel+locale only (sync, so first request is fast).
+     */
+    protected function warmCatalogDefault(): void
+    {
+        try {
+            $channel = Core::getDefaultChannel();
+            if ($channel && $channel->default_locale) {
+                $localeCode = is_object($channel->default_locale) ? $channel->default_locale->code : $channel->default_locale;
+                if (! empty($localeCode)) {
+                    CatalogCategoryController::warmCacheForChannelAndLocale($channel, $localeCode);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to warm catalog cache for default channel', [
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 

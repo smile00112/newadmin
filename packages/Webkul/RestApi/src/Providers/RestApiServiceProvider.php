@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Webkul\Core\Exceptions\Handler as BaseHandler;
 use Webkul\RestApi\Exceptions\Handler;
+use Webkul\RestApi\Console\Commands\WarmCatalogCacheCommand;
 use Webkul\RestApi\Console\Commands\WarmCatalogV2CacheCommand;
 use Webkul\RestApi\Console\Commands\WarmNomenclatureCacheCommand;
 use Webkul\RestApi\Listeners\InvalidateCustomerBonusesCache;
@@ -122,6 +123,7 @@ class RestApiServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 WarmNomenclatureCacheCommand::class,
+                WarmCatalogCacheCommand::class,
                 WarmCatalogV2CacheCommand::class,
             ]);
         }
@@ -134,6 +136,7 @@ class RestApiServiceProvider extends ServiceProvider
     {
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('nomenclature:warm-cache')->everyFiveMinutes();
+            $schedule->command('catalog:warm-cache')->everyFiveMinutes();
             $schedule->command('catalog-v2:warm-cache')->everyFiveMinutes();
         });
     }
