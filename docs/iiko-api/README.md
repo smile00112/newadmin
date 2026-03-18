@@ -8,6 +8,7 @@
 |------|----------|
 | [menu-by-id.md](menu-by-id.md) | Эндпоинт `POST /api/2/menu/by_id` — запрос и ответ |
 | [external-menu-v2-schema.md](external-menu-v2-schema.md) | Полная схема ответа `ExternalMenuV2` со всеми вложенными объектами |
+| [deliveries-create.md](deliveries-create.md) | Эндпоинт `POST /api/1/deliveries/create` — создание заказа на доставку (запрос + ответ, все вложенные объекты) |
 
 ## Версии формата ответа
 
