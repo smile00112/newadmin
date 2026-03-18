@@ -3,6 +3,7 @@
 namespace Webkul\IikoIntegration\Services;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Webkul\IikoIntegration\Models\IikoOrderSync;
 use Webkul\IikoIntegration\Models\IikoSyncLog;
 use Webkul\IikoIntegration\Repositories\IikoOrderSyncRepository;
@@ -68,30 +69,40 @@ class IikoOrderService
 
             // Send order to iiko
             $response = $this->apiService->makeRequest(
-                '/api/1/deliveries/deliveryCreate',
+                '/api/1/deliveries/create',
                 'POST',
                 $orderData,
                 $channelCode,
                 false // Don't log again, we already logged
             );
 
-            if ($response && isset($response['orderId'])) {
-                // Update sync record with success
+            $orderInfo = $response['orderInfo'] ?? null;
+            $creationStatus = $orderInfo['creationStatus'] ?? null;
+
+            if ($orderInfo && in_array($creationStatus, ['Success', 'InProgress'])) {
+                $iikoOrderId = $orderInfo['id'] ?? null;
+                $iikoOrderNumber = $orderInfo['order']['number'] ?? null;
+
+                // InProgress means terminal hasn't confirmed yet — save as pending
+                $syncStatus = $creationStatus === 'Success'
+                    ? IikoOrderSync::STATUS_SYNCED
+                    : IikoOrderSync::STATUS_PENDING;
+
                 $this->orderSyncRepository->update([
-                    'iiko_order_id'   => $response['orderId'],
-                    'iiko_order_number' => $response['orderNumber'] ?? null,
-                    'sync_status'     => IikoOrderSync::STATUS_SYNCED,
-                    'synced_at'       => now(),
-                    'error_message'   => null,
+                    'iiko_order_id'     => $iikoOrderId,
+                    'iiko_order_number' => $iikoOrderNumber,
+                    'sync_status'       => $syncStatus,
+                    'synced_at'         => $creationStatus === 'Success' ? now() : null,
+                    'error_message'     => null,
                 ], $sync->id);
 
-                // Set order status to active (processing) after successful sync
-                if ($order->status !== Order::STATUS_PROCESSING) {
+                // Set order status to processing after successful sync
+                if ($creationStatus === 'Success' && $order->status !== Order::STATUS_PROCESSING) {
                     $this->orderRepository->updateOrderStatus($order, Order::STATUS_PROCESSING);
-                    
+
                     Log::info('iiko: Order status set to processing after sync', [
                         'order_id'      => $order->id,
-                        'iiko_order_id' => $response['orderId'],
+                        'iiko_order_id' => $iikoOrderId,
                     ]);
                 }
 
@@ -104,15 +115,21 @@ class IikoOrderService
                     'response_data' => $response,
                 ]);
 
-                Log::info('iiko: Order synced successfully', [
-                    'order_id'      => $order->id,
-                    'iiko_order_id' => $response['orderId'],
+                Log::info('iiko: Order synced', [
+                    'order_id'        => $order->id,
+                    'iiko_order_id'   => $iikoOrderId,
+                    'creationStatus'  => $creationStatus,
                 ]);
 
                 return true;
             } else {
-                // Update sync record with error
-                $errorMessage = $response['errorDescription'] ?? 'Unknown error';
+                // Parse error from response
+                $errorInfo = $orderInfo['errorInfo'] ?? null;
+                $errorMessage = $errorInfo['message']
+                    ?? $errorInfo['description']
+                    ?? $response['description']
+                    ?? 'Unknown error';
+
                 $this->orderSyncRepository->update([
                     'sync_status'  => IikoOrderSync::STATUS_FAILED,
                     'error_message' => $errorMessage,
@@ -222,94 +239,190 @@ class IikoOrderService
     }
 
     /**
-     * Prepare order data for iiko API.
+     * Prepare order data for iiko API (POST /api/1/deliveries/create).
+     *
+     * @see docs/iiko-api/deliveries-create.md
      */
     protected function prepareOrderData(Order $order, ?string $channelCode = null): array
     {
         $organizationId = $this->getOrganizationId($order, $channelCode);
         $terminalGroupId = $this->getTerminalGroupId($order, $channelCode);
 
-        // Get shipping address
         $shippingAddress = $order->shipping_address;
         $billingAddress = $order->billing_address;
 
-        // Prepare customer data
-        $customerData = [
-            'name'  => trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')),
-            'email' => $order->customer_email,
-            'phone' => $shippingAddress->phone ?? $billingAddress->phone ?? null,
-        ];
+        // Phone: spec requires "+" prefix, min 8 digits
+        $phone = $this->formatPhone($shippingAddress->phone ?? $billingAddress->phone ?? null);
 
-        // Prepare delivery point
+        // Customer (spec: RegularCustomer or OneTimeCustomer)
+        $customerName = trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? ''));
+
+        $customerData = $order->customer_id
+            ? [
+                'type'   => 'regular',
+                'name'   => $customerName ?: 'Guest',
+                'gender' => 'NotSpecified',
+            ]
+            : [
+                'type'   => 'one-time',
+                'name'   => $customerName ?: 'Guest',
+                'gender' => 'NotSpecified',
+            ];
+
+        if ($order->customer_last_name) {
+            $customerData['surname'] = $order->customer_last_name;
+        }
+
+        // DeliveryPoint (spec: address.street is an object, address.type is required)
         $deliveryPoint = null;
         if ($shippingAddress) {
+            $address = [
+                'street' => [
+                    'name' => $shippingAddress->address1 ?? '',
+                    'city' => $shippingAddress->city ?? '',
+                ],
+                'house' => $shippingAddress->address2 ?: '0',
+                'type'  => 'legacy',
+            ];
+
+            if (!empty($shippingAddress->address3)) {
+                $address['flat'] = Str::limit($shippingAddress->address3, 100, '');
+            }
+
+            if (!empty($shippingAddress->postcode)) {
+                $address['index'] = Str::limit($shippingAddress->postcode, 10, '');
+            }
+
             $deliveryPoint = [
-                'address' => [
-                    'street'   => $shippingAddress->address1 ?? '',
-                    'house'    => $shippingAddress->address2 ?? '',
-                    'flat'     => $shippingAddress->address3 ?? null,
-                    'entrance' => null,
-                    'floor'    => null,
-                    'doorphone' => null,
-                    'comment'  => $shippingAddress->address2 ?? null,
-                ],
-                'coordinates' => [
-                    'latitude'  => null,
-                    'longitude' => null,
-                ],
+                'address' => $address,
             ];
         }
 
-        // Prepare order items
+        // Order items (spec: type "Product" required, productId must be iiko UUID)
         $items = [];
         foreach ($order->items as $item) {
-            // Note: product_id mapping to iiko product_id should be configured
-            // For now, we'll use a placeholder that needs to be mapped
-            $items[] = [
-                'id'           => $item->product_id, // This should be mapped to iiko product ID
-                'productId'    => $item->product_id, // This should be mapped to iiko product ID
-                'amount'       => (float) $item->qty_ordered,
-                'productName'  => $item->name,
-                'modifiers'    => [],
-                'price'        => (float) $item->price,
-                'positionId'   => null,
-                'comment'      => $item->product_options ?? null,
+            $iikoProductId = $item->product?->additional['iiko_id'] ?? null;
+
+            if (!$iikoProductId) {
+                Log::warning('iiko: Product has no iiko_id mapping, skipping item', [
+                    'order_id'   => $order->id,
+                    'product_id' => $item->product_id,
+                    'sku'        => $item->sku,
+                ]);
+                continue;
+            }
+
+            $iikoSizeId = $item->product?->additional['iiko_size_id'] ?? null;
+
+            $orderItem = [
+                'type'      => 'Product',
+                'productId' => $iikoProductId,
+                'amount'    => (float) $item->qty_ordered,
+                'price'     => (float) $item->price,
             ];
+
+            if ($iikoSizeId) {
+                $orderItem['productSizeId'] = $iikoSizeId;
+            }
+
+            $comment = is_string($item->additional['comment'] ?? null)
+                ? Str::limit($item->additional['comment'], 255, '')
+                : null;
+
+            if ($comment) {
+                $orderItem['comment'] = $comment;
+            }
+
+            $items[] = $orderItem;
         }
 
-        // Prepare payment
-        $payment = [];
+        if (empty($items)) {
+            Log::error('iiko: No items with iiko_id mapping found', ['order_id' => $order->id]);
+        }
+
+        // Payment (spec: PaymentRequest)
+        $payments = [];
         if ($order->payment) {
             $paymentTypeId = $this->getPaymentTypeId($order->payment->method, $organizationId);
-            
-            $payment = [
-                'paymentTypeKind' => $this->mapPaymentMethod($order->payment->method),
+            $paymentKind = $this->mapPaymentMethod($order->payment->method);
+
+            $paymentData = [
+                'paymentTypeKind' => $paymentKind,
                 'sum'             => (float) $order->grand_total,
                 'paymentTypeId'   => $paymentTypeId,
-                'prepaid'         => false,
             ];
+
+            // Online payments are processed externally (money already received)
+            if ($paymentKind !== 'Cash') {
+                $paymentData['isProcessedExternally'] = true;
+            }
+
+            $payments[] = $paymentData;
         }
 
-        // Build order data
-        $orderData = [
-            'organizationId'  => $organizationId,
-            'terminalGroupId' => $terminalGroupId,
-            'order'           => [
-                'externalNumber' => $order->increment_id,
-                'phone'          => $customerData['phone'],
-                'orderTypeId'    => null, // Should be fetched from order types dictionary
-                'deliveryPoint'  => $deliveryPoint,
-                'comment'        => $order->customer_note ?? null,
-                'customer'       => $customerData,
-                'items'          => $items,
-                'payments'       => $payment ? [$payment] : [],
-                'tips'           => [],
-                'discounts'      => [],
-                'problem'        => null,
-            ],
+        // Determine delivery type: courier or pickup
+        $orderServiceType = $this->resolveOrderServiceType($order);
+
+        // Build order payload per spec: DeliveryCreateRequest
+        $orderPayload = [
+            'externalNumber'   => Str::limit($order->increment_id, 50, ''),
+            'phone'            => $phone,
+            'orderServiceType' => $orderServiceType,
+            'comment'          => $order->customer_note ?? null,
+            'customer'         => $customerData,
+            'items'            => $items,
+            'payments'         => $payments,
         ];
 
-        return $orderData;
+        if ($deliveryPoint && $orderServiceType === 'DeliveryByCourier') {
+            $orderPayload['deliveryPoint'] = $deliveryPoint;
+        }
+
+        return [
+            'organizationId'  => $organizationId,
+            'terminalGroupId' => $terminalGroupId,
+            'order'           => $orderPayload,
+        ];
+    }
+
+    /**
+     * Format phone number to match iiko spec: starts with "+", min 8 digits.
+     */
+    protected function formatPhone(?string $phone): ?string
+    {
+        if (!$phone) {
+            return null;
+        }
+
+        // Strip everything except digits and leading +
+        $digits = preg_replace('/[^\d]/', '', $phone);
+
+        if (strlen($digits) < 8) {
+            Log::warning('iiko: Phone number too short', ['phone' => $phone]);
+            return null;
+        }
+
+        // Ensure + prefix
+        return '+' . $digits;
+    }
+
+    /**
+     * Determine order service type based on shipping method.
+     */
+    protected function resolveOrderServiceType(Order $order): string
+    {
+        $shippingMethod = $order->shipping_method ?? '';
+
+        // Common pickup shipping method codes
+        $pickupMethods = ['pickup', 'flatrate_pickup', 'store_pickup', 'self_pickup'];
+
+        foreach ($pickupMethods as $method) {
+            if (Str::contains($shippingMethod, $method, true)) {
+                return 'DeliveryByClient';
+            }
+        }
+
+        return 'DeliveryByCourier';
     }
 
     /**

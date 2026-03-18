@@ -21245,6 +21245,14 @@
                         ],
                         "example": 0
                     },
+                    "table_number": {
+                        "title": "Table Number",
+                        "description": "Table number assigned to the order",
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 5,
+                        "nullable": true
+                    },
                     "total_item_count": {
                         "title": "Total Item Count",
                         "description": "Total number of ordered's item",

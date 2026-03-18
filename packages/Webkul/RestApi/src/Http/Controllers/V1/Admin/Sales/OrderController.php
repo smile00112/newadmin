@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
 use Webkul\RestApi\Http\Resources\V1\Admin\Sales\OrderResource;
+use Webkul\RestApi\Jobs\WarmCustomerOrdersCacheJob;
+use Webkul\RestApi\Services\CustomerOrdersCache;
 use Webkul\Sales\Repositories\OrderCommentRepository;
 use Webkul\Sales\Repositories\OrderRepository;
 
@@ -83,6 +85,15 @@ class OrderController extends SalesController
         $order = $this->getRepositoryInstance()->findOrFail($validatedData['order_id']);
         $order->update(['table_number' => $validatedData['table_number']]);
 
+        if ($order->customer_id !== null) {
+            CustomerOrdersCache::invalidate((int) $order->customer_id);
+
+            $order->loadMissing('channel');
+            $channelCode = (string) ($order->channel?->code ?? core()->getDefaultChannelCode() ?? '');
+
+            WarmCustomerOrdersCacheJob::dispatch((int) $order->customer_id, $channelCode);
+        }
+
         $resourceClassName = $this->resource();
 
         return response([
@@ -102,6 +113,15 @@ class OrderController extends SalesController
 
         $order = $this->getRepositoryInstance()->findOrFail($validatedData['order_id']);
         $order->update(['table_number' => null]);
+
+        if ($order->customer_id !== null) {
+            CustomerOrdersCache::invalidate((int) $order->customer_id);
+
+            $order->loadMissing('channel');
+            $channelCode = (string) ($order->channel?->code ?? core()->getDefaultChannelCode() ?? '');
+
+            WarmCustomerOrdersCacheJob::dispatch((int) $order->customer_id, $channelCode);
+        }
 
         $resourceClassName = $this->resource();
 
