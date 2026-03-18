@@ -162,6 +162,7 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
      * Customer saved cards routes.
      */
     Route::controller(SavedCardController::class)->prefix('customer/saved-cards')->group(function () {
+        Route::post('', 'store');
         Route::get('', 'index');
         Route::delete('{id}', 'destroy');
     });
