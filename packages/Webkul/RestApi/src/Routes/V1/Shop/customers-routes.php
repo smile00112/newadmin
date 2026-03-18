@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AddressController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AuthController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\BonusController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AlfabankSettingsController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CartController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CheckoutController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\GDPRController;
@@ -165,6 +166,13 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('', 'store');
         Route::get('', 'index');
         Route::delete('{id}', 'destroy');
+    });
+
+    /**
+     * Customer Alfabank payment settings routes.
+     */
+    Route::controller(AlfabankSettingsController::class)->prefix('customer/alfabank')->group(function () {
+        Route::get('settings', 'show');
     });
 
     /**
