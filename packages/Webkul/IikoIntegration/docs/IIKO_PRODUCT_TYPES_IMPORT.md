@@ -2,7 +2,19 @@
 
 ## Структура ответа API `/api/2/menu/by_id`
 
-API возвращает номенклатуру в следующем формате:
+API возвращает номенклатуру в формате ExternalMenuV2 (подробная схема: `docs/iiko-api/external-menu-v2-schema.md`).
+
+Ключевые разделы:
+- `itemCategories[]` — категории с вложенными позициями (`ExternalMenuItem`)
+- `comboCategories[]` — категории комбо-наборов (`ComboDto`)
+
+Каждая позиция (`ExternalMenuItem`) имеет:
+- `type`: `DISH` | `COMBO` — тип позиции
+- `orderItemType`: `Product` | `Compound` — обычный или составной товар
+- `itemSizes[]` — размеры с ценами и **своими** группами модификаторов
+- `itemModifierGroups[]` — общие группы модификаторов (deprecated, перенесены в `itemSizes`)
+
+Пример:
 
 ```json
 {
@@ -58,194 +70,172 @@ API возвращает номенклатуру в следующем форм
 
 API iiko возвращает следующие типы товаров:
 
-- **DISH** - блюдо (основной товар меню)
-- **PRODUCT** - продукт (товар для продажи)
-- **MODIFIER** - модификатор/ингредиент (дополнительный компонент)
-- **GROUP** - группа товаров (набор связанных товаров)
+- **DISH** — блюдо (основной товар меню)
+- **COMBO** — комбо-набор (составной товар)
+- **MODIFIER** — модификатор/ингредиент (дополнительный компонент)
+- **GROUP** — группа товаров (набор связанных товаров)
+
+Дополнительно поле `orderItemType`:
+- **Product** — обычный товар
+- **Compound** — составной товар со схемой модификаторов
 
 ## Маппинг типов iiko → наши типы
 
-Маппинг выполняется в методе `IikoNomenclatureImportService::mapIikoProductType()`:
+### Базовый маппинг (`mapIikoProductType()`)
 
 | Тип iiko | Наш тип | Описание |
 |----------|---------|----------|
-| `dish`, `product` | `simple` | Простой товар без вариантов |
+| `dish`, `product` | `simple` | Простой товар |
+| `combo` | `bundle` | Комбо → бандл |
 | `modifier` | `ingredient` | Ингредиент для конструктора |
 | `group`, `grouped` | `grouped` | Группированный товар |
-| default (любой другой) | `simple` | По умолчанию простой товар |
+| default | `simple` | По умолчанию простой |
+
+### Поведенческий маппинг (приоритеты в `importProducts()`)
+
+Базовый маппинг перекрывается поведенческой логикой, которая анализирует **структуру данных**:
+
+| Приоритет | Условие | Итоговый тип | Метод |
+|-----------|---------|-------------|-------|
+| **1** | N размеров + модификаторы | `grouped` (parent) + `constructor` (variants) | `handleConfigurableConstructorProduct()` |
+| **2** | Модификаторы (1 размер / без размеров) | `constructor` | `handleConstructorProduct()` |
+| **3** | `orderItemType === 'Compound'` (без явных модификаторов) | `constructor` | через `importProducts()` |
+| **4** | N размеров, без модификаторов | `grouped` + `simple` variants | `handleMultiPriceProduct()` |
+| **5** | 1 размер, без модификаторов | из `mapIikoProductType()` | `createProduct()` |
+| **combo** | `comboCategories[]` | `bundle` | `handleComboProduct()` |
 
 ## Критерии создания типов товаров при импорте
 
 ### 1. Простой товар (`simple`)
 
 **Создается когда:**
-- Товар имеет тип `DISH` или `PRODUCT` из iiko
-- Товар имеет одну цену (один размер или без размеров)
-- Товар имеет тип `MODIFIER` (создается как `ingredient`, но технически это `simple`)
+- Тип `DISH` или `PRODUCT` из iiko
+- Одна цена (один размер или без размеров)
+- Нет групп модификаторов
+- `orderItemType !== 'Compound'`
 
 **Характеристики:**
-- Один SKU: `iiko_{itemId}`
-- Одна цена
-- Может быть добавлен в корзину напрямую
+- SKU: `iiko_{itemId}`
 - Видим индивидуально (`visible_individually = 1`)
 
 ### 2. Ингредиент (`ingredient`)
 
 **Создается когда:**
-- Товар имеет тип `MODIFIER` из iiko
+- Тип `MODIFIER` из iiko, или
+- Является модификатором внутри `itemModifierGroups` при импорте конструктора
 
 **Характеристики:**
-- Один SKU: `iiko_{itemId}`
-- Используется в системе конструктора товаров
-- Может иметь несовместимости с другими ингредиентами
+- SKU: `iiko_{itemId}`
+- Не видим индивидуально (`visible_individually = 0`)
+- Используется в конструкторах
 
 ### 3. Группированный товар (`grouped`)
 
-**Создается в двух случаях:**
-
-#### 3.1. Товар с несколькими ценами (размерами)
-
 **Создается когда:**
-- Товар имеет несколько размеров (`itemSizes` или `sizePrices` с количеством > 1)
-- Каждый размер имеет свою цену
+- Несколько размеров (`itemSizes` > 1) без модификаторов, или
+- Тип `GROUP`/`GROUPED` из iiko
 
-**Структура:**
-- **Главный товар** (тип `grouped`):
-  - SKU: `iiko_{itemId}`
-  - Название: оригинальное название товара
-  - Видим индивидуально (`visible_individually = 1`)
-  - Категория: категория из iiko
-  
-- **Варианты** (тип `simple`):
-  - SKU: `iiko_{itemId}_price_{sizeId}`
-  - Название: `{название товара} - {название размера}`
-  - Цена: цена размера
-  - Не видим индивидуально (`visible_individually = 0`)
-  - Категория: специальная категория "Варианты цен iiko"
-  - Связан с главным товаром через `parent_id`
-
-**Пример:**
+**Структура (для multi-price):**
 ```
-Пицца Маргарита (grouped)
-├── Пицца Маргарита - Маленькая (simple, 300 руб)
+Пицца Маргарита (grouped, iiko_{itemId})
+├── Пицца Маргарита - Маленькая (simple, iiko_{itemId}_price_{sizeId}, 300 руб)
 ├── Пицца Маргарита - Средняя (simple, 450 руб)
 └── Пицца Маргарита - Большая (simple, 600 руб)
 ```
 
-#### 3.2. Товар типа GROUP из iiko
+### 4. Конструктор (`constructor`)
 
 **Создается когда:**
-- Товар имеет тип `GROUP` или `GROUPED` из iiko
+- Товар имеет `itemModifierGroups` (в item или в первом itemSize)
+- Один размер или без размеров
+- Также: `orderItemType === 'Compound'` (без явных модификаторов в ответе)
 
 **Характеристики:**
-- Один SKU: `iiko_{itemId}`
-- Тип: `grouped`
-- Может содержать связанные товары (обрабатывается как обычный grouped product)
+- SKU: `iiko_{itemId}`
+- Модификаторы из iiko → группы конструктора
+- Каждый модификатор → `ingredient` товар
+- Видим индивидуально (`visible_individually = 1`)
 
-## Обработка цен
+### 5. Grouped + Constructor (товар с размерами и модификаторами)
 
-### Извлечение цен из API ответа
+**Создается когда:**
+- Несколько размеров (`itemSizes` > 1) **И** есть модификаторы
 
-Цены извлекаются в следующем порядке:
-
-1. **Из `sizePrices`** (если присутствует):
-   ```php
-   $prices = $item['sizePrices'] ?? [];
-   ```
-
-2. **Из `itemSizes`** (если `sizePrices` пуст):
-   ```php
-   if (empty($prices) && isset($item['itemSizes'])) {
-       foreach ($item['itemSizes'] as $size) {
-           $price = $size['prices'][0]['price'] ?? 0;
-           $prices[] = [
-               'sizeId' => $size['sizeId'],
-               'sizeName' => $size['sizeName'],
-               'sizeCode' => $size['sizeCode'],
-               'price' => $price,
-           ];
-       }
-   }
-   ```
-
-### Определение типа обработки
-
-```php
-if (count($prices) > 1) {
-    // Создать grouped product с вариантами
-    handleMultiPriceProduct($item, $categoryMap);
-} else {
-    // Создать простой товар
-    createProduct($item, $productType, $categoryMap, $prices);
-}
+**Структура:**
 ```
+Пицца Соренто (grouped, iiko_{itemId})
+├── Пицца Соренто - 25 см (constructor, iiko_{itemId}_size_{sizeId1}, 500 руб)
+│   ├── Группа: Добавки (cheese, bacon, ...)
+│   └── Группа: Соусы (ketchup, mayo, ...)
+├── Пицца Соренто - 30 см (constructor, iiko_{itemId}_size_{sizeId2}, 700 руб)
+│   ├── Группа: Добавки (те же или другие)
+│   └── Группа: Соусы
+└── Пицца Соренто - 35 см (constructor, iiko_{itemId}_size_{sizeId3}, 900 руб)
+    └── ...
+```
+
+**Особенности:**
+- Модификаторы извлекаются **per-size** (`extractPerSizeModifierGroups()`)
+- Каждый размер-вариант получает свой набор модификаторов
+- Если модификаторы у всех размеров одинаковые — используются общие
+- `itemSizes` сохраняются в оригинальном виде (не мержатся по имени)
+
+### 6. Бандл (`bundle`) — комбо из iiko
+
+**Создается когда:**
+- Импорт из `comboCategories[]` (раздел ExternalMenuV2)
+- Каждый `ComboDto` → один `bundle` товар
+
+**Структура:**
+```
+Обед Выгодный (bundle, iiko_combo_{comboId})
+├── Опция: Основное блюдо (select, обязательная)
+│   ├── Бургер классический
+│   └── Чикенбургер
+├── Опция: Напиток (select)
+│   ├── Кола
+│   └── Сок
+└── Опция: Десерт (select)
+    ├── Маффин
+    └── Пирожок
+```
+
+**Особенности:**
+- Группы комбо (`ComboGroupDto`) → опции бандла (`bundle_options`)
+- `isMainGroup` → `is_required = true`
+- Стратегия ценообразования (`priceStrategy`) сохраняется в `additional`
+- Для опций ищутся существующие товары по `iiko_id` или SKU
+- Изображения комбо скачиваются из `image[].url`
 
 ## Нормализация данных API
 
-Перед импортом данные нормализуются в методе `IikoNomenclatureService::normalizeNomenclatureData()`:
+Выполняется в `IikoNomenclatureService::normalizeNomenclatureData()`:
 
-1. **Извлечение категорий** из `itemCategories`:
-   ```php
-   foreach ($data['itemCategories'] as $category) {
-       $groups[] = [
-           'id' => $category['id'],
-           'name' => $category['name'],
-           'description' => $category['description'],
-           'parentGroup' => null,
-       ];
-   }
-   ```
-
-2. **Извлечение товаров** из `itemCategories`:
-   ```php
-   foreach ($category['items'] as $item) {
-       // Конвертация itemSizes в sizePrices
-       if (isset($item['itemSizes'])) {
-           $item['sizePrices'] = convertItemSizesToSizePrices($item['itemSizes']);
-       }
-       $items[] = $item;
-   }
-   ```
-
-3. **Результат нормализации**:
-   ```php
-   $normalized = [
-       'groups' => $groups,
-       'items' => $items,
-       // ... остальные поля из оригинального ответа
-   ];
-   ```
+1. `itemCategories[]` → `groups[]` + `items[]` (плоские массивы)
+2. `itemSizes[].prices[0].price` → `sizePrices[]` (для совместимости)
+3. **`itemSizes` сохраняются в оригинале** — используются `extractPerSizeModifierGroups()` и `extractSizePrices()` для получения модификаторов per-size
+4. `comboCategories[]` — передаются как есть, обрабатываются отдельно
 
 ## Особенности обработки
 
-### Обработка полей `itemId` vs `id`
-
-Код поддерживает оба варианта для совместимости:
-```php
-$iikoId = $item['id'] ?? $item['itemId'] ?? null;
-```
-
 ### Поиск существующих товаров
 
-Товары ищутся в следующем порядке:
-1. По `iiko_id` в поле `additional->iiko_id`
+1. По `iiko_id` в `additional->iiko_id` (JSON)
 2. По SKU (`iiko_{itemId}`)
 
-### Обновление существующих товаров
+### Формат SKU
 
-При обновлении:
-- Сохраняется существующий `iiko_id` в `additional`
-- Обновляются название, описание, цена
-- Обновляются категории
-- Обновляется индекс `product_flat`
+| Тип | SKU |
+|-----|-----|
+| Простой/конструктор | `iiko_{itemId}` |
+| Grouped-вариант (цена) | `iiko_{itemId}_price_{sizeId}` |
+| Grouped-конструктор-вариант | `iiko_{itemId}_size_{sizeId}` |
+| Комбо (бандл) | `iiko_combo_{comboId}` |
+| Ингредиент | `iiko_{modifierItemId}` |
 
-### Создание новых товаров
+### Использование `orderItemType`
 
-При создании:
-- Устанавливается `iiko_id` в `additional`
-- Устанавливается тип товара согласно маппингу
-- Устанавливается статус `1` (активен)
-- Устанавливается `visible_individually` в зависимости от типа
+Поле `orderItemType: Compound` используется как дополнительный сигнал: если товар помечен как `Compound`, но API не вернул `itemModifierGroups` — товар всё равно создаётся как `constructor` (пустой конструктор, который позже может быть наполнен при следующей синхронизации).
 - Создается индекс `product_flat`
 
 ## Примеры импорта

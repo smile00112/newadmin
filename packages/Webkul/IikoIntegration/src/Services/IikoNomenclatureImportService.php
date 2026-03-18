@@ -13,6 +13,7 @@ use Webkul\Category\Repositories\CategoryRepository;
 use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Product\Repositories\ProductGroupedProductRepository;
 use Webkul\Product\Repositories\ProductConstructorRepository;
+use Webkul\Product\Repositories\ProductBundleOptionRepository;
 use Webkul\Product\Repositories\ProductImageRepository;
 use Webkul\Product\Repositories\ProductAttributeValueRepository;
 use Webkul\Product\Repositories\ProductInventoryRepository;
@@ -31,6 +32,7 @@ class IikoNomenclatureImportService
         protected ProductRepository $productRepository,
         protected ProductGroupedProductRepository $productGroupedProductRepository,
         protected ProductConstructorRepository $productConstructorRepository,
+        protected ProductBundleOptionRepository $productBundleOptionRepository,
         protected ProductImageRepository $productImageRepository,
         protected ProductAttributeValueRepository $productAttributeValueRepository,
         protected ProductInventoryRepository $productInventoryRepository,
@@ -64,6 +66,8 @@ class IikoNomenclatureImportService
                 'products_updated' => 0,
                 'grouped_products_created' => 0,
                 'constructor_products_created' => 0,
+                'configurable_constructor_products_created' => 0,
+                'combo_products_created' => 0,
             ];
 
             // Extract categories and items from nomenclature data
@@ -134,12 +138,30 @@ class IikoNomenclatureImportService
                     $stats['products_updated'] = $productStats['updated'];
                     $stats['grouped_products_created'] = $productStats['grouped_created'] ?? 0;
                     $stats['constructor_products_created'] = $productStats['constructor_created'] ?? 0;
+                    $stats['configurable_constructor_products_created'] = $productStats['configurable_constructor_created'] ?? 0;
+                    $stats['combo_products_created'] = $productStats['combo_created'] ?? 0;
                 } catch (\Exception $e) {
                     Log::error('iiko: Error importing products', [
                         'organization_id' => $organizationId,
                         'message' => $e->getMessage(),
                     ]);
                     throw $e;
+                }
+            }
+
+            // Import combo products from comboCategories
+            $comboCategories = $nomenclatureData['comboCategories'] ?? [];
+            if (!empty($comboCategories)) {
+                try {
+                    $comboStats = $this->importComboProducts($comboCategories, $this->buildCategoryMap());
+                    $stats['combo_products_created'] += $comboStats['created'] ?? 0;
+                    $stats['products_created'] += $comboStats['created'] ?? 0;
+                } catch (\Exception $e) {
+                    Log::error('iiko: Error importing combo products', [
+                        'organization_id' => $organizationId,
+                        'message' => $e->getMessage(),
+                    ]);
+                    // Non-fatal: continue with the rest of the import
                 }
             }
 
@@ -286,7 +308,7 @@ class IikoNomenclatureImportService
      */
     protected function importProducts(array $items): array
     {
-        $stats = ['created' => 0, 'updated' => 0, 'grouped_created' => 0, 'constructor_created' => 0];
+        $stats = ['created' => 0, 'updated' => 0, 'grouped_created' => 0, 'constructor_created' => 0, 'configurable_constructor_created' => 0];
         $categoryMap = $this->buildCategoryMap();
 
         foreach ($items as $item) {
@@ -297,8 +319,26 @@ class IikoNomenclatureImportService
                 continue;
             }
 
-            // Handle products with itemModifierGroups (constructor products) - highest priority
-            if ($this->hasItemModifierGroups($item)) {
+            $hasModifiers = $this->hasItemModifierGroups($item);
+            $sizePrices = $this->extractSizePrices($item);
+            $hasMultipleSizes = count($sizePrices) > 1;
+
+            // Priority 1: Multiple sizes + modifiers → configurable_constructor
+            if ($hasModifiers && $hasMultipleSizes) {
+                $result = $this->handleConfigurableConstructorProduct($item, $categoryMap, $sizePrices);
+                if ($result) {
+                    $stats['configurable_constructor_created']++;
+                    if ($result === 'created') {
+                        $stats['created']++;
+                    } else {
+                        $stats['updated']++;
+                    }
+                }
+                continue;
+            }
+
+            // Priority 2: Modifiers (single size or no sizes) → constructor
+            if ($hasModifiers) {
                 $result = $this->handleConstructorProduct($item, $categoryMap);
                 if ($result) {
                     $stats['constructor_created']++;
@@ -313,32 +353,21 @@ class IikoNomenclatureImportService
 
             $productType = $this->mapIikoProductType($item['type'] ?? 'DISH');
 
-            // Extract prices from sizePrices or itemSizes (new API format)
-            $prices = $item['sizePrices'] ?? [];
-            if (empty($prices) && isset($item['itemSizes']) && is_array($item['itemSizes'])) {
-                foreach ($item['itemSizes'] as $size) {
-                    $sizePrice = 0;
-                    if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
-                        $sizePrice = $size['prices'][0]['price'] ?? 0;
-                    }
-                    $prices[] = [
-                        'sizeId' => $size['sizeId'] ?? null,
-                        'sizeName' => $size['sizeName'] ?? null,
-                        'sizeCode' => $size['sizeCode'] ?? null,
-                        'price' => $sizePrice,
-                    ];
-                }
+            // Use orderItemType as additional signal: Compound suggests modifiers exist
+            $orderItemType = strtolower(trim($item['orderItemType'] ?? ''));
+            if ($orderItemType === 'compound' && $productType === 'simple') {
+                $productType = 'constructor';
             }
 
-            // Handle products with multiple prices
-            if (count($prices) > 1) {
+            // Priority 3: Multiple prices → grouped
+            if ($hasMultipleSizes) {
                 $result = $this->handleMultiPriceProduct($item, $categoryMap);
                 if ($result) {
                     $stats['grouped_created']++;
                     $stats['created'] += $result['variants_created'] ?? 0;
                 }
             } else {
-                // Handle single price product
+                // Priority 4: Single price product
                 $sku = 'iiko_' . $iikoId;
                 $existingProduct = $this->findProductByIikoId($iikoId);
 
@@ -348,16 +377,44 @@ class IikoNomenclatureImportService
                 }
 
                 if ($existingProduct) {
-                    $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $prices);
+                    $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $sizePrices);
                     $stats['updated']++;
                 } else {
-                    $this->createProduct($item, $productType, $categoryMap, $prices);
+                    $this->createProduct($item, $productType, $categoryMap, $sizePrices);
                     $stats['created']++;
                 }
             }
         }
 
         return $stats;
+    }
+
+    /**
+     * Extract size prices from item (supports both sizePrices and itemSizes formats).
+     *
+     * @param  array  $item
+     * @return array
+     */
+    protected function extractSizePrices(array $item): array
+    {
+        $prices = $item['sizePrices'] ?? [];
+
+        if (empty($prices) && isset($item['itemSizes']) && is_array($item['itemSizes'])) {
+            foreach ($item['itemSizes'] as $size) {
+                $sizePrice = 0;
+                if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
+                    $sizePrice = $size['prices'][0]['price'] ?? 0;
+                }
+                $prices[] = [
+                    'sizeId' => $size['sizeId'] ?? null,
+                    'sizeName' => $size['sizeName'] ?? null,
+                    'sizeCode' => $size['sizeCode'] ?? null,
+                    'price' => $sizePrice,
+                ];
+            }
+        }
+
+        return $prices;
     }
 
     /**
@@ -394,6 +451,7 @@ class IikoNomenclatureImportService
 
         return match ($normalizedType) {
             'dish', 'product' => 'simple',
+            'combo' => 'bundle',
             'modifier' => 'ingredient',
             'group', 'grouped' => 'grouped',
             default => 'simple',
@@ -768,7 +826,433 @@ class IikoNomenclatureImportService
     }
 
     /**
-     * Extract itemModifierGroups from item (from item or from first itemSize).
+     * Handle product with multiple sizes AND modifiers (configurable_constructor).
+     *
+     * Creates a grouped product (parent) with simple variants per size,
+     * each variant gets the constructor (modifier groups) attached.
+     *
+     * @param  array  $item
+     * @param  array  $categoryMap
+     * @param  array  $sizePrices
+     * @return string|null 'created'|'updated' on success, null on failure
+     */
+    protected function handleConfigurableConstructorProduct(array $item, array $categoryMap, array $sizePrices): ?string
+    {
+        try {
+            $iikoId = $item['id'] ?? $item['itemId'] ?? null;
+            if (!$iikoId) {
+                return null;
+            }
+
+            $attributeFamily = $this->getDefaultAttributeFamily();
+            $channels = $this->getDefaultChannels();
+            $productName = $item['name'] ?? 'Unnamed Product';
+            $categoryIikoId = $item['groupId'] ?? null;
+
+            $categories = [];
+            if ($categoryIikoId && isset($categoryMap[$categoryIikoId]) && is_numeric($categoryMap[$categoryIikoId]) && $categoryMap[$categoryIikoId] > 0) {
+                $categories[] = (int) $categoryMap[$categoryIikoId];
+            }
+
+            // Check if main grouped product already exists
+            $mainSku = 'iiko_' . $iikoId;
+            $mainProduct = $this->findProductByIikoId($iikoId);
+            if (!$mainProduct) {
+                $mainProduct = $this->findProductBySku($mainSku);
+            }
+
+            $result = 'updated';
+
+            if (!$mainProduct) {
+                $mainProductData = [
+                    'type' => 'grouped',
+                    'sku' => $mainSku,
+                    'attribute_family_id' => $attributeFamily->id,
+                    'additional' => ['iiko_id' => $iikoId],
+                    'channels' => $channels,
+                    'status' => 1,
+                    'visible_individually' => 1,
+                ];
+
+                $mainProduct = $this->productRepository->create($mainProductData);
+                $mainProduct->refresh();
+                $result = 'created';
+            } else {
+                $this->productRepository->update([
+                    'additional' => array_merge($mainProduct->additional ?? [], ['iiko_id' => $iikoId]),
+                    'channels' => $channels,
+                ], $mainProduct->id);
+                $mainProduct->refresh();
+            }
+
+            // Save attribute values for main product
+            $locales = core()->getAllLocales();
+            $defaultChannelCode = core()->getDefaultChannelCode();
+            $customAttributes = $mainProduct->attribute_family->custom_attributes;
+
+            foreach ($locales as $locale) {
+                $this->productAttributeValueRepository->saveValues([
+                    'name' => $productName,
+                    'short_description' => $item['description'] ?? null,
+                    'description' => $item['description'] ?? null,
+                    'status' => 1,
+                    'locale' => $locale->code,
+                    'channel' => $defaultChannelCode,
+                ], $mainProduct, $customAttributes);
+            }
+
+            $mainProduct->categories()->sync($categories);
+            $this->ensureProductInventory($mainProduct);
+
+            // Get price variants category
+            $priceVariantsCategory = $this->getOrCreatePriceVariantsCategory();
+            $priceVariantCategoryId = $priceVariantsCategory->id ?? null;
+            $variantCategories = [];
+            if ($priceVariantCategoryId && is_numeric($priceVariantCategoryId) && $priceVariantCategoryId > 0) {
+                $variantCategories[] = (int) $priceVariantCategoryId;
+            }
+
+            // Extract per-size modifier groups
+            $perSizeModifiers = $this->extractPerSizeModifierGroups($item);
+
+            // Create constructor variant for each size
+            $variantProducts = [];
+            foreach ($sizePrices as $sizeIndex => $sizePrice) {
+                $sizeId = $sizePrice['sizeId'] ?? $sizeIndex;
+                $sizeName = $sizePrice['sizeName'] ?? '';
+                $price = $sizePrice['price'] ?? 0;
+
+                $variantSku = 'iiko_' . $iikoId . '_size_' . $sizeId;
+                $variantProduct = $this->findProductBySku($variantSku);
+
+                $variantName = $productName . ($sizeName ? ' - ' . $sizeName : '');
+
+                if (!$variantProduct) {
+                    $variantData = [
+                        'type' => 'constructor',
+                        'sku' => $variantSku,
+                        'attribute_family_id' => $attributeFamily->id,
+                        'parent_id' => $mainProduct->id,
+                        'additional' => [
+                            'iiko_id' => $iikoId . '_size_' . $sizeId,
+                            'iiko_main_id' => $iikoId,
+                            'iiko_size_id' => $sizeId,
+                        ],
+                        'channels' => $channels,
+                        'status' => 1,
+                        'visible_individually' => 0,
+                    ];
+
+                    $variantProduct = $this->productRepository->create($variantData);
+                    $variantProduct->refresh();
+                }
+
+                // Save variant attributes
+                $variantCustomAttributes = $variantProduct->attribute_family->custom_attributes;
+                foreach ($locales as $locale) {
+                    $this->productAttributeValueRepository->saveValues([
+                        'name' => $variantName,
+                        'short_description' => $item['description'] ?? null,
+                        'description' => $item['description'] ?? null,
+                        'price' => $price,
+                        'status' => 1,
+                        'locale' => $locale->code,
+                        'channel' => $defaultChannelCode,
+                    ], $variantProduct, $variantCustomAttributes);
+                }
+
+                $variantProduct->categories()->sync($variantCategories);
+                $this->ensureProductInventory($variantProduct);
+
+                // Attach modifiers for this size (or fallback to shared modifiers)
+                $sizeModifiers = $perSizeModifiers[$sizeId] ?? $perSizeModifiers[array_key_first($perSizeModifiers)] ?? [];
+                if (!empty($sizeModifiers)) {
+                    $constructorData = $this->processModifierGroups($sizeModifiers, $variantProduct->id);
+                    if (!empty($constructorData)) {
+                        $this->productConstructorRepository->saveConstructor($constructorData, $variantProduct);
+                    }
+                }
+
+                $this->flatIndexer->refresh($variantProduct);
+                $variantProducts[] = $variantProduct;
+            }
+
+            // Link variants to grouped product
+            $linksData = [];
+            foreach ($variantProducts as $index => $variant) {
+                $linksData['link_' . $variant->id] = [
+                    'associated_product_id' => $variant->id,
+                    'qty' => 1,
+                    'sort_order' => $index,
+                ];
+            }
+
+            $this->productGroupedProductRepository->saveGroupedProducts(
+                ['links' => $linksData],
+                $mainProduct
+            );
+
+            $mainProduct->refresh();
+            $this->flatIndexer->refresh($mainProduct);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('iiko: Error handling configurable_constructor product', [
+                'item_id' => $item['id'] ?? $item['itemId'] ?? null,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Extract modifier groups per size from item.
+     * Returns array keyed by sizeId with modifier groups for each.
+     *
+     * @param  array  $item
+     * @return array<string, array>
+     */
+    protected function extractPerSizeModifierGroups(array $item): array
+    {
+        $result = [];
+
+        // Direct itemModifierGroups apply to all sizes
+        if (isset($item['itemModifierGroups']) && is_array($item['itemModifierGroups']) && count($item['itemModifierGroups']) > 0) {
+            $result['_shared'] = $item['itemModifierGroups'];
+        }
+
+        // Per-size modifiers from itemSizes
+        if (isset($item['itemSizes']) && is_array($item['itemSizes'])) {
+            foreach ($item['itemSizes'] as $size) {
+                $sizeId = $size['sizeId'] ?? null;
+                if ($sizeId && isset($size['itemModifierGroups']) && is_array($size['itemModifierGroups']) && count($size['itemModifierGroups']) > 0) {
+                    $result[$sizeId] = $size['itemModifierGroups'];
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Import combo products from comboCategories section.
+     *
+     * @param  array  $comboCategories
+     * @param  array  $categoryMap
+     * @return array
+     */
+    protected function importComboProducts(array $comboCategories, array $categoryMap): array
+    {
+        $stats = ['created' => 0, 'updated' => 0];
+
+        foreach ($comboCategories as $comboCategory) {
+            $combos = $comboCategory['combos'] ?? [];
+
+            foreach ($combos as $combo) {
+                $comboId = $combo['id'] ?? null;
+                if (!$comboId) {
+                    continue;
+                }
+
+                $result = $this->handleComboProduct($combo, $categoryMap);
+                if ($result === 'created') {
+                    $stats['created']++;
+                } elseif ($result === 'updated') {
+                    $stats['updated']++;
+                }
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Handle a single combo product from comboCategories.
+     * Creates a bundle product with groups mapped to bundle options.
+     *
+     * @param  array  $combo  ComboDto from iiko API
+     * @param  array  $categoryMap
+     * @return string|null 'created'|'updated' on success, null on failure
+     */
+    protected function handleComboProduct(array $combo, array $categoryMap): ?string
+    {
+        try {
+            $comboId = $combo['id'];
+            $sku = 'iiko_combo_' . $comboId;
+            $comboName = $combo['name'] ?? 'Unnamed Combo';
+            $price = (float) ($combo['price'] ?? 0);
+            $priceStrategy = $combo['priceStrategy'] ?? 'FIXED';
+
+            $existingProduct = $this->findProductByIikoId('combo_' . $comboId);
+            if (!$existingProduct) {
+                $existingProduct = $this->findProductBySku($sku);
+            }
+
+            $attributeFamily = $this->getDefaultAttributeFamily();
+            $channels = $this->getDefaultChannels();
+
+            $result = 'updated';
+
+            if (!$existingProduct) {
+                $productData = [
+                    'type' => 'bundle',
+                    'sku' => $sku,
+                    'attribute_family_id' => $attributeFamily->id,
+                    'additional' => [
+                        'iiko_id' => 'combo_' . $comboId,
+                        'iiko_combo_id' => $comboId,
+                        'iiko_price_strategy' => $priceStrategy,
+                    ],
+                    'channels' => $channels,
+                    'status' => 1,
+                    'visible_individually' => 1,
+                ];
+
+                $product = $this->productRepository->create($productData);
+                $product->refresh();
+                $result = 'created';
+            } else {
+                $this->productRepository->update([
+                    'additional' => array_merge($existingProduct->additional ?? [], [
+                        'iiko_id' => 'combo_' . $comboId,
+                        'iiko_combo_id' => $comboId,
+                        'iiko_price_strategy' => $priceStrategy,
+                    ]),
+                    'channels' => $channels,
+                ], $existingProduct->id);
+                $product = $existingProduct->refresh();
+            }
+
+            // Save attribute values
+            $locales = core()->getAllLocales();
+            $defaultChannelCode = core()->getDefaultChannelCode();
+            $customAttributes = $product->attribute_family->custom_attributes;
+
+            foreach ($locales as $locale) {
+                $localeData = [
+                    'name' => $comboName,
+                    'short_description' => $combo['description'] ?? null,
+                    'description' => $combo['description'] ?? null,
+                    'status' => 1,
+                    'locale' => $locale->code,
+                    'channel' => $defaultChannelCode,
+                ];
+
+                if ($priceStrategy === 'FIXED' && $price > 0) {
+                    $localeData['price'] = $price;
+                }
+
+                $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
+            }
+
+            // Build bundle options from combo groups
+            $groups = $combo['groups'] ?? [];
+            if (!empty($groups)) {
+                $bundleOptionsData = $this->buildBundleOptionsFromComboGroups($groups);
+                $this->productBundleOptionRepository->saveBundleOptions(
+                    ['bundle_options' => $bundleOptionsData],
+                    $product
+                );
+            }
+
+            // Handle combo images
+            $images = $combo['image'] ?? [];
+            if (!empty($images) && is_array($images)) {
+                foreach ($images as $img) {
+                    $imgUrl = $img['url'] ?? null;
+                    if ($imgUrl) {
+                        $this->downloadAndSaveImage($imgUrl, $product);
+                        break; // Only download first image
+                    }
+                }
+            }
+
+            $this->ensureProductInventory($product);
+            $this->flatIndexer->refresh($product);
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::error('iiko: Error handling combo product', [
+                'combo_id' => $combo['id'] ?? null,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Build bundle options data from iiko combo groups.
+     *
+     * @param  array  $comboGroups  Array of ComboGroupDto
+     * @return array  Bundle options in format expected by saveBundleOptions
+     */
+    protected function buildBundleOptionsFromComboGroups(array $comboGroups): array
+    {
+        $bundleOptions = [];
+        $optionIndex = 0;
+
+        foreach ($comboGroups as $group) {
+            $groupId = $group['id'] ?? null;
+            $groupName = $group['name'] ?? 'Unnamed Group';
+            $isMainGroup = (bool) ($group['isMainGroup'] ?? false);
+            $groupItems = $group['items'] ?? [];
+
+            if (empty($groupItems)) {
+                continue;
+            }
+
+            $optionProducts = [];
+            $productIndex = 0;
+
+            foreach ($groupItems as $groupItem) {
+                $itemId = $groupItem['itemId'] ?? null;
+                if (!$itemId) {
+                    continue;
+                }
+
+                // Find the product in our system
+                $itemProduct = $this->findProductByIikoId($itemId);
+                if (!$itemProduct) {
+                    $itemProduct = $this->findProductBySku('iiko_' . $itemId);
+                }
+
+                if (!$itemProduct) {
+                    continue;
+                }
+
+                $optionProducts['product_' . $productIndex] = [
+                    'product_id' => $itemProduct->id,
+                    'qty' => 1,
+                    'is_user_defined' => false,
+                    'is_default' => $productIndex === 0,
+                    'sort_order' => $productIndex,
+                ];
+                $productIndex++;
+            }
+
+            if (empty($optionProducts)) {
+                continue;
+            }
+
+            // select = single choice, checkbox = multiple choice
+            $optionType = $isMainGroup ? 'select' : 'select';
+
+            $bundleOptions['option_' . $optionIndex] = [
+                'type' => $optionType,
+                'is_required' => $isMainGroup,
+                'sort_order' => $optionIndex,
+                'label' => $groupName,
+                'products' => $optionProducts,
+            ];
+            $optionIndex++;
+        }
+
+        return $bundleOptions;
+    }
+
+    /**
      *
      * @param  array  $item
      * @return array

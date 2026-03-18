@@ -94,9 +94,9 @@ class IikoNomenclatureService
                     $item['groupId'] = $categoryId;
                     
                     // Convert itemSizes to sizePrices format if present
+                    // Preserve original itemSizes with per-size modifiers for configurable_constructor
                     if (isset($item['itemSizes']) && is_array($item['itemSizes']) && count($item['itemSizes']) > 0) {
                         $sizePrices = [];
-                        $itemModifierGroupsMerged = [];
                         foreach ($item['itemSizes'] as $size) {
                             $sizePrice = 0;
                             if (isset($size['prices']) && is_array($size['prices']) && count($size['prices']) > 0) {
@@ -108,23 +108,12 @@ class IikoNomenclatureService
                                 'sizeCode' => $size['sizeCode'] ?? null,
                                 'price' => $sizePrice,
                             ];
-                            // Preserve itemModifierGroups from itemSizes for constructor product import
-                            if (isset($size['itemModifierGroups']) && is_array($size['itemModifierGroups']) && count($size['itemModifierGroups']) > 0) {
-                                foreach ($size['itemModifierGroups'] as $modGroup) {
-                                    $groupName = $modGroup['name'] ?? 'Unnamed Group';
-                                    if (!isset($itemModifierGroupsMerged[$groupName])) {
-                                        $itemModifierGroupsMerged[$groupName] = $modGroup;
-                                    }
-                                }
-                            }
                         }
                         // Store sizePrices for compatibility with existing import logic
                         $item['sizePrices'] = $sizePrices;
                         
-                        // Store itemModifierGroups for constructor product import (from first size or merged)
-                        if (!empty($itemModifierGroupsMerged)) {
-                            $item['itemModifierGroups'] = array_values($itemModifierGroupsMerged);
-                        }
+                        // Keep original itemSizes intact — import service uses them
+                        // for per-size modifier extraction (extractPerSizeModifierGroups)
                         
                         // Set price from first size for single-price fallback
                         if (count($sizePrices) > 0) {
