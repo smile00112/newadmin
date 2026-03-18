@@ -291,61 +291,61 @@ class MobileSettingsController
      *                          example="http://example.com/api/v1/cms/2/html",
      *                          nullable=true
      *                      )
+     *                  ),
+     *                  @OA\Property(
+     *                      property="sockets",
+     *                      type="object",
+     *                      description="WebSocket connection configuration (Pusher-compatible protocol)",
+     *                      @OA\Property(
+     *                          property="server",
+     *                          type="object",
+     *                          description="WebSocket server configuration",
+     *                          @OA\Property(
+     *                              property="url",
+     *                              type="string",
+     *                              example="wss://your-domain.com/app",
+     *                              description="WebSocket server URL"
+     *                          ),
+     *                          @OA\Property(
+     *                              property="protocol",
+     *                              type="string",
+     *                              example="pusher",
+     *                              description="WebSocket protocol (Pusher-compatible)"
+     *                          ),
+     *                          @OA\Property(
+     *                              property="key",
+     *                              type="string",
+     *                              example="your-app-key",
+     *                              description="WebSocket application key"
+     *                          ),
+     *                          @OA\Property(
+     *                              property="host",
+     *                              type="string",
+     *                              example="your-domain.com",
+     *                              description="WebSocket host"
+     *                          ),
+     *                          @OA\Property(
+     *                              property="port",
+     *                              type="integer",
+     *                              example=443,
+     *                              description="WebSocket port"
+     *                          ),
+     *                          @OA\Property(
+     *                              property="path",
+     *                              type="string",
+     *                              example="/app",
+     *                              description="WebSocket path"
+     *                          )
+     *                      ),
+     *                      @OA\Property(
+     *                          property="auth_endpoint",
+     *                          type="object",
+     *                          description="Endpoint for authorizing private channels (used by Echo/Pusher)",
+     *                          @OA\Property(property="url", type="string", example="http://example.com/api/v1/broadcasting/auth"),
+     *                          @OA\Property(property="method", type="string", example="POST"),
+     *                          @OA\Property(property="requires_auth", type="boolean", example=true)
+     *                      )
      *                  )
- *                  @OA\Property(
- *                      property="sockets",
- *                      type="object",
- *                      description="WebSocket connection configuration (Pusher-compatible protocol)",
- *                      @OA\Property(
- *                          property="server",
- *                          type="object",
- *                          description="WebSocket server configuration",
- *                          @OA\Property(
- *                              property="url",
- *                              type="string",
- *                              example="wss://your-domain.com/app",
- *                              description="WebSocket server URL"
- *                          ),
- *                          @OA\Property(
- *                              property="protocol",
- *                              type="string",
- *                              example="pusher",
- *                              description="WebSocket protocol (Pusher-compatible)"
- *                          ),
- *                          @OA\Property(
- *                              property="key",
- *                              type="string",
- *                              example="your-app-key",
- *                              description="WebSocket application key"
- *                          ),
- *                          @OA\Property(
- *                              property="host",
- *                              type="string",
- *                              example="your-domain.com",
- *                              description="WebSocket host"
- *                          ),
- *                          @OA\Property(
- *                              property="port",
- *                              type="integer",
- *                              example=443,
- *                              description="WebSocket port"
- *                          ),
- *                          @OA\Property(
- *                              property="path",
- *                              type="string",
- *                              example="/app",
- *                              description="WebSocket path"
- *                          )
- *                      ),
- *                      @OA\Property(
- *                          property="auth_endpoint",
- *                          type="object",
- *                          description="Endpoint for authorizing private channels (used by Echo/Pusher)",
- *                          @OA\Property(property="url", type="string", example="http://example.com/api/v1/broadcasting/auth"),
- *                          @OA\Property(property="method", type="string", example="POST"),
- *                          @OA\Property(property="requires_auth", type="boolean", example=true)
- *                      )
- *                  )
      *              )
      *          )
      *      ),
