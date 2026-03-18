@@ -27,14 +27,12 @@ trait ProductResourceFields
         $customAttributes = core()->getSingletonInstance(AttributeRepository::class)
             ->getFamilyAttributes($attributeFamily);
 
-        $customAttributes
-            ->filter(fn ($a) => in_array($a->type, ['select', 'multiselect', 'checkbox']))
-            ->each(fn ($a) => $a->loadMissing('options'));
+        $selectAttributes = $customAttributes
+            ->filter(fn ($a) => in_array($a->type, ['select', 'multiselect', 'checkbox']));
 
-        foreach ($customAttributes as $attribute) {
-            if (! in_array($attribute->type, ['select', 'multiselect', 'checkbox'])) {
-                continue;
-            }
+        $selectAttributes->loadMissing('options.translations');
+
+        foreach ($selectAttributes as $attribute) {
 
             if (! $attribute->options || $attribute->options->count() === 0) {
                 continue;

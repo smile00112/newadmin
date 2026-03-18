@@ -73,10 +73,11 @@ class NomenclatureController extends CatalogController
             'attribute_values',
             'images', 'videos', 'attribute_family',
             'price_indices', 'inventory_indices',
-            'super_attributes.options',
+            'super_attributes.options.translations', 'super_attributes.translations',
             'variants.attribute_values',
             'variants.price_indices',
             'variants.inventory_indices',
+            'variants.attribute_family',
             'up_sells:id', 'cross_sells:id', 'drinks:id',
             'constructor.groups.products:id,type',
         ])
