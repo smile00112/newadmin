@@ -2727,6 +2727,161 @@
                 ]
             }
         },
+        "/api/v1/customer/alfabank/settings": {
+            "get": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get Alfabank payment settings",
+                "description": "Returns full Alfabank payment method configuration for the current sales channel as stored in core_config under sales.payment_methods.alfabank.*. Endpoint is protected by customer sanctum token.",
+                "operationId": "getCustomerAlfabankSettings",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "active": {
+                                                    "description": "Whether the payment method is active (1 or 0).",
+                                                    "type": "string",
+                                                    "example": "1"
+                                                },
+                                                "title": {
+                                                    "description": "Localized title of the payment method.",
+                                                    "type": "string",
+                                                    "example": "Альфа-Банк"
+                                                },
+                                                "description": {
+                                                    "description": "Localized description of the payment method.",
+                                                    "type": "string",
+                                                    "example": "Оплата картой через Альфа-Банк",
+                                                    "nullable": true
+                                                },
+                                                "merchant": {
+                                                    "description": "Alfabank merchant identifier.",
+                                                    "type": "string",
+                                                    "example": "1234567890"
+                                                },
+                                                "password": {
+                                                    "description": "Technical password for Alfabank merchant.",
+                                                    "type": "string",
+                                                    "example": "secret-password"
+                                                },
+                                                "token": {
+                                                    "description": "Token for Alfabank merchant.",
+                                                    "type": "string",
+                                                    "example": "secret-token"
+                                                },
+                                                "test_mode": {
+                                                    "description": "Flag indicating test mode (1 or 0).",
+                                                    "type": "string",
+                                                    "example": "1"
+                                                },
+                                                "stage_mode": {
+                                                    "description": "Stage mode for payments (one-stage or two-stage).",
+                                                    "type": "string",
+                                                    "example": "one-stage"
+                                                },
+                                                "order_status_paid": {
+                                                    "description": "Order status code used when payment is completed.",
+                                                    "type": "string",
+                                                    "example": "processing"
+                                                },
+                                                "success_url": {
+                                                    "description": "Custom success redirect URL.",
+                                                    "type": "string",
+                                                    "example": "https://example.com/alfabank/success",
+                                                    "nullable": true
+                                                },
+                                                "fail_url": {
+                                                    "description": "Custom fail redirect URL.",
+                                                    "type": "string",
+                                                    "example": "https://example.com/alfabank/fail",
+                                                    "nullable": true
+                                                },
+                                                "send_order": {
+                                                    "description": "Whether order line items are sent to the bank (1 or 0).",
+                                                    "type": "string",
+                                                    "example": "0"
+                                                },
+                                                "tax_system": {
+                                                    "description": "Tax system code.",
+                                                    "type": "string",
+                                                    "example": "0"
+                                                },
+                                                "tax_type": {
+                                                    "description": "Default tax type code.",
+                                                    "type": "string",
+                                                    "example": "0"
+                                                },
+                                                "version_ffd": {
+                                                    "description": "FFD version (fiscal data format).",
+                                                    "type": "string",
+                                                    "example": "v1_05"
+                                                },
+                                                "payment_method_type": {
+                                                    "description": "Payment method type code for receipts.",
+                                                    "type": "string",
+                                                    "example": "4"
+                                                },
+                                                "payment_object_type": {
+                                                    "description": "Payment object type code for products.",
+                                                    "type": "string",
+                                                    "example": "1"
+                                                },
+                                                "payment_object_type_delivery": {
+                                                    "description": "Payment object type code for delivery.",
+                                                    "type": "string",
+                                                    "example": "1"
+                                                },
+                                                "saved_cards_payment_enable": {
+                                                    "description": "Flag indicating whether saved cards payment is enabled (1 or 0).",
+                                                    "type": "string",
+                                                    "example": "0"
+                                                },
+                                                "min_order_total": {
+                                                    "description": "Minimum order total for which the method is available.",
+                                                    "type": "string",
+                                                    "example": "0",
+                                                    "nullable": true
+                                                },
+                                                "max_order_total": {
+                                                    "description": "Maximum order total for which the method is available.",
+                                                    "type": "string",
+                                                    "example": "10000",
+                                                    "nullable": true
+                                                },
+                                                "callback_type": {
+                                                    "description": "Callback URL type (STATIC or DYNAMIC).",
+                                                    "type": "string",
+                                                    "example": "STATIC"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/login": {
             "post": {
                 "tags": [
@@ -6043,6 +6198,116 @@
                 ]
             }
         },
+        "/api/v1/customer/orders/{id}/confirm-payment": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Confirm payment for customer's order via Alfabank gateway",
+                "description": "Mobile app sends gateway_order_id (mdOrder) after redirect payment; backend verifies payment on Alfabank side and creates invoice if successful.",
+                "operationId": "confirmCustomerOrderPayment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Order id (backend order.id)",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "gateway_order_id"
+                                ],
+                                "properties": {
+                                    "gateway_order_id": {
+                                        "description": "Alfabank gateway order id (mdOrder)",
+                                        "type": "string",
+                                        "example": "00afdd1b-a6ab-75cf-b5f1-fe720257a540"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payment confirmed and invoice created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "order": {
+                                                    "$ref": "#/components/schemas/Order"
+                                                },
+                                                "invoice_id": {
+                                                    "description": "Created invoice id (if any)",
+                                                    "type": "integer",
+                                                    "example": 123,
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Payment has been confirmed."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Payment not confirmed by gateway or invalid order state",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Payment was not confirmed by the gateway."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/orders/{id}/rate": {
             "post": {
                 "tags": [
@@ -6544,6 +6809,83 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Create or update customer's saved card from SDK",
+                "description": "Creates or updates a customer's saved payment card using data provided by a mobile SDK after successful binding with Alfa-Bank.",
+                "operationId": "createCustomerSavedCard",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "binding_id",
+                                    "card_mask"
+                                ],
+                                "properties": {
+                                    "binding_id": {
+                                        "description": "Binding identifier returned by Alfa-Bank.",
+                                        "type": "string",
+                                        "example": "f3e9c0b1-1234-5678-9abc-def012345678"
+                                    },
+                                    "card_mask": {
+                                        "description": "Masked PAN of the card.",
+                                        "type": "string",
+                                        "example": "4111 11** **** 1111"
+                                    },
+                                    "card_type": {
+                                        "description": "Payment system / card brand (e.g. VISA, MASTERCARD).",
+                                        "type": "string",
+                                        "example": "VISA",
+                                        "nullable": true
+                                    },
+                                    "client_id": {
+                                        "description": "Client identifier used when binding the card in Alfa-Bank.",
+                                        "type": "string",
+                                        "example": "9c0b1f3e-5678-1234-9abc-def012345678",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Saved card created or updated successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/SavedCard"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -7603,6 +7945,66 @@
                                                         }
                                                     },
                                                     "type": "object"
+                                                },
+                                                "sockets": {
+                                                    "description": "WebSocket connection configuration (Pusher-compatible protocol)",
+                                                    "properties": {
+                                                        "server": {
+                                                            "description": "WebSocket server configuration",
+                                                            "properties": {
+                                                                "url": {
+                                                                    "description": "WebSocket server URL",
+                                                                    "type": "string",
+                                                                    "example": "wss://your-domain.com/app"
+                                                                },
+                                                                "protocol": {
+                                                                    "description": "WebSocket protocol (Pusher-compatible)",
+                                                                    "type": "string",
+                                                                    "example": "pusher"
+                                                                },
+                                                                "key": {
+                                                                    "description": "WebSocket application key",
+                                                                    "type": "string",
+                                                                    "example": "your-app-key"
+                                                                },
+                                                                "host": {
+                                                                    "description": "WebSocket host",
+                                                                    "type": "string",
+                                                                    "example": "your-domain.com"
+                                                                },
+                                                                "port": {
+                                                                    "description": "WebSocket port",
+                                                                    "type": "integer",
+                                                                    "example": 443
+                                                                },
+                                                                "path": {
+                                                                    "description": "WebSocket path",
+                                                                    "type": "string",
+                                                                    "example": "/app"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        },
+                                                        "auth_endpoint": {
+                                                            "description": "Endpoint for authorizing private channels (used by Echo/Pusher)",
+                                                            "properties": {
+                                                                "url": {
+                                                                    "type": "string",
+                                                                    "example": "http://example.com/api/v1/broadcasting/auth"
+                                                                },
+                                                                "method": {
+                                                                    "type": "string",
+                                                                    "example": "POST"
+                                                                },
+                                                                "requires_auth": {
+                                                                    "type": "boolean",
+                                                                    "example": true
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
                                                 }
                                             },
                                             "type": "object"
@@ -7630,7 +8032,7 @@
                     "WebSocket Notifications"
                 ],
                 "summary": "Get WebSocket connection information",
-                "description": "Returns WebSocket server connection details, available channels and events for real-time notifications.\n *      \n *      ## WebSocket Connection\n *      \n *      The API supports real-time notifications via WebSocket using Laravel Reverb (Pusher-compatible protocol).\n *      \n *      ### Connection Details\n *      - **Protocol**: Pusher-compatible WebSocket\n *      - **Server**: Laravel Reverb\n *      - **Channels**: Public and Private channels available\n *      \n *      ### Channel Types\n *      \n *      #### Public Channels\n *      - **notification**: Public channel for general notifications (no authentication required)\n *      \n *      #### Private Channels (Authentication Required)\n *      - **order.{orderId}**: Private channel for specific order updates (e.g., `order.123`)\n *      - **customer.{customerId}.orders**: Private channel for all orders of a specific customer (e.g., `customer.456.orders`)\n *      \n *      ### Available Events\n *      - **create-notification**: Fired when a new order is created (public channel)\n *      - **update-notification**: Fired when an order status is updated (private channels)\n *      - **product-status-changed**: Fired when a product becomes out of stock (public channel)\n *      - **product-price-changed**: Fired when a product price changes (public channel)\n *      \n *      ### Authentication for Private Channels\n *      \n *      Private channels require authentication. The authorization endpoint is:\n *      - **POST** `/api/v1/customer/broadcasting/auth`\n *      \n *      This endpoint requires authentication token in the Authorization header.\n *      \n *      ### Example Connection (JavaScript)\n *      ```javascript\n *      import Echo from 'laravel-echo';\n *      import Pusher from 'pusher-js';\n *      \n *      window.Echo = new Echo({\n *          broadcaster: 'pusher',\n *          key: process.env.VITE_REVERB_APP_KEY,\n *          wsHost: process.env.VITE_REVERB_HOST,\n *          wsPort: process.env.VITE_REVERB_PORT ?? 80,\n *          wssPort: process.env.VITE_REVERB_PORT ?? 443,\n *          wsPath: '/app',\n *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',\n *          enabledTransports: ['ws', 'wss'],\n *          authEndpoint: '/api/v1/customer/broadcasting/auth',\n *          auth: {\n *              headers: {\n *                  Authorization: 'Bearer ' + yourAuthToken\n *              }\n *          }\n *      });\n *      \n *      // Public channel - no authentication required\n *      Echo.channel('notification')\n *          .listen('.product-status-changed', (e) => {\n *              console.log('Product out of stock:', e);\n *          })\n *          .listen('.product-price-changed', (e) => {\n *              console.log('Price changed:', e);\n *          })\n *          .listen('.create-notification', (e) => {\n *              console.log('New order created:', e);\n *          });\n *      \n *      // Private channel for specific order\n *      Echo.private('order.123')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order updated:', e);\n *          });\n *      \n *      // Private channel for all customer orders\n *      Echo.private('customer.456.orders')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order status changed:', e);\n *          });\n *      ```\n *      ",
+                "description": "Returns WebSocket server connection details, available channels and events for real-time notifications.\n *      \n *      ## WebSocket Connection\n *      \n *      The API supports real-time notifications via WebSocket using Laravel Reverb (Pusher-compatible protocol).\n *      \n *      ### Connection Details\n *      - **Protocol**: Pusher-compatible WebSocket\n *      - **Server**: Laravel Reverb\n *      - **Channels**: Public and Private channels available\n *      \n *      ### Channel Types\n *      \n *      #### Public Channels\n *      - **notification**: Public channel for general notifications (no authentication required)\n *      \n *      #### Private Channels (Authentication Required)\n *      - **order.{orderId}**: Private channel for specific order updates (e.g., `order.123`)\n *      - **customer.{customerId}.orders**: Private channel for all orders of a specific customer (e.g., `customer.456.orders`)\n *      \n *      ### Available Events\n *      - **create-notification**: Fired when a new order is created (public channel)\n *      - **update-notification**: Fired when an order status is updated (private channels)\n *      - **product-status-changed**: Fired when a product becomes out of stock (public channel)\n *      - **product-price-changed**: Fired when a product price changes (public channel)\n *      \n *      ### Authentication for Private Channels\n *      \n *      Private channels require authentication. The authorization endpoint is:\n *      - **POST** `/api/v1/broadcasting/auth`\n *      \n *      This endpoint requires authentication token in the Authorization header.\n *      \n *      ### Example Connection (JavaScript)\n *      ```javascript\n *      import Echo from 'laravel-echo';\n *      import Pusher from 'pusher-js';\n *      \n *      window.Echo = new Echo({\n *          broadcaster: 'pusher',\n *          key: process.env.VITE_REVERB_APP_KEY,\n *          wsHost: process.env.VITE_REVERB_HOST,\n *          wsPort: process.env.VITE_REVERB_PORT ?? 80,\n *          wssPort: process.env.VITE_REVERB_PORT ?? 443,\n *          wsPath: '/app',\n *          forceTLS: (process.env.VITE_REVERB_SCHEME ?? 'https') === 'https',\n *          enabledTransports: ['ws', 'wss'],\n *          authEndpoint: '/api/v1/broadcasting/auth',\n *          auth: {\n *              headers: {\n *                  Authorization: 'Bearer ' + yourAuthToken\n *              }\n *          }\n *      });\n *      \n *      // Public channel - no authentication required\n *      Echo.channel('notification')\n *          .listen('.product-status-changed', (e) => {\n *              console.log('Product out of stock:', e);\n *          })\n *          .listen('.product-price-changed', (e) => {\n *              console.log('Price changed:', e);\n *          })\n *          .listen('.create-notification', (e) => {\n *              console.log('New order created:', e);\n *          });\n *      \n *      // Private channel for specific order\n *      Echo.private('order.123')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order updated:', e);\n *          });\n *      \n *      // Private channel for all customer orders\n *      Echo.private('customer.456.orders')\n *          .listen('.update-notification', (e) => {\n *              console.log('Order status changed:', e);\n *          });\n *      ```\n *      ",
                 "operationId": "getWebSocketInfo",
                 "responses": {
                     "200": {
@@ -7772,7 +8174,7 @@
                                             "properties": {
                                                 "url": {
                                                     "type": "string",
-                                                    "example": "/api/v1/customer/broadcasting/auth"
+                                                    "example": "/api/v1/broadcasting/auth"
                                                 },
                                                 "method": {
                                                     "type": "string",
@@ -7905,7 +8307,7 @@
                 }
             }
         },
-        "/api/v1/customer/broadcasting/auth": {
+        "/api/v1/broadcasting/auth": {
             "post": {
                 "tags": [
                     "WebSocket Notifications"
@@ -13405,7 +13807,7 @@
                     },
                     "additional": {
                         "title": "Additional Info About Cart Item",
-                        "description": "selected_configurable_option, super_attribute, and attributes fields will use in case of configurable type product.",
+                        "description": "selected_configurable_option, super_attribute, and attributes fields will use in case of configurable type product. constructor_options поле используется для товаров constructor и configurable_constructor и содержит выбранные ингредиенты.",
                         "type": "array",
                         "items": {
                             "properties": {
@@ -13506,6 +13908,58 @@
                                     "attribute_name": "Color"
                                 }
                             }
+                        }
+                    },
+                    "modifications": {
+                        "title": "Selected Modifications",
+                        "description": "Нормализованный список выбранных модификаций для товаров типов configurable и configurable_constructor.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "code": {
+                                    "type": "string",
+                                    "example": "size"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "Size"
+                                },
+                                "option_id": {
+                                    "type": "integer",
+                                    "example": 8
+                                },
+                                "option_label": {
+                                    "type": "string",
+                                    "example": "L"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "ingredients": {
+                        "title": "Selected Ingredients",
+                        "description": "Нормализованный список выбранных ингредиентов для товаров типов constructor и configurable_constructor.",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "product_id": {
+                                    "type": "integer",
+                                    "example": 10
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "example": 2
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "Mozzarella"
+                                },
+                                "sku": {
+                                    "type": "string",
+                                    "example": "INGR-MOZZA-001"
+                                }
+                            },
+                            "type": "object"
                         }
                     },
                     "child": {
