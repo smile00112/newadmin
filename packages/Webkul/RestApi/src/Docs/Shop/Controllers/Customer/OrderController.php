@@ -182,7 +182,7 @@ class OrderController
      *      operationId="confirmCustomerOrderPayment",
      *      tags={"Orders"},
      *      summary="Confirm payment for customer's order via Alfabank gateway",
-     *      description="Mobile app sends gateway_order_id (mdOrder) after redirect payment; backend verifies payment on Alfabank side and creates invoice if successful.",
+     *      description="Mobile app sends payment confirmation request. `id` is backend order.id, `gateway_order_id` is Alfa mdOrder. Backend verifies payment in gateway and does not trust client status.",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\Parameter(
@@ -205,7 +205,8 @@ class OrderController
      *                  type="string",
      *                  description="Alfabank gateway order id (mdOrder)",
      *                  example="00afdd1b-a6ab-75cf-b5f1-fe720257a540"
-     *              )
+     *              ),
+     *              example={"gateway_order_id":"00afdd1b-a6ab-75cf-b5f1-fe720257a540"}
      *          )
      *      ),
      *

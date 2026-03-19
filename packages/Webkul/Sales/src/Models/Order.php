@@ -38,6 +38,7 @@ class Order extends Model implements OrderContract
      */
     protected $casts = [
         'order_labels' => 'array',
+        'additional'   => 'array',
         'rating' => 'boolean',
     ];
 

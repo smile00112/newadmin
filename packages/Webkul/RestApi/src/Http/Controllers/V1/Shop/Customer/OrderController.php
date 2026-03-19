@@ -64,6 +64,14 @@ class OrderController extends CustomerController
         ]);
 
         $customer = $this->resolveShopUser($request);
+        $alfabankLogChannel = config('alfabank-payment.log_channel', 'daily');
+        $gatewayOrderId = $validated['gateway_order_id'];
+
+        Log::channel($alfabankLogChannel)->info('Alfabank confirmPayment: request received', [
+            'customer_id'     => $customer->id,
+            'order_id'        => $id,
+            'gateway_order_id'=> $gatewayOrderId,
+        ]);
 
         /** @var \Webkul\Sales\Models\Order|null $order */
         $order = $customer->orders()->with('payment', 'items')->find($id);
@@ -86,15 +94,24 @@ class OrderController extends CustomerController
             ], 422);
         }
 
-        $gatewayOrderId = $validated['gateway_order_id'];
-
         try {
             $alfabankApi = app(\Webkul\AlfabankPayment\Services\AlfabankApiService::class);
+
+            // Note: Alfa SDK/service logs full request/response if enabled.
+            // Here we log just the endpoint-level intent and expected totals for easier tracing.
+            $expectedAmount = (int) round($order->grand_total * 100);
+            Log::channel($alfabankLogChannel)->info('Alfabank confirmPayment: checking gateway order', [
+                'order_id'         => $order->id,
+                'gateway_order_id' => $gatewayOrderId,
+                'expected_amount'  => $expectedAmount,
+                'order_status'      => $order->status,
+                'payment_method'    => $order->payment?->method,
+            ]);
 
             $response = $alfabankApi->getOrderStatus($gatewayOrderId);
 
             if (isset($response['errorCode']) && $response['errorCode'] !== '0') {
-                Log::warning('Alfabank confirmPayment: gateway returned error', [
+                Log::channel($alfabankLogChannel)->warning('Alfabank confirmPayment: gateway returned error', [
                     'order_id'        => $order->id,
                     'gateway_order_id'=> $gatewayOrderId,
                     'errorCode'       => $response['errorCode'] ?? null,
@@ -110,10 +127,19 @@ class OrderController extends CustomerController
 
             $orderStatus = $response['orderStatus'] ?? null;
             $amount = isset($response['amount']) ? (int) $response['amount'] : null;
-            $expectedAmount = (int) round($order->grand_total * 100);
+            $amountDiff = $amount !== null ? $amount - $expectedAmount : null;
+
+            Log::channel($alfabankLogChannel)->info('Alfabank confirmPayment: gateway response summary', [
+                'order_id'         => $order->id,
+                'gateway_order_id' => $gatewayOrderId,
+                'orderStatus'      => $orderStatus,
+                'amount'           => $amount,
+                'expected_amount' => $expectedAmount,
+                'amount_diff'     => $amountDiff,
+            ]);
 
             if ($orderStatus !== 2 || $amount !== $expectedAmount) {
-                Log::warning('Alfabank confirmPayment: status or amount mismatch', [
+                Log::channel($alfabankLogChannel)->warning('Alfabank confirmPayment: status or amount mismatch', [
                     'order_id'         => $order->id,
                     'gateway_order_id' => $gatewayOrderId,
                     'orderStatus'      => $orderStatus,
@@ -188,10 +214,17 @@ class OrderController extends CustomerController
                 }
 
                 DB::commit();
+
+                Log::channel($alfabankLogChannel)->info('Alfabank confirmPayment: success', [
+                    'order_id'          => $order->id,
+                    'gateway_order_id' => $gatewayOrderId,
+                    'invoice_id'       => $invoiceId,
+                    'order_status'     => $orderStatusPaid,
+                ]);
             } catch (\Exception $e) {
                 DB::rollBack();
 
-                Log::error('Alfabank confirmPayment: failed to create invoice or update order', [
+                Log::channel($alfabankLogChannel)->error('Alfabank confirmPayment: failed to create invoice or update order', [
                     'order_id'         => $order->id,
                     'gateway_order_id' => $gatewayOrderId,
                     'exception'        => $e->getMessage(),
