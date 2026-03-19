@@ -178,6 +178,98 @@ class OrderController
 
     /**
      * @OA\Post(
+     *      path="/api/v1/customer/orders/{id}/confirm-payment",
+     *      operationId="confirmCustomerOrderPayment",
+     *      tags={"Orders"},
+     *      summary="Confirm payment for customer's order via Alfabank gateway",
+     *      description="Mobile app sends gateway_order_id (mdOrder) after redirect payment; backend verifies payment on Alfabank side and creates invoice if successful.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Parameter(
+     *          name="id",
+     *          description="Order id (backend order.id)",
+     *          required=true,
+     *          in="path",
+     *
+     *          @OA\Schema(
+     *              type="integer"
+     *          )
+     *      ),
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"gateway_order_id"},
+     *              @OA\Property(
+     *                  property="gateway_order_id",
+     *                  type="string",
+     *                  description="Alfabank gateway order id (mdOrder)",
+     *                  example="00afdd1b-a6ab-75cf-b5f1-fe720257a540"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Payment confirmed and invoice created",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  @OA\Property(
+     *                      property="order",
+     *                      type="object",
+     *                      ref="#/components/schemas/Order"
+     *                  ),
+     *                  @OA\Property(
+     *                      property="invoice_id",
+     *                      type="integer",
+     *                      nullable=true,
+     *                      description="Created invoice id (if any)",
+     *                      example=123
+     *                  )
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Payment has been confirmed."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Payment not confirmed by gateway or invalid order state",
+     *
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Payment was not confirmed by the gateway."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found",
+     *
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Order not found."
+     *              )
+     *          )
+     *      )
+     * )
+     */
+    public function confirmPayment() {}
+
+    /**
+     * @OA\Post(
      *      path="/api/v1/customer/orders/{id}/rate",
      *      operationId="rateCustomerOrder",
      *      tags={"Orders"},

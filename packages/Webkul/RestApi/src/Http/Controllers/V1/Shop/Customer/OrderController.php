@@ -4,16 +4,40 @@ namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderListResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
 use Webkul\RestApi\Services\CustomerOrdersCache;
 use Webkul\Sales\Models\Order;
+use Webkul\Sales\Repositories\InvoiceRepository;
 use Webkul\Sales\Repositories\OrderRepository;
 
 class OrderController extends CustomerController
 {
+    /**
+     * @var \Webkul\Sales\Repositories\InvoiceRepository
+     */
+    protected InvoiceRepository $invoiceRepository;
+
+    /**
+     * @var \Webkul\Sales\Repositories\OrderRepository
+     */
+    protected OrderRepository $orderRepository;
+
+    /**
+     * Create a new controller instance.
+     */
+    public function __construct(
+        OrderRepository $orderRepository,
+        InvoiceRepository $invoiceRepository
+    ) {
+        $this->orderRepository = $orderRepository;
+        $this->invoiceRepository = $invoiceRepository;
+    }
+
     /**
      * Repository class name.
      */
@@ -28,6 +52,211 @@ class OrderController extends CustomerController
     public function resource(): string
     {
         return OrderResource::class;
+    }
+
+    /**
+     * Confirm payment for the specified order using Alfabank gateway.
+     */
+    public function confirmPayment(Request $request, int $id): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'gateway_order_id' => 'required|string',
+        ]);
+
+        $customer = $this->resolveShopUser($request);
+
+        /** @var \Webkul\Sales\Models\Order|null $order */
+        $order = $customer->orders()->with('payment', 'items')->find($id);
+
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        if ($order->payment?->method !== 'alfabank') {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.invalid-payment-method'),
+            ], 422);
+        }
+
+        if (! in_array($order->status, [Order::STATUS_PENDING, Order::STATUS_PENDING_PAYMENT, Order::STATUS_FRAUD, Order::STATUS_CANCELED])) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.invalid-status-for-payment'),
+            ], 422);
+        }
+
+        $gatewayOrderId = $validated['gateway_order_id'];
+
+        try {
+            $alfabankApi = app(\Webkul\AlfabankPayment\Services\AlfabankApiService::class);
+
+            $response = $alfabankApi->getOrderStatus($gatewayOrderId);
+
+            if (isset($response['errorCode']) && $response['errorCode'] !== '0') {
+                Log::warning('Alfabank confirmPayment: gateway returned error', [
+                    'order_id'        => $order->id,
+                    'gateway_order_id'=> $gatewayOrderId,
+                    'errorCode'       => $response['errorCode'] ?? null,
+                    'errorMessage'    => $response['errorMessage'] ?? null,
+                ]);
+
+                $this->storeFailedCheckReason($order, 'gateway_error', $response);
+
+                return response([
+                    'message' => trans('rest-api::app.shop.sales.orders.error.payment-not-confirmed'),
+                ], 422);
+            }
+
+            $orderStatus = $response['orderStatus'] ?? null;
+            $amount = isset($response['amount']) ? (int) $response['amount'] : null;
+            $expectedAmount = (int) round($order->grand_total * 100);
+
+            if ($orderStatus !== 2 || $amount !== $expectedAmount) {
+                Log::warning('Alfabank confirmPayment: status or amount mismatch', [
+                    'order_id'         => $order->id,
+                    'gateway_order_id' => $gatewayOrderId,
+                    'orderStatus'      => $orderStatus,
+                    'amount'           => $amount,
+                    'expected_amount'  => $expectedAmount,
+                ]);
+
+                $this->storeFailedCheckReason($order, 'status_or_amount_mismatch', $response);
+
+                return response([
+                    'message' => trans('rest-api::app.shop.sales.orders.error.payment-not-confirmed'),
+                ], 422);
+            }
+
+            $invoiceId = null;
+
+            DB::beginTransaction();
+
+            try {
+                $invoiceData = [
+                    'order_id' => $order->id,
+                    'invoice'  => [
+                        'items' => [],
+                    ],
+                ];
+
+                foreach ($order->items as $item) {
+                    if ($item->qty_to_invoice > 0) {
+                        $invoiceData['invoice']['items'][$item->id] = $item->qty_to_invoice;
+                    }
+                }
+
+                if (! empty($invoiceData['invoice']['items']) && $this->invoiceRepository->haveProductToInvoice($invoiceData)) {
+                    if (! $this->invoiceRepository->isValidQuantity($invoiceData)) {
+                        throw new \Exception('Invalid invoice quantities for order ' . $order->id);
+                    }
+
+                    $invoice = $this->invoiceRepository->create($invoiceData);
+
+                    $invoiceId = $invoice->id;
+                }
+
+                $orderStatusPaid = core()->getConfigData('sales.payment_methods.alfabank.order_status_paid') ?? Order::STATUS_PROCESSING;
+
+                if ($order->status !== $orderStatusPaid) {
+                    $order->status = $orderStatusPaid;
+                }
+
+                $additional = $order->additional ?? [];
+                $additional['alfabank_order_id'] = $gatewayOrderId;
+
+                if (isset($response['authRefNum'])) {
+                    $additional['transaction_id'] = $response['authRefNum'];
+                }
+
+                unset($additional['alfabank_last_failed_check']);
+
+                $order->additional = $additional;
+
+                $order->save();
+
+                if ($order->payment) {
+                    $paymentAdditional = $order->payment->additional ?? [];
+                    $paymentAdditional['alfabank_order_id'] = $gatewayOrderId;
+
+                    if (isset($response['authRefNum'])) {
+                        $paymentAdditional['transaction_id'] = $response['authRefNum'];
+                    }
+
+                    $order->payment->additional = $paymentAdditional;
+                    $order->payment->save();
+                }
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+
+                Log::error('Alfabank confirmPayment: failed to create invoice or update order', [
+                    'order_id'         => $order->id,
+                    'gateway_order_id' => $gatewayOrderId,
+                    'exception'        => $e->getMessage(),
+                ]);
+
+                return response([
+                    'message' => trans('rest-api::app.shop.sales.orders.error.payment-processing-failed'),
+                ], 500);
+            }
+
+            $order->refresh();
+
+            $resourceClass = $this->resource();
+
+            return response([
+                'data' => [
+                    'order'      => (new $resourceClass($order))->resolve($request),
+                    'invoice_id' => $invoiceId,
+                ],
+                'message' => trans('rest-api::app.shop.sales.orders.payment-confirmed'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Alfabank confirmPayment: exception', [
+                'order_id'         => $order->id ?? null,
+                'gateway_order_id' => $gatewayOrderId ?? null,
+                'exception'        => $e->getMessage(),
+            ]);
+
+            return response([
+                'message' => trans('rest-api::app.shop.errors.report-success'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Store reason of failed payment confirmation check in order additional data.
+     */
+    protected function storeFailedCheckReason(Order $order, string $reasonCode, array $gatewayResponse): void
+    {
+        try {
+            $additional = $order->additional ?? [];
+
+            $additional['alfabank_last_failed_check'] = [
+                'reason'   => $reasonCode,
+                'response' => [
+                    'orderStatus'            => $gatewayResponse['orderStatus'] ?? null,
+                    'actionCode'             => $gatewayResponse['actionCode'] ?? null,
+                    'actionCodeDescription'  => $gatewayResponse['actionCodeDescription'] ?? null,
+                    'amount'                 => $gatewayResponse['amount'] ?? null,
+                    'currency'               => $gatewayResponse['currency'] ?? null,
+                    'errorCode'              => $gatewayResponse['errorCode'] ?? null,
+                    'errorMessage'           => $gatewayResponse['errorMessage'] ?? null,
+                ],
+                'checked_at' => now()->toIso8601String(),
+            ];
+
+            $order->additional = $additional;
+            $order->save();
+        } catch (\Exception $e) {
+            Log::error('Alfabank confirmPayment: failed to store failed check reason', [
+                'order_id'  => $order->id,
+                'reason'    => $reasonCode,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

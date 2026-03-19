@@ -117,6 +117,8 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('{id}/rate', 'rate');
 
         Route::get('reorder/{id}', 'reorder');
+
+        Route::post('{id}/confirm-payment', 'confirmPayment');
     });
 
     /**

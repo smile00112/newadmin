@@ -534,6 +534,8 @@ return [
                 'cancel' => 'Order canceled successfully.',
                 'rate-success' => 'Order rated successfully.',
 
+                'payment-confirmed' => 'Payment has been confirmed.',
+
                 'saved-card' => [
                     'add-success'    => 'Saved card has been added to the order successfully.',
                     'remove-success' => 'Saved card has been removed from the order successfully.',
@@ -551,6 +553,10 @@ return [
                     'cancel-reason-general'           => 'Order cannot be canceled in its current status.',
                     'not-found'                       => 'Order not found.',
                     'reorder-error'                   => 'Order can not be reordered.',
+                    'invalid-payment-method'          => 'Payment confirmation via Alfabank is not available for this order.',
+                    'invalid-status-for-payment'      => 'Payment cannot be confirmed for order in its current status.',
+                    'payment-not-confirmed'           => 'Payment was not confirmed by the gateway.',
+                    'payment-processing-failed'       => 'Failed to process payment confirmation. Please try again later.',
                 ],
             ],
         ],
