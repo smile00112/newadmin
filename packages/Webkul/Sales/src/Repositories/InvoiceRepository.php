@@ -5,6 +5,7 @@ namespace Webkul\Sales\Repositories;
 use Illuminate\Container\Container;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Schema;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\Sales\Generators\InvoiceSequencer;
 
@@ -65,8 +66,19 @@ class InvoiceRepository extends Repository
                 'base_currency_code'    => $order->base_currency_code,
                 'channel_currency_code' => $order->channel_currency_code,
                 'order_currency_code'   => $order->order_currency_code,
-                'order_address_id'      => $order->billing_address->id,
+                // Some orders can miss billing address (e.g., partially filled checkout).
+                // In that case, we should ignore address and create the invoice without order_address_id.
+                // Note: we only add the field when address exists to avoid potential "unknown column" issues.
             ]);
+
+            $billingAddressId = $order->billing_address?->id;
+            if (
+                ! empty($billingAddressId)
+                && Schema::hasColumn($invoice->getTable(), 'order_address_id')
+            ) {
+                $invoice->order_address_id = $billingAddressId;
+                $invoice->save();
+            }
 
             foreach ($data['invoice']['items'] as $itemId => $qty) {
                 if (! $qty) {
