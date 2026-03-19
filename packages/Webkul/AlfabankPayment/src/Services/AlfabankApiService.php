@@ -37,6 +37,11 @@ class AlfabankApiService
     protected bool $testMode;
 
     /**
+     * AlfaPay base url override (optional).
+     */
+    protected string $alfaPayBaseUrl = '';
+
+    /**
      * Stage mode: 'one-stage' or 'two-stage'.
      */
     protected string $stageMode;
@@ -51,6 +56,7 @@ class AlfabankApiService
         $this->token = core()->getConfigData('sales.payment_methods.alfabank.token');
         $this->testMode = (bool) core()->getConfigData('sales.payment_methods.alfabank.test_mode');
         $this->stageMode = core()->getConfigData('sales.payment_methods.alfabank.stage_mode') ?? 'one-stage';
+        $this->alfaPayBaseUrl = core()->getConfigData('sales.payment_methods.alfabank.alfa_pay_base_url') ?? '';
     }
 
     /**
@@ -58,6 +64,13 @@ class AlfabankApiService
      */
     protected function getBaseUrl(): string
     {
+        $configuredBaseUrl = trim($this->alfaPayBaseUrl);
+
+        // If user provided base url in admin settings, prefer it.
+        if ($configuredBaseUrl !== '') {
+            return rtrim($configuredBaseUrl, '/') . '/';
+        }
+
         return $this->testMode ? $this->testUrl : $this->prodUrl;
     }
 

@@ -15,10 +15,38 @@ class AlfabankSettingsController extends CustomerController
     {
         $this->resolveShopUser($request);
 
-        $settings = $this->getSettingsFromCoreConfig();
+        $getValue = function (string $key, string $default = ''): string {
+            $code = 'sales.payment_methods.alfabank.' . $key;
+
+            $record = CoreConfig::where('code', $code)
+                ->whereNull('channel_code')
+                ->whereNull('locale_code')
+                ->first();
+
+            return $record !== null
+                ? (string) $record->value
+                : $default;
+        };
+
+        $testMode = $getValue('test_mode', '1');
+        $alfaPayBaseUrl = trim($getValue('alfa_pay_base_url', ''));
+
+        // If base url is not configured, fallback to module defaults by test_mode.
+        if ($alfaPayBaseUrl === '') {
+            $alfaPayBaseUrl = ((string) $testMode === '1')
+                ? (string) config('alfabank-payment.test_url')
+                : (string) config('alfabank-payment.prod_url');
+        }
 
         return response([
-            'data' => $settings,
+            'data' => [
+                'ALFA_PAY_BASE_URL'    => $alfaPayBaseUrl,
+                'GATEWAY_USERNAME'     => $getValue('merchant'),
+                'GATEWAY_PASSWORD'     => $getValue('password'),
+                'GATEWAY_CLIENT_ID'   => $getValue('token'),
+                'GATEWAY_RETURN_URL'  => $getValue('success_url'),
+                'GATEWAY_FAIL_URL'    => $getValue('fail_url'),
+            ],
         ]);
     }
 

@@ -97,15 +97,29 @@
 
                                 <x-admin::form.control-group>
                                     <x-admin::form.control-group.label>
-                                        Токен (альтернатива логину/паролю)
+                                        GATEWAY_CLIENT_ID
                                     </x-admin::form.control-group.label>
                                     <x-admin::form.control-group.control
                                         type="text"
                                         name="token"
                                         v-model="token"
-                                        :label="'Токен'"
+                                        :label="'GATEWAY_CLIENT_ID'"
                                     />
                                     <x-admin::form.control-group.error control-name="token" />
+                                </x-admin::form.control-group>
+
+                                <x-admin::form.control-group>
+                                    <x-admin::form.control-group.label>
+                                        ALFA_PAY_BASE_URL
+                                    </x-admin::form.control-group.label>
+                                    <x-admin::form.control-group.control
+                                        type="text"
+                                        name="alfa_pay_base_url"
+                                        v-model="alfa_pay_base_url"
+                                        :label="'ALFA_PAY_BASE_URL'"
+                                        :placeholder="'Напр.: https://pay.alfabank.ru/payment/rest/'"
+                                    />
+                                    <x-admin::form.control-group.error control-name="alfa_pay_base_url" />
                                 </x-admin::form.control-group>
 
                                 <x-admin::form.control-group>
@@ -452,6 +466,7 @@
                         merchant: @json($settings['merchant'] ?? ''),
                         password: @json($settings['password'] ?? ''),
                         token: @json($settings['token'] ?? ''),
+                        alfa_pay_base_url: @json($settings['alfa_pay_base_url'] ?? ''),
                         test_mode: @json($settings['test_mode'] ?? '1') === '1',
                         stage_mode: @json($settings['stage_mode'] ?? 'one-stage'),
                         order_status_paid: @json($settings['order_status_paid'] ?? 'processing'),
@@ -483,6 +498,7 @@
                             merchant: this.merchant,
                             password: this.password,
                             token: this.token,
+                            alfa_pay_base_url: this.alfa_pay_base_url || '',
                             test_mode: !this.test_mode ? '1' : '0',
                             stage_mode: this.stage_mode,
                             order_status_paid: this.order_status_paid,
