@@ -211,6 +211,10 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::delete('coupon', 'removeCoupon');
 
         Route::get('cross-sell', 'crossSellProducts');
+
+        Route::post('bind-table', 'bindTable');
+
+        Route::delete('bind-table', 'unbindTable');
     });
 
     /**

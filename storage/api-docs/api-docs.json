@@ -4319,6 +4319,98 @@
                 ]
             }
         },
+        "/api/v1/customer/cart/bind-table": {
+            "post": {
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Bind table number to cart",
+                "description": "Bind table number to the current customer's cart. Requires authenticated customer with active cart.",
+                "operationId": "bindCartTable",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "table_number"
+                                ],
+                                "properties": {
+                                    "table_number": {
+                                        "description": "Table number to bind to the cart",
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": 1,
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number bound to cart successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Cart"
+                ],
+                "summary": "Unbind table number from cart",
+                "description": "Unbind table number from the current customer's cart. Requires authenticated customer with active cart.",
+                "operationId": "unbindCartTable",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number unbound from cart successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/checkout/bonus/auto-apply": {
             "post": {
                 "tags": [

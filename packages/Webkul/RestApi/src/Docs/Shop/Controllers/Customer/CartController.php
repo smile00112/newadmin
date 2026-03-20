@@ -857,6 +857,79 @@ class CartController
     public function removeCoupon() {}
 
     /**
+     * @OA\Post(
+     *      path="/api/v1/customer/cart/bind-table",
+     *      operationId="bindCartTable",
+     *      tags={"Cart"},
+     *      summary="Bind table number to cart",
+     *      description="Bind table number to the current customer's cart. Requires authenticated customer with active cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"table_number"},
+     *              @OA\Property(
+     *                  property="table_number",
+     *                  type="integer",
+     *                  format="int32",
+     *                  minimum=1,
+     *                  description="Table number to bind to the cart",
+     *                  example=5
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number bound to cart successfully."
+     *              )
+     *          )
+     *      )
+     * )
+     */
+    public function bindTable() {}
+
+    /**
+     * @OA\Delete(
+     *      path="/api/v1/customer/cart/bind-table",
+     *      operationId="unbindCartTable",
+     *      tags={"Cart"},
+     *      summary="Unbind table number from cart",
+     *      description="Unbind table number from the current customer's cart. Requires authenticated customer with active cart.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Cart"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number unbound from cart successfully."
+     *              )
+     *          )
+     *      )
+     * )
+     */
+    public function unbindTable() {}
+
+    /**
      * @OA\Get(
      *      path="/api/v1/customer/cart/cross-sell",
      *      operationId="getCartCrossSellProducts",
