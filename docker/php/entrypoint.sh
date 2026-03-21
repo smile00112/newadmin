@@ -40,6 +40,9 @@ chmod -R 755 /var/www/html
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
 
+# Создание symlink storage -> public/storage
+run_artisan_optional storage:link
+
 # Оптимизация Laravel для production
 if [ "$APP_ENV" = "production" ]; then
     echo "Optimizing Laravel for production..."
