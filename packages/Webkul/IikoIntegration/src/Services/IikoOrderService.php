@@ -47,6 +47,21 @@ class IikoOrderService
                 return true;
             }
 
+            $organizationId = $this->getOrganizationId($order, $channelCode);
+            $terminalGroupId = $this->getTerminalGroupId($order, $channelCode);
+
+            if (!$organizationId || !$terminalGroupId) {
+                Log::error('iiko: Cannot sync order — missing organization_id or terminal_group_id', [
+                    'order_id'          => $order->id,
+                    'channel_code'      => $channelCode,
+                    'organization_id'   => $organizationId,
+                    'terminal_group_id' => $terminalGroupId,
+                    'hint'              => 'Configure inventory source iiko_organization_id and iiko_terminal_id, or iiko channel settings / IIKO_ORGANIZATION_ID and IIKO_TERMINAL_GROUP_ID in .env',
+                ]);
+
+                return false;
+            }
+
             // Prepare order data for iiko
             $orderData = $this->prepareOrderData($order, $channelCode);
 
@@ -152,7 +167,7 @@ class IikoOrderService
 
                 return false;
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('iiko: Exception while syncing order', [
                 'order_id' => $order->id,
                 'message'  => $e->getMessage(),
@@ -343,7 +358,9 @@ class IikoOrderService
         // Payment (spec: PaymentRequest)
         $payments = [];
         if ($order->payment) {
-            $paymentTypeId = $this->getPaymentTypeId($order->payment->method, $organizationId);
+            $paymentTypeId = ($organizationId !== null && $organizationId !== '')
+                ? $this->getPaymentTypeId($order->payment->method, $organizationId)
+                : null;
             $paymentKind = $this->mapPaymentMethod($order->payment->method);
 
             $paymentData = [
@@ -441,8 +458,16 @@ class IikoOrderService
     /**
      * Get payment type ID from iiko by payment method code.
      */
-    protected function getPaymentTypeId(string $paymentMethodCode, string $organizationId): ?string
+    protected function getPaymentTypeId(string $paymentMethodCode, ?string $organizationId): ?string
     {
+        if ($organizationId === null || $organizationId === '') {
+            Log::warning('iiko: Cannot resolve payment type — organization_id is empty', [
+                'payment_method_code' => $paymentMethodCode,
+            ]);
+
+            return null;
+        }
+
         try {
             $paymentType = $this->paymentTypeRepository->findWhere([
                 'organization_id'      => $organizationId,
@@ -460,7 +485,7 @@ class IikoOrderService
             ]);
 
             return null;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('iiko: Exception getting payment type ID', [
                 'payment_method_code' => $paymentMethodCode,
                 'organization_id'    => $organizationId,
@@ -514,7 +539,7 @@ class IikoOrderService
             }
 
             return false;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('iiko: Exception while cancelling order', [
                 'order_id' => $order->id,
                 'message'  => $e->getMessage(),

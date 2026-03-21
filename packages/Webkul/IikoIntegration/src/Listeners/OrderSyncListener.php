@@ -26,8 +26,8 @@ class OrderSyncListener
         // Sync order to iiko asynchronously or synchronously
         // For now, we'll do it synchronously, but can be queued later
         try {
-            $this->orderService->syncOrderToIiko($order);
-        } catch (\Exception $e) {
+            $this->orderService->syncOrderToIiko($order, $order->channel?->code);
+        } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('iiko: Failed to sync order on create', [
                 'order_id' => $order->id,
                 'message'  => $e->getMessage(),
@@ -45,8 +45,8 @@ class OrderSyncListener
         }
 
         try {
-            $this->orderService->cancelOrderInIiko($order);
-        } catch (\Exception $e) {
+            $this->orderService->cancelOrderInIiko($order, null, $order->channel?->code);
+        } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('iiko: Failed to cancel order', [
                 'order_id' => $order->id,
                 'message'  => $e->getMessage(),
@@ -64,8 +64,8 @@ class OrderSyncListener
         }
 
         try {
-            $this->orderService->updateOrderStatus($order, $order->status);
-        } catch (\Exception $e) {
+            $this->orderService->updateOrderStatus($order, $order->status, $order->channel?->code);
+        } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('iiko: Failed to update order status', [
                 'order_id' => $order->id,
                 'message'  => $e->getMessage(),
