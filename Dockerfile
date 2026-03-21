@@ -12,6 +12,7 @@ RUN apk add --no-cache \
     libxml2-dev \
     freetype-dev \
     libjpeg-turbo-dev \
+    libwebp-dev \
     unzip \
     bash \
     supervisor \
@@ -25,7 +26,7 @@ RUN apk add --no-cache \
     npm
 
 # Установка PHP расширений
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) \
     pdo \
     pdo_mysql \
