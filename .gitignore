@@ -40,3 +40,4 @@ yarn-error.log
 /storage/app/public/product
 /public/build/assets
 /tmp/*
+/test

@@ -118,7 +118,7 @@ if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
 fi
 
 # SSL-сертификат: проверка / первичная генерация
-DOMAIN="${DOMAIN:-sunrise-n.softnova.ru}"
+DOMAIN="${DOMAIN:-surprise.softnova.ru}"
 SSL_CERT_DIR="docker/nginx/ssl/live/${DOMAIN}"
 
 if [ ! -f "${SSL_CERT_DIR}/fullchain.pem" ]; then
