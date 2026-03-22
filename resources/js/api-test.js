@@ -3,11 +3,19 @@
  * Выполняет последовательность из 15 API запросов с измерением времени
  */
 
-// Импортируем axios из bootstrap
-import './bootstrap';
+import axios from 'axios';
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+window.axios = axios;
+window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+window.Pusher = Pusher;
 
 // Конфигурация
 const TEST_CODE = '1234';
+
+/** Echo только для страницы теста (с Bearer для private-каналов); не тянем bootstrap → echo.js */
+let ordersEcho = null;
 
 /**
  * Получает базовый URL API из поля ввода
@@ -21,6 +29,79 @@ function getApiBaseUrl() {
     // Убираем завершающий слэш если есть
     return url.endsWith('/') ? url.slice(0, -1) : url;
 }
+
+function resolveBroadcastingAuthUrl() {
+    const base = getApiBaseUrl().replace(/\/$/, '');
+    if (/^https?:\/\//i.test(base)) {
+        return `${base}/broadcasting/auth`;
+    }
+    const path = base.startsWith('/') ? base : `/${base}`;
+    return `${window.location.origin}${path}/broadcasting/auth`;
+}
+
+function createOrdersEcho(token) {
+    return new Echo({
+        broadcaster: 'reverb',
+        key: import.meta.env.VITE_REVERB_APP_KEY,
+        wsHost: import.meta.env.VITE_REVERB_HOST,
+        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
+        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'https') === 'https',
+        enabledTransports: ['ws', 'wss'],
+        authEndpoint: resolveBroadcastingAuthUrl(),
+        auth: {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+            },
+        },
+    });
+}
+
+function disconnectOrdersEcho() {
+    if (ordersEcho) {
+        try {
+            ordersEcho.disconnect();
+        } catch (e) {
+            console.warn('[WS] Echo disconnect:', e);
+        }
+        ordersEcho = null;
+    }
+}
+
+function subscribeCustomerOrders() {
+    const customerIdInput = document.getElementById('ws_customer_id');
+    const raw = customerIdInput ? customerIdInput.value.trim() : '15';
+    const customerId = parseInt(raw, 10);
+
+    if (!authToken) {
+        alert('Сначала получите токен (пройдите шаги 1–2 авторизации).');
+        return;
+    }
+    if (!Number.isFinite(customerId) || customerId < 1) {
+        alert('Укажите корректный ID клиента.');
+        return;
+    }
+
+    disconnectOrdersEcho();
+    ordersEcho = createOrdersEcho(authToken);
+    const channelName = `customer.${customerId}.orders`;
+
+    ordersEcho
+        .private(channelName)
+        .subscribed(() => {
+            console.log('[WS] Подписка:', `private-${channelName}`);
+        })
+        .error((error) => {
+            console.error('[WS] Ошибка канала:', error);
+        })
+        .listen('.update-notification', (e) => {
+            console.log('[WS] update-notification:', e);
+        });
+}
+
+window.subscribeCustomerOrders = subscribeCustomerOrders;
+window.disconnectOrdersEcho = disconnectOrdersEcho;
 
 /**
  * Получает список товаров из поля ввода
@@ -691,5 +772,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (stopBtn) {
         stopBtn.addEventListener('click', stopTesting);
+    }
+
+    const wsSubscribeBtn = document.getElementById('wsSubscribeBtn');
+    const wsUnsubscribeBtn = document.getElementById('wsUnsubscribeBtn');
+    if (wsSubscribeBtn) {
+        wsSubscribeBtn.addEventListener('click', () => subscribeCustomerOrders());
+    }
+    if (wsUnsubscribeBtn) {
+        wsUnsubscribeBtn.addEventListener('click', () => {
+            disconnectOrdersEcho();
+            console.log('[WS] Отписка (Echo.disconnect)');
+        });
     }
 });

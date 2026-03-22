@@ -23,7 +23,7 @@ class NomenclatureController extends CatalogController
     /**
      * Cache TTL in seconds (10 minutes - nomenclature may change).
      */
-    protected int $cacheTtl = 600;
+    protected int $cacheTtl = 3600;
 
     /**
      * Is resource authorized.
