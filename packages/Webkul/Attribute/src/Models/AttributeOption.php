@@ -50,7 +50,7 @@ class AttributeOption extends TranslatableModel implements AttributeOptionContra
             $this->swatch_value
             && $this->attribute->swatch_type == 'image'
         ) {
-            return url('cache/small/'.$this->swatch_value);
+            return cache_image_url($this->swatch_value, 'small');
         }
 
         return null;

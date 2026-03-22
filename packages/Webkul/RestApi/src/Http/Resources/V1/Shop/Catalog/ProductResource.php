@@ -534,9 +534,9 @@ class ProductResource extends JsonResource
             'path'               => $categoryImagePath,
             'url'                => Storage::url($categoryImagePath),
             'original_image_url' => Storage::url($categoryImagePath),
-            'small_image_url'    => url('cache/small/'.$categoryImagePath),
-            'medium_image_url'   => url('cache/medium/'.$categoryImagePath),
-            'large_image_url'    => url('cache/large/'.$categoryImagePath),
+            'small_image_url'    => cache_image_url($categoryImagePath, 'small'),
+            'medium_image_url'   => cache_image_url($categoryImagePath, 'medium'),
+            'large_image_url'    => cache_image_url($categoryImagePath, 'large'),
         ];
     }
 

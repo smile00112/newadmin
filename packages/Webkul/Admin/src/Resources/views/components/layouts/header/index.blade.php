@@ -121,7 +121,7 @@
 
                 <div class="flex items-center gap-2 border-b border-gray-100 px-5 py-3 dark:border-gray-800">
                     <img
-                        src="{{ url('cache/logo/bagisto.png') }}"
+                        src="{{ cache_image_url('bagisto.png', 'logo') }}"
                         class="h-5 w-5"
                         width="20"
                         height="20"

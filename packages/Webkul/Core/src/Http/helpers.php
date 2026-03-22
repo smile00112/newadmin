@@ -53,6 +53,20 @@ if (! function_exists('system_config')) {
     }
 }
 
+if (! function_exists('cache_image_url')) {
+    /**
+     * Absolute URL for image-cache paths (Intervention / public/cache).
+     * Uses config app.url so links stay correct behind proxies and in CLI.
+     */
+    function cache_image_url(string $path, string $size): string
+    {
+        $path = ltrim($path, '/');
+        $size = trim($size, '/');
+
+        return rtrim((string) config('app.url'), '/').'/cache/'.$size.'/'.$path;
+    }
+}
+
 if (! function_exists('clean_path')) {
     /**
      * Clean path.

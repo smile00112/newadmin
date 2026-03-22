@@ -130,10 +130,10 @@ class ProductImage
         }
 
         return [
-            'small_image_url'    => url('cache/small/'.$path),
-            'medium_image_url'   => url('cache/medium/'.$path),
-            'large_image_url'    => url('cache/large/'.$path),
-            'original_image_url' => url('cache/original/'.$path),
+            'small_image_url'    => cache_image_url($path, 'small'),
+            'medium_image_url'   => cache_image_url($path, 'medium'),
+            'large_image_url'    => cache_image_url($path, 'large'),
+            'original_image_url' => cache_image_url($path, 'original'),
         ];
     }
 
