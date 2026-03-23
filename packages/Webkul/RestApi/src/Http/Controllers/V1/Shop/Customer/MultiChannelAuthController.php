@@ -356,6 +356,7 @@ class MultiChannelAuthController extends ShopController
             $tokenName,
             $abilities,
             null,
+            $token,
             $request
         );
 
@@ -487,6 +488,7 @@ class MultiChannelAuthController extends ShopController
             $tokenName,
             $abilities,
             null,
+            $token,
             $request
         );
 

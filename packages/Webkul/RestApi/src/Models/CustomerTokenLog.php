@@ -23,6 +23,7 @@ class CustomerTokenLog extends Model
     protected $fillable = [
         'customer_id',
         'token_name',
+        'token',
         'abilities',
         'issued_at',
         'expires_at',

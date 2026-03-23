@@ -98,6 +98,7 @@ class AuthController extends CustomerController
                 $tokenName,
                 $abilities,
                 null,
+                $plainTextToken,
                 $request
             );
 

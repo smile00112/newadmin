@@ -16,6 +16,7 @@ class CustomerTokenLogService
         ?string $tokenName,
         array $abilities,
         ?\DateTimeInterface $expiresAt,
+        ?string $plainTextToken = null,
         ?Request $request = null
     ): CustomerTokenLog {
         $request ??= request();
@@ -23,6 +24,7 @@ class CustomerTokenLogService
         return CustomerTokenLog::create([
             'customer_id' => $customer->id,
             'token_name'  => $tokenName,
+            'token'       => $plainTextToken,
             'abilities'   => json_encode($abilities),
             'issued_at'   => now(),
             'expires_at'  => $expiresAt,

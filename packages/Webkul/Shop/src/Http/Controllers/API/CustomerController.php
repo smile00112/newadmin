@@ -174,6 +174,7 @@ class CustomerController extends APIController
             $tokenName,
             $abilities,
             $expiresAt,
+            $token,
             $request
         );
 
@@ -255,6 +256,7 @@ class CustomerController extends APIController
             $tokenName,
             $abilities,
             $expiresAt,
+            $token,
             $request
         );
 

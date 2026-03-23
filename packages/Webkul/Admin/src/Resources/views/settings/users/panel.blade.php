@@ -161,6 +161,7 @@
                                                         <tr style="text-align:left; border-bottom:1px solid #e5e7eb;">
                                                             <th style="padding:4px 6px; white-space:nowrap;">Дата</th>
                                                             <th style="padding:4px 6px; white-space:nowrap;">Имя</th>
+                                                            <th style="padding:4px 6px; white-space:nowrap;">Токен</th>
                                                             <th style="padding:4px 6px; white-space:nowrap;">IP</th>
                                                         </tr>
                                                     </thead>
@@ -168,6 +169,7 @@
                                                         <tr v-for="log in tokenLogs" :key="log.id" style="border-bottom:1px solid #f3f4f6;">
                                                             <td style="padding:4px 6px; white-space:nowrap;">@{{ formatDate(log.issued_at || log.created_at) }}</td>
                                                             <td style="padding:4px 6px; white-space:nowrap;">@{{ log.token_name || '—' }}</td>
+                                                            <td style="padding:4px 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; max-width:280px; word-break: break-all;">@{{ log.token || '—' }}</td>
                                                             <td style="padding:4px 6px; white-space:nowrap;">@{{ log.ip_address || '—' }}</td>
                                                         </tr>
                                                     </tbody>
