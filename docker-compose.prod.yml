@@ -54,6 +54,10 @@ services:
       - LOG_CHANNEL=${LOG_CHANNEL:-stack}
       - LOG_LEVEL=${LOG_LEVEL:-warning}
       - RESPONSE_CACHE_ENABLED=${RESPONSE_CACHE_ENABLED:-true}
+      - LOG_DEPRECATIONS_CHANNEL=${LOG_DEPRECATIONS_CHANNEL:-null}
+      - DB_CONNECTION=mysql
+      - TELESCOPE_ENABLED=${TELESCOPE_ENABLED:-false}
+      
     networks:
       - app-network
     depends_on:
