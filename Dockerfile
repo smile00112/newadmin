@@ -70,6 +70,16 @@ RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --pr
 
 COPY . .
 
+RUN set -eux; \
+    npm ci || npm install; \
+    npm run build; \
+    if [ -f packages/Webkul/Shop/package-lock.json ]; then npm --prefix packages/Webkul/Shop ci; else npm --prefix packages/Webkul/Shop install; fi; \
+    if [ -f packages/Webkul/Admin/package-lock.json ]; then npm --prefix packages/Webkul/Admin ci; else npm --prefix packages/Webkul/Admin install; fi; \
+    if [ -f packages/Webkul/Installer/package-lock.json ]; then npm --prefix packages/Webkul/Installer ci; else npm --prefix packages/Webkul/Installer install; fi; \
+    npm --prefix packages/Webkul/Shop run build; \
+    npm --prefix packages/Webkul/Admin run build; \
+    npm --prefix packages/Webkul/Installer run build
+
 RUN composer dump-autoload --optimize --no-dev
 
 COPY docker/php/php.ini /usr/local/etc/php/php.ini

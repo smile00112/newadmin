@@ -83,12 +83,8 @@ docker compose -f docker-compose.prod.yml up -d --force-recreate app
 info "Ожидание готовности нового контейнера..."
 sleep 10
 
-# Сборка фронтенда (если есть package.json)
-if [ -f package.json ]; then
-    info "Установка NPM-зависимостей и сборка фронтенда..."
-    docker compose -f docker-compose.prod.yml exec -T app npm ci 2>/dev/null || docker compose -f docker-compose.prod.yml exec -T app npm install
-    docker compose -f docker-compose.prod.yml exec -T app npm run build
-fi
+# Vite ассеты собираются на этапе docker build в Dockerfile
+info "Пропуск runtime-сборки фронтенда (Vite собирается в Dockerfile)..."
 
 # Миграции в работающем новом контейнере
 info "Запуск миграций базы данных..."
