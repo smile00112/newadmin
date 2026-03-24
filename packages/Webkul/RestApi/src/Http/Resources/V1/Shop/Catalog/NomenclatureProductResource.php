@@ -22,6 +22,8 @@ class NomenclatureProductResource extends JsonResource
         $productTypeInstance = $product->getTypeInstance();
         $minimalPrice = $productTypeInstance->getMinimalPrice();
         $hasDiscount = $productTypeInstance->haveDiscount();
+        $baseImage = ProductImage::getProductBaseImage($product);
+        $categoryImage = $this->getCategoryImage($product) ?? $baseImage;
 
         $filteredSuperAttributes = $productTypeInstance->isComposite()
             ? $this->getFilteredSuperAttributes($product)
@@ -39,8 +41,8 @@ class NomenclatureProductResource extends JsonResource
                 'description'        => $this->cleanHtmlDescription($product->description),
                 'images'             => ProductImageResource::collection($product->images ?? collect()),
                 'videos'             => ProductVideoResource::collection($product->videos ?? collect()),
-                'base_image'         => ProductImage::getProductBaseImage($product),
-                'category_image'     => $this->getCategoryImage($product),
+                'base_image'         => $baseImage,
+                'category_image'     => $categoryImage,
                 'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
                 'is_half_portion'            => (bool) ($product->is_half_portion ?? false),
                 'half_portion_pair_product_id' => $product->half_portion_pair_product_id,

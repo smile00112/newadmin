@@ -22,6 +22,8 @@ class NomenclatureIngredientResource extends JsonResource
         $product = $this->product ?? $this;
         $productTypeInstance = $product->getTypeInstance();
         $minimalPrice = $productTypeInstance->getMinimalPrice();
+        $baseImage = ProductImage::getProductBaseImage($product);
+        $categoryImage = $this->getCategoryImage($product) ?? $baseImage;
 
         return [
             'id'                 => $product->id,
@@ -32,8 +34,8 @@ class NomenclatureIngredientResource extends JsonResource
             'short_description'  => $this->cleanHtmlDescription($product->short_description),
             'description'        => $this->cleanHtmlDescription($product->description),
             'images'             => ProductImageResource::collection($product->images ?? collect()),
-            'base_image'         => ProductImage::getProductBaseImage($product),
-            'category_image'     => $this->getCategoryImage($product),
+            'base_image'         => $baseImage,
+            'category_image'     => $categoryImage,
             'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
             'in_stock'           => $product->haveSufficientQuantity(1),
             'videos'             => ProductVideoResource::collection($product->videos ?? collect()),
