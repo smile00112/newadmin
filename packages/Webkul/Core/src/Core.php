@@ -895,7 +895,8 @@ class Core
             ?: config('mail.from.name'));
 
         $adminEmail = $this->getConfigData('emails.configure.email_settings.admin_email')
-            ?: config('mail.admin.address');
+            ?: (config('mail.admin.address')
+            ?: config('mail.from.address'));
 
         return [
             'name'  => $adminName,

@@ -22,11 +22,13 @@ class CreatedNotification extends Mailable
      */
     public function envelope(): Envelope
     {
+        $adminEmailDetails = core()->getAdminEmailDetails();
+
         return new Envelope(
             to: [
                 new Address(
-                    core()->getAdminEmailDetails()['email'],
-                    core()->getAdminEmailDetails()['name']
+                    $adminEmailDetails['email'] ?: config('mail.from.address'),
+                    $adminEmailDetails['name'] ?: config('mail.from.name')
                 ),
             ],
             subject: trans('admin::app.emails.orders.created.subject'),

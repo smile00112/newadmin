@@ -191,6 +191,13 @@ services:
       - APP_ENV=${APP_ENV:-production}
       - APP_KEY=${APP_KEY}
       - APP_DEBUG=${APP_DEBUG:-false}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - TELESCOPE_ENABLED=false
       - REVERB_APP_ID=${REVERB_APP_ID:-my-app-id}
       - REVERB_APP_KEY=${REVERB_APP_KEY:-my-app-key}
       - REVERB_APP_SECRET=${REVERB_APP_SECRET:-my-app-secret}
