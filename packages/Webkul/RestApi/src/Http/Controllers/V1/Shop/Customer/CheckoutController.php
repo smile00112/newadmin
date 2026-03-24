@@ -334,12 +334,6 @@ class CheckoutController extends CustomerController
 
             $cart = Cart::getCart();
 
-            if (! $cart?->customer_id || ! $cart?->customer?->phone) {
-                return response()->json([
-                    'message' => 'Attach customer phone before placing the order.',
-                ], 422);
-            }
-
             $paymentMethod = $cart->payment->method ?? null;
             $redirectUrl = ($paymentMethod === 'alfabank') ? null : Payment::getRedirectUrl($cart);
 
