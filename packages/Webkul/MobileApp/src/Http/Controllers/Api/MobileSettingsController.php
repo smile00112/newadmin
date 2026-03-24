@@ -329,7 +329,22 @@ class MobileSettingsController extends Controller
                 ->take(core()->getConfigData('catalog.products.cart_view_page.no_of_cross_sells_products'))
                 ->get();
 
-            return ProductResource::collection($products)->resolve();
+            $crossSellProducts = ProductResource::collection($products)->resolve();
+
+            return collect($crossSellProducts)
+                ->map(function ($product) {
+                    if (! is_array($product)) {
+                        return $product;
+                    }
+
+                    if (empty($product['category_image']) && ! empty($product['base_image'])) {
+                        $product['category_image'] = $product['base_image'];
+                    }
+
+                    return $product;
+                })
+                ->values()
+                ->all();
         }
 
         // Если отдельный список не включен, возвращаем пустой массив
