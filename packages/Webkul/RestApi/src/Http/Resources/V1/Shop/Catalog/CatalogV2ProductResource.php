@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Webkul\Product\Facades\ProductImage;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\Concerns\ProductResourceFields;
 
 class CatalogV2ProductResource extends JsonResource
@@ -19,6 +20,7 @@ class CatalogV2ProductResource extends JsonResource
     {
         $product = $this->product ?? $this;
         $productTypeInstance = $product->getTypeInstance();
+        $categoryImage = $this->getCategoryImage($product) ?? ProductImage::getProductBaseImage($product);
 
         return [
             'id'                      => $product->id,
@@ -29,7 +31,7 @@ class CatalogV2ProductResource extends JsonResource
             'formatted_price'         => core()->currency($productTypeInstance->getMinimalPrice()),
             'short_description'       => $this->cleanHtmlDescription($product->short_description),
             'description'             => $this->cleanHtmlDescription($product->description),
-            'category_image'          => $this->getCategoryImage($product),
+            'category_image'          => $categoryImage,
             'videos'                  => ProductVideoResource::collection($product->videos),
             'show_as_big_in_category' => (bool) ($product->show_as_big_in_category ?? false),
             'in_stock'                => $product->haveSufficientQuantity(1),
