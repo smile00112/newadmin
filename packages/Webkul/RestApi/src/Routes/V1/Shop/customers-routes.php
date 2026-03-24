@@ -30,6 +30,8 @@ Route::controller(AuthController::class)->prefix('customer')->group(function () 
     Route::post('register', 'register');
 
     Route::post('forgot-password', 'forgotPassword');
+
+    Route::post('guest/token', 'guestToken');
 });
 
 /**
@@ -221,6 +223,8 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
      * Customer checkout routes.
      */
     Route::controller(CheckoutController::class)->prefix('customer/checkout')->group(function () {
+        Route::post('set-phone', 'setPhone');
+
         Route::post('save-address', 'saveAddress');
 
         Route::post('save-shipping', 'saveShipping');

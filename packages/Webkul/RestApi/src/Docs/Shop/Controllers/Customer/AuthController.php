@@ -161,6 +161,49 @@ class AuthController
 
     /**
      * @OA\Post(
+     *      path="/api/v1/customer/guest/token",
+     *      operationId="guestCustomerToken",
+     *      tags={"Customers"},
+     *      summary="Issue guest customer token",
+     *      description="Creates or finds guest customer by guest_uid and returns Sanctum token for checkout flow.",
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"guest_uid"},
+     *              @OA\Property(
+     *                  property="guest_uid",
+     *                  type="string",
+     *                  example="device-9f3c8a11"
+     *              ),
+     *              @OA\Property(
+     *                  property="device_name",
+     *                  type="string",
+     *                  example="android"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Token issued",
+     *          @OA\JsonContent(
+     *              @OA\Property(property="message", type="string", example="Guest token issued successfully."),
+     *              @OA\Property(property="token", type="string", example="1|sanctum-token"),
+     *              @OA\Property(property="data", type="object", ref="#/components/schemas/Customer")
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
+     * )
+     */
+    public function guestToken() {}
+
+    /**
+     * @OA\Post(
      *      path="/api/v1/customer/forgot-password",
      *      operationId="customerForgotPassword",
      *      tags={"Customers"},

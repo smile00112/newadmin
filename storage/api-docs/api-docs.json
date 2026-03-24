@@ -2733,7 +2733,7 @@
                     "Customers"
                 ],
                 "summary": "Get Alfabank payment settings",
-                "description": "Returns full Alfabank payment method configuration for the current sales channel as stored in core_config under sales.payment_methods.alfabank.*. Endpoint is protected by customer sanctum token.",
+                "description": "Returns only required Alfabank payment settings for the customer, taken from core_config under sales.payment_methods.alfabank.*.",
                 "operationId": "getCustomerAlfabankSettings",
                 "responses": {
                     "200": {
@@ -2744,120 +2744,37 @@
                                     "properties": {
                                         "data": {
                                             "properties": {
-                                                "active": {
-                                                    "description": "Whether the payment method is active (1 or 0).",
+                                                "ALFA_PAY_BASE_URL": {
+                                                    "description": "Base URL AlfaPay API (override from `alfa_pay_base_url`, fallback by test_mode).",
                                                     "type": "string",
-                                                    "example": "1"
+                                                    "example": "https://pay.alfabank.ru/payment/rest/"
                                                 },
-                                                "title": {
-                                                    "description": "Localized title of the payment method.",
-                                                    "type": "string",
-                                                    "example": "Альфа-Банк"
-                                                },
-                                                "description": {
-                                                    "description": "Localized description of the payment method.",
-                                                    "type": "string",
-                                                    "example": "Оплата картой через Альфа-Банк",
-                                                    "nullable": true
-                                                },
-                                                "merchant": {
+                                                "GATEWAY_USERNAME": {
                                                     "description": "Alfabank merchant identifier.",
                                                     "type": "string",
                                                     "example": "1234567890"
                                                 },
-                                                "password": {
-                                                    "description": "Technical password for Alfabank merchant.",
+                                                "GATEWAY_PASSWORD": {
+                                                    "description": "Alfabank technical password.",
                                                     "type": "string",
                                                     "example": "secret-password"
                                                 },
-                                                "token": {
-                                                    "description": "Token for Alfabank merchant.",
+                                                "GATEWAY_CLIENT_ID": {
+                                                    "description": "Alfabank token / client id.",
                                                     "type": "string",
                                                     "example": "secret-token"
                                                 },
-                                                "test_mode": {
-                                                    "description": "Flag indicating test mode (1 or 0).",
+                                                "GATEWAY_RETURN_URL": {
+                                                    "description": "Return URL after successful payment.",
                                                     "type": "string",
-                                                    "example": "1"
-                                                },
-                                                "stage_mode": {
-                                                    "description": "Stage mode for payments (one-stage or two-stage).",
-                                                    "type": "string",
-                                                    "example": "one-stage"
-                                                },
-                                                "order_status_paid": {
-                                                    "description": "Order status code used when payment is completed.",
-                                                    "type": "string",
-                                                    "example": "processing"
-                                                },
-                                                "success_url": {
-                                                    "description": "Custom success redirect URL.",
-                                                    "type": "string",
-                                                    "example": "https://example.com/alfabank/success",
+                                                    "example": "sdk://done",
                                                     "nullable": true
                                                 },
-                                                "fail_url": {
-                                                    "description": "Custom fail redirect URL.",
+                                                "GATEWAY_FAIL_URL": {
+                                                    "description": "Return URL after failed payment.",
                                                     "type": "string",
-                                                    "example": "https://example.com/alfabank/fail",
+                                                    "example": "sdk://done",
                                                     "nullable": true
-                                                },
-                                                "send_order": {
-                                                    "description": "Whether order line items are sent to the bank (1 or 0).",
-                                                    "type": "string",
-                                                    "example": "0"
-                                                },
-                                                "tax_system": {
-                                                    "description": "Tax system code.",
-                                                    "type": "string",
-                                                    "example": "0"
-                                                },
-                                                "tax_type": {
-                                                    "description": "Default tax type code.",
-                                                    "type": "string",
-                                                    "example": "0"
-                                                },
-                                                "version_ffd": {
-                                                    "description": "FFD version (fiscal data format).",
-                                                    "type": "string",
-                                                    "example": "v1_05"
-                                                },
-                                                "payment_method_type": {
-                                                    "description": "Payment method type code for receipts.",
-                                                    "type": "string",
-                                                    "example": "4"
-                                                },
-                                                "payment_object_type": {
-                                                    "description": "Payment object type code for products.",
-                                                    "type": "string",
-                                                    "example": "1"
-                                                },
-                                                "payment_object_type_delivery": {
-                                                    "description": "Payment object type code for delivery.",
-                                                    "type": "string",
-                                                    "example": "1"
-                                                },
-                                                "saved_cards_payment_enable": {
-                                                    "description": "Flag indicating whether saved cards payment is enabled (1 or 0).",
-                                                    "type": "string",
-                                                    "example": "0"
-                                                },
-                                                "min_order_total": {
-                                                    "description": "Minimum order total for which the method is available.",
-                                                    "type": "string",
-                                                    "example": "0",
-                                                    "nullable": true
-                                                },
-                                                "max_order_total": {
-                                                    "description": "Maximum order total for which the method is available.",
-                                                    "type": "string",
-                                                    "example": "10000",
-                                                    "nullable": true
-                                                },
-                                                "callback_type": {
-                                                    "description": "Callback URL type (STATIC or DYNAMIC).",
-                                                    "type": "string",
-                                                    "example": "STATIC"
                                                 }
                                             },
                                             "type": "object"
@@ -3050,6 +2967,67 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/customer/guest/token": {
+            "post": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Issue guest customer token",
+                "description": "Creates or finds guest customer by guest_uid and returns Sanctum token for checkout flow.",
+                "operationId": "guestCustomerToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "guest_uid"
+                                ],
+                                "properties": {
+                                    "guest_uid": {
+                                        "type": "string",
+                                        "example": "device-9f3c8a11"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "example": "android"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token issued",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Guest token issued successfully."
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "example": "1|sanctum-token"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Customer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
                     }
                 }
             }
@@ -4319,6 +4297,88 @@
                 ]
             }
         },
+        "/api/v1/checkout/bonus/auto-apply": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Auto-apply maximum bonus to cart",
+                "description": "Applies the maximum possible bonus amount to the current customer's cart based on order total and max_usage_percent (no amount in request body). Requires authenticated customer with active cart.",
+                "operationId": "autoApplyBonus",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Coupon code applied successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart, bonus system disabled, or validation error)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Disable auto-apply bonus for cart",
+                "description": "Disables automatic bonus recalculation for the current customer's cart. Sets auto_apply to false. Requires authenticated customer with active cart.",
+                "operationId": "disableAutoApplyBonus",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Cart"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Auto-apply bonus disabled successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (empty cart or customer not authenticated)"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/cart/bind-table": {
             "post": {
                 "tags": [
@@ -4411,88 +4471,6 @@
                 ]
             }
         },
-        "/api/v1/checkout/bonus/auto-apply": {
-            "post": {
-                "tags": [
-                    "Checkout"
-                ],
-                "summary": "Auto-apply maximum bonus to cart",
-                "description": "Applies the maximum possible bonus amount to the current customer's cart based on order total and max_usage_percent (no amount in request body). Requires authenticated customer with active cart.",
-                "operationId": "autoApplyBonus",
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/Cart"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Coupon code applied successfully."
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request (empty cart, bonus system disabled, or validation error)"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Checkout"
-                ],
-                "summary": "Disable auto-apply bonus for cart",
-                "description": "Disables automatic bonus recalculation for the current customer's cart. Sets auto_apply to false. Requires authenticated customer with active cart.",
-                "operationId": "disableAutoApplyBonus",
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/components/schemas/Cart"
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Auto-apply bonus disabled successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request (empty cart or customer not authenticated)"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
         "/api/v1/customer/cart/cross-sell": {
             "get": {
                 "tags": [
@@ -4523,6 +4501,76 @@
                     },
                     "401": {
                         "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/checkout/set-phone": {
+            "post": {
+                "tags": [
+                    "Checkout"
+                ],
+                "summary": "Attach phone to checkout customer",
+                "description": "Guest sends phone before saving order. System finds or creates customer by phone, binds current cart to that customer and returns token for subsequent checkout requests.",
+                "operationId": "setCheckoutPhone",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "phone"
+                                ],
+                                "properties": {
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "+998901234567"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Phone attached successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Phone was attached to checkout cart successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string",
+                                                    "example": "1|sanctum-token"
+                                                },
+                                                "cart": {
+                                                    "$ref": "#/components/schemas/Cart"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Cart is empty"
+                    },
+                    "422": {
+                        "description": "Validation error"
                     }
                 },
                 "security": [
@@ -6296,7 +6344,7 @@
                     "Orders"
                 ],
                 "summary": "Confirm payment for customer's order via Alfabank gateway",
-                "description": "Mobile app sends gateway_order_id (mdOrder) after redirect payment; backend verifies payment on Alfabank side and creates invoice if successful.",
+                "description": "Mobile app sends payment confirmation request. `id` is backend order.id, `gateway_order_id` is Alfa mdOrder. Backend verifies payment in gateway and does not trust client status.",
                 "operationId": "confirmCustomerOrderPayment",
                 "parameters": [
                     {
@@ -6325,6 +6373,9 @@
                                     }
                                 },
                                 "type": "object"
+                            },
+                            "example": {
+                                "gateway_order_id": "00afdd1b-a6ab-75cf-b5f1-fe720257a540"
                             }
                         }
                     }

@@ -7,12 +7,16 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Webkul\Checkout\Facades\Cart;
+use Webkul\Core\Rules\PhoneNumber;
+use Webkul\Customer\Repositories\CustomerGroupRepository;
+use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Customer\Repositories\CustomerAddressRepository;
 use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
 use Webkul\Payment\Facades\Payment;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartShippingRateResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
+use Webkul\RestApi\Services\Auth\CustomerTokenLogService;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Sales\Transformers\OrderResource as OrderTransformer;
 use Webkul\Shipping\Facades\Shipping;
@@ -23,7 +27,86 @@ class CheckoutController extends CustomerController
     public function __construct(
         protected CustomerAddressRepository $customerAddressRepository,
         protected MobileAppSettingRepository $mobileAppSettingRepository,
+        protected CustomerRepository $customerRepository,
+        protected CustomerGroupRepository $customerGroupRepository,
+        protected CustomerTokenLogService $customerTokenLogService,
     ) {}
+
+    /**
+     * Attach phone to checkout cart customer.
+     */
+    public function setPhone(Request $request): JsonResponse
+    {
+        $validatedData = $request->validate([
+            'phone' => ['required', new PhoneNumber],
+        ]);
+
+        $phone = $validatedData['phone'];
+        $currentCustomer = $this->resolveShopUser($request);
+        $customerByPhone = $this->customerRepository->where('phone', $phone)->first();
+
+        if ($customerByPhone) {
+            $checkoutCustomer = $customerByPhone;
+        } else {
+            $checkoutCustomer = $currentCustomer;
+
+            if (! $checkoutCustomer->phone) {
+                $checkoutCustomer = $this->customerRepository->update([
+                    'phone'       => $phone,
+                    'is_verified' => 1,
+                ], $checkoutCustomer->id);
+            } else {
+                $checkoutCustomer = $this->customerRepository->create([
+                    'first_name'        => 'Guest',
+                    'last_name'         => 'Customer',
+                    'phone'             => $phone,
+                    'password'          => null,
+                    'is_verified'       => 1,
+                    'channel_id'        => core()->getCurrentChannel()->id,
+                    'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id,
+                ]);
+            }
+        }
+
+        $cart = Cart::getCart();
+
+        if (! $cart) {
+            return response()->json([
+                'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+            ], 400);
+        }
+
+        $cart->update([
+            'customer_id'         => $checkoutCustomer->id,
+            'is_guest'            => 0,
+            'customer_first_name' => $checkoutCustomer->first_name,
+            'customer_last_name'  => $checkoutCustomer->last_name,
+            'customer_email'      => $checkoutCustomer->email,
+        ]);
+
+        $tokenName = 'checkout-phone-bind';
+        $abilities = ['role:customer'];
+        $token = $checkoutCustomer->createToken($tokenName, $abilities)->plainTextToken;
+
+        $this->customerTokenLogService->logToken(
+            $checkoutCustomer,
+            $tokenName,
+            $abilities,
+            null,
+            $token,
+            $request
+        );
+
+        request()->merge(['minimal' => true]);
+
+        return response()->json([
+            'data' => [
+                'cart'  => new CartResource($cart->fresh()),
+                'token' => $token,
+            ],
+            'message' => 'Phone was attached to checkout cart successfully.',
+        ]);
+    }
 
     /**
      * Save customer address.
@@ -250,6 +333,12 @@ class CheckoutController extends CustomerController
             $this->validateOrder();
 
             $cart = Cart::getCart();
+
+            if (! $cart?->customer_id || ! $cart?->customer?->phone) {
+                return response()->json([
+                    'message' => 'Attach customer phone before placing the order.',
+                ], 422);
+            }
 
             $paymentMethod = $cart->payment->method ?? null;
             $redirectUrl = ($paymentMethod === 'alfabank') ? null : Payment::getRedirectUrl($cart);

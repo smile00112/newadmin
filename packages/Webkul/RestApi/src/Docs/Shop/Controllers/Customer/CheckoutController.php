@@ -6,6 +6,54 @@ class CheckoutController
 {
     /**
      * @OA\Post(
+     *      path="/api/v1/customer/checkout/set-phone",
+     *      operationId="setCheckoutPhone",
+     *      tags={"Checkout"},
+     *      summary="Attach phone to checkout customer",
+     *      description="Guest sends phone before saving order. System finds or creates customer by phone, binds current cart to that customer and returns token for subsequent checkout requests.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"phone"},
+     *              @OA\Property(
+     *                  property="phone",
+     *                  type="string",
+     *                  example="+998901234567"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Phone attached successfully",
+     *          @OA\JsonContent(
+     *              @OA\Property(property="message", type="string", example="Phone was attached to checkout cart successfully."),
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  @OA\Property(property="token", type="string", example="1|sanctum-token"),
+     *                  @OA\Property(property="cart", type="object", ref="#/components/schemas/Cart")
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=400,
+     *          description="Cart is empty"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
+     * )
+     */
+    public function setPhone() {}
+
+    /**
+     * @OA\Post(
      *      path="/api/v1/customer/checkout/save-address",
      *      operationId="saveCheckoutAddress",
      *      tags={"Checkout"},

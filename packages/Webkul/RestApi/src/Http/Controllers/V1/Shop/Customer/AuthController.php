@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Webkul\Core\Repositories\SubscribersListRepository;
@@ -127,6 +128,59 @@ class AuthController extends CustomerController
         return response([
             'message' => trans('rest-api::app.shop.customer.accounts.error.invalid'),
         ], 401);
+    }
+
+    /**
+     * Issue guest token for checkout flow.
+     */
+    public function guestToken(Request $request): Response
+    {
+        $validatedData = $request->validate([
+            'guest_uid'    => 'required|string|max:191',
+            'device_name'  => 'nullable|string|max:191',
+        ]);
+
+        $guestUid = trim($validatedData['guest_uid']);
+        $guestMarker = 'guest:' . $guestUid;
+
+        $customer = $this->customerRepository
+            ->where('token', $guestMarker)
+            ->where('channel_id', core()->getCurrentChannel()->id)
+            ->first();
+
+        if (! $customer) {
+            $customer = $this->customerRepository->create([
+                'first_name'        => 'Guest',
+                'last_name'         => 'Customer',
+                'email'             => 'guest+' . md5($guestUid) . '@guest.local',
+                'password'          => null,
+                'is_verified'       => 1,
+                'channel_id'        => core()->getCurrentChannel()->id,
+                'customer_group_id' => $this->customerGroupRepository->findOneWhere(['code' => 'general'])->id,
+                'token'             => $guestMarker,
+            ]);
+        }
+
+        $tokenName = $validatedData['device_name'] ?? ('guest-' . Str::random(8));
+        $abilities = ['role:customer'];
+        $plainTextToken = $customer->createToken($tokenName, $abilities)->plainTextToken;
+
+        $this->customerTokenLogService->logToken(
+            $customer,
+            $tokenName,
+            $abilities,
+            null,
+            $plainTextToken,
+            $request
+        );
+
+        Event::dispatch('customer.after.login', $customer);
+
+        return response([
+            'data'    => new CustomerResource($customer),
+            'message' => 'Guest token issued successfully.',
+            'token'   => $plainTextToken,
+        ]);
     }
 
     /**
