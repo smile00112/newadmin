@@ -167,6 +167,7 @@
                                         v-model="order_status_paid"
                                         :label="'Статус заказа после оплаты'"
                                     >
+                                        <option value="preparing">Готовим</option>
                                         <option value="processing">Обработка</option>
                                         <option value="completed">Завершен</option>
                                     </x-admin::form.control-group.control>
