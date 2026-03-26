@@ -462,14 +462,20 @@ class Configurable extends AbstractType
     {
         $childProduct = app('Webkul\Product\Repositories\ProductRepository')->find($data['selected_configurable_option']);
 
+        if (! $childProduct) {
+            return $data;
+        }
+
         foreach ($this->product->super_attributes as $attribute) {
             $option = $attribute->options()->where('id', $childProduct->{$attribute->code})->first();
 
-            $data['attributes'][$attribute->code] = [
-                'attribute_name' => $attribute->name ? $attribute->name : $attribute->admin_name,
-                'option_id'      => $option->id,
-                'option_label'   => $option->label ? $option->label : $option->admin_name,
-            ];
+            if ($option) {
+                $data['attributes'][$attribute->code] = [
+                    'attribute_name' => $attribute->name ? $attribute->name : $attribute->admin_name,
+                    'option_id'      => $option->id,
+                    'option_label'   => $option->label ? $option->label : $option->admin_name,
+                ];
+            }
         }
 
         return $data;
