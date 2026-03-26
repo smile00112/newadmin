@@ -4016,6 +4016,7 @@ return [
     ],
 
     'configuration' => [
+        'save-message'                 => 'Настройки успешно сохранены',
         'index' => [
             'channel'                       => 'Канал',
             'back-btn'                     => 'Назад',
