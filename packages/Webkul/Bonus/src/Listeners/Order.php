@@ -25,10 +25,17 @@ class Order
     public function afterCreated(OrderContract $order)
     {
         try {
+            $status = $order->status;
+
             // Deduct bonuses if they were used (bonus_amount_used is already set from cart)
             $bonusAmount = $order->base_bonus_amount_used ?? 0;
             if ($bonusAmount > 0) {
                 $this->bonusService->deductBonuses($order, $bonusAmount);
+            }
+
+            // Accrue bonuses on order creation when configured status matches current status.
+            if ($status === $this->getNormalizedAccrualStatus()) {
+                $this->bonusService->accrueBonuses($order);
             }
         } catch (\Exception $e) {
             report($e);
@@ -58,12 +65,7 @@ class Order
             }
             
             // Accrue bonuses when order reaches configured status
-            $accrualStatus = core()->getConfigData('bonus.general.settings.accrual_status');
-
-            // Fallback to completed status if not configured
-            if (! $accrualStatus) {
-                $accrualStatus = \Webkul\Sales\Models\Order::STATUS_COMPLETED;
-            }
+            $accrualStatus = $this->getNormalizedAccrualStatus();
 
             if ($status === $accrualStatus) {
                 $this->bonusService->accrueBonuses($order);
@@ -87,5 +89,24 @@ class Order
         } catch (\Exception $e) {
             report($e);
         }
+    }
+
+    /**
+     * Return configured accrual status with backward-compatible typo normalization.
+     */
+    protected function getNormalizedAccrualStatus(): string
+    {
+        $accrualStatus = core()->getConfigData('bonus.general.settings.accrual_status');
+
+        // Backward-compatible fix for misspelled value in stored config.
+        if ($accrualStatus === 'panding') {
+            $accrualStatus = \Webkul\Sales\Models\Order::STATUS_PENDING;
+        }
+
+        if (! $accrualStatus) {
+            return \Webkul\Sales\Models\Order::STATUS_COMPLETED;
+        }
+
+        return $accrualStatus;
     }
 }
