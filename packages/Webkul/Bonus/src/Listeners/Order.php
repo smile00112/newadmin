@@ -2,6 +2,7 @@
 
 namespace Webkul\Bonus\Listeners;
 
+use Illuminate\Support\Facades\Log;
 use Webkul\Bonus\Services\BonusService;
 use Webkul\Sales\Contracts\Order as OrderContract;
 
@@ -26,6 +27,15 @@ class Order
     {
         try {
             $status = $order->status;
+            $accrualStatus = $this->getNormalizedAccrualStatus();
+
+            Log::info('bonus.listener.after_created.captured', [
+                'order_id'       => $order->id,
+                'increment_id'   => $order->increment_id,
+                'status'         => $status,
+                'accrual_status' => $accrualStatus,
+                'customer_id'    => $order->customer_id,
+            ]);
 
             // Deduct bonuses if they were used (bonus_amount_used is already set from cart)
             $bonusAmount = $order->base_bonus_amount_used ?? 0;
@@ -34,7 +44,14 @@ class Order
             }
 
             // Accrue bonuses on order creation when configured status matches current status.
-            if ($status === $this->getNormalizedAccrualStatus()) {
+            if ($status === $accrualStatus) {
+                Log::info('bonus.listener.after_created.accrual_started', [
+                    'order_id'       => $order->id,
+                    'increment_id'   => $order->increment_id,
+                    'status'         => $status,
+                    'accrual_status' => $accrualStatus,
+                ]);
+
                 $this->bonusService->accrueBonuses($order);
             }
         } catch (\Exception $e) {
@@ -52,7 +69,7 @@ class Order
     {
         try {
             $status = $order->status;
-            
+
             // Check deduction statuses - списание бонусов при смене статуса
             $deductionStatuses = core()->getConfigData('bonus.general.settings.deduction_status');
             $deductionStatuses = is_array($deductionStatuses) ? $deductionStatuses : ($deductionStatuses ? [$deductionStatuses] : []);
@@ -67,7 +84,22 @@ class Order
             // Accrue bonuses when order reaches configured status
             $accrualStatus = $this->getNormalizedAccrualStatus();
 
+            Log::info('bonus.listener.after_status_updated.captured', [
+                'order_id'       => $order->id,
+                'increment_id'   => $order->increment_id,
+                'status'         => $status,
+                'accrual_status' => $accrualStatus,
+                'customer_id'    => $order->customer_id,
+            ]);
+
             if ($status === $accrualStatus) {
+                Log::info('bonus.listener.after_status_updated.accrual_started', [
+                    'order_id'       => $order->id,
+                    'increment_id'   => $order->increment_id,
+                    'status'         => $status,
+                    'accrual_status' => $accrualStatus,
+                ]);
+
                 $this->bonusService->accrueBonuses($order);
             }
         } catch (\Exception $e) {
