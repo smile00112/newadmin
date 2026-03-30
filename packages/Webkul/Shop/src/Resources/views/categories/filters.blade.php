@@ -209,7 +209,7 @@
                     <ul class="pb-3 text-base text-gray-700">
                         <template v-if="options.length">
                             <li
-                                :key="`${filter.id}_${option.id}`"
+                                :key="`${filter.id}_${optionIndex}_${option.id}`"
                                 v-for="(option, optionIndex) in options"
                             >
                                 <div class="flex select-none items-center gap-x-4 rounded hover:bg-gray-100 max-sm:gap-x-1 max-sm:!p-0 ltr:pl-2 rtl:pr-2">
@@ -254,8 +254,8 @@
                                 @lang('shop::app.categories.filters.search.no-options-available')
                             </li>
 
-                            <div
-                                class="mt-2"
+                            <li
+                                class="mt-2 list-none"
                                 v-else
                             >
                                 <div class="flex flex-col items-center justify-between">
@@ -287,7 +287,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </li>
                         </template>
                     </ul>
 
