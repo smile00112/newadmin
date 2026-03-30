@@ -47,8 +47,18 @@
     <!-- Datagrid -->
     @php
         $datagridSrc = route('admin.catalog.products.index');
+        $datagridQuery = [];
+
         if (request('category')) {
-            $datagridSrc .= '?' . http_build_query(['filters' => ['category_name' => [request('category')]]]);
+            $datagridQuery['filters']['category_name'] = [request('category')];
+        }
+
+        if (request()->has('ingredient')) {
+            $datagridQuery['ingredient'] = request('ingredient');
+        }
+
+        if (! empty($datagridQuery)) {
+            $datagridSrc .= '?' . http_build_query($datagridQuery);
         }
     @endphp
     <x-admin::datagrid
