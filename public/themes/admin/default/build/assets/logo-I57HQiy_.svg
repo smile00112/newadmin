@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-<svg width="180" height="40" xmlns="http://www.w3.org/2000/svg">
-    <g>
-        <text font-style="normal" opacity="0.95" transform="matrix(1.26039 0 0 1 -2.77309 0)" stroke="#000" font-weight="bold" xml:space="preserve" text-anchor="start" font-family="'Brygada 1918'" font-size="31" id="svg_3" y="30.46694" x="9.51797" stroke-width="0" fill="#000000">Surprise</text>
-    </g>
-</svg>
-=======
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 50 285 80" height="80">
   <!-- Только надпись "Surprise" без фона -->
   <text x="0" y="110" font-family="'Pacifico', 'Segoe UI Script', 'Brush Script MT', cursive" font-size="96" fill="none" stroke="#a67b5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -14,4 +7,3 @@
     Surprise
   </text>
 </svg>
->>>>>>> 5b4edd6fd76ce05d3ec23160c7d4de36c8309c50
