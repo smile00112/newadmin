@@ -160,11 +160,7 @@ Route::prefix('catalog')->group(function () {
     });
 
     Route::controller(ProductController::class)->prefix('ingredients')->group(function () {
-
-        //redirect()->route('admin.catalog.products.index', ['id' => 1]);
-        Route::get('', function(){
-            return  redirect('/admin/catalog/products?ingredient=1');
-        })->name('admin.catalog.ingredients');
+        Route::get('', 'ingredientsIndex')->name('admin.catalog.ingredients');
     });
 
     /**

@@ -46,15 +46,14 @@
 
     <!-- Datagrid -->
     @php
-        $datagridSrc = route('admin.catalog.products.index');
+        $datagridSrc = ($isIngredients ?? false)
+            ? route('admin.catalog.ingredients')
+            : route('admin.catalog.products.index');
+
         $datagridQuery = [];
 
         if (request('category')) {
             $datagridQuery['filters']['category_name'] = [request('category')];
-        }
-
-        if (request()->has('ingredient')) {
-            $datagridQuery['ingredient'] = request('ingredient');
         }
 
         if (! empty($datagridQuery)) {
@@ -568,8 +567,7 @@
                         if (this.isCreating) return;
 
                         @php
-                            $defaultType = 'simple';
-                            if(!empty($_GET['ingredient'])) $defaultType = 'ingredient';
+                            $defaultType = ($isIngredients ?? false) ? 'ingredient' : 'simple';
                         @endphp
 
                         const type = '{{ $defaultType }}';

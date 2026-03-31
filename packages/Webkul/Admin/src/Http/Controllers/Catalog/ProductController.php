@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Webkul\Admin\DataGrids\Catalog\IngredientDataGrid;
 use Webkul\Admin\DataGrids\Catalog\ProductDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Admin\Http\Requests\InventoryRequest;
@@ -60,9 +61,32 @@ class ProductController extends Controller
             return datagrid(ProductDataGrid::class)->process();
         }
 
-        $families = $this->attributeFamilyRepository->all();
+        $families = \Cache::remember('admin_products_attribute_families', 3600, function () {
+            return $this->attributeFamilyRepository->all();
+        });
 
         return view('admin::catalog.products.index', compact('families'));
+    }
+
+    /**
+     * Display a dedicated ingredients listing.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function ingredientsIndex()
+    {
+        if (request()->ajax()) {
+            return datagrid(IngredientDataGrid::class)->process();
+        }
+
+        $families = \Cache::remember('admin_ingredients_attribute_families', 3600, function () {
+            return $this->attributeFamilyRepository->all();
+        });
+
+        return view('admin::catalog.products.index', [
+            'families'      => $families,
+            'isIngredients' => true,
+        ]);
     }
 
     /**
