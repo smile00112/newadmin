@@ -6,8 +6,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Webkul\Core\Facades\Core;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\CatalogCategoryV2Controller;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
 use Webkul\RestApi\Jobs\WarmCatalogCacheJob;
+use Webkul\RestApi\Jobs\WarmCatalogV2CacheJob;
 use Webkul\RestApi\Jobs\WarmNomenclatureCacheJob;
 
 class ProductObserver
@@ -84,6 +86,18 @@ class ProductObserver
                 WarmNomenclatureCacheJob::dispatch();
             }
         }
+
+        if (class_exists(CatalogCategoryV2Controller::class)) {
+            CatalogCategoryV2Controller::clearCatalogV2Cache();
+
+            // Synchronously warm default channel+locale so first request is fast
+            $this->warmCatalogV2Default();
+
+            // Only dispatch warm cache if queue is async; skip on sync to avoid blocking
+            if (config('queue.default') !== 'sync') {
+                WarmCatalogV2CacheJob::dispatch();
+            }
+        }
     }
 
     /**
@@ -121,6 +135,26 @@ class ProductObserver
             }
         } catch (\Throwable $e) {
             Log::warning('Failed to warm nomenclature cache for default channel', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Warm catalog-v2 cache for default channel+locale only (sync, so first request is fast).
+     */
+    protected function warmCatalogV2Default(): void
+    {
+        try {
+            $channel = Core::getDefaultChannel();
+            if ($channel && $channel->default_locale) {
+                $localeCode = is_object($channel->default_locale) ? $channel->default_locale->code : $channel->default_locale;
+                if (! empty($localeCode)) {
+                    CatalogCategoryV2Controller::warmCacheForChannelAndLocale($channel, $localeCode);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to warm catalog-v2 cache for default channel', [
                 'message' => $e->getMessage(),
             ]);
         }
