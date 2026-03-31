@@ -21,7 +21,7 @@ services:
       - APP_KEY=${APP_KEY}
       - APP_DEBUG=${APP_DEBUG:-false}
       - APP_DEBUG_ALLOWED_IPS=${APP_DEBUG_ALLOWED_IPS:-}
-      - APP_URL=${APP_URL:-http://localhost}
+      - APP_URL=${APP_URL}
       - APP_ADMIN_URL=${APP_ADMIN_URL:-admin}
       - APP_TIMEZONE=${APP_TIMEZONE:-UTC}
       - APP_LOCALE=${APP_LOCALE:-ru}
@@ -248,6 +248,7 @@ services:
       - APP_ENV=${APP_ENV:-production}
       - APP_KEY=${APP_KEY}
       - APP_DEBUG=${APP_DEBUG:-false}
+      - APP_URL=${APP_URL}
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE}
