@@ -22,6 +22,14 @@ class ProductDataGrid extends DataGrid
     protected $primaryColumn = 'product_id';
 
     /**
+     * Resolve whether ingredient-only mode is requested.
+     */
+    protected function shouldShowIngredientsOnly(): bool
+    {
+        return request()->has('ingredient') && (bool) request()->input('ingredient');
+    }
+
+    /**
      * Constructor for the class.
      *
      * @return void
@@ -373,6 +381,12 @@ class ProductDataGrid extends DataGrid
 
         $ids = collect($results['hits']['hits'])->pluck('_id')->toArray();
 
+        if ($this->shouldShowIngredientsOnly()) {
+            $this->queryBuilder->where('product_flat.type', 'ingredient');
+        } else {
+            $this->queryBuilder->where('product_flat.type', '<>', 'ingredient');
+        }
+
         $this->queryBuilder
             ->whereIn('product_flat.product_id', $ids);
 
@@ -414,6 +428,20 @@ class ProductDataGrid extends DataGrid
             }
 
             $filters['filter'][] = $this->getFilterValue($attribute, $value);
+        }
+
+        if ($this->shouldShowIngredientsOnly()) {
+            $filters['filter'][] = [
+                'term' => [
+                    'type.keyword' => 'ingredient',
+                ],
+            ];
+        } else {
+            $filters['must_not'][] = [
+                'term' => [
+                    'type.keyword' => 'ingredient',
+                ],
+            ];
         }
 
         return $filters;
