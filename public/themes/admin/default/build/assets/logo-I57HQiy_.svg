@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 50 285 80" height="80">
-  <!-- Только надпись "Surprise" без фона -->
-  <text x="0" y="110" font-family="'Pacifico', 'Segoe UI Script', 'Brush Script MT', cursive" font-size="96" fill="none" stroke="#a67b5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    Surprise
-  </text>
-  <text x="0" y="110" font-family="'Pacifico', 'Segoe UI Script', 'Brush Script MT', cursive" font-size="96" fill="#c48b5e">
-    Surprise
-  </text>
-</svg>
