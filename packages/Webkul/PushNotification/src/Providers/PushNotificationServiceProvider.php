@@ -4,6 +4,7 @@ namespace Webkul\PushNotification\Providers;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Webkul\PushNotification\Listeners\LiveActivityStatusChanged;
 use Webkul\PushNotification\Listeners\OrderStatusChanged;
 
 class PushNotificationServiceProvider extends ServiceProvider
@@ -33,6 +34,11 @@ class PushNotificationServiceProvider extends ServiceProvider
             \Webkul\PushNotification\Contracts\CustomerPushToken::class,
             \Webkul\PushNotification\Models\CustomerPushToken::class
         );
+
+        $this->app->bind(
+            \Webkul\PushNotification\Contracts\OrderLiveActivityToken::class,
+            \Webkul\PushNotification\Models\OrderLiveActivityToken::class
+        );
     }
 
     /**
@@ -41,6 +47,7 @@ class PushNotificationServiceProvider extends ServiceProvider
     protected function registerEvents(): void
     {
         Event::listen('sales.order.update-status.after', [OrderStatusChanged::class, 'handle']);
+        Event::listen('sales.order.update-status.after', [LiveActivityStatusChanged::class, 'handle']);
     }
 
     /**

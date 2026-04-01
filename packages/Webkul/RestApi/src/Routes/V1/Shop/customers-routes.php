@@ -114,6 +114,10 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
 
         Route::get('{id}', 'getResource');
 
+        Route::post('bind-table', 'bindTable');
+
+        Route::delete('bind-table', 'unbindTable');
+
         Route::post('{id}/cancel', 'cancel');
 
         Route::post('{id}/refund', 'refund');
@@ -123,6 +127,13 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::get('reorder/{id}', 'reorder');
 
         Route::post('{id}/confirm-payment', 'confirmPayment');
+    });
+
+    /**
+     * Apple Live Activity token registration route.
+     */
+    Route::controller(OrderController::class)->prefix('customer')->group(function () {
+        Route::post('live-activity-token', 'storeLiveActivityToken');
     });
 
     /**

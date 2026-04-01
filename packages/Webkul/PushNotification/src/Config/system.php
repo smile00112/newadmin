@@ -2,6 +2,72 @@
 
 return [
     /**
+     * Apple Live Activity Settings.
+     */
+    [
+        'key'  => 'mobile_app.apple_live_activity',
+        'name' => 'push_notification::app.apple-live-activity.title',
+        'info' => 'push_notification::app.apple-live-activity.info',
+        'icon' => 'settings/store.svg',
+        'sort' => 12,
+    ],
+    [
+        'key'    => 'mobile_app.apple_live_activity.settings',
+        'name'   => 'push_notification::app.apple-live-activity.settings.title',
+        'info'   => 'push_notification::app.apple-live-activity.settings.info',
+        'sort'   => 1,
+        'fields' => [
+            [
+                'name'    => 'enabled',
+                'title'   => 'push_notification::app.apple-live-activity.fields.enabled',
+                'info'    => 'push_notification::app.apple-live-activity.fields.enabled-info',
+                'type'    => 'boolean',
+                'default' => false,
+            ],
+            [
+                'name'    => 'sandbox',
+                'title'   => 'push_notification::app.apple-live-activity.fields.sandbox',
+                'info'    => 'push_notification::app.apple-live-activity.fields.sandbox-info',
+                'type'    => 'boolean',
+                'default' => true,
+                'depends' => 'enabled:1',
+            ],
+            [
+                'name'    => 'bundle_id',
+                'title'   => 'push_notification::app.apple-live-activity.fields.bundle-id',
+                'info'    => 'push_notification::app.apple-live-activity.fields.bundle-id-info',
+                'type'    => 'text',
+                'default' => '',
+                'depends' => 'enabled:1',
+            ],
+            [
+                'name'    => 'team_id',
+                'title'   => 'push_notification::app.apple-live-activity.fields.team-id',
+                'info'    => 'push_notification::app.apple-live-activity.fields.team-id-info',
+                'type'    => 'text',
+                'default' => '',
+                'depends' => 'enabled:1',
+            ],
+            [
+                'name'    => 'key_id',
+                'title'   => 'push_notification::app.apple-live-activity.fields.key-id',
+                'info'    => 'push_notification::app.apple-live-activity.fields.key-id-info',
+                'type'    => 'text',
+                'default' => '',
+                'depends' => 'enabled:1',
+            ],
+            [
+                'name'    => 'p8_key',
+                'title'   => 'push_notification::app.apple-live-activity.fields.p8-key',
+                'info'    => 'push_notification::app.apple-live-activity.fields.p8-key-info',
+                'type'    => 'textarea',
+                'default' => '',
+                'depends' => 'enabled:1',
+            ],
+        ],
+    ],
+
+    /**
      * Push Notification Settings.
      */
     [

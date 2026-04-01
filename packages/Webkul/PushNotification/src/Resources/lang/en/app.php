@@ -1,6 +1,31 @@
 <?php
 
 return [
+    'apple-live-activity' => [
+        'title' => 'Apple Live Activity',
+        'info'  => 'Push notifications for Apple Live Activity (lock-screen widget)',
+
+        'settings' => [
+            'title' => 'APNs Settings',
+            'info'  => 'Apple Push Notification service configuration for Live Activity',
+        ],
+
+        'fields' => [
+            'enabled'      => 'Enable Apple Live Activity',
+            'enabled-info' => 'Send Live Activity updates to iOS via APNs when the order status changes',
+            'sandbox'      => 'Sandbox Mode',
+            'sandbox-info' => 'Use APNs sandbox (api.sandbox.push.apple.com). Disable for production.',
+            'bundle-id'    => 'App Bundle ID',
+            'bundle-id-info' => 'iOS app bundle identifier (e.g. com.example.app)',
+            'team-id'      => 'Apple Team ID',
+            'team-id-info' => '10-character Team ID from Apple Developer portal',
+            'key-id'       => 'APNs Key ID',
+            'key-id-info'  => '10-character Key ID for the .p8 authentication key',
+            'p8-key'       => '.p8 Private Key',
+            'p8-key-info'  => 'Paste the full content of the AuthKey_XXXXXXXX.p8 file or provide an absolute path to the file',
+        ],
+    ],
+
     'settings' => [
         'title' => 'Push Notifications',
         'info'  => 'Push notification settings via Firebase Cloud Messaging',

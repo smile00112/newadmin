@@ -6291,13 +6291,145 @@
                 ]
             }
         },
+        "/api/v1/customer/orders/bind-table": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Bind table number to customer's order",
+                "description": "Bind table number to a specific order of the authenticated customer.",
+                "operationId": "bindCustomerOrderTable",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id",
+                                    "table_number"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "description": "Customer order ID",
+                                        "type": "integer",
+                                        "format": "int64",
+                                        "example": 1
+                                    },
+                                    "table_number": {
+                                        "description": "Table number to bind to the order",
+                                        "type": "integer",
+                                        "format": "int32",
+                                        "minimum": 1,
+                                        "example": 5
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Order"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number bound to order successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Unbind table number from customer's order",
+                "description": "Unbind table number from a specific order of the authenticated customer.",
+                "operationId": "unbindCustomerOrderTable",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "description": "Customer order ID",
+                                        "type": "integer",
+                                        "format": "int64",
+                                        "example": 1
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Order"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Table number unbound from order successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/orders/{id}/cancel": {
             "post": {
                 "tags": [
                     "Orders"
                 ],
                 "summary": "Cancel customer's order by id",
-                "description": "Cancel customer's order by id",
+                "description": "Cancel customer's order by id. For `alfabank` orders, endpoint first checks payment status in gateway: paid orders are sent to full refund, unpaid orders are canceled normally.",
                 "operationId": "cancelCustomerOrder",
                 "parameters": [
                     {
@@ -6319,7 +6451,31 @@
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Order canceled successfully."
+                                            "example": "Order has been canceled with full refund request."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "order_id": {
+                                                    "type": "integer",
+                                                    "example": 101
+                                                },
+                                                "order_status": {
+                                                    "type": "string",
+                                                    "example": "canceled"
+                                                },
+                                                "gateway_order_id": {
+                                                    "type": "string",
+                                                    "example": "01491d0b-c848-7dd6-a20d-e96900a7d8c0"
+                                                },
+                                                "gateway_action": {
+                                                    "type": "string",
+                                                    "example": "refund"
+                                                },
+                                                "gateway_response": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
                                         }
                                     },
                                     "type": "object"
@@ -6327,8 +6483,11 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Something went wrong!"
+                    "422": {
+                        "description": "Business rule or gateway validation error"
+                    },
+                    "500": {
+                        "description": "Gateway/network processing error"
                     }
                 },
                 "security": [
@@ -6392,6 +6551,10 @@
                                                 "order_id": {
                                                     "type": "integer",
                                                     "example": 101
+                                                },
+                                                "order_status": {
+                                                    "type": "string",
+                                                    "example": "canceled"
                                                 },
                                                 "gateway_order_id": {
                                                     "type": "string",
@@ -7048,6 +7211,97 @@
                                         },
                                         "meta": {
                                             "$ref": "#/components/schemas/Pagination"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/customer/live-activity-token": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Save Apple Live Activity push token for an order",
+                "description": "Stores (or replaces) an Apple Live Activity push token bound to a specific order. The backend uses this token to send Live Activity updates to the iOS lock-screen widget whenever the order status changes. A repeated call with the same order_number overwrites the previous token.",
+                "operationId": "saveLiveActivityToken",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "push_token",
+                                    "order_number"
+                                ],
+                                "properties": {
+                                    "push_token": {
+                                        "description": "Apple APNs Live Activity push token received from ActivityKit on iOS",
+                                        "type": "string",
+                                        "example": "a1b2c3d4e5f6..."
+                                    },
+                                    "order_number": {
+                                        "description": "Order increment_id (e.g. 00000123)",
+                                        "type": "string",
+                                        "example": "00000123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Live Activity push token saved successfully."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found or does not belong to the authenticated customer",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The push token field is required."
                                         }
                                     },
                                     "type": "object"

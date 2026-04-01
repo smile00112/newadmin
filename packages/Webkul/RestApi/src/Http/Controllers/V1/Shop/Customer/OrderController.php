@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Webkul\Checkout\Facades\Cart;
+use Webkul\PushNotification\Models\OrderLiveActivityToken;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderListResource;
 use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
+use Webkul\RestApi\Jobs\WarmCustomerOrdersCacheJob;
 use Webkul\RestApi\Services\CustomerOrdersCache;
 use Webkul\Sales\Models\Order;
 use Webkul\Sales\Repositories\InvoiceRepository;
@@ -443,6 +445,80 @@ class OrderController extends CustomerController
             'message' => trans('rest-api::app.shop.sales.orders.error.cancel-error'),
             'reason' => $reason,
         ], 422);
+    }
+
+    /**
+     * Bind table number to customer's order.
+     */
+    public function bindTable(Request $request): \Illuminate\Http\Response
+    {
+        $validatedData = $request->validate([
+            'order_id'     => ['required', 'integer', 'exists:orders,id'],
+            'table_number' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $customer = $this->resolveShopUser($request);
+        $order = $customer->orders()->find($validatedData['order_id']);
+
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        $order->update(['table_number' => $validatedData['table_number']]);
+
+        $this->refreshOrdersCacheForCustomer($order, (int) $customer->id);
+
+        $resourceClassName = $this->resource();
+
+        return response([
+            'data'    => new $resourceClassName($order->fresh()),
+            'message' => trans('rest-api::app.shop.sales.orders.bind-table-success'),
+        ]);
+    }
+
+    /**
+     * Unbind table number from customer's order.
+     */
+    public function unbindTable(Request $request): \Illuminate\Http\Response
+    {
+        $validatedData = $request->validate([
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
+        ]);
+
+        $customer = $this->resolveShopUser($request);
+        $order = $customer->orders()->find($validatedData['order_id']);
+
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        $order->update(['table_number' => null]);
+
+        $this->refreshOrdersCacheForCustomer($order, (int) $customer->id);
+
+        $resourceClassName = $this->resource();
+
+        return response([
+            'data'    => new $resourceClassName($order->fresh()),
+            'message' => trans('rest-api::app.shop.sales.orders.unbind-table-success'),
+        ]);
+    }
+
+    /**
+     * Invalidate and warm customer orders cache for the order's channel.
+     */
+    private function refreshOrdersCacheForCustomer(Order $order, int $customerId): void
+    {
+        CustomerOrdersCache::invalidate($customerId);
+
+        $order->loadMissing('channel');
+        $channelCode = (string) ($order->channel?->code ?? core()->getDefaultChannelCode() ?? '');
+
+        WarmCustomerOrdersCacheJob::dispatch($customerId, $channelCode);
     }
 
     /**
@@ -936,6 +1012,42 @@ class OrderController extends CustomerController
         $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return api_stream_json($jsonResponse, 'orders.json');
+    }
+
+    /**
+     * Save (or replace) an Apple Live Activity push token for a customer order.
+     */
+    public function storeLiveActivityToken(Request $request): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'push_token'   => ['required', 'string', 'max:512'],
+            'order_number' => ['required', 'string', 'max:64'],
+        ]);
+
+        $customer = $this->resolveShopUser($request);
+
+        $order = $customer->orders()
+            ->where('increment_id', $validated['order_number'])
+            ->first();
+
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        OrderLiveActivityToken::updateOrCreate(
+            ['order_id' => $order->id],
+            [
+                'customer_id'        => $customer->id,
+                'order_increment_id' => $order->increment_id,
+                'push_token'         => $validated['push_token'],
+            ]
+        );
+
+        return response([
+            'message' => trans('rest-api::app.shop.sales.orders.live-activity-token-saved'),
+        ]);
     }
 
     /**

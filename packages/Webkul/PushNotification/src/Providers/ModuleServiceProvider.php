@@ -13,6 +13,7 @@ class ModuleServiceProvider extends CoreModuleServiceProvider
      */
     protected $models = [
         \Webkul\PushNotification\Models\CustomerPushToken::class,
+        \Webkul\PushNotification\Models\OrderLiveActivityToken::class,
     ];
 
     /**

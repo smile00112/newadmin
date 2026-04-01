@@ -533,6 +533,8 @@ return [
             'orders' => [
                 'cancel' => 'Order canceled successfully.',
                 'rate-success' => 'Order rated successfully.',
+                'bind-table-success' => 'Table number bound to order successfully.',
+                'unbind-table-success' => 'Table number unbound from order successfully.',
 
                 'payment-confirmed' => 'Payment has been confirmed.',
 
@@ -543,6 +545,8 @@ return [
                     'invalid-order'  => 'Order does not allow adding or removing saved card.',
                     'card-not-found' => 'Saved card not found.',
                 ],
+
+                'live-activity-token-saved' => 'Live Activity push token saved successfully.',
 
                 'error' => [
                     'cancel-error'                    => 'Order can not be canceled.',

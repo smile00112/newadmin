@@ -1,6 +1,31 @@
 <?php
 
 return [
+    'apple-live-activity' => [
+        'title' => 'Apple Live Activity',
+        'info'  => 'Push-уведомления для Apple Live Activity (виджет на экране блокировки)',
+
+        'settings' => [
+            'title' => 'Настройки APNs',
+            'info'  => 'Конфигурация Apple Push Notification service для Live Activity',
+        ],
+
+        'fields' => [
+            'enabled'      => 'Включить Apple Live Activity',
+            'enabled-info' => 'Отправлять обновления Live Activity на iOS через APNs при смене статуса заказа',
+            'sandbox'      => 'Режим Sandbox',
+            'sandbox-info' => 'Использовать APNs sandbox (api.sandbox.push.apple.com). Отключите для production.',
+            'bundle-id'    => 'Bundle ID приложения',
+            'bundle-id-info' => 'Идентификатор пакета iOS-приложения (например, com.example.app)',
+            'team-id'      => 'Apple Team ID',
+            'team-id-info' => '10-символьный Team ID из Apple Developer Portal',
+            'key-id'       => 'APNs Key ID',
+            'key-id-info'  => '10-символьный Key ID для .p8 ключа аутентификации',
+            'p8-key'       => '.p8 приватный ключ',
+            'p8-key-info'  => 'Вставьте полное содержимое файла AuthKey_XXXXXXXX.p8 или укажите абсолютный путь к файлу',
+        ],
+    ],
+
     'settings' => [
         'title' => 'Push-уведомления',
         'info'  => 'Настройки push-уведомлений через Firebase Cloud Messaging',

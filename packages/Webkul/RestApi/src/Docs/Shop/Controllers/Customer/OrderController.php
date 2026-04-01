@@ -136,6 +136,120 @@ class OrderController
 
     /**
      * @OA\Post(
+     *      path="/api/v1/customer/orders/bind-table",
+     *      operationId="bindCustomerOrderTable",
+     *      tags={"Orders"},
+     *      summary="Bind table number to customer's order",
+     *      description="Bind table number to a specific order of the authenticated customer.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"order_id", "table_number"},
+     *              @OA\Property(
+     *                  property="order_id",
+     *                  type="integer",
+     *                  format="int64",
+     *                  description="Customer order ID",
+     *                  example=1
+     *              ),
+     *              @OA\Property(
+     *                  property="table_number",
+     *                  type="integer",
+     *                  format="int32",
+     *                  minimum=1,
+     *                  description="Table number to bind to the order",
+     *                  example=5
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Order"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number bound to order successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
+     * )
+     */
+    public function bindTable() {}
+
+    /**
+     * @OA\Delete(
+     *      path="/api/v1/customer/orders/bind-table",
+     *      operationId="unbindCustomerOrderTable",
+     *      tags={"Orders"},
+     *      summary="Unbind table number from customer's order",
+     *      description="Unbind table number from a specific order of the authenticated customer.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"order_id"},
+     *              @OA\Property(
+     *                  property="order_id",
+     *                  type="integer",
+     *                  format="int64",
+     *                  description="Customer order ID",
+     *                  example=1
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  ref="#/components/schemas/Order"
+     *              ),
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Table number unbound from order successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
+     * )
+     */
+    public function unbindTable() {}
+
+    /**
+     * @OA\Post(
      *      path="/api/v1/customer/orders/{id}/cancel",
      *      operationId="cancelCustomerOrder",
      *      tags={"Orders"},
@@ -822,4 +936,63 @@ class OrderController
      * )
      */
     public function cancelledOrders() {}
+
+    /**
+     * @OA\Post(
+     *      path="/api/v1/customer/live-activity-token",
+     *      operationId="saveLiveActivityToken",
+     *      tags={"Orders"},
+     *      summary="Save Apple Live Activity push token for an order",
+     *      description="Stores (or replaces) an Apple Live Activity push token bound to a specific order. The backend uses this token to send Live Activity updates to the iOS lock-screen widget whenever the order status changes. A repeated call with the same order_number overwrites the previous token.",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\RequestBody(
+     *          required=true,
+     *          @OA\JsonContent(
+     *              required={"push_token", "order_number"},
+     *              @OA\Property(
+     *                  property="push_token",
+     *                  type="string",
+     *                  description="Apple APNs Live Activity push token received from ActivityKit on iOS",
+     *                  example="a1b2c3d4e5f6..."
+     *              ),
+     *              @OA\Property(
+     *                  property="order_number",
+     *                  type="string",
+     *                  description="Order increment_id (e.g. 00000123)",
+     *                  example="00000123"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Token saved successfully",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Live Activity push token saved successfully."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found or does not belong to the authenticated customer",
+     *          @OA\JsonContent(
+     *              @OA\Property(property="message", type="string", example="Order not found.")
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error",
+     *          @OA\JsonContent(
+     *              @OA\Property(property="message", type="string", example="The push token field is required.")
+     *          )
+     *      )
+     * )
+     */
+    public function storeLiveActivityToken() {}
 }

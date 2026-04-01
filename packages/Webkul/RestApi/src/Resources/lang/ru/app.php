@@ -531,6 +531,8 @@ return [
             'orders' => [
                 'cancel' => 'Заказ успешно отменен.',
                 'rate-success' => 'Спасибо за оценку',
+                'bind-table-success' => 'Номер стола успешно привязан к заказу.',
+                'unbind-table-success' => 'Номер стола успешно отвязан от заказа.',
 
                 'payment-confirmed' => 'Оплата подтверждена.',
 
@@ -541,6 +543,8 @@ return [
                     'invalid-order'  => 'Заказ не позволяет добавлять или удалять сохранённую карту.',
                     'card-not-found' => 'Сохранённая карта не найдена.',
                 ],
+
+                'live-activity-token-saved' => 'Live Activity push-токен успешно сохранён.',
 
                 'error' => [
                     'cancel-error'                    => 'Заказ не может быть отменен.',
