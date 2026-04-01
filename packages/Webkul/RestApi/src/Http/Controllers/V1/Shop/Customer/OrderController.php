@@ -361,7 +361,8 @@ class OrderController extends CustomerController
      */
     public function cancel(Request $request, int $id): \Illuminate\Http\Response
     {
-        $order = $this->resolveShopUser($request)->orders()->find($id);
+        $customer = $this->resolveShopUser($request);
+        $order = $customer->orders()->with('payment', 'items')->find($id);
 
         if (! $order) {
             return response([
@@ -369,9 +370,69 @@ class OrderController extends CustomerController
             ], 404);
         }
 
+        if ($order->payment?->method === 'alfabank') {
+            $bankOrderId = $this->resolveAlfabankOrderId($order);
+
+            if (! $bankOrderId) {
+                return response([
+                    'message' => 'Cancel is unavailable: missing Alfabank gateway order id.',
+                ], 422);
+            }
+
+            try {
+                $gatewayStatus = $this->fetchAlfabankOrderStatus($bankOrderId, $order);
+                $isPaidInGateway = $this->isAlfabankOrderPaid($gatewayStatus);
+            } catch (\RuntimeException $e) {
+                return response([
+                    'message' => $e->getMessage(),
+                ], 422);
+            } catch (\Exception $e) {
+                return response([
+                    'message' => 'Failed to check payment status in Alfabank gateway.',
+                ], 500);
+            }
+
+            if ($isPaidInGateway) {
+                try {
+                    $gatewayResponse = $this->processGatewayFullRefund($order, $bankOrderId);
+                } catch (\RuntimeException $e) {
+                    return response([
+                        'message' => $e->getMessage(),
+                    ], 422);
+                } catch (\Exception $e) {
+                    return response([
+                        'message' => 'Failed to process refund request.',
+                    ], 500);
+                }
+
+                if ($order->status !== Order::STATUS_CANCELED) {
+                    $this->orderRepository->update([
+                        'status' => Order::STATUS_CANCELED,
+                    ], $order->id);
+
+                    $order->refresh();
+                }
+
+                return response([
+                    'message' => 'Order has been canceled with full refund request.',
+                    'data'    => [
+                        'order_id'         => $order->id,
+                        'order_status'     => $order->status,
+                        'gateway_order_id' => $bankOrderId,
+                        'gateway_action'   => 'refund',
+                        'gateway_response' => $gatewayResponse,
+                    ],
+                ]);
+            }
+        }
+
         if ($this->getRepositoryInstance()->cancel($order)) {
             return response([
                 'message' => trans('rest-api::app.shop.sales.orders.cancel'),
+                'data'    => [
+                    'order_id'       => $order->id,
+                    'gateway_action' => $order->payment?->method === 'alfabank' ? 'cancel' : 'none',
+                ],
             ]);
         }
 
@@ -580,6 +641,87 @@ class OrderController extends CustomerController
         ];
 
         return $codes[strtoupper($currencyCode)] ?? null;
+    }
+
+    /**
+     * Fetch order status from Alfabank gateway.
+     *
+     * @throws \RuntimeException
+     */
+    protected function fetchAlfabankOrderStatus(string $bankOrderId, Order $order): string
+    {
+        $alfabankLogChannel = config('alfabank-payment.log_channel', 'daily');
+        $alfabankApi = app(\Webkul\AlfabankPayment\Services\AlfabankApiService::class);
+        $response = $alfabankApi->getOrderStatus($bankOrderId);
+
+        if (isset($response['errorCode']) && (string) $response['errorCode'] !== '0') {
+            Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: status check failed', [
+                'order_id'         => $order->id,
+                'gateway_order_id' => $bankOrderId,
+                'errorCode'        => $response['errorCode'] ?? null,
+                'errorMessage'     => $response['errorMessage'] ?? null,
+            ]);
+
+            throw new \RuntimeException(
+                'Alfabank status check error: ' . ($response['errorMessage'] ?? 'Unknown gateway error')
+            );
+        }
+
+        if (! array_key_exists('orderStatus', $response)) {
+            throw new \RuntimeException('Alfabank status check error: missing orderStatus in gateway response.');
+        }
+
+        return (string) $response['orderStatus'];
+    }
+
+    /**
+     * Check if Alfabank order is paid in gateway.
+     */
+    protected function isAlfabankOrderPaid(string $gatewayOrderStatus): bool
+    {
+        return $gatewayOrderStatus === '2';
+    }
+
+    /**
+     * Send full refund request for Alfabank order.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws \RuntimeException
+     */
+    protected function processGatewayFullRefund(Order $order, string $bankOrderId): array
+    {
+        $alfabankLogChannel = config('alfabank-payment.log_channel', 'daily');
+        $currency = $this->resolveNumericCurrencyCode((string) $order->order_currency_code);
+        $language = app()->getLocale() ?: 'ru';
+
+        Log::channel($alfabankLogChannel)->info('Alfabank customer cancel: full refund request', [
+            'order_id'         => $order->id,
+            'gateway_order_id' => $bankOrderId,
+        ]);
+
+        $alfabankApi = app(\Webkul\AlfabankPayment\Services\AlfabankApiService::class);
+        $response = $alfabankApi->refundOrder($bankOrderId, 0, $language, $currency);
+
+        if (isset($response['errorCode']) && (string) $response['errorCode'] !== '0') {
+            Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: refund failed', [
+                'order_id'         => $order->id,
+                'gateway_order_id' => $bankOrderId,
+                'errorCode'        => $response['errorCode'] ?? null,
+                'errorMessage'     => $response['errorMessage'] ?? null,
+            ]);
+
+            throw new \RuntimeException(
+                'Alfabank refund error: ' . ($response['errorMessage'] ?? 'Unknown gateway error')
+            );
+        }
+
+        Log::channel($alfabankLogChannel)->info('Alfabank customer cancel: refund accepted', [
+            'order_id'         => $order->id,
+            'gateway_order_id' => $bankOrderId,
+        ]);
+
+        return $response;
     }
 
     /**

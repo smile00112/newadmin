@@ -140,7 +140,7 @@ class OrderController
      *      operationId="cancelCustomerOrder",
      *      tags={"Orders"},
      *      summary="Cancel customer's order by id",
-     *      description="Cancel customer's order by id",
+     *      description="Cancel customer's order by id. For `alfabank` orders, endpoint first checks payment status in gateway: paid orders are sent to full refund, unpaid orders are canceled normally.",
      *      security={ {"sanctum": {} }},
      *
      *      @OA\Parameter(
@@ -163,14 +163,28 @@ class OrderController
      *              @OA\Property(
      *                  property="message",
      *                  type="string",
-     *                  example="Order canceled successfully."
+     *                  example="Order has been canceled with full refund request."
+     *              ),
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  @OA\Property(property="order_id", type="integer", example=101),
+     *                  @OA\Property(property="order_status", type="string", example="canceled"),
+     *                  @OA\Property(property="gateway_order_id", type="string", example="01491d0b-c848-7dd6-a20d-e96900a7d8c0"),
+     *                  @OA\Property(property="gateway_action", type="string", example="refund"),
+     *                  @OA\Property(property="gateway_response", type="object")
      *              )
      *          )
      *      ),
      *
      *      @OA\Response(
-     *          response=404,
-     *          description="Something went wrong!"
+     *          response=422,
+     *          description="Business rule or gateway validation error"
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=500,
+     *          description="Gateway/network processing error"
      *      )
      * )
      */
