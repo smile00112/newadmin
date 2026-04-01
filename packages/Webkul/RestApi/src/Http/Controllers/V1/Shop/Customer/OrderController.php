@@ -385,6 +385,115 @@ class OrderController extends CustomerController
     }
 
     /**
+     * Refund customer's paid order via Alfabank gateway.
+     */
+    public function refund(Request $request, int $id): \Illuminate\Http\Response
+    {
+        $validated = $request->validate([
+            'amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $customer = $this->resolveShopUser($request);
+        $alfabankLogChannel = config('alfabank-payment.log_channel', 'daily');
+
+        /** @var \Webkul\Sales\Models\Order|null $order */
+        $order = $customer->orders()->with('payment')->find($id);
+
+        if (! $order) {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.not-found'),
+            ], 404);
+        }
+
+        if ($order->payment?->method !== 'alfabank') {
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.error.invalid-payment-method'),
+            ], 422);
+        }
+
+        $bankOrderId = $this->resolveAlfabankOrderId($order);
+
+        if (! $bankOrderId) {
+            return response([
+                'message' => 'Refund is unavailable: missing Alfabank gateway order id.',
+            ], 422);
+        }
+
+        $requestedAmount = $validated['amount'] ?? null;
+        $gatewayAmount = $requestedAmount === null
+            ? 0
+            : (int) round(((float) $requestedAmount) * 100);
+
+        if ($requestedAmount !== null && $gatewayAmount <= 0) {
+            return response([
+                'message' => 'Refund amount must be greater than zero.',
+            ], 422);
+        }
+
+        $currency = $this->resolveNumericCurrencyCode((string) $order->order_currency_code);
+        $language = app()->getLocale() ?: 'ru';
+
+        try {
+            Log::channel($alfabankLogChannel)->info('Alfabank customer refund: request', [
+                'customer_id'      => $customer->id,
+                'order_id'         => $order->id,
+                'gateway_order_id' => $bankOrderId,
+                'requested_amount' => $requestedAmount,
+                'gateway_amount'   => $gatewayAmount,
+            ]);
+
+            $alfabankApi = app(\Webkul\AlfabankPayment\Services\AlfabankApiService::class);
+            $response = $alfabankApi->refundOrder($bankOrderId, $gatewayAmount, $language, $currency);
+
+            if (isset($response['errorCode']) && (string) $response['errorCode'] !== '0') {
+                Log::channel($alfabankLogChannel)->warning('Alfabank customer refund: gateway error', [
+                    'customer_id'      => $customer->id,
+                    'order_id'         => $order->id,
+                    'gateway_order_id' => $bankOrderId,
+                    'errorCode'        => $response['errorCode'] ?? null,
+                    'errorMessage'     => $response['errorMessage'] ?? null,
+                ]);
+
+                return response([
+                    'message' => 'Alfabank refund error: ' . ($response['errorMessage'] ?? 'Unknown gateway error'),
+                ], 422);
+            }
+
+            Log::channel($alfabankLogChannel)->info('Alfabank customer refund: success', [
+                'customer_id'      => $customer->id,
+                'order_id'         => $order->id,
+                'gateway_order_id' => $bankOrderId,
+                'requested_amount' => $requestedAmount,
+                'gateway_amount'   => $gatewayAmount,
+            ]);
+
+            return response([
+                'message' => 'Refund request has been sent successfully.',
+                'data'    => [
+                    'order_id'         => $order->id,
+                    'gateway_order_id' => $bankOrderId,
+                    'requested_amount' => $requestedAmount,
+                    'gateway_amount'   => $gatewayAmount,
+                    'gateway_response' => $response,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::channel($alfabankLogChannel)->error('Alfabank customer refund: exception', [
+                'customer_id'      => $customer->id,
+                'order_id'         => $order->id,
+                'gateway_order_id' => $bankOrderId,
+                'requested_amount' => $requestedAmount,
+                'gateway_amount'   => $gatewayAmount,
+                'exception'        => $e->getMessage(),
+            ]);
+
+            return response([
+                'message' => 'Failed to process refund request.',
+            ], 500);
+        }
+    }
+
+    /**
      * Get detailed reason why order cannot be canceled.
      *
      * @param  \Webkul\Sales\Models\Order  $order
@@ -429,6 +538,39 @@ class OrderController extends CustomerController
 
         // Общая причина
         return trans('rest-api::app.shop.sales.orders.error.cancel-reason-general');
+    }
+
+    /**
+     * Resolve saved Alfabank gateway order id from order data.
+     */
+    protected function resolveAlfabankOrderId(Order $order): ?string
+    {
+        $paymentAdditional = $order->payment?->additional ?? [];
+        $orderAdditional = $order->additional ?? [];
+
+        $gatewayOrderId = $paymentAdditional['alfabank_order_id']
+            ?? $orderAdditional['alfabank_order_id']
+            ?? null;
+
+        return is_string($gatewayOrderId) && $gatewayOrderId !== ''
+            ? $gatewayOrderId
+            : null;
+    }
+
+    /**
+     * Resolve numeric ISO 4217 code by alpha currency code.
+     */
+    protected function resolveNumericCurrencyCode(string $currencyCode): ?string
+    {
+        $codes = [
+            'BYN' => '933',
+            'BYR' => '974',
+            'RUB' => '643',
+            'USD' => '840',
+            'EUR' => '978',
+        ];
+
+        return $codes[strtoupper($currencyCode)] ?? null;
     }
 
     /**

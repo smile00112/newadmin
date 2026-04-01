@@ -530,7 +530,7 @@ return [
         'sales' => [
             'orders' => [
                 'cancel' => 'Заказ успешно отменен.',
-                'rate-success' => 'Спасибо за отзыв.',
+                'rate-success' => 'Спасибо за оценку',
 
                 'payment-confirmed' => 'Оплата подтверждена.',
 

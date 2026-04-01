@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ${APP_NAME:-bagisto}_app
+    container_name: ${APP_NAME:-Surprise}_app
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
@@ -16,7 +16,7 @@ services:
         max-size: "10m"
         max-file: "3"
     environment:
-      - APP_NAME=${APP_NAME:-Bagisto}
+      - APP_NAME=${APP_NAME:-Surprise}
       - APP_ENV=${APP_ENV:-production}
       - APP_KEY=${APP_KEY}
       - APP_DEBUG=${APP_DEBUG:-false}
@@ -74,7 +74,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: ${APP_NAME:-bagisto}_nginx
+    container_name: ${APP_NAME:-Surprise}_nginx
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
@@ -110,7 +110,7 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: ${APP_NAME:-bagisto}_mysql
+    container_name: ${APP_NAME:-Surprise}_mysql
     restart: unless-stopped
     ports:
       - "127.0.0.1:${FORWARD_DB_PORT:-3306}:3306"
@@ -135,7 +135,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ${APP_NAME:-bagisto}_redis
+    container_name: ${APP_NAME:-Surprise}_redis
     restart: unless-stopped
     ports:
       - "127.0.0.1:${FORWARD_REDIS_PORT:-6379}:6379"
@@ -159,7 +159,7 @@ services:
 
   adminer:
     image: adminer:latest
-    container_name: ${APP_NAME:-bagisto}_adminer
+    container_name: ${APP_NAME:-Surprise}_adminer
     restart: unless-stopped
     expose:
       - "8080"
@@ -174,7 +174,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ${APP_NAME:-bagisto}_reverb
+    container_name: ${APP_NAME:-Surprise}_reverb
     restart: unless-stopped
     command: php artisan reverb:start --host=0.0.0.0 --port=8080
     working_dir: /var/www/html
@@ -187,7 +187,7 @@ services:
         max-size: "10m"
         max-file: "3"
     environment:
-      - APP_NAME=${APP_NAME:-Bagisto}
+      - APP_NAME=${APP_NAME:-Surprise}
       - APP_ENV=${APP_ENV:-production}
       - APP_KEY=${APP_KEY}
       - APP_DEBUG=${APP_DEBUG:-false}
@@ -226,7 +226,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ${APP_NAME:-bagisto}_queue
+    container_name: ${APP_NAME:-Surprise}_queue
     restart: unless-stopped
     working_dir: /var/www/html
     command: php artisan queue:work redis --queue=default,broadcastable --sleep=3 --tries=3 --max-time=3600 --timeout=300
@@ -244,11 +244,20 @@ services:
       timeout: 5s
       retries: 3
     environment:
-      - APP_NAME=${APP_NAME:-Bagisto}
+      - APP_NAME=${APP_NAME:-Surprise}
       - APP_ENV=${APP_ENV:-production}
       - APP_KEY=${APP_KEY}
       - APP_DEBUG=${APP_DEBUG:-false}
+      - APP_DEBUG_ALLOWED_IPS=${APP_DEBUG_ALLOWED_IPS:-}
       - APP_URL=${APP_URL}
+      - APP_ADMIN_URL=${APP_ADMIN_URL:-admin}
+      - APP_TIMEZONE=${APP_TIMEZONE:-UTC}
+      - APP_LOCALE=${APP_LOCALE:-ru}
+      - APP_FALLBACK_LOCALE=${APP_FALLBACK_LOCALE:-ru}
+      - APP_FAKER_LOCALE=${APP_FAKER_LOCALE:-en_US}
+      - APP_CURRENCY=${APP_CURRENCY:-USD}
+      - TELESCOPE_ENABLED=${TELESCOPE_ENABLED:-false}
+      - OCTANE_SERVER=roadrunner
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE}
@@ -257,9 +266,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_PORT=6379
-      - QUEUE_CONNECTION=redis
       - CACHE_DRIVER=redis
       - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
       - BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}
       - REVERB_APP_ID=${REVERB_APP_ID:-my-app-id}
       - REVERB_APP_KEY=${REVERB_APP_KEY:-my-app-key}
@@ -267,6 +276,15 @@ services:
       - REVERB_HOST=reverb
       - REVERB_PORT=8080
       - REVERB_SCHEME=http
+      - RUN_MIGRATIONS=${RUN_MIGRATIONS:-false}
+      - SESSION_LIFETIME=${SESSION_LIFETIME:-120}
+      - FILESYSTEM_DISK=${FILESYSTEM_DISK:-public}
+      - LOG_CHANNEL=${LOG_CHANNEL:-stack}
+      - LOG_LEVEL=${LOG_LEVEL:-warning}
+      - RESPONSE_CACHE_ENABLED=${RESPONSE_CACHE_ENABLED:-true}
+      - LOG_DEPRECATIONS_CHANNEL=${LOG_DEPRECATIONS_CHANNEL:-null}
+      - DB_CONNECTION=mysql
+      - TELESCOPE_ENABLED=${TELESCOPE_ENABLED:-false}
     networks:
       - app-network
     depends_on:
@@ -281,7 +299,7 @@ services:
 
   certbot:
     image: certbot/certbot:latest
-    container_name: ${APP_NAME:-bagisto}_certbot
+    container_name: ${APP_NAME:-Surprise}_certbot
     restart: unless-stopped
     volumes:
       - ./docker/nginx/ssl:/etc/letsencrypt

@@ -164,6 +164,46 @@ class AlfabankApiService
     }
 
     /**
+     * Refund captured payment amount for a registered bank order.
+     *
+     * @param  string  $orderId
+     * @param  int  $amount  Amount in minimal currency units (kopecks/cents).
+     * @param  string|null  $language
+     * @param  string|null  $currency  Numeric ISO 4217 code.
+     * @return array
+     */
+    public function refundOrder(
+        string $orderId,
+        int $amount,
+        ?string $language = null,
+        ?string $currency = null
+    ): array {
+        $url = $this->getBaseUrl() . 'refund.do';
+
+        $data = [
+            'userName' => $this->merchant,
+            'orderId'  => $orderId,
+            'amount'   => $amount,
+        ];
+
+        if ($this->token) {
+            $data['token'] = $this->token;
+        } else {
+            $data['password'] = $this->password;
+        }
+
+        if (! empty($language)) {
+            $data['language'] = $language;
+        }
+
+        if (! empty($currency)) {
+            $data['currency'] = $currency;
+        }
+
+        return $this->sendRequest($url, $data, [], 'refundOrder');
+    }
+
+    /**
      * Build registration data for order.
      *
      * @param  array  $orderData

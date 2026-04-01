@@ -2,8 +2,10 @@
 
 namespace Webkul\AlfabankPayment\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Webkul\AlfabankPayment\Listeners\RefundOrderListener;
 
 class AlfabankPaymentServiceProvider extends ServiceProvider
 {
@@ -29,6 +31,8 @@ class AlfabankPaymentServiceProvider extends ServiceProvider
         $this->mapWebRoutes();
 
         $this->mapAdminRoutes();
+
+        Event::listen('sales.refund.save.before', RefundOrderListener::class);
 
         $this->publishAssets();
     }

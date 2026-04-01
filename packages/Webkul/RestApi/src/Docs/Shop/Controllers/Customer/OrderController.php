@@ -178,6 +178,104 @@ class OrderController
 
     /**
      * @OA\Post(
+     *      path="/api/v1/customer/orders/{id}/refund",
+     *      operationId="refundCustomerOrder",
+     *      tags={"Orders"},
+     *      summary="Refund customer's paid order via Alfabank",
+     *      description="Sends refund request to Alfabank for customer's order. If `amount` is omitted, full refund is requested (`amount=0` in gateway minimal currency units).",
+     *      security={ {"sanctum": {} }},
+     *
+     *      @OA\Parameter(
+     *          name="id",
+     *          description="Order id",
+     *          required=true,
+     *          in="path",
+     *
+     *          @OA\Schema(
+     *              type="integer"
+     *          )
+     *      ),
+     *
+     *      @OA\RequestBody(
+     *          required=false,
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="amount",
+     *                  type="number",
+     *                  format="float",
+     *                  nullable=true,
+     *                  description="Refund amount in major currency units. If omitted, full refund is requested.",
+     *                  example=12.5
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=200,
+     *          description="Refund request accepted by gateway",
+     *
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Refund request has been sent successfully."
+     *              ),
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="object",
+     *                  @OA\Property(property="order_id", type="integer", example=101),
+     *                  @OA\Property(property="gateway_order_id", type="string", example="01491d0b-c848-7dd6-a20d-e96900a7d8c0"),
+     *                  @OA\Property(property="requested_amount", type="number", format="float", nullable=true, example=12.5),
+     *                  @OA\Property(property="gateway_amount", type="integer", example=1250),
+     *                  @OA\Property(property="gateway_response", type="object")
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=404,
+     *          description="Order not found",
+     *
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Order not found."
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation or business rule error",
+     *
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Alfabank refund error: Gateway rejected refund"
+     *              )
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=500,
+     *          description="Internal server error",
+     *
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Failed to process refund request."
+     *              )
+     *          )
+     *      )
+     * )
+     */
+    public function refund() {}
+
+    /**
+     * @OA\Post(
      *      path="/api/v1/customer/orders/{id}/confirm-payment",
      *      operationId="confirmCustomerOrderPayment",
      *      tags={"Orders"},

@@ -6338,6 +6338,143 @@
                 ]
             }
         },
+        "/api/v1/customer/orders/{id}/refund": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Refund customer's paid order via Alfabank",
+                "description": "Sends refund request to Alfabank for customer's order. If `amount` is omitted, full refund is requested (`amount=0` in gateway minimal currency units).",
+                "operationId": "refundCustomerOrder",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Order id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "amount": {
+                                        "description": "Refund amount in major currency units. If omitted, full refund is requested.",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 12.5,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Refund request accepted by gateway",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Refund request has been sent successfully."
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "order_id": {
+                                                    "type": "integer",
+                                                    "example": 101
+                                                },
+                                                "gateway_order_id": {
+                                                    "type": "string",
+                                                    "example": "01491d0b-c848-7dd6-a20d-e96900a7d8c0"
+                                                },
+                                                "requested_amount": {
+                                                    "type": "number",
+                                                    "format": "float",
+                                                    "example": 12.5,
+                                                    "nullable": true
+                                                },
+                                                "gateway_amount": {
+                                                    "type": "integer",
+                                                    "example": 1250
+                                                },
+                                                "gateway_response": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Order not found."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation or business rule error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Alfabank refund error: Gateway rejected refund"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Failed to process refund request."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/customer/orders/{id}/confirm-payment": {
             "post": {
                 "tags": [

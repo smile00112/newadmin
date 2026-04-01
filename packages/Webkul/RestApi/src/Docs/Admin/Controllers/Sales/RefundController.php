@@ -146,7 +146,7 @@ class RefundController
      *      operationId="storeOrderRefund",
      *      tags={"Refunds"},
      *      summary="Create refund for an order",
-     *      description="Create refund for an order",
+     *      description="Create refund for an order. For orders paid with `alfabank`, this operation also sends a gateway request to `refund.do` before local refund is persisted. If gateway refund fails, local refund creation is aborted.",
      *      security={ {"sanctum_admin": {} }},
      *
      *      @OA\Parameter(
@@ -222,6 +222,20 @@ class RefundController
      * 					type="string",
      * 					example="Order refund creation is not allowed."
      * 				)
+     *          )
+     *      ),
+     *
+     *      @OA\Response(
+     *          response=500,
+     *          description="Gateway refund failure",
+     *
+     *          @OA\JsonContent(
+     *
+     *              @OA\Property(
+     *                  property="message",
+     *                  type="string",
+     *                  example="Alfabank refund error: Gateway rejected refund"
+     *              )
      *          )
      *      ),
      *
