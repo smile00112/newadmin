@@ -224,6 +224,7 @@ class OrderController
      *                  property="data",
      *                  type="object",
      *                  @OA\Property(property="order_id", type="integer", example=101),
+ *                  @OA\Property(property="order_status", type="string", example="canceled"),
      *                  @OA\Property(property="gateway_order_id", type="string", example="01491d0b-c848-7dd6-a20d-e96900a7d8c0"),
      *                  @OA\Property(property="requested_amount", type="number", format="float", nullable=true, example=12.5),
      *                  @OA\Property(property="gateway_amount", type="integer", example=1250),

@@ -467,10 +467,19 @@ class OrderController extends CustomerController
                 'gateway_amount'   => $gatewayAmount,
             ]);
 
+            if ($order->status !== Order::STATUS_CANCELED) {
+                $this->orderRepository->update([
+                    'status' => Order::STATUS_CANCELED,
+                ], $order->id);
+
+                $order->refresh();
+            }
+
             return response([
                 'message' => 'Refund request has been sent successfully.',
                 'data'    => [
                     'order_id'         => $order->id,
+                    'order_status'     => $order->status,
                     'gateway_order_id' => $bankOrderId,
                     'requested_amount' => $requestedAmount,
                     'gateway_amount'   => $gatewayAmount,
