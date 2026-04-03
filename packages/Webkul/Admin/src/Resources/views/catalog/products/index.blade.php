@@ -1101,7 +1101,7 @@
                         :style="dropdownStyle"
                     >
                         <button
-                            v-for="(label, key) in typeLabels"
+                            v-for="(label, key) in dropdownTypeLabels"
                             :key="key"
                             type="button"
                             @click="changeType(key)"
@@ -1146,6 +1146,18 @@
                         },
                         dropdownStyle: {},
                     };
+                },
+
+                computed: {
+                    dropdownTypeLabels() {
+                        if (['bundle', 'grouped'].includes(this.currentType)) {
+                            return this.typeLabels;
+                        }
+                        const filtered = { ...this.typeLabels };
+                        delete filtered.bundle;
+                        delete filtered.grouped;
+                        return filtered;
+                    },
                 },
 
                 mounted() {

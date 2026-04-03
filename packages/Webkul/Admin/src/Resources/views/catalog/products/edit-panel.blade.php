@@ -76,6 +76,10 @@
                         'constructor' => 'Конструктор',
                         'configurable_constructor' => 'Настроенный + Конструктор',
                     ];
+
+                    if (! in_array($product->type, ['bundle', 'grouped'], true)) {
+                        unset($typeLabels['bundle'], $typeLabels['grouped']);
+                    }
                 @endphp
             </div>
 
