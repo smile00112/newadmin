@@ -64,6 +64,22 @@ return [
                 'default' => '',
                 'depends' => 'enabled:1',
             ],
+            [
+                'name'    => 'rate_order_delay_minutes',
+                'title'   => 'push_notification::app.apple-live-activity.fields.rate-order-delay',
+                'info'    => 'push_notification::app.apple-live-activity.fields.rate-order-delay-info',
+                'type'    => 'number',
+                'default' => 10,
+                'depends' => 'enabled:1',
+            ],
+            [
+                'name'    => 'close_delay_minutes',
+                'title'   => 'push_notification::app.apple-live-activity.fields.close-delay',
+                'info'    => 'push_notification::app.apple-live-activity.fields.close-delay-info',
+                'type'    => 'number',
+                'default' => 60,
+                'depends' => 'enabled:1',
+            ],
         ],
     ],
 

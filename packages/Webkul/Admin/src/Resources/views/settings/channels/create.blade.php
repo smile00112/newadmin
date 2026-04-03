@@ -450,7 +450,7 @@
                         </div>
 
                         <!-- Default Currency Selector -->
-                        <x-admin::form.control-group class="!mb-0">
+                        <x-admin::form.control-group>
                             <x-admin::form.control-group.label class="required">
                                 @lang('admin::app.settings.channels.create.default-currency')
                             </x-admin::form.control-group.label>
@@ -476,6 +476,30 @@
                             </x-admin::form.control-group.control>
 
                             <x-admin::form.control-group.error control-name="base_currency_id" />
+                        </x-admin::form.control-group>
+
+                        <!-- Timezone -->
+                        <x-admin::form.control-group class="!mb-0">
+                            <x-admin::form.control-group.label class="required">
+                                @lang('admin::app.settings.channels.create.timezone')
+                            </x-admin::form.control-group.label>
+
+                            <x-admin::form.control-group.control
+                                type="select"
+                                id="timezone"
+                                name="timezone"
+                                rules="required"
+                                :value="old('timezone', config('app.timezone'))"
+                                :label="trans('admin::app.settings.channels.create.timezone')"
+                            >
+                                @foreach (\DateTimeZone::listIdentifiers(\DateTimeZone::ALL) as $tz)
+                                    <option value="{{ $tz }}" {{ old('timezone', config('app.timezone')) === $tz ? 'selected' : '' }}>
+                                        {{ $tz }}
+                                    </option>
+                                @endforeach
+                            </x-admin::form.control-group.control>
+
+                            <x-admin::form.control-group.error control-name="timezone" />
                         </x-admin::form.control-group>
                     </x-slot>
                 </x-admin::accordion>

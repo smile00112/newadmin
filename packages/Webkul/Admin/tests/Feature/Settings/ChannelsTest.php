@@ -41,6 +41,7 @@ it('should fail the validation with errors when certain field not provided when 
         ->assertJsonValidationErrorFor('default_locale_id')
         ->assertJsonValidationErrorFor('currencies')
         ->assertJsonValidationErrorFor('base_currency_id')
+        ->assertJsonValidationErrorFor('timezone')
         ->assertJsonValidationErrorFor('seo_title')
         ->assertJsonValidationErrorFor('seo_description')
         ->assertJsonValidationErrorFor('seo_keywords')
@@ -63,6 +64,7 @@ it('should store the newly created channels', function () {
         'inventory_sources' => [1],
         'locales'           => [1],
         'currencies'        => [1],
+        'timezone'          => 'Europe/Moscow',
         'seo_title'         => fake()->title(),
         'seo_description'   => substr(fake()->paragraph(), 0, 50),
         'seo_keywords'      => fake()->name(),
@@ -86,6 +88,7 @@ it('should store the newly created channels', function () {
                 'root_category_id'  => $data['root_category_id'],
                 'default_locale_id' => $data['default_locale_id'],
                 'base_currency_id'  => $data['base_currency_id'],
+                'timezone'          => $data['timezone'],
             ],
         ],
     ]);
@@ -107,22 +110,48 @@ it('should returns the edit page of channels', function () {
 it('should fail the validation with errors when certain field not provided when update the channels', function () {
     // Arrange.
     $channel = Channel::factory()->create();
+    $locale = app()->getLocale();
 
     // Act and Assert.
     $this->loginAsAdmin();
 
     putJson(route('admin.settings.channels.update', $channel->id))
         ->assertJsonValidationErrorFor('code')
-        ->assertJsonValidationErrorFor('en.name')
-        ->assertJsonValidationErrorFor('en.seo_title')
-        ->assertJsonValidationErrorFor('en.seo_description')
-        ->assertJsonValidationErrorFor('en.seo_keywords')
+        ->assertJsonValidationErrorFor($locale.'.name')
+        ->assertJsonValidationErrorFor($locale.'.seo_title')
+        ->assertJsonValidationErrorFor($locale.'.seo_description')
+        ->assertJsonValidationErrorFor($locale.'.seo_keywords')
         ->assertJsonValidationErrorFor('inventory_sources')
         ->assertJsonValidationErrorFor('root_category_id')
         ->assertJsonValidationErrorFor('locales')
         ->assertJsonValidationErrorFor('default_locale_id')
         ->assertJsonValidationErrorFor('currencies')
         ->assertJsonValidationErrorFor('base_currency_id')
+        ->assertJsonValidationErrorFor('timezone')
+        ->assertUnprocessable();
+});
+
+it('should fail validation when timezone is invalid on store', function () {
+    $this->loginAsAdmin();
+
+    postJson(route('admin.settings.channels.store'), [
+        'code'              => fake()->numerify('code######'),
+        'theme'             => 'default',
+        'hostname'          => 'http://'.fake()->ipv4(),
+        'root_category_id'  => 1,
+        'default_locale_id' => 1,
+        'base_currency_id'  => 1,
+        'name'              => fake()->name(),
+        'description'       => substr(fake()->paragraph, 0, 50),
+        'inventory_sources' => [1],
+        'locales'           => [1],
+        'currencies'        => [1],
+        'timezone'          => 'Not/A_Real_Zone',
+        'seo_title'         => fake()->title(),
+        'seo_description'   => substr(fake()->paragraph(), 0, 50),
+        'seo_keywords'      => fake()->name(),
+    ])
+        ->assertJsonValidationErrorFor('timezone')
         ->assertUnprocessable();
 });
 
@@ -151,6 +180,7 @@ it('should update the existing channel', function () {
         'inventory_sources' => [1],
         'locales'           => [1],
         'currencies'        => [1],
+        'timezone'          => 'Europe/Moscow',
         'is_maintenance_on' => fake()->boolean(),
     ])
         ->assertRedirect(route('admin.settings.channels.index'))
@@ -165,6 +195,7 @@ it('should update the existing channel', function () {
                 'base_currency_id'  => 1,
                 'root_category_id'  => 1,
                 'default_locale_id' => 1,
+                'timezone'          => $data['timezone'],
             ],
         ],
     ]);
@@ -179,7 +210,9 @@ it('should delete the existing channel', function () {
 
     deleteJson(route('admin.settings.channels.delete', $channel->id))
         ->assertOk()
-        ->assertSeeText(trans('admin::app.settings.channels.index.delete-success'));
+        ->assertJson([
+            'message' => trans('admin::app.settings.channels.index.delete-success'),
+        ]);
 
     $this->assertDatabaseMissing('channels', ['id' => $channel->id]);
 });

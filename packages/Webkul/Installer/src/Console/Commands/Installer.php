@@ -667,6 +667,7 @@ class Installer extends Command
             'allowed_locales'    => $this->envDetails['APP_ALLOWED_LOCALES'] ?? [$this->getEnvVariable('APP_LOCALE', 'en')],
             'default_currency'   => $this->envDetails['APP_CURRENCY'] ?? $this->getEnvVariable('APP_CURRENCY', 'USD'),
             'allowed_currencies' => $this->envDetails['APP_ALLOWED_CURRENCIES'] ?? [$this->getEnvVariable('APP_CURRENCY', 'USD')],
+            'app_timezone'       => $this->envDetails['APP_TIMEZONE'] ?? $this->getEnvVariable('APP_TIMEZONE', config('app.timezone')),
         ];
     }
 

@@ -75,6 +75,7 @@ class DatabaseManager
             'allowed_locales'    => $data['parameter']['allowed_locales'],
             'default_currency'   => $data['parameter']['default_currency'],
             'allowed_currencies' => $data['parameter']['allowed_currencies'],
+            'app_timezone'       => $data['parameter']['app_timezone'] ?? config('app.timezone'),
         ];
 
         try {

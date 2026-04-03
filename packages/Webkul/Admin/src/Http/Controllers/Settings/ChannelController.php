@@ -2,11 +2,17 @@
 
 namespace Webkul\Admin\Http\Controllers\Settings;
 
+use DateTimeZone;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 use Webkul\Admin\DataGrids\Settings\ChannelDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Core\Repositories\ChannelRepository;
+use Webkul\Core\Rules\Code;
 
 class ChannelController extends Controller
 {
@@ -20,7 +26,7 @@ class ChannelController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index()
     {
@@ -34,7 +40,7 @@ class ChannelController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function create()
     {
@@ -44,13 +50,13 @@ class ChannelController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function store()
     {
         $data = $this->validate(request(), [
             /* general */
-            'code'                  => ['required', 'unique:channels,code', new \Webkul\Core\Rules\Code],
+            'code'                  => ['required', 'unique:channels,code', new Code],
             'name'                  => 'required',
             'description'           => 'nullable',
             'inventory_sources'     => 'required|array|min:1',
@@ -62,6 +68,7 @@ class ChannelController extends Controller
             'default_locale_id'     => 'required|in_array:locales.*',
             'currencies'            => 'required|array|min:1',
             'base_currency_id'      => 'required|in_array:currencies.*',
+            'timezone'              => $this->timezoneRules(),
 
             /* design */
             'theme'                 => 'nullable',
@@ -101,7 +108,7 @@ class ChannelController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function edit(int $id)
     {
@@ -113,7 +120,7 @@ class ChannelController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
     public function update(int $id)
     {
@@ -121,7 +128,7 @@ class ChannelController extends Controller
 
         $data = $this->validate(request(), [
             /* general */
-            'code'                             => ['required', 'unique:channels,code,'.$id, new \Webkul\Core\Rules\Code],
+            'code'                             => ['required', 'unique:channels,code,'.$id, new Code],
             $locale.'.name'                    => 'required',
             $locale.'.description'             => 'nullable',
             'inventory_sources'                => 'required|array|min:1',
@@ -133,6 +140,7 @@ class ChannelController extends Controller
             'default_locale_id'                => 'required|in_array:locales.*',
             'currencies'                       => 'required|array|min:1',
             'base_currency_id'                 => 'required|in_array:currencies.*',
+            'timezone'                         => $this->timezoneRules(),
 
             /* design */
             'theme'                            => 'nullable',
@@ -247,5 +255,17 @@ class ChannelController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * @return array<int, ValidationRule|string>
+     */
+    private function timezoneRules(): array
+    {
+        return [
+            'required',
+            'string',
+            Rule::in(DateTimeZone::listIdentifiers(DateTimeZone::ALL)),
+        ];
     }
 }
