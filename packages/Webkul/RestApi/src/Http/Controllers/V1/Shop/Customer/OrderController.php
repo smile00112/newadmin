@@ -372,60 +372,92 @@ class OrderController extends CustomerController
             ], 404);
         }
 
+        $gatewayFallbackReason = null;
+
         if ($order->payment?->method === 'alfabank') {
+            $alfabankLogChannel = config('alfabank-payment.log_channel', 'daily');
             $bankOrderId = $this->resolveAlfabankOrderId($order);
 
             if (! $bankOrderId) {
-                return response([
-                    'message' => 'Cancel is unavailable: missing Alfabank gateway order id.',
-                ], 422);
-            }
-
-            try {
-                $gatewayStatus = $this->fetchAlfabankOrderStatus($bankOrderId, $order);
-                $isPaidInGateway = $this->isAlfabankOrderPaid($gatewayStatus);
-            } catch (\RuntimeException $e) {
-                return response([
-                    'message' => $e->getMessage(),
-                ], 422);
-            } catch (\Exception $e) {
-                return response([
-                    'message' => 'Failed to check payment status in Alfabank gateway.',
-                ], 500);
-            }
-
-            if ($isPaidInGateway) {
-                try {
-                    $gatewayResponse = $this->processGatewayFullRefund($order, $bankOrderId);
-                } catch (\RuntimeException $e) {
-                    return response([
-                        'message' => $e->getMessage(),
-                    ], 422);
-                } catch (\Exception $e) {
-                    return response([
-                        'message' => 'Failed to process refund request.',
-                    ], 500);
-                }
-
-                if ($order->status !== Order::STATUS_CANCELED) {
-                    $this->orderRepository->update([
-                        'status' => Order::STATUS_CANCELED,
-                    ], $order->id);
-
-                    $order->refresh();
-                }
-
-                return response([
-                    'message' => 'Order has been canceled with full refund request.',
-                    'data'    => [
-                        'order_id'         => $order->id,
-                        'order_status'     => $order->status,
-                        'gateway_order_id' => $bankOrderId,
-                        'gateway_action'   => 'refund',
-                        'gateway_response' => $gatewayResponse,
-                    ],
+                Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: falling back to local cancel', [
+                    'order_id' => $order->id,
+                    'reason'   => 'missing_gateway_order_id',
                 ]);
+                $gatewayFallbackReason = 'missing_gateway_order_id';
+            } else {
+                $isPaidInGateway = false;
+                $gatewayFailed = false;
+
+                try {
+                    $gatewayStatus = $this->fetchAlfabankOrderStatus($bankOrderId, $order);
+                    $isPaidInGateway = $this->isAlfabankOrderPaid($gatewayStatus);
+                } catch (\RuntimeException $e) {
+                    Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: status check failed, falling back to local cancel', [
+                        'order_id'         => $order->id,
+                        'gateway_order_id' => $bankOrderId,
+                        'reason'           => 'status_check_failed',
+                        'message'          => $e->getMessage(),
+                    ]);
+                    $gatewayFallbackReason = 'status_check_failed';
+                    $gatewayFailed = true;
+                } catch (\Throwable $e) {
+                    Log::channel($alfabankLogChannel)->error('Alfabank customer cancel: unexpected error during status check, falling back to local cancel', [
+                        'order_id'        => $order->id,
+                        'gateway_order_id' => $bankOrderId,
+                        'reason'          => 'unexpected',
+                        'message'         => $e->getMessage(),
+                        'exception_class' => get_class($e),
+                    ]);
+                    $gatewayFallbackReason = 'unexpected';
+                    $gatewayFailed = true;
+                }
+
+                if (! $gatewayFailed && $isPaidInGateway) {
+                    try {
+                        $gatewayResponse = $this->processGatewayFullRefund($order, $bankOrderId);
+
+                        if ($order->status !== Order::STATUS_CANCELED) {
+                            $this->orderRepository->update([
+                                'status' => Order::STATUS_CANCELED,
+                            ], $order->id);
+
+                            $order->refresh();
+                        }
+
+                        return response([
+                            'message' => 'Order has been canceled with full refund request.',
+                            'data'    => [
+                                'order_id'         => $order->id,
+                                'order_status'     => $order->status,
+                                'gateway_order_id' => $bankOrderId,
+                                'gateway_action'   => 'refund',
+                                'gateway_response' => $gatewayResponse,
+                            ],
+                        ]);
+                    } catch (\RuntimeException $e) {
+                        Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: refund failed, falling back to local cancel', [
+                            'order_id'         => $order->id,
+                            'gateway_order_id' => $bankOrderId,
+                            'reason'           => 'refund_failed',
+                            'message'          => $e->getMessage(),
+                        ]);
+                        $gatewayFallbackReason = 'refund_failed';
+                    } catch (\Throwable $e) {
+                        Log::channel($alfabankLogChannel)->error('Alfabank customer cancel: unexpected error during refund, falling back to local cancel', [
+                            'order_id'        => $order->id,
+                            'gateway_order_id' => $bankOrderId,
+                            'reason'          => 'unexpected',
+                            'message'         => $e->getMessage(),
+                            'exception_class' => get_class($e),
+                        ]);
+                        $gatewayFallbackReason = 'unexpected';
+                    }
+                }
             }
+        }
+
+        if ($gatewayFallbackReason !== null) {
+            return $this->cancelLocallyAfterGatewayError($order, $gatewayFallbackReason);
         }
 
         if ($this->getRepositoryInstance()->cancel($order)) {
@@ -443,7 +475,71 @@ class OrderController extends CustomerController
 
         return response([
             'message' => trans('rest-api::app.shop.sales.orders.error.cancel-error'),
-            'reason' => $reason,
+            'reason'  => $reason,
+        ], 422);
+    }
+
+    /**
+     * Attempt local order cancellation after an Alfabank gateway error.
+     *
+     * Tries full repository cancel first (stock return, events).
+     * If that is unavailable but the order is not in a terminal state,
+     * forces a status-only update to STATUS_CANCELED — matching the same
+     * approach used on successful gateway refund. Every outcome is logged.
+     */
+    protected function cancelLocallyAfterGatewayError(Order $order, string $fallbackReason): \Illuminate\Http\Response
+    {
+        $alfabankLogChannel = config('alfabank-payment.log_channel', 'daily');
+
+        if ($this->getRepositoryInstance()->cancel($order)) {
+            $order->refresh();
+
+            Log::channel($alfabankLogChannel)->info('Alfabank customer cancel: local cancel succeeded after gateway error', [
+                'order_id'                => $order->id,
+                'gateway_fallback_reason' => $fallbackReason,
+            ]);
+
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.cancel'),
+                'data'    => [
+                    'order_id'                => $order->id,
+                    'gateway_action'          => 'local_fallback',
+                    'gateway_fallback_reason' => $fallbackReason,
+                ],
+            ]);
+        }
+
+        // Full cancel not possible (e.g. invoiced items).
+        // Force status-only update unless order is already in a terminal state.
+        if (! in_array($order->status, [Order::STATUS_CLOSED, Order::STATUS_FRAUD, Order::STATUS_CANCELED])) {
+            $this->orderRepository->update([
+                'status' => Order::STATUS_CANCELED,
+            ], $order->id);
+
+            $order->refresh();
+
+            Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: forced status-only cancel after gateway error', [
+                'order_id'                => $order->id,
+                'order_status'            => $order->status,
+                'gateway_fallback_reason' => $fallbackReason,
+            ]);
+
+            return response([
+                'message' => trans('rest-api::app.shop.sales.orders.cancel'),
+                'data'    => [
+                    'order_id'                => $order->id,
+                    'order_status'            => $order->status,
+                    'gateway_action'          => 'local_fallback',
+                    'gateway_fallback_reason' => $fallbackReason,
+                ],
+            ]);
+        }
+
+        $reason = $this->getCancelErrorReason($order);
+
+        return response([
+            'message' => trans('rest-api::app.shop.sales.orders.error.cancel-error'),
+            'reason'  => $reason,
         ], 422);
     }
 
