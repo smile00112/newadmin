@@ -3,6 +3,7 @@
 namespace Webkul\IikoIntegration\Listeners;
 
 use Illuminate\Support\Facades\Log;
+use Webkul\IikoIntegration\Jobs\CancelOrderInIikoJob;
 use Webkul\IikoIntegration\Jobs\SyncOrderToIikoJob;
 use Webkul\IikoIntegration\Services\IikoOrderService;
 use Webkul\Sales\Models\Order;
@@ -33,7 +34,7 @@ class OrderSyncListener
     }
 
     /**
-     * Handle order cancelled event.
+     * Handle order cancelled event — dispatches to queue (runs after response when sync driver).
      */
     public function handleOrderCancelled($order): void
     {
@@ -42,9 +43,9 @@ class OrderSyncListener
         }
 
         try {
-            $this->orderService->cancelOrderInIiko($order);
+            CancelOrderInIikoJob::dispatch($order->id)->afterResponse();
         } catch (\Exception $e) {
-            Log::error('iiko: Failed to cancel order', [
+            Log::error('iiko: Failed to dispatch cancel job', [
                 'order_id' => $order->id,
                 'message'  => $e->getMessage(),
             ]);
