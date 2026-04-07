@@ -315,7 +315,7 @@ class BonusService
 
         DB::transaction(function () use ($order, $bonusAmount, $currencyCode) {
             // Get available bonuses (FIFO - oldest first)
-            $availableTransactions = $this->bonusTransactionRepository->model
+            $availableTransactions = $this->bonusTransactionRepository->getModel()
                 ->where('customer_id', $order->customer_id)
                 ->where('currency_code', $currencyCode)
                 ->where('type', BonusTransaction::TYPE_ACCRUAL)
@@ -417,7 +417,7 @@ class BonusService
             // Cancel accrual if exists - найти и обновить исходную транзакцию начисления
             if ($accruedAmount > 0) {
                 // Найти транзакцию начисления для этого заказа
-                $accrualTransaction = $this->bonusTransactionRepository->model
+                $accrualTransaction = $this->bonusTransactionRepository->getModel()
                     ->where('customer_id', $order->customer_id)
                     ->where('order_id', $order->id)
                     ->where('type', BonusTransaction::TYPE_ACCRUAL)
@@ -593,7 +593,7 @@ class BonusService
 
         DB::transaction(function () use ($customerId, $amount, $description, $currencyCode) {
             // Get available bonuses (FIFO - oldest first)
-            $availableTransactions = $this->bonusTransactionRepository->model
+            $availableTransactions = $this->bonusTransactionRepository->getModel()
                 ->where('customer_id', $customerId)
                 ->where('currency_code', $currencyCode)
                 ->where('type', BonusTransaction::TYPE_ACCRUAL)
@@ -670,7 +670,7 @@ class BonusService
             return 0;
         }
 
-        $expiredTransactions = $this->bonusTransactionRepository->model
+        $expiredTransactions = $this->bonusTransactionRepository->getModel()
             ->where('type', BonusTransaction::TYPE_ACCRUAL)
             ->where('amount', '>', 0)
             ->whereNotNull('expires_at')
