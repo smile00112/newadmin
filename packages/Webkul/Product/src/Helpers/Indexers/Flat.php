@@ -2,6 +2,7 @@
 
 namespace Webkul\Product\Helpers\Indexers;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Webkul\Product\Helpers\ProductType;
 use Webkul\Product\Repositories\ProductFlatRepository;
@@ -57,7 +58,10 @@ class Flat extends AbstractIndexer
     ) {
         $this->batchSize = self::BATCH_SIZE;
 
-        $this->flatColumns = Schema::getColumnListing('product_flat');
+        // Кэшируем schema на 1 час — колонки таблицы не меняются в рантайме
+        $this->flatColumns = Cache::remember('product_flat_columns', 3600, function () {
+            return Schema::getColumnListing('product_flat');
+        });
     }
 
     /**
@@ -110,16 +114,26 @@ class Flat extends AbstractIndexer
      */
     public function refresh($product)
     {
-        // Reload product to get fresh data from database
-        $product = $this->productRepository->find($product->id);
-        
+        // Загружаем с нужными связями за 1 запрос вместо множества ленивых загрузок
+        $product = $this->productRepository
+            ->with(['attribute_family', 'attribute_values', 'channels'])
+            ->find($product->id);
+
+        if (! $product) {
+            return;
+        }
+
         $this->updateOrCreate($product);
 
         if (! ProductType::hasVariants($product->type)) {
             return;
         }
 
-        foreach ($product->variants()->get() as $variant) {
+        $variants = $product->variants()
+            ->with(['attribute_family', 'attribute_values', 'channels'])
+            ->get();
+
+        foreach ($variants as $variant) {
             $this->updateOrCreate($variant);
         }
     }
@@ -140,10 +154,14 @@ class Flat extends AbstractIndexer
             $channelIds[] = core()->getDefaultChannel()->id;
         }
 
-        // Always get fresh attribute values from database
-        $attributeValues = $product->attribute_values()->get();
+        // Используем предзагруженные attribute_values (уже eager loaded в refresh())
+        $attributeValues = $product->relationLoaded('attribute_values')
+            ? $product->attribute_values
+            : $product->attribute_values()->get();
 
-        foreach (core()->getAllChannels() as $channel) {
+        $allChannels = $this->getCachedChannels();
+
+        foreach ($allChannels as $channel) {
             if (in_array($channel->id, $channelIds)) {
                 foreach ($channel->locales as $locale) {
                     $productFlat = $this->productFlatRepository->updateOrCreate([
@@ -227,5 +245,17 @@ class Flat extends AbstractIndexer
         }
 
         return $this->familyAttributes[$product->attribute_family_id] = $product->attribute_family->custom_attributes;
+    }
+
+    /**
+     * Кэшируем каналы на время запроса.
+     */
+    protected function getCachedChannels()
+    {
+        if (empty($this->channels)) {
+            $this->channels = core()->getAllChannels();
+        }
+
+        return $this->channels;
     }
 }

@@ -35,14 +35,21 @@ class Base
 
         $previousLocale = core()->getCurrentLocale()->code;
 
-        app()->setLocale($customerLocale);
-
         try {
-            Mail::queue($notification);
+            // Defer email sending until after the HTTP response is sent
+            app()->terminating(function () use ($notification, $customerLocale, $previousLocale) {
+                app()->setLocale($customerLocale);
+
+                try {
+                    Mail::queue($notification);
+                } catch (\Exception $e) {
+                    \Log::error('Error in Sending Email'.$e->getMessage());
+                }
+
+                app()->setLocale($previousLocale);
+            });
         } catch (\Exception $e) {
             \Log::error('Error in Sending Email'.$e->getMessage());
         }
-
-        app()->setLocale($previousLocale);
     }
 }

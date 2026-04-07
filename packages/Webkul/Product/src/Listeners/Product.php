@@ -3,6 +3,7 @@
 namespace Webkul\Product\Listeners;
 
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Webkul\Product\Jobs\ElasticSearch\DeleteIndex as DeleteElasticSearchIndexJob;
 use Webkul\Product\Jobs\ElasticSearch\UpdateCreateIndex as UpdateCreateElasticSearchIndexJob;
 use Webkul\Product\Jobs\UpdateProductFlatIndex as UpdateProductFlatIndexJob;
@@ -26,7 +27,48 @@ class Product
     ) {}
 
     /**
-     * Update or create product indices
+     * Проверяем, используется ли ElasticSearch.
+     */
+    protected function isElasticEnabled(): bool
+    {
+        static $enabled = null;
+
+        if ($enabled === null) {
+            try {
+                $enabled = core()->getConfigData('catalog.products.search.engine') === 'elastic';
+            } catch (\Throwable $e) {
+                $enabled = false;
+            }
+        }
+
+        return $enabled;
+    }
+
+    /**
+     * Принудительно закрыть HTTP-соединение для сред без fastcgi_finish_request
+     * (например, php artisan serve).
+     */
+    protected function flushConnection(): void
+    {
+        if (function_exists('fastcgi_finish_request')) {
+            // Уже вызвано в index.php, но на случай если нет
+            fastcgi_finish_request();
+            return;
+        }
+
+        // Для встроенного PHP-сервера (artisan serve)
+        if (ob_get_level() > 0) {
+            ob_end_flush();
+        }
+        flush();
+
+        if (function_exists('ignore_user_abort')) {
+            ignore_user_abort(true);
+        }
+    }
+
+    /**
+     * After product create: refresh flat index, ES only if configured.
      *
      * @param  \Webkul\Product\Contracts\Product  $product
      * @return void
@@ -35,21 +77,29 @@ class Product
     {
         $productId = $product->id;
         $productIds = $this->getAllRelatedProductIds($product);
+        $isElastic = $this->isElasticEnabled();
 
         if (config('queue.default') === 'sync') {
-            // Defer heavy sync jobs until after HTTP response is sent
-            app()->terminating(function () use ($productId, $productIds) {
-                UpdateProductFlatIndexJob::dispatch($productId);
-                UpdateCreateElasticSearchIndexJob::dispatch($productIds);
+            app()->terminating(function () use ($productId, $productIds, $isElastic) {
+                $this->flushConnection();
+
+                UpdateProductFlatIndexJob::dispatchSync($productId);
+
+                if ($isElastic) {
+                    UpdateCreateElasticSearchIndexJob::dispatchSync($productIds);
+                }
             });
         } else {
             UpdateProductFlatIndexJob::dispatch($productId);
-            UpdateCreateElasticSearchIndexJob::dispatch($productIds);
+
+            if ($isElastic) {
+                UpdateCreateElasticSearchIndexJob::dispatch($productIds);
+            }
         }
     }
 
     /**
-     * Update or create product indices
+     * After product update: refresh flat, inventory, price, ES indices.
      *
      * @param  \Webkul\Product\Contracts\Product  $product
      * @return void
@@ -58,26 +108,34 @@ class Product
     {
         $productId = $product->id;
         $productIds = $this->getAllRelatedProductIds($product);
+        $isElastic = $this->isElasticEnabled();
 
         if (config('queue.default') === 'sync') {
-            // Defer heavy sync jobs until after HTTP response is sent
-            app()->terminating(function () use ($productId, $productIds) {
-                UpdateProductFlatIndexJob::dispatch($productId);
+            app()->terminating(function () use ($productId, $productIds, $isElastic) {
+                $this->flushConnection();
 
-                Bus::chain([
-                    new UpdateCreateInventoryIndexJob($productIds),
-                    new UpdateCreatePriceIndexJob($productIds),
-                    new UpdateCreateElasticSearchIndexJob($productIds),
-                ])->dispatch();
+                UpdateProductFlatIndexJob::dispatchSync($productId);
+                // Запускаем inventory и price параллельно (не chained)
+                (new UpdateCreateInventoryIndexJob($productIds))->handle();
+                (new UpdateCreatePriceIndexJob($productIds))->handle();
+
+                if ($isElastic) {
+                    (new UpdateCreateElasticSearchIndexJob($productIds))->handle();
+                }
             });
         } else {
             UpdateProductFlatIndexJob::dispatch($productId);
 
-            Bus::chain([
+            $chain = [
                 new UpdateCreateInventoryIndexJob($productIds),
                 new UpdateCreatePriceIndexJob($productIds),
-                new UpdateCreateElasticSearchIndexJob($productIds),
-            ])->dispatch();
+            ];
+
+            if ($isElastic) {
+                $chain[] = new UpdateCreateElasticSearchIndexJob($productIds);
+            }
+
+            Bus::chain($chain)->dispatch();
         }
     }
 

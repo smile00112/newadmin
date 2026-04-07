@@ -4,6 +4,7 @@ namespace Webkul\Admin\Http\Controllers\Catalog;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Webkul\Admin\DataGrids\Catalog\CategoryDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -85,6 +86,8 @@ class CategoryController extends Controller
 
         Event::dispatch('catalog.category.create.after', $category);
 
+        Cache::forget('category_tree_' . ($category->parent_id ?? core()->getDefaultChannel()->root_category_id));
+
         session()->flash('success', trans('admin::app.catalog.categories.create-success'));
 
         return redirect()->route('admin.catalog.categories.index');
@@ -130,6 +133,11 @@ class CategoryController extends Controller
 
         Event::dispatch('catalog.category.update.after', $category);
 
+        // Инвалидируем все кэши деревьев категорий
+        foreach ($this->channelRepository->pluck('root_category_id') as $rootId) {
+            Cache::forget('category_tree_' . $rootId);
+        }
+
         session()->flash('success', trans('admin::app.catalog.categories.update-success'));
 
         return redirect()->route('admin.catalog.categories.index');
@@ -154,6 +162,10 @@ class CategoryController extends Controller
             $category->delete($id);
 
             Event::dispatch('catalog.category.delete.after', $id);
+
+            foreach ($this->channelRepository->pluck('root_category_id') as $rootId) {
+                Cache::forget('category_tree_' . $rootId);
+            }
 
             return new JsonResponse([
                 'message' => trans('admin::app.catalog.categories.delete-success'),
@@ -191,6 +203,10 @@ class CategoryController extends Controller
                         $this->categoryRepository->delete($categoryId);
 
                         Event::dispatch('catalog.category.delete.after', $categoryId);
+
+                        foreach ($this->channelRepository->pluck('root_category_id') as $rootId) {
+                            Cache::forget('category_tree_' . $rootId);
+                        }
                     } catch (\Exception $e) {
                         return new JsonResponse([
                             'message' => trans('admin::app.catalog.categories.delete-failed'),
@@ -263,11 +279,16 @@ class CategoryController extends Controller
     }
 
     /**
-     * Get all categories in tree format.
+     * Get all categories in tree format (cached 60s).
      */
     public function tree(): JsonResource
     {
-        $categories = $this->categoryRepository->getVisibleCategoryTree(core()->getRequestedChannel()->root_category_id);
+        $channelId = core()->getRequestedChannel()->root_category_id;
+        $cacheKey = 'category_tree_' . $channelId;
+
+        $categories = Cache::remember($cacheKey, 60, function () use ($channelId) {
+            return $this->categoryRepository->getVisibleCategoryTree($channelId);
+        });
 
         return CategoryTreeResource::collection($categories);
     }
