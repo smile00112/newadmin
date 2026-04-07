@@ -92,6 +92,10 @@ class Order
                 'customer_id'    => $order->customer_id,
             ]);
 
+            if ($status === \Webkul\Sales\Models\Order::STATUS_CANCELED) {
+                $this->bonusService->returnBonuses($order);
+            }
+
             if ($status === $accrualStatus) {
                 Log::info('bonus.listener.after_status_updated.accrual_started', [
                     'order_id'       => $order->id,
