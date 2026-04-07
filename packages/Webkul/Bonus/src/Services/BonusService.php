@@ -385,36 +385,37 @@ class BonusService
         }
 
         $currencyCode = $order->order_currency_code ?? core()->getCurrentCurrencyCode();
-        $returnAmount = $order->base_bonus_amount_used ?? 0;
+        $returnAmount = (float) ($order->base_bonus_amount_used ?? 0);
+        $accruedAmount = (float) ($order->base_bonus_amount_accrued ?? 0);
 
-        if ($returnAmount <= 0) {
+        if ($returnAmount <= 0 && $accruedAmount <= 0) {
             return;
         }
 
-        DB::transaction(function () use ($order, $returnAmount, $currencyCode) {
-            // Create return transaction
-            $this->bonusTransactionRepository->create([
-                'customer_id' => $order->customer_id,
-                'order_id' => $order->id,
-                'type' => BonusTransaction::TYPE_RETURN,
-                'amount' => $returnAmount,
-                'currency_code' => $currencyCode,
-                'description' => trans('bonus::app.transactions.return_description', [
-                    'order_id' => $order->increment_id,
-                ]),
-            ]);
+        DB::transaction(function () use ($order, $returnAmount, $accruedAmount, $currencyCode) {
+            if ($returnAmount > 0) {
+                // Create return transaction for previously used bonuses.
+                $this->bonusTransactionRepository->create([
+                    'customer_id' => $order->customer_id,
+                    'order_id' => $order->id,
+                    'type' => BonusTransaction::TYPE_RETURN,
+                    'amount' => $returnAmount,
+                    'currency_code' => $currencyCode,
+                    'description' => trans('bonus::app.transactions.return_description', [
+                        'order_id' => $order->increment_id,
+                    ]),
+                ]);
 
-            // Update customer balance
-            $this->customerBonusRepository->updateBalance(
-                $order->customer_id,
-                $returnAmount,
-                $currencyCode
-            );
+                // Update customer balance.
+                $this->customerBonusRepository->updateBalance(
+                    $order->customer_id,
+                    $returnAmount,
+                    $currencyCode
+                );
+            }
 
             // Cancel accrual if exists - найти и обновить исходную транзакцию начисления
-            if ($order->base_bonus_amount_accrued > 0) {
-                $accruedAmount = $order->base_bonus_amount_accrued;
-                
+            if ($accruedAmount > 0) {
                 // Найти транзакцию начисления для этого заказа
                 $accrualTransaction = $this->bonusTransactionRepository->model
                     ->where('customer_id', $order->customer_id)

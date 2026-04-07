@@ -80,6 +80,9 @@ return [
                 'recent-accruals' => 'Последние начисления',
                 'no-accruals' => 'Нет начислений',
                 'loading-accruals' => 'Загрузка начислений...',
+                'recent-operations' => 'Последние операции',
+                'no-operations' => 'Операции не найдены',
+                'loading-operations' => 'Загрузка операций...',
             ],
             'levels' => [
                 'title' => 'Управление уровнями',

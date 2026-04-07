@@ -42,10 +42,10 @@
                     </div>
                 </div>
 
-                <!-- Recent Accruals (before search results) -->
+                <!-- Recent operations (before search results) -->
                 <div class="grid gap-2.5" v-if="showRecentAccruals">
                     <p class="text-base font-semibold text-gray-800 dark:text-white mb-4">
-                        @lang('bonus::app.admin.settings.manage.recent-accruals')
+                        @lang('bonus::app.admin.settings.manage.recent-operations')
                     </p>
 
                     <template v-if="isLoadingRecentAccruals">
@@ -55,7 +55,7 @@
                                 src="{{ bagisto_asset('images/spinner.svg') }}"
                             />
                             <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                                @lang('bonus::app.admin.settings.manage.loading-accruals')
+                                @lang('bonus::app.admin.settings.manage.loading-operations')
                             </span>
                         </div>
                     </template>
@@ -68,6 +68,7 @@
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.customer')</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.order')</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.type')</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.amount')</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.transactions.date')</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">@lang('bonus::app.admin.settings.manage.description')</th>
@@ -82,13 +83,14 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">@{{ item.id }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.customer_name }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.order_increment_id }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.type }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.amount_formatted }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">@{{ item.created_at }}</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-300">@{{ item.description }}</td>
                                     </tr>
                                     <tr v-if="recentAccruals.length === 0 && !isLoadingRecentAccruals">
-                                        <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                            @lang('bonus::app.admin.settings.manage.no-accruals')
+                                        <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                            @lang('bonus::app.admin.settings.manage.no-operations')
                                         </td>
                                     </tr>
                                 </tbody>
@@ -101,7 +103,7 @@
                             v-if="recentAccrualsPagination.lastPage > 1"
                         >
                             <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                @lang('bonus::app.admin.settings.manage.recent-accruals'): @{{ recentAccrualsPagination.total }}
+                                @lang('bonus::app.admin.settings.manage.recent-operations'): @{{ recentAccrualsPagination.total }}
                             </span>
                             <span class="whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 max-sm:hidden">
                                 @{{ recentAccrualsPagination.page }} / @{{ recentAccrualsPagination.lastPage }}

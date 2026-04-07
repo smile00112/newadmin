@@ -72,7 +72,7 @@ class BonusManageController extends Controller
     }
 
     /**
-     * Get recent bonus accruals with pagination.
+     * Get recent bonus operations (accrual, deduction, return) with pagination.
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -82,7 +82,11 @@ class BonusManageController extends Controller
         $perPage = self::RECENT_ACCRUALS_PER_PAGE;
 
         $paginator = BonusTransaction::query()
-            ->accruals()
+            ->whereIn('type', [
+                BonusTransaction::TYPE_ACCRUAL,
+                BonusTransaction::TYPE_DEDUCTION,
+                BonusTransaction::TYPE_RETURN,
+            ])
             ->with(['customer', 'order'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
@@ -96,6 +100,7 @@ class BonusManageController extends Controller
                     : '—',
                 'order_id' => $item->order_id,
                 'order_increment_id' => $item->order ? $item->order->increment_id : '—',
+                'type' => $item->type,
                 'amount' => round($item->amount, 2),
                 'amount_formatted' => core()->formatPrice($item->amount, $item->currency_code),
                 'currency_code' => $item->currency_code,
