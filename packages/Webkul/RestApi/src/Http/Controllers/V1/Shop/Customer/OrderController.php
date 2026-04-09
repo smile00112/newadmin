@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Webkul\Bonus\Services\BonusService;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\PushNotification\Models\OrderLiveActivityToken;
 use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
@@ -28,16 +29,19 @@ class OrderController extends CustomerController
      * @var \Webkul\Sales\Repositories\OrderRepository
      */
     protected OrderRepository $orderRepository;
+    protected BonusService $bonusService;
 
     /**
      * Create a new controller instance.
      */
     public function __construct(
         OrderRepository $orderRepository,
-        InvoiceRepository $invoiceRepository
+        InvoiceRepository $invoiceRepository,
+        BonusService $bonusService
     ) {
         $this->orderRepository = $orderRepository;
         $this->invoiceRepository = $invoiceRepository;
+        $this->bonusService = $bonusService;
     }
 
     /**
@@ -706,6 +710,9 @@ class OrderController extends CustomerController
                 ], $order->id);
 
                 $order->refresh();
+
+                // Ensure bonuses used/accrued for this order are reverted on API refund.
+                $this->bonusService->returnBonuses($order);
             }
 
             return response([
