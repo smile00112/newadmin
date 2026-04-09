@@ -107,6 +107,7 @@
             "Webkul\\RestApi\\": "packages/Webkul/RestApi/src",
             "Webkul\\MobileApp\\": "packages/Webkul/MobileApp/src",
             "Webkul\\Bonus\\": "packages/Webkul/Bonus/src",
+            "Webkul\\Menu\\": "packages/Webkul/Menu/src",
             "Webkul\\AlfabankPayment\\": "packages/Webkul/AlfabankPayment/src",
             "Webkul\\Reporting\\": "packages/Webkul/Reporting/src",
             "Webkul\\IikoIntegration\\": "packages/Webkul/IikoIntegration/src"
