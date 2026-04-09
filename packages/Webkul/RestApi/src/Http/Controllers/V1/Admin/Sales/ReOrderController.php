@@ -184,7 +184,9 @@ class ReOrderController extends SalesController
             ], 500);
         }
 
-        $data = (new OrderResource(Cart::getCart()))->jsonSerialize();
+        $cart = Cart::getCart();
+        $data = (new OrderResource($cart))->jsonSerialize();
+        $data = OrderResource::mergeCartBonusIntoOrderData($data, $cart);
 
         $this->orderRepository->create($data);
 

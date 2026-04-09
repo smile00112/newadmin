@@ -332,6 +332,8 @@ class CheckoutController extends CustomerController
 
             $this->validateOrder();
 
+            Cart::refreshCart();
+
             $cart = Cart::getCart();
 
             $paymentMethod = $cart->payment->method ?? null;
@@ -339,6 +341,7 @@ class CheckoutController extends CustomerController
 
             // Full order data from cart (payment, items, addresses, etc.) — required by OrderRepository
             $data = (new OrderTransformer($cart))->jsonSerialize();
+            $data = OrderTransformer::mergeCartBonusIntoOrderData($data, $cart);
 
             // Get and validate order labels from request
             $orderLabels = request()->input('order_labels', []);

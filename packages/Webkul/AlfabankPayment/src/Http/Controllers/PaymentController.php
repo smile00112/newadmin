@@ -417,6 +417,7 @@ class PaymentController extends Controller
             }
 
             $orderData = (new \Webkul\Sales\Transformers\OrderResource($cart))->jsonSerialize();
+            $orderData = \Webkul\Sales\Transformers\OrderResource::mergeCartBonusIntoOrderData($orderData, $cart);
 
             $order = $this->orderRepository->create($orderData);
 

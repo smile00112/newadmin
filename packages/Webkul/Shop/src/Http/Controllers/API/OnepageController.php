@@ -173,6 +173,7 @@ class OnepageController extends APIController
         }
 
         $data = (new OrderResource($cart))->jsonSerialize();
+        $data = OrderResource::mergeCartBonusIntoOrderData($data, $cart);
 
         $order = $this->orderRepository->create($data);
 

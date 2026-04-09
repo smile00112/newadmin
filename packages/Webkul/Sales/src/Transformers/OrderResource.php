@@ -3,9 +3,30 @@
 namespace Webkul\Sales\Transformers;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Webkul\Checkout\Contracts\Cart as CartContract;
 
 class OrderResource extends JsonResource
 {
+    /**
+     * Ensure applied cart bonus amounts are copied onto order create payload.
+     * Call after {@see jsonSerialize()} so DB-backed cart values always win.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function mergeCartBonusIntoOrderData(array $data, CartContract $cart): array
+    {
+        $baseBonus = (float) ($cart->base_bonus_amount ?? 0);
+        $bonus = (float) ($cart->bonus_amount ?? 0);
+
+        $data['bonus_amount'] = $bonus;
+        $data['base_bonus_amount'] = $baseBonus;
+        $data['bonus_amount_used'] = $bonus;
+        $data['base_bonus_amount_used'] = $baseBonus;
+
+        return $data;
+    }
+
     /**
      * Indicates if the resource's collection keys should be preserved.
      *

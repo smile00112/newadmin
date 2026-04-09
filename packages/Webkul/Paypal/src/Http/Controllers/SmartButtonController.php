@@ -220,6 +220,7 @@ class SmartButtonController extends Controller
             $cart = Cart::getCart();
 
             $data = (new OrderResource($cart))->jsonSerialize();
+            $data = OrderResource::mergeCartBonusIntoOrderData($data, $cart);
 
             $order = $this->orderRepository->create($data);
 
