@@ -105,10 +105,9 @@
             <!-- Confirm Modal Blade Component -->
             <x-shop::modal.confirm />
 
-            <!-- Page Header Blade Component -->
-            {{-- @if ($hasHeader)
-                <x-shop::layouts.header />
-            @endif --}}
+            @if ($hasHeader)
+                @include('menu::shop.components.menu', ['location' => 'header', 'class' => 'shop-menu shop-menu--header'])
+            @endif
 
             @if(
                 core()->getConfigData('general.gdpr.settings.enabled')
@@ -132,10 +131,11 @@
                 <x-shop::layouts.services />
             @endif
 
-            <!-- Page Footer Blade Component -->
-            {{-- @if ($hasFooter)
-                <x-shop::layouts.footer />
-            @endif --}}
+            @include('menu::shop.components.menu', ['location' => 'mobile', 'class' => 'shop-menu shop-menu--mobile'])
+
+            @if ($hasFooter)
+                @include('menu::shop.components.menu', ['location' => 'footer', 'class' => 'shop-menu shop-menu--footer'])
+            @endif
         </div>
 
         {!! view_render_event('bagisto.shop.layout.body.after') !!}
