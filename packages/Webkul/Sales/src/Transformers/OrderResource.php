@@ -69,6 +69,11 @@ class OrderResource extends JsonResource
             'applied_cart_rule_ids'    => $this->applied_cart_rule_ids,
             'discount_amount'          => $this->discount_amount,
             'base_discount_amount'     => $this->base_discount_amount,
+            // Preserve applied bonus payment from cart on order creation.
+            'bonus_amount'             => $this->bonus_amount ?? 0,
+            'base_bonus_amount'        => $this->base_bonus_amount ?? 0,
+            'bonus_amount_used'        => $this->bonus_amount ?? 0,
+            'base_bonus_amount_used'   => $this->base_bonus_amount ?? 0,
             'billing_address'          => $this->billing_address ? (new OrderAddressResource($this->billing_address))->jsonSerialize() : null,
             $this->mergeWhen($this->haveStockableItems(), $shippingInformation),
             'payment'                  => (new OrderPaymentResource($this->payment))->jsonSerialize(),
