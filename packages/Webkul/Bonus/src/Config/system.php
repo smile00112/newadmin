@@ -35,6 +35,14 @@ return [
                 'channel_based' => true,
             ],
             [
+                'name'          => 'accrue_when_bonus_used',
+                'title'         => 'bonus::app.admin.settings.fields.accrue-when-bonus-used',
+                'type'          => 'boolean',
+                'default'       => true,
+                'info'          => 'bonus::app.admin.settings.fields.accrue-when-bonus-used-info',
+                'channel_based' => true,
+            ],
+            [
                 'name'          => 'calculation_type',
                 'title'         => 'bonus::app.admin.settings.fields.calculation-type',
                 'type'          => 'select',

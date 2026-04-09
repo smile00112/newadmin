@@ -32,6 +32,8 @@ return [
             ],
             'fields' => [
                 'enabled' => 'Включить бонусную систему',
+                'accrue-when-bonus-used' => 'Начислять бонусы за заказы с использованием бонусов',
+                'accrue-when-bonus-used-info' => 'Если отключено, бонусы за заказ не начисляются, когда в этом заказе были использованы бонусы.',
                 'calculation-type' => 'Тип расчета уровня',
                 'calculation-type-total-spent' => 'От суммы потраченных средств',
                 'calculation-type-orders-count' => 'От количества заказов',

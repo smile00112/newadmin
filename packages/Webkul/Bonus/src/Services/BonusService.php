@@ -169,6 +169,14 @@ class BonusService
             return 0;
         }
 
+        $accrueWhenBonusUsed = (bool) $this->config('accrue_when_bonus_used', true);
+        $hasUsedBonuses = (float) ($order->base_bonus_amount_used ?? 0) > 0
+            || (float) ($order->base_bonus_amount ?? 0) > 0;
+
+        if (! $accrueWhenBonusUsed && $hasUsedBonuses) {
+            return 0;
+        }
+
         // Get order total excluding excluded products
         $orderTotal = $this->getOrderTotalForCashback($order);
 

@@ -248,6 +248,12 @@ class Cart
             }
         }
 
+        /**
+         * Refresh cart relations to avoid stale in-memory items collection.
+         * Without this, validateItems() may see zero items and remove cart.
+         */
+        $this->refreshCart();
+
         $this->collectTotals();
 
         $this->removeCart($guestCart);
