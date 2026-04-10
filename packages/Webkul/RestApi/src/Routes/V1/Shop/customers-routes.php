@@ -91,10 +91,6 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('logout', 'logout');
     });
 
-    Route::post('customer/test-delete', function () {
-        return response(['message' => 'route works']);
-    });
-
     /**
      * Customer address routes.
      */
