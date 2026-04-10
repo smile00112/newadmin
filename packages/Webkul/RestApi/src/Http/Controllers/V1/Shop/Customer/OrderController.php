@@ -426,6 +426,8 @@ class OrderController extends CustomerController
                             ], $order->id);
 
                             $order->refresh();
+
+                            $this->refreshOrdersCacheForCustomer($order, (int) $customer->id);
                         }
 
                         return response([
@@ -521,6 +523,8 @@ class OrderController extends CustomerController
             ], $order->id);
 
             $order->refresh();
+
+            $this->refreshOrdersCacheForCustomer($order, (int) $order->customer_id);
 
             Log::channel($alfabankLogChannel)->warning('Alfabank customer cancel: forced status-only cancel after gateway error', [
                 'order_id'                => $order->id,
