@@ -86,6 +86,8 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
 
         Route::put('profile', 'update');
 
+        Route::delete('account', 'destroy');
+
         Route::post('logout', 'logout');
     });
 

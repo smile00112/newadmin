@@ -376,6 +376,44 @@ class AuthController extends CustomerController
     }
 
     /**
+     * Delete the customer account.
+     */
+    public function destroy(Request $request): Response
+    {
+        $customer = $this->resolveShopUser($request);
+
+        if (! $customer) {
+            return response([
+                'message' => trans('rest-api::app.shop.customer.accounts.error.credential-error'),
+            ], 401);
+        }
+
+        Event::dispatch('customer.account.delete.before', $customer);
+
+        // Revoke all tokens
+        $customer->tokens()->delete();
+
+        // Delete related data
+        $customer->addresses()->delete();
+        $customer->reviews()->delete();
+        $customer->wishlist_items()->delete();
+        $customer->notes()->delete();
+
+        if ($customer->subscription) {
+            $customer->subscription()->delete();
+        }
+
+        // Delete the customer
+        $this->customerRepository->delete($customer->id);
+
+        Event::dispatch('customer.account.delete.after', $customer->id);
+
+        return response([
+            'message' => 'Аккаунт успешно удалён.',
+        ]);
+    }
+
+    /**
      * Send Reset Password Link.
      */
     public function forgotPassword(Request $request): Response
