@@ -18,40 +18,30 @@ echo ""
 mkdir -p docker/nginx/ssl/live/$DOMAIN
 mkdir -p docker/certbot/www
 
-# Остановка Nginx для получения сертификата
+# Остановка Nginx (освобождаем порт 80 для standalone certbot)
 echo "Остановка Nginx..."
 docker compose -f docker-compose.prod.yml stop nginx || true
 
-# Запуск временного веб-сервера для проверки домена
-echo "Запуск временного веб-сервера..."
-docker compose -f docker-compose.prod.yml run --rm -d --name certbot-temp \
+# Создание необходимых директорий
+mkdir -p docker/nginx/ssl
+
+# Получение сертификата через standalone (certbot поднимает временный HTTP-сервер на порту 80)
+echo "Получение SSL сертификата от Let's Encrypt (standalone)..."
+docker run --rm \
+    -v "$(pwd)/docker/nginx/ssl:/etc/letsencrypt" \
     -p 80:80 \
-    nginx:alpine \
-    sh -c "echo 'Certbot verification' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'" || true
-
-sleep 5
-
-# Получение сертификата
-echo "Получение SSL сертификата от Let's Encrypt..."
-docker compose -f docker-compose.prod.yml run --rm certbot certonly \
-    --webroot \
-    --webroot-path=/var/www/certbot \
-    --email $EMAIL \
+    certbot/certbot certonly --standalone \
+    --email "$EMAIL" \
     --agree-tos \
     --no-eff-email \
     --force-renewal \
-    -d $DOMAIN \
-    -d www.$DOMAIN || {
+    -d "$DOMAIN" || {
     echo "Ошибка при получении сертификата. Проверьте:"
     echo "1. Домен указывает на IP этого сервера"
     echo "2. Порт 80 открыт в firewall"
-    docker compose -f docker-compose.prod.yml stop certbot-temp || true
+    docker compose -f docker-compose.prod.yml start nginx || true
     exit 1
 }
-
-# Остановка временного сервера
-docker compose -f docker-compose.prod.yml stop certbot-temp || true
-docker compose -f docker-compose.prod.yml rm -f certbot-temp || true
 
 # Обновление конфигурации Nginx
 echo "Обновление конфигурации Nginx..."
@@ -72,7 +62,7 @@ fi
 
 # Запуск Nginx
 echo "Запуск Nginx..."
-docker compose -f docker-compose.prod.yml up -d nginx
+docker compose -f docker-compose.prod.yml start nginx
 
 echo ""
 echo "=========================================="
