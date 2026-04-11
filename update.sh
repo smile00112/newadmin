@@ -79,9 +79,20 @@ rm -f bootstrap/cache/events.php
 info "Пересоздание контейнера app из нового образа..."
 docker compose -f docker-compose.prod.yml up -d --force-recreate app
 
-# Ожидание готовности нового контейнера
-info "Ожидание готовности нового контейнера..."
-sleep 10
+# Ожидание готовности нового контейнера (Octane start_period = 90s)
+info "Ожидание готовности контейнера app (healthcheck)..."
+APP_CONTAINER="${APP_NAME:-Surprise}_app"
+elapsed=0
+until docker inspect -f '{{.State.Health.Status}}' "$APP_CONTAINER" 2>/dev/null | grep -q "healthy"; do
+    sleep 5
+    elapsed=$((elapsed + 5))
+    if [ "$elapsed" -ge 180 ]; then
+        warn "App container не стал healthy за 180 секунд, продолжаю..."
+        break
+    fi
+    info "  ожидание app... ${elapsed}с / 180с"
+done
+info "App container готов."
 
 # Vite ассеты собираются на этапе docker build в Dockerfile
 info "Пропуск runtime-сборки фронтенда (Vite собирается в Dockerfile)..."
@@ -122,6 +133,10 @@ if git diff HEAD@{1} HEAD --name-only | grep -q "docker/nginx/"; then
     docker compose -f docker-compose.prod.yml exec nginx nginx -t
     docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 fi
+
+# Убедиться, что nginx и все сервисы запущены после каскадных перезапусков
+info "Восстановление всех сервисов после каскадных перезапусков..."
+docker compose -f docker-compose.prod.yml up -d
 
 # Проверка статуса
 info "Проверка статуса сервисов..."
