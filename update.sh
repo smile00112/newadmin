@@ -108,7 +108,17 @@ docker compose -f docker-compose.prod.yml exec app php artisan catalog-v2:warm-c
 
 # Перезапуск Nginx (если нужно)
 if git diff HEAD@{1} HEAD --name-only | grep -q "docker/nginx/"; then
-    info "Обнаружены изменения в конфигурации Nginx. Перезапуск..."
+    info "Обнаружены изменения в конфигурации Nginx. Ожидание готовности контейнера..."
+    NGINX_CONTAINER="${APP_NAME:-Surprise}_nginx"
+    elapsed=0
+    until [ "$(docker inspect -f '{{.State.Status}}' "$NGINX_CONTAINER" 2>/dev/null)" = "running" ]; do
+        sleep 2
+        elapsed=$((elapsed + 2))
+        if [ "$elapsed" -ge 60 ]; then
+            error "Nginx не перешёл в состояние running за 60 секунд"
+        fi
+    done
+    info "Перезапуск Nginx..."
     docker compose -f docker-compose.prod.yml exec nginx nginx -t
     docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 fi
