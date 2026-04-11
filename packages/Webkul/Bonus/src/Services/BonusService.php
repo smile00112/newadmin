@@ -16,6 +16,12 @@ use Webkul\Sales\Models\Order;
 class BonusService
 {
     /**
+     * Minimum payable total in base currency after bonus when the pre-bonus total is greater
+     * than this value (avoids zero due to full bonus coverage; e.g. acquiring minimum).
+     */
+    public const MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS = 1.0;
+
+    /**
      * Create a new service instance.
      *
      * @return void
@@ -512,15 +518,19 @@ class BonusService
             return 0;
         }
 
-        $grandTotal = $orderOrCart->base_grand_total ?? $orderOrCart->grand_total ?? 0;
+        $baseGrand = (float) ($orderOrCart->base_grand_total ?? 0);
+        $baseBonus = (float) ($orderOrCart->base_bonus_amount ?? 0);
+        $preBonusGrandTotal = $baseGrand + $baseBonus;
+
         $currencyCode = $orderOrCart->order_currency_code ?? $orderOrCart->cart_currency_code ?? core()->getCurrentCurrencyCode();
         $maxPercent = (float) $this->config('max_usage_percent', 100);
         $availableBalance = $this->getAvailableBonuses($customerId, $currencyCode);
 
-        $maxByPercent = $grandTotal * ($maxPercent / 100);
+        $maxByPercent = $preBonusGrandTotal * ($maxPercent / 100);
         $maxByBalance = $availableBalance;
+        $maxByRemainder = max(0.0, $preBonusGrandTotal - self::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS);
 
-        return min($maxByPercent, $maxByBalance, $grandTotal);
+        return min($maxByPercent, $maxByBalance, $maxByRemainder);
     }
 
     /**

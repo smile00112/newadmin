@@ -22,6 +22,7 @@ use Webkul\Product\Repositories\ProductRepository;
 use Webkul\Shipping\Facades\Shipping;
 use Webkul\Tax\Facades\Tax;
 use Webkul\Tax\Repositories\TaxCategoryRepository;
+use Webkul\Bonus\Services\BonusService;
 
 class Cart
 {
@@ -970,12 +971,25 @@ class Cart
 
         // Вычитаем бонусы из grand_total, если они применены
         if ($this->cart->base_bonus_amount > 0) {
-            $this->cart->base_grand_total = max(0, $this->cart->base_grand_total - $this->cart->base_bonus_amount);
-            $this->cart->grand_total = max(0, $this->cart->grand_total - $this->cart->bonus_amount);
-            
-            // Округляем заново после вычитания бонусов
-            $this->cart->grand_total = round($this->cart->grand_total, 2);
-            $this->cart->base_grand_total = round($this->cart->base_grand_total, 2);
+            $preBonusBaseGrand = $this->cart->base_grand_total;
+            $preBonusGrand = $this->cart->grand_total;
+            $baseAfter = $preBonusBaseGrand - $this->cart->base_bonus_amount;
+
+            if ($baseAfter <= 0 && $preBonusBaseGrand > BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS) {
+                $this->cart->base_bonus_amount = max(
+                    0,
+                    $preBonusBaseGrand - BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS
+                );
+                $this->cart->bonus_amount = round(core()->convertPrice($this->cart->base_bonus_amount), 2);
+                $this->cart->base_grand_total = round(BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS, 2);
+                $this->cart->grand_total = round(core()->convertPrice(BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS), 2);
+            } else {
+                $this->cart->base_grand_total = max(0, $baseAfter);
+                $this->cart->grand_total = max(0, $preBonusGrand - $this->cart->bonus_amount);
+
+                $this->cart->grand_total = round($this->cart->grand_total, 2);
+                $this->cart->base_grand_total = round($this->cart->base_grand_total, 2);
+            }
         }
 
         $this->cart->cart_currency_code = core()->getCurrentCurrencyCode();

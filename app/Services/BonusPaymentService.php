@@ -59,12 +59,14 @@ class BonusPaymentService
         // Validate products
         $this->validateBonusProducts($cart);
 
+        $preBonusBaseGrand = (float) $cart->base_grand_total + (float) $cart->base_bonus_amount;
+
         // Get max bonus percent
         $maxPercent = (float) (core()->getConfigData('bonus.general.settings.max_usage_percent') ?? 100);
-        $maxBonusAmount = ($cart->base_grand_total * $maxPercent) / 100;
+        $maxBonusAmount = ($preBonusBaseGrand * $maxPercent) / 100;
 
-        // Limit bonus amount
-        $bonusAmount = min($bonusAmount, $maxBonusAmount, $cart->base_grand_total);
+        $maxByRemainder = max(0.0, $preBonusBaseGrand - BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS);
+        $bonusAmount = min($bonusAmount, $maxBonusAmount, $preBonusBaseGrand, $maxByRemainder);
 
         // Check available balance
         $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
