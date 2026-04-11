@@ -83,7 +83,16 @@ docker compose -f docker-compose.prod.yml up -d --force-recreate app
 info "Ожидание готовности контейнера app (healthcheck)..."
 APP_CONTAINER="${APP_NAME:-Surprise}_app"
 elapsed=0
-until docker inspect -f '{{.State.Health.Status}}' "$APP_CONTAINER" 2>/dev/null | grep -q "healthy"; do
+until docker inspect -f '{{.State.Health.Status}}' "$APP_CONTAINER" 2>/dev/null | grep -qE "healthy|unhealthy"; do
+    # Ждём пока статус перестанет быть 'starting' — значит entrypoint завершился
+    STATUS=$(docker inspect -f '{{.State.Status}}' "$APP_CONTAINER" 2>/dev/null)
+    if [ "$STATUS" = "running" ] && [ "$elapsed" -ge 30 ]; then
+        # Контейнер работает и прошло достаточно времени — проверяем порт напрямую
+        if docker exec "$APP_CONTAINER" nc -z localhost 8000 2>/dev/null; then
+            info "App container отвечает на порту 8000."
+            break
+        fi
+    fi
     sleep 5
     elapsed=$((elapsed + 5))
     if [ "$elapsed" -ge 180 ]; then
@@ -126,12 +135,17 @@ if git diff HEAD@{1} HEAD --name-only | grep -q "docker/nginx/"; then
         sleep 2
         elapsed=$((elapsed + 2))
         if [ "$elapsed" -ge 60 ]; then
-            error "Nginx не перешёл в состояние running за 60 секунд"
+            warn "Nginx не перешёл в состояние running за 60 секунд (возможно проблема с SSL-сертификатами)"
+            break
         fi
     done
-    info "Перезапуск Nginx..."
-    docker compose -f docker-compose.prod.yml exec nginx nginx -t
-    docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+    if [ "$(docker inspect -f '{{.State.Status}}' "$NGINX_CONTAINER" 2>/dev/null)" = "running" ]; then
+        info "Перезапуск Nginx..."
+        docker compose -f docker-compose.prod.yml exec nginx nginx -t
+        docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+    else
+        warn "Пропуск reload nginx — контейнер не запущен. Проверьте: docker compose -f docker-compose.prod.yml logs nginx"
+    fi
 fi
 
 # Убедиться, что nginx и все сервисы запущены после каскадных перезапусков
