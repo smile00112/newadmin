@@ -78,6 +78,9 @@ class BonusServiceProvider extends ServiceProvider
         
         // Register listener for cart bonus calculation
         Event::listen('checkout.cart.collect.totals.after', \App\Listeners\Cart\BonusCartListener::class);
+
+        // Recalculate max bonus when cart changes and auto_apply is enabled (API checkout/bonus/auto-apply)
+        Event::listen('checkout.cart.collect.totals.after', \App\Listeners\Cart\AutoApplyBonusListener::class);
     }
 
     /**

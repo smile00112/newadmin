@@ -11,6 +11,11 @@ use Webkul\Checkout\Facades\Cart as CartFacade;
 class AutoApplyBonusListener
 {
     /**
+     * Prevents infinite recursion when this listener calls Cart::collectTotals().
+     */
+    protected static bool $recalculatingAutoApplyBonus = false;
+
+    /**
      * Create the event listener.
      *
      * @return void
@@ -50,6 +55,12 @@ class AutoApplyBonusListener
             return;
         }
 
+        if (self::$recalculatingAutoApplyBonus) {
+            return;
+        }
+
+        self::$recalculatingAutoApplyBonus = true;
+
         try {
             // Recalculate maximum bonus amount
             $maxAmount = $this->bonusService->getMaxUsableBonuses($cart, (int) $cart->customer_id);
@@ -62,6 +73,8 @@ class AutoApplyBonusListener
         } catch (\Exception $e) {
             // Log error but don't break the cart update process
             report($e);
+        } finally {
+            self::$recalculatingAutoApplyBonus = false;
         }
     }
 
