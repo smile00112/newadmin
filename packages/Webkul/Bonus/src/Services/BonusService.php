@@ -528,9 +528,18 @@ class BonusService
 
         $maxByPercent = $preBonusGrandTotal * ($maxPercent / 100);
         $maxByBalance = $availableBalance;
+        $maxWithoutRemainder = min($maxByPercent, $maxByBalance);
+
+        // Keep 1 ruble remainder only when bonuses can fully cover the order.
+        $canFullyCover = $maxWithoutRemainder >= ($preBonusGrandTotal - 0.0001);
+
+        if (! $canFullyCover) {
+            return $maxWithoutRemainder;
+        }
+
         $maxByRemainder = max(0.0, $preBonusGrandTotal - self::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS);
 
-        return min($maxByPercent, $maxByBalance, $maxByRemainder);
+        return min($maxWithoutRemainder, $maxByRemainder);
     }
 
     /**

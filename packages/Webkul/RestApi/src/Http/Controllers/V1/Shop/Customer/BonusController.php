@@ -147,11 +147,11 @@ class BonusController extends CustomerController
         $showLevelsInfo = (bool) core()->getConfigData('bonus.general.settings.show_levels_info', false);
 
         $ordersCount = $customer->orders()
-            ->where('status', Order::STATUS_COMPLETED)
+            ->where('status', Order::STATUS_READY)
             ->count();
 
         $spentSum = (float) $customer->orders()
-            ->where('status', Order::STATUS_COMPLETED)
+            ->where('status', Order::STATUS_READY)
             ->sum('base_grand_total');
 
         $currentLevel = $this->bonusService->calculateCustomerLevel($customer, $calculationType);
