@@ -725,6 +725,32 @@ class ConfigurableConstructor extends AbstractType
 
         $baseTotal = $variant->getTypeInstance()->getFinalPrice($item->quantity) * $item->quantity;
 
+        $constructorOptions = $item->additional['constructor_options'] ?? [];
+
+        if (is_array($constructorOptions)) {
+            foreach ($constructorOptions as $selectedProducts) {
+                if (! is_array($selectedProducts)) {
+                    continue;
+                }
+
+                foreach ($selectedProducts as $productId => $qty) {
+                    $qty = (int) $qty;
+
+                    if ($qty <= 0) {
+                        continue;
+                    }
+
+                    $ingredient = $this->productRepository->find((int) $productId);
+
+                    if (! $ingredient || ! in_array($ingredient->type, ['simple', 'ingredient'])) {
+                        continue;
+                    }
+
+                    $baseTotal += $ingredient->getTypeInstance()->getFinalPrice($qty * $item->quantity) * $qty * $item->quantity;
+                }
+            }
+        }
+
         foreach ($item->children as $childItem) {
             if ((int) $childItem->product_id === (int) $variantId) {
                 continue;
@@ -740,7 +766,6 @@ class ConfigurableConstructor extends AbstractType
                 $validation->cartIsInvalid();
             }
 
-            $baseTotal += $childItem->base_total;
         }
 
         $baseTotal = round($baseTotal, 4);
