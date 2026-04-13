@@ -541,9 +541,12 @@ class ConfigurableConstructor extends AbstractType
                     continue;
                 }
 
+                // Per-unit constructor qty × parent line qty (e.g. 2 drinks → 2× milk).
+                $ingredientLineQty = (int) $qty * (int) $data['quantity'];
+
                 $cartProduct = $ingredientProduct->getTypeInstance()->prepareForCart([
                     'product_id' => $productId,
-                    'quantity'   => $qty,
+                    'quantity'   => $ingredientLineQty,
                     'parent_id'  => $this->product->id,
                 ]);
 

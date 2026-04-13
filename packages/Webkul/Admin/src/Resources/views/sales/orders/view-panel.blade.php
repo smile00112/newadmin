@@ -1188,7 +1188,7 @@
                         savingIdx: -1,
                         steps: (() => {
                             const allSt = @json($allStatuses ?? []);
-                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed'];
+                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed', 'completed'];
                             const defaultIcon = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
                             return allSt
                                 .filter(s => !negative.includes(s.code))

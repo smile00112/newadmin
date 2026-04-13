@@ -32,7 +32,7 @@
                     <p class="text-xl font-bold leading-6 text-gray-800 dark:text-white">
                         Заказ #{{ $order->increment_id }}
                     </p>
-                    <span 
+                    <span
                         class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
                         data-order-status-badge
                         style="@php
@@ -643,9 +643,9 @@
 
                                 <!-- Phone -->
                                 @php
-                                    $customerPhone = $order->shipping_address?->phone 
-                                        ?? $order->billing_address?->phone 
-                                        ?? $order->customer?->phone 
+                                    $customerPhone = $order->shipping_address?->phone
+                                        ?? $order->billing_address?->phone
+                                        ?? $order->customer?->phone
                                         ?? null;
                                     $phoneDigits = $customerPhone ? preg_replace('/[^0-9]/', '', $customerPhone) : null;
                                 @endphp
@@ -672,7 +672,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                                 </svg>
                                             </a>
-                                            <a href="https://wa.me/{{ $phoneDigits }}" 
+                                            <a href="https://wa.me/{{ $phoneDigits }}"
                                                target="_blank"
                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
                                                style="background: #dcfce7;"
@@ -1494,7 +1494,7 @@
                         // Dynamic steps from order_statuses table (exclude negative statuses)
                         steps: (() => {
                             const allSt = @json($allStatuses ?? []);
-                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed'];
+                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed', 'completed'];
                             const defaultIcon = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
                             return allSt
                                 .filter(s => !negative.includes(s.code))

@@ -250,14 +250,14 @@ class Constructor extends AbstractType
             return trans('product::app.checkout.cart.missing-options');
         }
 
-        $constructorQuantity = parent::handleQuantity((int) ($data['quantity'] ?? 1));
-
-        // First, create the parent constructor product cart item
+        // First, create the parent constructor product cart item (getQtyRequest runs inside parent).
         $products = parent::prepareForCart($data);
 
         if (is_string($products)) {
             return $products;
         }
+
+        $lineQuantity = (int) $products[0]['quantity'];
 
         // Override base price of constructor product with price field value
         $basePrice = (float) ($this->product->price ?? 0);
@@ -267,10 +267,10 @@ class Constructor extends AbstractType
         $products[0]['price_incl_tax'] = $products[0]['price'];
 
         // Recalculate totals for constructor base price
-        $products[0]['base_total'] = $basePrice * $constructorQuantity;
-        $products[0]['base_total_incl_tax'] = $basePrice * $constructorQuantity;
-        $products[0]['total'] = $products[0]['price'] * $constructorQuantity;
-        $products[0]['total_incl_tax'] = $products[0]['price'] * $constructorQuantity;
+        $products[0]['base_total'] = $basePrice * $lineQuantity;
+        $products[0]['base_total_incl_tax'] = $basePrice * $lineQuantity;
+        $products[0]['total'] = $products[0]['price'] * $lineQuantity;
+        $products[0]['total_incl_tax'] = $products[0]['price'] * $lineQuantity;
 
         $cartProductsList = [];
 
@@ -291,7 +291,7 @@ class Constructor extends AbstractType
                 }
 
                 /* need to check each individual quantity as well if don't have then show error */
-                if (! $product->getTypeInstance()->haveSufficientQuantity($qty * $constructorQuantity)) {
+                if (! $product->getTypeInstance()->haveSufficientQuantity($qty * $lineQuantity)) {
                     return trans('product::app.checkout.cart.inventory-warning');
                 }
 
@@ -299,9 +299,11 @@ class Constructor extends AbstractType
                     continue;
                 }
 
+                $ingredientLineQty = (int) $qty * $lineQuantity;
+
                 $cartProduct = $product->getTypeInstance()->prepareForCart([
                     'product_id' => $productId,
-                    'quantity'   => $qty,
+                    'quantity'   => $ingredientLineQty,
                     'parent_id'  => $this->product->id,
                 ]);
 
@@ -326,11 +328,11 @@ class Constructor extends AbstractType
 
         // Recalculate per-unit prices after adding all ingredients
         // Price per unit = total / quantity
-        if ($constructorQuantity > 0) {
-            $products[0]['base_price'] = $products[0]['base_total'] / $constructorQuantity;
-            $products[0]['base_price_incl_tax'] = $products[0]['base_total_incl_tax'] / $constructorQuantity;
-            $products[0]['price'] = $products[0]['total'] / $constructorQuantity;
-            $products[0]['price_incl_tax'] = $products[0]['total_incl_tax'] / $constructorQuantity;
+        if ($lineQuantity > 0) {
+            $products[0]['base_price'] = $products[0]['base_total'] / $lineQuantity;
+            $products[0]['base_price_incl_tax'] = $products[0]['base_total_incl_tax'] / $lineQuantity;
+            $products[0]['price'] = $products[0]['total'] / $lineQuantity;
+            $products[0]['price_incl_tax'] = $products[0]['total_incl_tax'] / $lineQuantity;
         }
 
         if (empty($cartProductsList)) {
