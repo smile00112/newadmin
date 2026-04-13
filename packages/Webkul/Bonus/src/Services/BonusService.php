@@ -136,7 +136,7 @@ class BonusService
     protected function getCustomerOrdersCount(Customer $customer): int
     {
         return $customer->orders()
-            ->where('status', Order::STATUS_COMPLETED)
+            ->where('status', Order::STATUS_READY)
             ->count();
     }
 
@@ -149,7 +149,7 @@ class BonusService
     protected function getCustomerTotalSpent(Customer $customer): float
     {
         return (float) $customer->orders()
-            ->where('status', Order::STATUS_COMPLETED)
+            ->where('status', Order::STATUS_READY)
             ->sum('base_grand_total');
     }
 
