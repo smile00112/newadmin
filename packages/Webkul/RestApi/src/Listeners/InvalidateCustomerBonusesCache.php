@@ -14,7 +14,8 @@ class InvalidateCustomerBonusesCache
     public function onOrderCreated(Order $order): void
     {
         $this->invalidateForOrder($order);
-        $this->dispatchWarmJobForOrder($order);
+        // Warm-up temporarily disabled: keep invalidation only.
+        // $this->dispatchWarmJobForOrder($order);
     }
 
     /**
@@ -23,7 +24,8 @@ class InvalidateCustomerBonusesCache
     public function onOrderStatusUpdated(Order $order): void
     {
         $this->invalidateForOrder($order);
-        $this->dispatchWarmJobForOrder($order);
+        // Warm-up temporarily disabled: keep invalidation only.
+        // $this->dispatchWarmJobForOrder($order);
     }
 
     /**
@@ -32,7 +34,8 @@ class InvalidateCustomerBonusesCache
     public function onOrderCanceled(Order $order): void
     {
         $this->invalidateForOrder($order);
-        $this->dispatchWarmJobForOrder($order);
+        // Warm-up temporarily disabled: keep invalidation only.
+        // $this->dispatchWarmJobForOrder($order);
     }
 
     /**
@@ -44,7 +47,8 @@ class InvalidateCustomerBonusesCache
     public function onBalanceChanged(int $customerId): void
     {
         CustomerBonusesCache::invalidate($customerId);
-        $this->dispatchWarmJob($customerId);
+        // Warm-up temporarily disabled: keep invalidation only.
+        // $this->dispatchWarmJob($customerId);
     }
 
     /**
