@@ -530,6 +530,12 @@ class Configurable extends AbstractType
             return $validation;
         }
 
+        if (! $item->child) {
+            $validation->itemIsInactive();
+
+            return $validation;
+        }
+
         $basePrice = $item->child->getTypeInstance()->getFinalPrice($item->quantity);
 
         if (Tax::isInclusiveTaxProductPrices()) {
