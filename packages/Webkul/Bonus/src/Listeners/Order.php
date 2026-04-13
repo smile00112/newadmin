@@ -140,7 +140,7 @@ class Order
         }
 
         if (! $accrualStatus) {
-            return \Webkul\Sales\Models\Order::STATUS_COMPLETED;
+            return \Webkul\Sales\Models\Order::STATUS_READY;
         }
 
         return $accrualStatus;
