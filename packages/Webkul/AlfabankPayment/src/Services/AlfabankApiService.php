@@ -204,6 +204,94 @@ class AlfabankApiService
     }
 
     /**
+     * Pay with new card using seToken.
+     */
+    public function payWithNewCard(string $mdOrder, string $seToken): array
+    {
+        $url = $this->getBaseUrl() . 'paymentorder.do';
+
+        $data = [
+            'userName'  => $this->merchant,
+            'MDORDER'   => $mdOrder,
+            'seToken'   => $seToken,
+            'TEXT'      => 'CARDHOLDER',
+            'language'  => 'ru',
+            'threeDSSDK' => 'false',
+        ];
+
+        if ($this->token) {
+            $data['token'] = $this->token;
+        } else {
+            $data['password'] = $this->password;
+        }
+
+        return $this->sendRequest($url, $data, [], 'payWithNewCard');
+    }
+
+    /**
+     * Pay with saved card (binding).
+     */
+    public function payWithBinding(string $mdOrder, string $bindingId, ?string $cvc = null): array
+    {
+        $url = $this->getBaseUrl() . 'paymentOrderBinding.do';
+
+        $data = [
+            'userName'  => $this->merchant,
+            'mdOrder'   => $mdOrder,
+            'bindingId' => $bindingId,
+            'language'  => 'ru',
+        ];
+
+        if ($this->token) {
+            $data['token'] = $this->token;
+        } else {
+            $data['password'] = $this->password;
+        }
+
+        if ($cvc !== null && $cvc !== '') {
+            $data['cvc'] = $cvc;
+        }
+
+        return $this->sendRequest($url, $data, [], 'payWithBinding');
+    }
+
+    /**
+     * Reverse (cancel) a payment order.
+     */
+    public function reverseOrder(string $orderId): array
+    {
+        $url = $this->getBaseUrl() . 'reverse.do';
+
+        $data = [
+            'userName' => $this->merchant,
+            'orderId'  => $orderId,
+            'language' => 'ru',
+        ];
+
+        if ($this->token) {
+            $data['token'] = $this->token;
+        } else {
+            $data['password'] = $this->password;
+        }
+
+        return $this->sendRequest($url, $data, [], 'reverseOrder');
+    }
+
+    /**
+     * Get public key for seToken encryption (se/keys.do).
+     */
+    public function getPublicKey(): array
+    {
+        $baseUrl = $this->getBaseUrl();
+        // se/keys.do is at the payment root, not under /rest/
+        $url = preg_replace('#/rest/$#', '/', $baseUrl) . 'se/keys.do';
+
+        $data = [];
+
+        return $this->sendRequest($url, $data, [], 'getPublicKey');
+    }
+
+    /**
      * Build registration data for order.
      *
      * @param  array  $orderData
