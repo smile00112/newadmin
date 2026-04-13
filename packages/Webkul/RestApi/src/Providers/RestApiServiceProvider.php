@@ -76,6 +76,10 @@ class RestApiServiceProvider extends ServiceProvider
     protected function registerBonusCacheInvalidation(): void
     {
         $listener = InvalidateCustomerBonusesCache::class;
+
+        Event::listen('checkout.order.save.after', [$listener, 'onOrderCreated']);
+        Event::listen('sales.order.update-status.after', [$listener, 'onOrderStatusUpdated']);
+        Event::listen('sales.order.cancel.after', [$listener, 'onOrderCanceled']);
         Event::listen('bonus.balance.changed', [$listener, 'onBalanceChanged']);
     }
 

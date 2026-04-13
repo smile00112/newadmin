@@ -15,14 +15,13 @@ echo "Email: $EMAIL"
 echo ""
 
 # Создание необходимых директорий
-mkdir -p docker/nginx/ssl/live/$DOMAIN
 mkdir -p docker/certbot/www
 
 # Остановка Nginx (освобождаем порт 80 для standalone certbot)
 echo "Остановка Nginx..."
 docker compose -f docker-compose.prod.yml stop nginx || true
 
-# Создание необходимых директорий
+# Создание необходимых директорий (только корень, НЕ live/$DOMAIN — certbot создаст сам)
 mkdir -p docker/nginx/ssl
 
 # Получение сертификата через standalone (certbot поднимает временный HTTP-сервер на порту 80)

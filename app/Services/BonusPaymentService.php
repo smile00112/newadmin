@@ -65,12 +65,18 @@ class BonusPaymentService
         $maxPercent = (float) (core()->getConfigData('bonus.general.settings.max_usage_percent') ?? 100);
         $maxBonusAmount = ($preBonusBaseGrand * $maxPercent) / 100;
 
-        $maxByRemainder = max(0.0, $preBonusBaseGrand - BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS);
-        $bonusAmount = min($bonusAmount, $maxBonusAmount, $preBonusBaseGrand, $maxByRemainder);
-
-        // Check available balance
         $availableBalance = $this->bonusService->getAvailableBonuses($customer->id);
-        $bonusAmount = min($bonusAmount, $availableBalance);
+        $maxWithoutRemainder = min($maxBonusAmount, $preBonusBaseGrand, $availableBalance);
+
+        // Keep 1 ruble remainder only when bonuses can fully cover the cart amount.
+        $canFullyCover = $maxWithoutRemainder >= ($preBonusBaseGrand - 0.0001);
+
+        if ($canFullyCover) {
+            $maxByRemainder = max(0.0, $preBonusBaseGrand - BonusService::MIN_BASE_CURRENCY_REMAINDER_AFTER_BONUS);
+            $maxWithoutRemainder = min($maxWithoutRemainder, $maxByRemainder);
+        }
+
+        $bonusAmount = min($bonusAmount, $maxWithoutRemainder);
 
         // Update cart
         $cart->update([
