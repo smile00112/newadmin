@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "https://dolinger_new_admin.test",
+            "url": "https://surprise.softnova.ru",
             "description": "Rest API"
         }
     ],
@@ -3093,6 +3093,55 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/customer/delete-account": {
+            "post": {
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Delete customer account",
+                "description": "Permanently deletes the authenticated customer's account and all associated data (addresses, reviews, wishlist, notes, subscription, tokens).",
+                "operationId": "deleteCustomerAccount",
+                "responses": {
+                    "200": {
+                        "description": "Account deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Аккаунт успешно удалён."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/customer/bonuses": {

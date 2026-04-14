@@ -14,6 +14,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\InvoiceController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\MultiChannelAuthController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\NewsLetterController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\OrderController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\PaymentGatewayController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\SavedCardController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\ShipmentController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\TransactionController;
@@ -299,6 +300,19 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
      */
     Route::controller(BonusController::class)->prefix('customer/bonuces-test')->group(function () {
         Route::get('', 'indexTest');
+    });
+
+
+    /**
+     * Customer payment gateway proxy routes.
+     */
+    Route::controller(PaymentGatewayController::class)->prefix('customer/payment')->group(function () {
+        Route::post('register', 'register');
+        Route::post('pay', 'pay');
+        Route::post('pay-binding', 'payBinding');
+        Route::post('reverse', 'reverse');
+        Route::get('public-key', 'publicKey');
+        Route::post('order-status', 'orderStatus');
     });
 
 });

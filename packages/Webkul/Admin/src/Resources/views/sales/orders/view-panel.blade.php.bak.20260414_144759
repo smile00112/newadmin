@@ -120,57 +120,13 @@
             <!-- Items Editor -->
             <div class="box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
                 @php
-                    // Collect all ingredient product IDs to batch-load names
-                    $allIngredientProductIds = [];
-                    foreach ($order->items as $item) {
-                        $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
-                        $constructorOptions = $additional['constructor_options'] ?? [];
-                        if (is_array($constructorOptions)) {
-                            foreach ($constructorOptions as $groupProducts) {
-                                if (is_array($groupProducts)) {
-                                    foreach ($groupProducts as $productId => $qty) {
-                                        if ($qty) $allIngredientProductIds[] = (int) $productId;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    $ingredientProducts = [];
-                    if (!empty($allIngredientProductIds)) {
-                        $ingredientProducts = \Webkul\Product\Models\ProductFlat::whereIn('product_id', array_unique($allIngredientProductIds))
-                            ->where('locale', app()->getLocale())
-                            ->whereNotNull('name')
-                            ->pluck('name', 'product_id')
-                            ->toArray();
-                    }
-
-                    $itemsJson = $order->items->map(function ($item) use ($ingredientProducts) {
+                    $itemsJson = $order->items->map(function ($item) {
                         $imageUrl = null;
                         if ($item->product?->category_image) {
                             $imageUrl = \Illuminate\Support\Facades\Storage::url($item->product->category_image);
                         } elseif ($item->product?->base_image_url) {
                             $imageUrl = $item->product->base_image_url;
                         }
-
-                        // Extract ingredients from constructor_options
-                        $ingredients = [];
-                        $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
-                        $constructorOptions = $additional['constructor_options'] ?? [];
-                        if (is_array($constructorOptions)) {
-                            foreach ($constructorOptions as $groupProducts) {
-                                if (is_array($groupProducts)) {
-                                    foreach ($groupProducts as $productId => $qty) {
-                                        if ($qty && isset($ingredientProducts[(int)$productId])) {
-                                            $ingredients[] = [
-                                                'name'     => $ingredientProducts[(int)$productId],
-                                                'quantity' => (int) $qty,
-                                            ];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
                         return [
                             'id'                  => $item->id,
                             'name'                => $item->name,
@@ -182,7 +138,6 @@
                             'base_discount_amount'=> $item->base_discount_amount,
                             'formatted_price'     => core()->formatBasePrice($item->base_price),
                             'image_url'           => $imageUrl,
-                            'ingredients'         => $ingredients,
                         ];
                     })->toArray();
                 @endphp
@@ -1196,16 +1151,6 @@
                             </div>
                             <div class="flex flex-col gap-1">
                                 <p class="text-sm font-bold text-gray-800 dark:text-white">@{{ item.name }}</p>
-                                <div v-if="item.ingredients && item.ingredients.length" class="flex flex-wrap gap-1 mt-0.5">
-                                    <span
-                                        v-for="ing in item.ingredients"
-                                        :key="ing.name"
-                                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium"
-                                        style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;"
-                                    >
-                                        @{{ ing.name }}<span v-if="ing.quantity > 1" class="ml-0.5 opacity-70">×@{{ ing.quantity }}</span>
-                                    </span>
-                                </div>
                                 <div class="flex flex-col gap-1">
                                     <p v-if="!isEditing" class="text-xs text-gray-500">@{{ item.formatted_price }} × @{{ item.qty_ordered }} шт.</p>
                                     <div v-else class="flex items-center gap-2">
@@ -1243,7 +1188,7 @@
                         savingIdx: -1,
                         steps: (() => {
                             const allSt = @json($allStatuses ?? []);
-                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed'];
+                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed', 'completed'];
                             const defaultIcon = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
                             return allSt
                                 .filter(s => !negative.includes(s.code))

@@ -70,6 +70,17 @@ class Order
         try {
             $status = $order->status;
 
+            // Check deduction statuses - списание бонусов при смене статуса
+            $deductionStatuses = core()->getConfigData('bonus.general.settings.deduction_status');
+            $deductionStatuses = is_array($deductionStatuses) ? $deductionStatuses : ($deductionStatuses ? [$deductionStatuses] : []);
+            if (in_array($status, $deductionStatuses)) {
+                // Списать бонусы, если они были использованы, но еще не списаны
+                $bonusAmount = $order->base_bonus_amount ?? 0;
+                if ($bonusAmount > 0 && ($order->base_bonus_amount_used ?? 0) == 0) {
+                    $this->bonusService->deductBonuses($order, $bonusAmount);
+                }
+            }
+            
             // Accrue bonuses when order reaches configured status
             $accrualStatus = $this->getNormalizedAccrualStatus();
 
@@ -80,6 +91,10 @@ class Order
                 'accrual_status' => $accrualStatus,
                 'customer_id'    => $order->customer_id,
             ]);
+
+            if ($status === \Webkul\Sales\Models\Order::STATUS_CANCELED) {
+                $this->bonusService->returnBonuses($order);
+            }
 
             if ($status === $accrualStatus) {
                 Log::info('bonus.listener.after_status_updated.accrual_started', [
@@ -125,7 +140,7 @@ class Order
         }
 
         if (! $accrualStatus) {
-            return \Webkul\Sales\Models\Order::STATUS_COMPLETED;
+            return \Webkul\Sales\Models\Order::STATUS_READY;
         }
 
         return $accrualStatus;

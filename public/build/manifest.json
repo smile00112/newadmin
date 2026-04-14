@@ -1,30 +1,14 @@
 {
-  "_pusher-C69Ohdjx.js": {
-    "file": "assets/pusher-C69Ohdjx.js",
-    "name": "pusher"
-  },
   "resources/css/app.css": {
     "file": "assets/app-l0sNRNKZ.js",
     "name": "app",
     "src": "resources/css/app.css",
     "isEntry": true
   },
-  "resources/js/api-test.js": {
-    "file": "assets/api-test-DFa04Rt8.js",
-    "name": "api-test",
-    "src": "resources/js/api-test.js",
-    "isEntry": true,
-    "imports": [
-      "_pusher-C69Ohdjx.js"
-    ]
-  },
   "resources/js/app.js": {
-    "file": "assets/app-CUqxZTer.js",
+    "file": "assets/app-BnnQrqkl.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true,
-    "imports": [
-      "_pusher-C69Ohdjx.js"
-    ]
+    "isEntry": true
   }
 }
