@@ -103,6 +103,12 @@ class BonusOrderListener
             // Return bonuses if they were used
             if ($order->base_bonus_amount_used > 0) {
                 $this->bonusService->returnBonuses($order);
+                
+                // Reset order bonus amount
+                $order->update([
+                    'bonus_amount' => 0,
+                    'base_bonus_amount' => 0,
+                ]);
             }
         }
     }

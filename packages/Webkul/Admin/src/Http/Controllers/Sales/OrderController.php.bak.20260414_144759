@@ -225,56 +225,13 @@ class OrderController extends Controller
     {
         $order = $this->orderRepository->with(['items', 'items.product', 'payment', 'addresses'])->findOrFail($id);
 
-        // Batch-load ingredient product names
-        $allIngredientProductIds = [];
-        foreach ($order->items as $item) {
-            $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
-            $constructorOptions = $additional['constructor_options'] ?? [];
-            if (is_array($constructorOptions)) {
-                foreach ($constructorOptions as $groupProducts) {
-                    if (is_array($groupProducts)) {
-                        foreach ($groupProducts as $productId => $qty) {
-                            if ($qty) $allIngredientProductIds[] = (int) $productId;
-                        }
-                    }
-                }
-            }
-        }
-        $ingredientProducts = [];
-        if (!empty($allIngredientProductIds)) {
-            $ingredientProducts = \Webkul\Product\Models\ProductFlat::whereIn('product_id', array_unique($allIngredientProductIds))
-                ->where('locale', app()->getLocale())
-                ->whereNotNull('name')
-                ->pluck('name', 'product_id')
-                ->toArray();
-        }
-
-        $items = $order->items->map(function ($item) use ($ingredientProducts) {
+        $items = $order->items->map(function ($item) {
             $imageUrl = null;
 
             if ($item->product?->category_image) {
                 $imageUrl = \Illuminate\Support\Facades\Storage::url($item->product->category_image);
             } elseif ($item->product?->base_image_url) {
                 $imageUrl = $item->product->base_image_url;
-            }
-
-            // Extract ingredients
-            $ingredients = [];
-            $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
-            $constructorOptions = $additional['constructor_options'] ?? [];
-            if (is_array($constructorOptions)) {
-                foreach ($constructorOptions as $groupProducts) {
-                    if (is_array($groupProducts)) {
-                        foreach ($groupProducts as $productId => $qty) {
-                            if ($qty && isset($ingredientProducts[(int)$productId])) {
-                                $ingredients[] = [
-                                    'name'     => $ingredientProducts[(int)$productId],
-                                    'quantity' => (int) $qty,
-                                ];
-                            }
-                        }
-                    }
-                }
             }
 
             return [
@@ -285,7 +242,6 @@ class OrderController extends Controller
                 'price'         => core()->formatBasePrice($item->base_price),
                 'total'         => core()->formatBasePrice($item->base_total + $item->base_tax_amount - $item->base_discount_amount),
                 'image_url'     => $imageUrl,
-                'ingredients'   => $ingredients,
             ];
         });
 
