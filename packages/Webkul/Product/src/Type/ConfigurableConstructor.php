@@ -173,6 +173,12 @@ class ConfigurableConstructor extends AbstractType
 
         $this->fillableVariantAttributes = $this->attributeRepository->findWhereIn('code', $this->fillableVariantAttributeCodes);
 
+        foreach ($product->super_attributes as $superAttribute) {
+            if (! $this->fillableVariantAttributes->contains('id', $superAttribute->id)) {
+                $this->fillableVariantAttributes->push($superAttribute);
+            }
+        }
+
         $previousVariantIds = $product->variants->pluck('id');
 
         foreach ($data['variants'] ?? [] as $variantId => $variantData) {
@@ -181,8 +187,6 @@ class ConfigurableConstructor extends AbstractType
 
                 foreach ($product->super_attributes as $superAttribute) {
                     $superAttributes[$superAttribute->id] = $variantData[$superAttribute->code];
-
-                    $this->fillableVariantAttributes->push($superAttribute);
                 }
 
                 $this->createVariant($product, $superAttributes, array_merge($variantData, [

@@ -53,6 +53,7 @@
                         :key="index"
                         :index="index"
                         :variant="variant"
+                        :variants="variants"
                         :attributes="superAttributes"
                         @onRemoved="removeVariant"
                         :errors="errors"
@@ -1002,6 +1003,40 @@
                                             <x-admin::form.control-group.error control-name="weight" />
                                         </x-admin::form.control-group>
 
+                                        <x-admin::form.control-group
+                                            v-for="attribute in attributes"
+                                        >
+                                            <x-admin::form.control-group.label class="required">
+                                                @{{ attribute.admin_name }}
+                                            </x-admin::form.control-group.label>
+
+                                            <v-field
+                                                as="select"
+                                                :name="attribute.code"
+                                                class="custom-select flex min-h-[39px] w-full rounded-md border bg-white px-3 py-1.5 text-sm font-normal text-gray-600 transition-all hover:border-gray-400 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                                                :class="[errors[attribute.code] ? 'border border-red-500' : '']"
+                                                rules="required"
+                                                :label="attribute.admin_name"
+                                                v-model="variant[attribute.code]"
+                                            >
+                                                <option
+                                                    v-for="option in attribute.options"
+                                                    :value="option.id"
+                                                >
+                                                    @{{ option.admin_name }}
+                                                </option>
+                                            </v-field>
+
+                                            <v-error-message
+                                                :name="attribute.code"
+                                                v-slot="{ message }"
+                                            >
+                                                <p class="mt-1 text-xs italic text-red-600">
+                                                    @{{ message }}
+                                                </p>
+                                            </v-error-message>
+                                        </x-admin::form.control-group>
+
                                         <!-- Inventories -->
                                         <div class="mt-5 grid">
                                             <p class="mb-2.5 font-semibold text-gray-800 dark:text-white">
@@ -1478,6 +1513,7 @@
 
             props: [
                 'variant',
+                'variants',
                 'attributes',
                 'errors',
             ],
@@ -1541,7 +1577,28 @@
                 },
 
                 update(params) {
-                    Object.assign(this.variant, params);
+                    const updatedVariant = Object.assign({}, this.variant, params);
+
+                    const hasDuplicateCombination = this.variants.some((variant) => {
+                        if (variant.id == this.variant.id) {
+                            return false;
+                        }
+
+                        return this.attributes.every((attribute) => {
+                            return variant[attribute.code] == updatedVariant[attribute.code];
+                        });
+                    });
+
+                    if (hasDuplicateCombination) {
+                        this.$emitter.emit('add-flash', {
+                            type: 'warning',
+                            message: "@lang('admin::app.catalog.products.edit.types.configurable.create.variant-already-exists')",
+                        });
+
+                        return;
+                    }
+
+                    Object.assign(this.variant, updatedVariant);
 
                     this.$refs.editVariantDrawer.close();
                 },

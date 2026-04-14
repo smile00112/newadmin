@@ -144,6 +144,12 @@ class Configurable extends AbstractType
          */
         $this->fillableVariantAttributes = $this->attributeRepository->findWhereIn('code', $this->fillableVariantAttributeCodes);
 
+        foreach ($product->super_attributes as $superAttribute) {
+            if (! $this->fillableVariantAttributes->contains('id', $superAttribute->id)) {
+                $this->fillableVariantAttributes->push($superAttribute);
+            }
+        }
+
         $previousVariantIds = $product->variants->pluck('id');
 
         ProductModel::withoutEvents(function () use ($data, $product, &$previousVariantIds) {
@@ -153,8 +159,6 @@ class Configurable extends AbstractType
 
                     foreach ($product->super_attributes as $superAttribute) {
                         $superAttributes[$superAttribute->id] = $variantData[$superAttribute->code];
-
-                        $this->fillableVariantAttributes->push($superAttribute);
                     }
 
                     $this->createVariant($product, $superAttributes, array_merge($variantData, [
