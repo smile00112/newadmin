@@ -11,6 +11,7 @@ use Webkul\RestApi\Exceptions\Handler;
 use Webkul\RestApi\Console\Commands\WarmCatalogCacheCommand;
 use Webkul\RestApi\Console\Commands\WarmCatalogV2CacheCommand;
 use Webkul\RestApi\Console\Commands\WarmNomenclatureCacheCommand;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Catalog\NomenclatureController;
 use Webkul\RestApi\Listeners\InvalidateCustomerBonusesCache;
 use Webkul\RestApi\Listeners\InvalidateCustomerOrdersCache;
 use Webkul\Sales\Models\Order;
@@ -52,6 +53,7 @@ class RestApiServiceProvider extends ServiceProvider
 
         $this->registerOrderCacheInvalidation();
         $this->registerBonusCacheInvalidation();
+        $this->registerNomenclatureCacheInvalidation();
 
         // Load helpers
         require_once __DIR__.'/../Http/helpers.php';
@@ -81,6 +83,16 @@ class RestApiServiceProvider extends ServiceProvider
         Event::listen('sales.order.update-status.after', [$listener, 'onOrderStatusUpdated']);
         Event::listen('sales.order.cancel.after', [$listener, 'onOrderCanceled']);
         Event::listen('bonus.balance.changed', [$listener, 'onBalanceChanged']);
+    }
+
+    /**
+     * Register domain event listener for nomenclature cache invalidation.
+     */
+    protected function registerNomenclatureCacheInvalidation(): void
+    {
+        Event::listen('catalog.product.update.after', static function (): void {
+            NomenclatureController::clearNomenclatureCache();
+        });
     }
 
     /**
