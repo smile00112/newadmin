@@ -201,6 +201,22 @@
             </div>
         </div>
 
+        <div id="panel-configurable-modal" class="hidden" style="position:fixed; inset:0; background:rgba(17,24,39,0.45); z-index:1200; align-items:center; justify-content:center; padding:16px;">
+            <div style="width:100%; max-width:760px; max-height:85vh; overflow:auto; background:white; border-radius:16px; box-shadow:0 18px 48px rgba(0,0,0,0.2);">
+                <div style="padding:18px 20px; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <p style="margin:0; font-size:18px; font-weight:700; color:#111827;">Атрибуты конфигурируемого продукта</p>
+                    <button type="button" onclick="closePanelConfigurableModal()" style="border:none; background:transparent; font-size:24px; line-height:1; color:#6b7280; cursor:pointer;">&times;</button>
+                </div>
+
+                <div id="panel-configurable-modal-content" style="padding:20px;"></div>
+
+                <div style="padding:16px 20px; border-top:1px solid #e5e7eb; display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" onclick="closePanelConfigurableModal()" style="padding:8px 14px; border-radius:10px; border:1px solid #d1d5db; background:#fff; color:#374151; font-weight:600; cursor:pointer;">Отмена</button>
+                    <button id="panel-configurable-save-btn" type="button" onclick="confirmPanelTypeWithAttributes()" style="padding:8px 16px; border-radius:10px; border:none; background:#7c3aed; color:white; font-weight:700; cursor:pointer;" disabled>Применить</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Body Content -->
         <div class="flex gap-2.5 max-xl:flex-wrap">
             @php
@@ -338,6 +354,11 @@
 
     @pushOnce('scripts')
         <script>
+            const panelVariantTypes = ['configurable', 'configurable_constructor'];
+            let panelPendingType = null;
+            let panelPendingLabel = null;
+            let panelFetchedAttributes = [];
+
             // Notify parent when product is saved (form submit intercept)
             document.addEventListener('DOMContentLoaded', function() {
                 @if(session('success'))
@@ -357,7 +378,7 @@
             });
 
             // Change product type via AJAX
-            function changeProductType(newType, newLabel) {
+            async function changeProductType(newType, newLabel) {
                 const productId = {{ $product->id }};
                 const currentType = '{{ $product->type }}';
                 if (newType === currentType) {
@@ -365,29 +386,159 @@
                     return;
                 }
 
-                const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-                           || document.querySelector('input[name="_token"]')?.value;
+                document.getElementById('panel-type-dropdown').classList.add('hidden');
 
-                fetch('/admin/catalog/products/quick-update/' + productId, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrf,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    body: JSON.stringify({ field: 'type', value: newType }),
-                })
-                .then(r => r.json())
-                .then(data => {
+                if (panelVariantTypes.includes(newType)) {
+                    panelPendingType = newType;
+                    panelPendingLabel = newLabel;
+                    await openPanelConfigurableModal(productId);
+
+                    return;
+                }
+
+                await submitPanelTypeUpdate(newType, null, newLabel);
+            }
+
+            async function openPanelConfigurableModal(productId) {
+                const modal = document.getElementById('panel-configurable-modal');
+                const content = document.getElementById('panel-configurable-modal-content');
+                const saveButton = document.getElementById('panel-configurable-save-btn');
+
+                content.innerHTML = 'Загрузка атрибутов...';
+                saveButton.disabled = true;
+                modal.style.display = 'flex';
+                modal.classList.remove('hidden');
+
+                try {
+                    const response = await fetch(`/admin/catalog/products/${productId}/configurable-attributes`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    const payload = await response.json();
+
+                    panelFetchedAttributes = payload?.data?.attributes ?? [];
+
+                    if (!Array.isArray(panelFetchedAttributes) || !panelFetchedAttributes.length) {
+                        content.innerHTML = '<p style="margin:0; color:#b45309;">Для выбранного семейства нет конфигурируемых атрибутов.</p>';
+                        return;
+                    }
+
+                    renderPanelConfigurableAttributes(content, panelFetchedAttributes);
+                    updatePanelConfigurableSaveState();
+                } catch (error) {
+                    content.innerHTML = '<p style="margin:0; color:#dc2626;">Не удалось загрузить атрибуты. Повторите попытку.</p>';
+                }
+            }
+
+            function renderPanelConfigurableAttributes(container, attributes) {
+                const blocks = attributes.map((attribute, index) => {
+                    const options = (attribute.options || []).map((option) => {
+                        return `
+                            <label style="display:flex; align-items:center; gap:8px; padding:6px 0; cursor:pointer;">
+                                <input type="checkbox" class="panel-super-attribute-option" data-attribute-code="${attribute.code}" value="${option.id}" checked onchange="updatePanelConfigurableSaveState()">
+                                <span style="font-size:14px; color:#374151;">${option.name}</span>
+                            </label>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div style="${index ? 'margin-top:14px; padding-top:14px; border-top:1px solid #f3f4f6;' : ''}">
+                            <p style="margin:0 0 6px; font-size:14px; font-weight:700; color:#111827;">${attribute.name}</p>
+                            ${options || '<p style="margin:0; font-size:13px; color:#9ca3af;">Нет опций</p>'}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = blocks;
+            }
+
+            function closePanelConfigurableModal() {
+                const modal = document.getElementById('panel-configurable-modal');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                panelPendingType = null;
+                panelPendingLabel = null;
+                panelFetchedAttributes = [];
+            }
+
+            function collectPanelSuperAttributes() {
+                const map = {};
+
+                document.querySelectorAll('.panel-super-attribute-option:checked').forEach((input) => {
+                    const code = input.getAttribute('data-attribute-code');
+                    if (!map[code]) {
+                        map[code] = [];
+                    }
+
+                    map[code].push(parseInt(input.value, 10));
+                });
+
+                return map;
+            }
+
+            function updatePanelConfigurableSaveState() {
+                const saveButton = document.getElementById('panel-configurable-save-btn');
+                const superAttributes = collectPanelSuperAttributes();
+                const hasValidSelection = Object.keys(superAttributes).length > 0
+                    && Object.values(superAttributes).every((options) => Array.isArray(options) && options.length > 0);
+
+                saveButton.disabled = !hasValidSelection;
+            }
+
+            async function confirmPanelTypeWithAttributes() {
+                if (!panelPendingType) {
+                    return;
+                }
+
+                const superAttributes = collectPanelSuperAttributes();
+                await submitPanelTypeUpdate(panelPendingType, superAttributes, panelPendingLabel);
+            }
+
+            async function submitPanelTypeUpdate(newType, superAttributes = null, newLabel = null) {
+                const productId = {{ $product->id }};
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+                    || document.querySelector('input[name="_token"]')?.value;
+
+                const payload = { field: 'type', value: newType };
+
+                if (superAttributes) {
+                    payload.super_attributes = superAttributes;
+                }
+
+                try {
+                    const response = await fetch('/admin/catalog/products/quick-update/' + productId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrf,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        if (data?.errors) {
+                            const firstError = Object.values(data.errors).flat()[0];
+                            alert(firstError || 'Ошибка смены типа товара');
+                            return;
+                        }
+
+                        alert(data?.message || 'Ошибка смены типа товара');
+                        return;
+                    }
+
                     if (data.success) {
-                        document.getElementById('panel-type-label').textContent = newLabel;
-                        document.getElementById('panel-type-dropdown').classList.add('hidden');
+                        if (newLabel) {
+                            document.getElementById('panel-type-label').textContent = newLabel;
+                        }
+                        closePanelConfigurableModal();
                         window.location.reload();
                     }
-                })
-                .catch(() => {
+                } catch (error) {
                     alert('Ошибка смены типа товара');
-                });
+                }
             }
             // Delete product with confirm modal
             function confirmDeleteProduct(productId) {

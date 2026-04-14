@@ -538,7 +538,7 @@
                                         class="primary-button"
                                         :title="trans('admin::app.catalog.products.index.create.save-btn')"
                                         ::loading="isLoading"
-                                        ::disabled="isLoading"
+                                        ::disabled="isLoading || ! canSubmitConfigurable"
                                     />
                                 </div>
                             </x-slot>
@@ -559,7 +559,20 @@
                         isLoading: false,
                         isCreating: false,
                         pendingType: null,
+                        variantTypes: ['configurable', 'configurable_constructor'],
                     };
+                },
+
+                computed: {
+                    canSubmitConfigurable() {
+                        const attributeCodes = Object.keys(this.superAttributes);
+
+                        if (! attributeCodes.length) {
+                            return false;
+                        }
+
+                        return attributeCodes.every((code) => Array.isArray(this.superAttributes[code]) && this.superAttributes[code].length > 0);
+                    },
                 },
 
                 methods: {
@@ -599,6 +612,10 @@
                                         this.$emitter.emit('datagrid:refresh');
                                     }
                                 } else if (response.data.data.attributes) {
+                                    if (! this.variantTypes.includes(type)) {
+                                        return;
+                                    }
+
                                     this.attributes = response.data.data.attributes;
                                     this.setSuperAttributes();
                                     this.$refs.productCreateModal.toggle();
@@ -620,6 +637,7 @@
 
                     submitConfigurable(params, { setErrors }) {
                         if (this.isCreating) return;
+                        if (! this.canSubmitConfigurable) return;
 
                         this.isCreating = true;
                         this.isLoading = true;
