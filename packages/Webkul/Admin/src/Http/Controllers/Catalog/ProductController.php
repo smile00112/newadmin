@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Webkul\Admin\DataGrids\Catalog\IngredientDataGrid;
 use Webkul\Admin\DataGrids\Catalog\ProductDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
@@ -593,8 +594,62 @@ class ProductController extends Controller
             if (! in_array($value, $allowedTypes)) {
                 return new JsonResponse(['message' => 'Invalid type'], 422);
             }
-            DB::table('products')->where('id', $id)->update(['type' => $value]);
-            DB::table('product_flat')->where('product_id', $id)->update(['type' => $value]);
+
+            if (ProductType::hasVariants($value)) {
+                $validator = Validator::make(request()->all(), [
+                    'super_attributes'   => 'required|array|min:1',
+                    'super_attributes.*' => 'array|min:1',
+                ]);
+
+                if ($validator->fails()) {
+                    return new JsonResponse([
+                        'message' => 'Validation failed',
+                        'errors'  => $validator->errors(),
+                    ], 422);
+                }
+
+                $configurableAttributes = $product->attribute_family
+                    ->configurable_attributes
+                    ->load('options')
+                    ->keyBy('code');
+
+                $superAttributes = request()->input('super_attributes', []);
+
+                $attributeIdsToSync = [];
+
+                foreach ($superAttributes as $attributeCode => $optionIds) {
+                    $attribute = $configurableAttributes->get($attributeCode);
+
+                    if (! $attribute || ! is_array($optionIds) || empty($optionIds)) {
+                        continue;
+                    }
+
+                    $validOptionIds = $attribute->options->pluck('id')->map(fn ($id) => (int) $id)->toArray();
+                    $requestedOptionIds = array_map('intval', $optionIds);
+
+                    if (empty(array_intersect($requestedOptionIds, $validOptionIds))) {
+                        continue;
+                    }
+
+                    $attributeIdsToSync[] = (int) $attribute->id;
+                }
+
+                if (empty($attributeIdsToSync)) {
+                    return new JsonResponse([
+                        'message' => 'No valid super attributes selected',
+                    ], 422);
+                }
+
+                DB::transaction(function () use ($id, $value, $product, $attributeIdsToSync) {
+                    DB::table('products')->where('id', $id)->update(['type' => $value]);
+                    DB::table('product_flat')->where('product_id', $id)->update(['type' => $value]);
+
+                    $product->super_attributes()->sync($attributeIdsToSync);
+                });
+            } else {
+                DB::table('products')->where('id', $id)->update(['type' => $value]);
+                DB::table('product_flat')->where('product_id', $id)->update(['type' => $value]);
+            }
 
             return new JsonResponse([
                 'success' => true,
@@ -713,6 +768,22 @@ class ProductController extends Controller
             ->getAll($params);
 
         return ProductResource::collection($products);
+    }
+
+    /**
+     * Return configurable attributes for product family.
+     */
+    public function configurableAttributes(int $id): JsonResponse
+    {
+        $product = $this->productRepository->findOrFail($id);
+
+        $configurableAttributes = $product->attribute_family->configurable_attributes;
+
+        return new JsonResponse([
+            'data' => [
+                'attributes' => AttributeResource::collection($configurableAttributes),
+            ],
+        ]);
     }
 
     /*TODO - refactor this*/

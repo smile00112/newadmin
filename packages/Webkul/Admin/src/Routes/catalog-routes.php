@@ -107,6 +107,8 @@ Route::prefix('catalog')->group(function () {
         Route::put('edit-panel/{id}', 'updatePanel')->name('admin.catalog.products.update_panel');
 
         Route::post('quick-update/{id}', 'quickUpdate')->name('admin.catalog.products.quick_update');
+        
+        Route::get('{id}/configurable-attributes', 'configurableAttributes')->name('admin.catalog.products.configurable_attributes');
 
         Route::put('edit/{id}', 'update')->name('admin.catalog.products.update');
 
