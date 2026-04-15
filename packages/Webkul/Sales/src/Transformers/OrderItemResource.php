@@ -24,6 +24,7 @@ class OrderItemResource extends JsonResource
         $product = $this->product;
         $baseImage = null;
         $images = [];
+        $additional = $this->resolveAdditionalWithoutLocalId();
 
         if ($product) {
             $baseImage = product_image()->getProductBaseImage($product);
@@ -56,8 +57,22 @@ class OrderItemResource extends JsonResource
             'base_discount_amount'  => $this->base_discount_amount,
             'base_image'            => $baseImage,
             'images'                => $images,
-            'additional'            => array_merge($this->resource->additional ?? [], ['locale' => core()->getCurrentLocale()->code]),
+            'additional'            => array_merge($additional, ['locale' => core()->getCurrentLocale()->code]),
             'children'              => self::collection($this->children)->jsonSerialize(),
         ];
+    }
+
+    private function resolveAdditionalWithoutLocalId(): array
+    {
+        $additional = $this->resource->additional ?? [];
+
+        if (! is_array($additional)) {
+            $decoded = json_decode((string) $additional, true);
+            $additional = is_array($decoded) ? $decoded : [];
+        }
+
+        unset($additional['local_id']);
+
+        return $additional;
     }
 }

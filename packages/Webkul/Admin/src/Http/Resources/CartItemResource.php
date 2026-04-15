@@ -14,6 +14,8 @@ class CartItemResource extends JsonResource
      */
     public function toArray($request)
     {
+        $additional = $this->resolveAdditionalWithoutLocalId();
+
         return [
             'id'                       => $this->id,
             'cart_id'                  => $this->cart_id,
@@ -30,9 +32,23 @@ class CartItemResource extends JsonResource
             'formatted_total'          => core()->formatPrice($this->base_total),
             'total_incl_tax'           => $this->base_total_incl_tax,
             'formatted_total_incl_tax' => core()->formatPrice($this->base_total_incl_tax),
-            'options'                  => array_values($this->resource->additional['attributes'] ?? []),
-            'additional'               => (object) $this->resource->additional,
+            'options'                  => array_values($additional['attributes'] ?? []),
+            'additional'               => (object) $additional,
             'product'                  => new ProductResource($this->product),
         ];
+    }
+
+    private function resolveAdditionalWithoutLocalId(): array
+    {
+        $additional = $this->resource->additional ?? [];
+
+        if (! is_array($additional)) {
+            $decoded = json_decode((string) $additional, true);
+            $additional = is_array($decoded) ? $decoded : [];
+        }
+
+        unset($additional['local_id']);
+
+        return $additional;
     }
 }

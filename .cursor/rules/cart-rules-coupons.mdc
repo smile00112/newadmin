@@ -152,6 +152,23 @@ CartRuleCouponRepository::generateCoupons($data, $cartRuleId)
 
 ### Shop API (for customers):
 
+#### Add product to cart (customer REST API):
+```http
+POST /api/v1/customer/cart/add/{productId}
+Content-Type: application/json
+
+{
+    "product_id": 123,
+    "quantity": 1,
+    "local_id": "client-temp-item-id"
+}
+```
+
+Notes:
+- `local_id` is optional metadata from client apps.
+- `local_id` is stored in cart item `additional` and returned in cart item payloads (`items[].local_id`) for cart responses.
+- `local_id` must not be exposed in order/admin outputs.
+
 #### Apply coupon:
 ```http
 POST /api/shop/customers/cart/coupon
@@ -304,6 +321,11 @@ CartRule::checkCouponCode()
 6. **Usage tracking occurs when order is created**
    - Listener `CartRule\Listeners\Order` processes order creation event
    - Usage counters are updated
+
+7. **Cart item client metadata (`local_id`) is cart-only**
+   - Accepted on add-to-cart request (`POST /api/v1/customer/cart/add/{productId}`)
+   - Returned in cart item responses as `local_id`
+   - Must be removed from order/admin serializers to avoid leaking client-side temporary identifiers
 
 ## Usage Examples
 

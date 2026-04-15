@@ -19,6 +19,7 @@ class OrderItemResource extends JsonResource
         $product = $this->product;
         $baseImage = null;
         $images = [];
+        $additional = $this->resolveAdditionalWithoutLocalId();
 
         if ($product) {
             $baseImage = product_image()->getProductBaseImage($product);
@@ -91,18 +92,26 @@ class OrderItemResource extends JsonResource
             'ingredients'                        => $this->when(
                 in_array($this->type, ['constructor', 'configurable_constructor'], true),
                 function () {
-                    $additional = is_array($this->resource->additional)
-                        ? $this->resource->additional
-                        : (array) json_decode($this->resource->additional ?? '{}', true);
-
-                    return $this->getIngredientsFromAdditional($additional);
+                    return $this->getIngredientsFromAdditional($this->resolveAdditionalWithoutLocalId());
                 }
             ),
-            'additional'                         => is_array($this->resource->additional)
-                ? $this->resource->additional
-                : json_decode($this->resource->additional, true),
+            'additional'                         => $additional,
             'child'                              => new self($this->child),
             'children'                           => self::collection($this->children),
         ];
+    }
+
+    private function resolveAdditionalWithoutLocalId(): array
+    {
+        $rawAdditional = $this->resource->additional ?? [];
+
+        if (! is_array($rawAdditional)) {
+            $decoded = json_decode((string) $rawAdditional, true);
+            $rawAdditional = is_array($decoded) ? $decoded : [];
+        }
+
+        unset($rawAdditional['local_id']);
+
+        return $rawAdditional;
     }
 }

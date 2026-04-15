@@ -32,8 +32,11 @@ class CartItemResource extends JsonResource
      */
     private function toMinimalArray($request): array
     {
+        $additional = $this->resolveAdditional();
+
         $data = [
             'id'                    => $this->id,
+            'local_id'              => $additional['local_id'] ?? null,
             'quantity'              => $this->quantity,
             'sku'                   => $this->sku,
             'type'                  => $this->type,
@@ -63,16 +66,6 @@ class CartItemResource extends JsonResource
             }),
         ];
 
-        // Структура additional может быть массивом или JSON-строкой.
-        $rawAdditional = $this->resource->additional ?? [];
-
-        if (! is_array($rawAdditional)) {
-            $decoded = json_decode($rawAdditional, true);
-            $additional = is_array($decoded) ? $decoded : [];
-        } else {
-            $additional = $rawAdditional;
-        }
-
         // Для configurable и configurable_constructor добавляем выбранные модификации.
         if (in_array($this->type, ['configurable', 'configurable_constructor'], true)) {
             $modifications = $this->getModificationsSummary($additional);
@@ -99,8 +92,11 @@ class CartItemResource extends JsonResource
      */
     private function toFullArray($request): array
     {
+        $additional = $this->resolveAdditional();
+
         return [
             'id'                             => $this->id,
+            'local_id'                       => $additional['local_id'] ?? null,
             'quantity'                       => $this->quantity,
             'sku'                            => $this->sku,
             'type'                           => $this->type,
@@ -129,9 +125,7 @@ class CartItemResource extends JsonResource
             'formatted_discount_amount'      => core()->formatPrice($this->discount_amount, $this->cart->cart_currency_code),
             'base_discount_amount'           => $this->base_discount_amount,
             'formatted_base_discount_amount' => core()->formatBasePrice($this->base_discount_amount),
-            'additional'                     => is_array($this->resource->additional)
-                ? $this->resource->additional
-                : json_decode($this->resource->additional, true),
+            'additional'                     => $additional,
             'child'                          => new self($this->child),
             'children'                       => $this->when($this->children->isNotEmpty(), self::collection($this->children)),
             'product'                        => $this->when($this->product_id, new ProductResource($this->product)),
@@ -174,5 +168,21 @@ class CartItemResource extends JsonResource
         }
 
         return $result;
+    }
+
+    /**
+     * Структура additional может быть массивом или JSON-строкой.
+     */
+    private function resolveAdditional(): array
+    {
+        $rawAdditional = $this->resource->additional ?? [];
+
+        if (is_array($rawAdditional)) {
+            return $rawAdditional;
+        }
+
+        $decoded = json_decode((string) $rawAdditional, true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 }
