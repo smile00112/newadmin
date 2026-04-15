@@ -173,12 +173,6 @@ class ConfigurableConstructor extends AbstractType
 
         $this->fillableVariantAttributes = $this->attributeRepository->findWhereIn('code', $this->fillableVariantAttributeCodes);
 
-        foreach ($product->super_attributes as $superAttribute) {
-            if (! $this->fillableVariantAttributes->contains('id', $superAttribute->id)) {
-                $this->fillableVariantAttributes->push($superAttribute);
-            }
-        }
-
         $previousVariantIds = $product->variants->pluck('id');
 
         foreach ($data['variants'] ?? [] as $variantId => $variantData) {
@@ -187,6 +181,8 @@ class ConfigurableConstructor extends AbstractType
 
                 foreach ($product->super_attributes as $superAttribute) {
                     $superAttributes[$superAttribute->id] = $variantData[$superAttribute->code];
+
+                    $this->fillableVariantAttributes->push($superAttribute);
                 }
 
                 $this->createVariant($product, $superAttributes, array_merge($variantData, [
@@ -545,12 +541,9 @@ class ConfigurableConstructor extends AbstractType
                     continue;
                 }
 
-                // Per-unit constructor qty × parent line qty (e.g. 2 drinks → 2× milk).
-                $ingredientLineQty = (int) $qty * (int) $data['quantity'];
-
                 $cartProduct = $ingredientProduct->getTypeInstance()->prepareForCart([
                     'product_id' => $productId,
-                    'quantity'   => $ingredientLineQty,
+                    'quantity'   => $qty,
                     'parent_id'  => $this->product->id,
                 ]);
 
@@ -565,8 +558,9 @@ class ConfigurableConstructor extends AbstractType
             }
         }
 
-        $products[0]['base_total'] += $ingredientsTotal;
-        $products[0]['base_total_incl_tax'] += $ingredientsTotal;
+        // ingredientsTotal is for ONE dish; multiply by quantity for all dishes
+        $products[0]['base_total'] += $ingredientsTotal * $data['quantity'];
+        $products[0]['base_total_incl_tax'] += $ingredientsTotal * $data['quantity'];
         $products[0]['total'] = core()->convertPrice($products[0]['base_total']);
         $products[0]['total_incl_tax'] = core()->convertPrice($products[0]['base_total_incl_tax']);
 
@@ -729,32 +723,6 @@ class ConfigurableConstructor extends AbstractType
 
         $baseTotal = $variant->getTypeInstance()->getFinalPrice($item->quantity) * $item->quantity;
 
-        $constructorOptions = $item->additional['constructor_options'] ?? [];
-
-        if (is_array($constructorOptions)) {
-            foreach ($constructorOptions as $selectedProducts) {
-                if (! is_array($selectedProducts)) {
-                    continue;
-                }
-
-                foreach ($selectedProducts as $productId => $qty) {
-                    $qty = (int) $qty;
-
-                    if ($qty <= 0) {
-                        continue;
-                    }
-
-                    $ingredient = $this->productRepository->find((int) $productId);
-
-                    if (! $ingredient || ! in_array($ingredient->type, ['simple', 'ingredient'])) {
-                        continue;
-                    }
-
-                    $baseTotal += $ingredient->getTypeInstance()->getFinalPrice($qty * $item->quantity) * $qty * $item->quantity;
-                }
-            }
-        }
-
         foreach ($item->children as $childItem) {
             if ((int) $childItem->product_id === (int) $variantId) {
                 continue;
@@ -770,6 +738,8 @@ class ConfigurableConstructor extends AbstractType
                 $validation->cartIsInvalid();
             }
 
+            // Child base_total is for ONE dish; multiply by parent quantity for all dishes
+            $baseTotal += $childItem->base_total * $item->quantity;
         }
 
         $baseTotal = round($baseTotal, 4);

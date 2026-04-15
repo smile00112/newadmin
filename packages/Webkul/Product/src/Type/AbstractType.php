@@ -909,7 +909,13 @@ abstract class AbstractType
             }
         }
 
-        return true;
+        $constructor1 = $options1['constructor_options'] ?? [];
+        $constructor2 = $options2['constructor_options'] ?? [];
+
+        $drinks1 = $options1['drinks'] ?? [];
+        $drinks2 = $options2['drinks'] ?? [];
+
+        return $constructor1 == $constructor2 && $drinks1 == $drinks2;
     }
 
     /**

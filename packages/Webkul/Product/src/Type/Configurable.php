@@ -144,12 +144,6 @@ class Configurable extends AbstractType
          */
         $this->fillableVariantAttributes = $this->attributeRepository->findWhereIn('code', $this->fillableVariantAttributeCodes);
 
-        foreach ($product->super_attributes as $superAttribute) {
-            if (! $this->fillableVariantAttributes->contains('id', $superAttribute->id)) {
-                $this->fillableVariantAttributes->push($superAttribute);
-            }
-        }
-
         $previousVariantIds = $product->variants->pluck('id');
 
         ProductModel::withoutEvents(function () use ($data, $product, &$previousVariantIds) {
@@ -159,6 +153,8 @@ class Configurable extends AbstractType
 
                     foreach ($product->super_attributes as $superAttribute) {
                         $superAttributes[$superAttribute->id] = $variantData[$superAttribute->code];
+
+                        $this->fillableVariantAttributes->push($superAttribute);
                     }
 
                     $this->createVariant($product, $superAttributes, array_merge($variantData, [
@@ -444,7 +440,17 @@ class Configurable extends AbstractType
             isset($options1['selected_configurable_option'])
             && isset($options2['selected_configurable_option'])
         ) {
-            return $options1['selected_configurable_option'] === $options2['selected_configurable_option'];
+            if ($options1['selected_configurable_option'] !== $options2['selected_configurable_option']) {
+                return false;
+            }
+
+            $constructor1 = $options1['constructor_options'] ?? [];
+            $constructor2 = $options2['constructor_options'] ?? [];
+
+            $drinks1 = $options1['drinks'] ?? [];
+            $drinks2 = $options2['drinks'] ?? [];
+
+            return $constructor1 == $constructor2 && $drinks1 == $drinks2;
         }
 
         if (! isset($options1['selected_configurable_option'])) {
@@ -529,12 +535,6 @@ class Configurable extends AbstractType
         $validation = new CartItemValidationResult;
 
         if ($this->isCartItemInactive($item)) {
-            $validation->itemIsInactive();
-
-            return $validation;
-        }
-
-        if (! $item->child) {
             $validation->itemIsInactive();
 
             return $validation;
