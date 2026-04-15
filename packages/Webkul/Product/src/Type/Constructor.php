@@ -374,6 +374,64 @@ class Constructor extends AbstractType
     }
 
     /**
+     * Compare cart options for constructor products.
+     *
+     * Two constructor items are considered equal only when both base options
+     * and selected constructor ingredients are identical.
+     */
+    public function compareOptions($options1, $options2)
+    {
+        if (! parent::compareOptions($options1, $options2)) {
+            return false;
+        }
+
+        return $this->normalizeConstructorOptions($options1['constructor_options'] ?? [])
+            === $this->normalizeConstructorOptions($options2['constructor_options'] ?? []);
+    }
+
+    /**
+     * Normalize constructor options for stable comparison.
+     */
+    protected function normalizeConstructorOptions($constructorOptions): array
+    {
+        if (! is_array($constructorOptions)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($constructorOptions as $groupId => $groupProducts) {
+            if (! is_array($groupProducts)) {
+                continue;
+            }
+
+            $normalizedGroupProducts = [];
+
+            foreach ($groupProducts as $productId => $qty) {
+                $quantity = (int) $qty;
+
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $normalizedGroupProducts[(int) $productId] = $quantity;
+            }
+
+            if (empty($normalizedGroupProducts)) {
+                continue;
+            }
+
+            ksort($normalizedGroupProducts);
+
+            $normalized[(int) $groupId] = $normalizedGroupProducts;
+        }
+
+        ksort($normalized);
+
+        return $normalized;
+    }
+
+    /**
      * Validate cart item product price and other things.
      * Recalculate parent total from children (ingredients) instead of using constructor product base price.
      */
