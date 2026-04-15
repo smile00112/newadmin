@@ -70,6 +70,7 @@ RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --pr
 
 COPY . .
 
+
 RUN set -eux; \
     npm ci || npm install; \
     npm run build; \
