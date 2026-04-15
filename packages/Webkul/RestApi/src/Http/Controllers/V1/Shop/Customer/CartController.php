@@ -70,7 +70,7 @@ class CartController extends CustomerController
             'product_id' => 'required|integer|exists:products,id',
             'is_buy_now' => 'integer|in:0,1',
             'quantity'   => 'integer|min:1',
-            'local_id'   => 'nullable|string|max:255',
+            'local_id'   => 'nullable|integer',
         ]);
 
         if ($productId != request()->product_id) {
