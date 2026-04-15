@@ -440,7 +440,17 @@ class Ingredient extends AbstractType
             ! isset($options1['customizable_options'])
             && ! isset($options2['customizable_options'])
         ) {
-            return $this->product->id == $options2['product_id'];
+            if ($this->product->id != ($options2['product_id'] ?? null)) {
+                return false;
+            }
+
+            $constructor1 = $options1['constructor_options'] ?? [];
+            $constructor2 = $options2['constructor_options'] ?? [];
+
+            $drinks1 = $options1['drinks'] ?? [];
+            $drinks2 = $options2['drinks'] ?? [];
+
+            return $constructor1 === $constructor2 && $drinks1 === $drinks2;
         }
 
         return false;
