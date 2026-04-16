@@ -73,10 +73,26 @@ class CatalogCategoryV2Controller extends CatalogController
      */
     protected function buildCatalogV2Json(Request $request, bool $usePagination, int $limit): string
     {
+        $channel = core()->getCurrentChannel();
+        $channelId = (int) data_get($channel, 'id');
+        $channelCode = (string) data_get($channel, 'code', (string) $channelId);
+        $locale = core()->getRequestedLocaleCode();
+
         $query = $this->getRepositoryInstance()
             ->with([
                 'translations',
-                'products' => function ($query) {
+                'products' => function ($query) use ($channelId, $channelCode, $locale) {
+                    $query->whereIn('id', function ($subQuery) use ($channelCode, $locale) {
+                        $subQuery->select('product_id')
+                            ->from('product_flat')
+                            ->where('channel', $channelCode)
+                            ->where('locale', $locale)
+                            ->where('status', 1);
+                    })->whereHas('inventory_indices', function ($inventoryQuery) use ($channelId) {
+                        $inventoryQuery->where('channel_id', $channelId)
+                            ->where('qty', '>', 0);
+                    });
+
                     $query->with([
                         'videos',
                         'up_sells:id',
