@@ -225,13 +225,15 @@ class OrderController extends Controller
     {
         $order = $this->orderRepository->with(['items', 'items.product', 'payment', 'addresses'])->findOrFail($id);
 
-        // Batch-load ingredient product names
+        // Batch-load ingredient product names and group IDs
         $allIngredientProductIds = [];
+        $allGroupIds = [];
         foreach ($order->items as $item) {
             $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
             $constructorOptions = $additional['constructor_options'] ?? [];
             if (is_array($constructorOptions)) {
-                foreach ($constructorOptions as $groupProducts) {
+                foreach ($constructorOptions as $groupId => $groupProducts) {
+                    $allGroupIds[] = (int) $groupId;
                     if (is_array($groupProducts)) {
                         foreach ($groupProducts as $productId => $qty) {
                             if ($qty) $allIngredientProductIds[] = (int) $productId;
@@ -249,7 +251,16 @@ class OrderController extends Controller
                 ->toArray();
         }
 
-        $items = $order->items->map(function ($item) use ($ingredientProducts) {
+        // Load constructor groups with sale_by_sizes for portion size resolution
+        $sizeGroups = [];
+        if (!empty($allGroupIds)) {
+            $sizeGroups = \Webkul\Product\Models\ProductConstructorGroup::whereIn('id', array_unique($allGroupIds))
+                ->where('sale_by_sizes', true)
+                ->pluck('portion_sizes', 'id')
+                ->toArray();
+        }
+
+        $items = $order->items->filter(fn($item) => !$item->parent_id)->map(function ($item) use ($ingredientProducts, $sizeGroups) {
             $imageUrl = null;
 
             if ($item->product?->category_image) {
@@ -258,19 +269,48 @@ class OrderController extends Controller
                 $imageUrl = $item->product->base_image_url;
             }
 
+            $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
+
+            // Extract volume from attributes
+            $volume = null;
+            if (!empty($additional['attributes']['volume']['option_label'])) {
+                $volume = $additional['attributes']['volume']['option_label'];
+            }
+
             // Extract ingredients
             $ingredients = [];
-            $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
             $constructorOptions = $additional['constructor_options'] ?? [];
             if (is_array($constructorOptions)) {
-                foreach ($constructorOptions as $groupProducts) {
+                foreach ($constructorOptions as $groupId => $groupProducts) {
+                    // Resolve portion size name for sale_by_sizes groups
+                    $portionName = null;
+                    if (isset($sizeGroups[(int)$groupId])) {
+                        $portions = $sizeGroups[(int)$groupId];
+                        if (is_string($portions)) {
+                            $portions = json_decode($portions, true);
+                        }
+                        if (is_array($portions)) {
+                            $maxQty = is_array($groupProducts) ? max(array_values($groupProducts)) : 1;
+                            foreach ($portions as $ps) {
+                                if (isset($ps['quantity']) && (int)$ps['quantity'] === (int)$maxQty) {
+                                    $portionName = $ps['name'] ?? null;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
                     if (is_array($groupProducts)) {
                         foreach ($groupProducts as $productId => $qty) {
                             if ($qty && isset($ingredientProducts[(int)$productId])) {
-                                $ingredients[] = [
+                                $ing = [
                                     'name'     => $ingredientProducts[(int)$productId],
                                     'quantity' => (int) $qty,
                                 ];
+                                if ($portionName) {
+                                    $ing['portion'] = $portionName;
+                                }
+                                $ingredients[] = $ing;
                             }
                         }
                     }
@@ -285,6 +325,7 @@ class OrderController extends Controller
                 'price'         => core()->formatBasePrice($item->base_price),
                 'total'         => core()->formatBasePrice($item->base_total + $item->base_tax_amount - $item->base_discount_amount),
                 'image_url'     => $imageUrl,
+                'volume'        => $volume,
                 'ingredients'   => $ingredients,
             ];
         });

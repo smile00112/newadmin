@@ -395,7 +395,16 @@ class Constructor extends AbstractType
 
     /**
      * Validate cart item product price and other things.
-     * Recalculate parent total from children (ingredients) instead of using constructor product base price.
+     *
+     * For constructor items the price is fixed at the moment the user configured
+     * and added the dish to the cart. We must NOT recalculate the parent total
+     * from current product_flat prices because:
+     * - ingredient prices can be changed by admin at any time
+     * - the user already agreed to the price shown in the cart
+     * - Simple::validateCartItem() on children would update their base_total
+     *   to the current DB price, silently changing the order total
+     *
+     * We only check whether the constructor or any of its children became inactive.
      */
     public function validateCartItem(CartItem $item): CartItemValidationResult
     {
@@ -411,50 +420,17 @@ class Constructor extends AbstractType
             return $validation;
         }
 
-        // Start with constructor base price
-        $baseTotal = (float) ($item->product->price ?? 0) * $item->quantity;
-
+        // Only check for inactive/invalid children — do NOT reprice them.
+        // Calling Simple::validateCartItem() would update each child's base_total
+        // to the current product_flat price, corrupting the constructor total.
         foreach ($item->children as $childItem) {
-            $childValidation = $childItem->getTypeInstance()->validateCartItem($childItem);
-
-            if ($childValidation->isItemInactive()) {
+            if (parent::isCartItemInactive($childItem)) {
                 $validation->itemIsInactive();
             }
-
-            if ($childValidation->isCartInvalid()) {
-                $validation->cartIsInvalid();
-            }
-
-            // Child base_total is for ONE dish; multiply by parent quantity for all dishes
-            $baseTotal += $childItem->base_total * $item->quantity;
         }
 
-        $baseTotal = round($baseTotal, 4);
-
-        if (Tax::isInclusiveTaxProductPrices()) {
-            $itemBaseTotal = $item->base_total_incl_tax;
-        } else {
-            $itemBaseTotal = $item->base_total;
-        }
-
-        if ($baseTotal == $itemBaseTotal) {
-            return $validation;
-        }
-
-        $basePrice = $item->quantity > 0 ? $baseTotal / $item->quantity : 0;
-
-        $item->base_total = $baseTotal;
-        $item->base_total_incl_tax = $baseTotal;
-        $item->base_price = $basePrice;
-        $item->base_price_incl_tax = $basePrice;
-
-        $item->price = core()->convertPrice($basePrice);
-        $item->price_incl_tax = $item->price;
-        $item->total = core()->convertPrice($baseTotal);
-        $item->total_incl_tax = $item->total;
-
-        $item->save();
-
+        // Parent base_total is not touched — it stays exactly as set when the
+        // user configured the constructor (correct price, correct quantities).
         return $validation;
     }
 

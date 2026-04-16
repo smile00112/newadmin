@@ -162,13 +162,15 @@
 
                 <div class="box-shadow rounded-2xl bg-white dark:bg-gray-900 overflow-hidden">
                     @php
-                        // Collect all ingredient product IDs to batch-load names
+                        // Collect all ingredient product IDs and constructor group IDs
                         $allIngredientProductIds = [];
+                        $allGroupIds = [];
                         foreach ($order->items as $item) {
                             $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
                             $constructorOptions = $additional['constructor_options'] ?? [];
                             if (is_array($constructorOptions)) {
-                                foreach ($constructorOptions as $groupProducts) {
+                                foreach ($constructorOptions as $groupId => $groupProducts) {
+                                    $allGroupIds[] = (int) $groupId;
                                     if (is_array($groupProducts)) {
                                         foreach ($groupProducts as $productId => $qty) {
                                             if ($qty) $allIngredientProductIds[] = (int) $productId;
@@ -186,7 +188,16 @@
                                 ->toArray();
                         }
 
-                        $itemsJson = $order->items->map(function ($item) use ($ingredientProducts) {
+                        // Load constructor groups with sale_by_sizes for portion size resolution
+                        $sizeGroups = [];
+                        if (!empty($allGroupIds)) {
+                            $sizeGroups = \Webkul\Product\Models\ProductConstructorGroup::whereIn('id', array_unique($allGroupIds))
+                                ->where('sale_by_sizes', true)
+                                ->pluck('portion_sizes', 'id')
+                                ->toArray();
+                        }
+
+                        $itemsJson = $order->items->filter(fn($item) => !$item->parent_id)->map(function ($item) use ($ingredientProducts, $sizeGroups) {
                             $imageUrl = null;
                             if ($item->product?->category_image) {
                                 $imageUrl = \Illuminate\Support\Facades\Storage::url($item->product->category_image);
@@ -194,24 +205,54 @@
                                 $imageUrl = $item->product->base_image_url;
                             }
 
+                            $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
+
+                            // Extract volume from attributes
+                            $volume = null;
+                            if (!empty($additional['attributes']['volume']['option_label'])) {
+                                $volume = $additional['attributes']['volume']['option_label'];
+                            }
+
                             // Extract ingredients from constructor_options
                             $ingredients = [];
-                            $additional = is_array($item->additional) ? $item->additional : (is_string($item->additional) ? json_decode($item->additional, true) : []);
                             $constructorOptions = $additional['constructor_options'] ?? [];
                             if (is_array($constructorOptions)) {
-                                foreach ($constructorOptions as $groupProducts) {
+                                foreach ($constructorOptions as $groupId => $groupProducts) {
+                                    // Resolve portion size name for sale_by_sizes groups
+                                    $portionName = null;
+                                    if (isset($sizeGroups[(int)$groupId])) {
+                                        $portions = $sizeGroups[(int)$groupId];
+                                        if (is_string($portions)) {
+                                            $portions = json_decode($portions, true);
+                                        }
+                                        if (is_array($portions)) {
+                                            // Get max qty in this group to match portion
+                                            $maxQty = is_array($groupProducts) ? max(array_values($groupProducts)) : 1;
+                                            foreach ($portions as $ps) {
+                                                if (isset($ps['quantity']) && (int)$ps['quantity'] === (int)$maxQty) {
+                                                    $portionName = $ps['name'] ?? null;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     if (is_array($groupProducts)) {
                                         foreach ($groupProducts as $productId => $qty) {
                                             if ($qty && isset($ingredientProducts[(int)$productId])) {
-                                                $ingredients[] = [
+                                                $ing = [
                                                     'name'     => $ingredientProducts[(int)$productId],
                                                     'quantity' => (int) $qty,
                                                 ];
-                                            }
+                                                if ($portionName) {
+                                                    $ing['portion'] = $portionName;
+                                                }
+                                                $ingredients[] = $ing;
                                         }
                                     }
                                 }
                             }
+                        }
 
                             return [
                                 'id'                  => $item->id,
@@ -224,6 +265,7 @@
                                 'base_discount_amount'=> $item->base_discount_amount,
                                 'formatted_price'     => core()->formatBasePrice($item->base_price),
                                 'image_url'           => $imageUrl,
+                                'volume'              => $volume,
                                 'ingredients'         => $ingredients,
                             ];
                         })->toArray();
@@ -1481,7 +1523,12 @@
                                 </svg>
                             </div>
                             <div class="flex flex-col gap-1">
-                                <p class="text-sm font-bold text-gray-800 dark:text-white">@{{ item.name }}</p>
+                                <div class="flex items-center gap-1.5">
+                                    <p class="text-sm font-bold text-gray-800 dark:text-white">@{{ item.name }}</p>
+                                    <span v-if="item.volume" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">
+                                        @{{ item.volume }}
+                                    </span>
+                                </div>
                                 <div v-if="item.ingredients && item.ingredients.length" class="flex flex-wrap gap-1 mt-0.5">
                                     <span
                                         v-for="ing in item.ingredients"
@@ -1489,7 +1536,7 @@
                                         class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium"
                                         style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;"
                                     >
-                                        @{{ ing.name }}<span v-if="ing.quantity > 1" class="ml-0.5 opacity-70">×@{{ ing.quantity }}</span>
+                                        @{{ ing.name }}<span v-if="ing.portion" class="ml-0.5 opacity-70">(@{{ ing.portion }})</span><span v-if="ing.quantity > 1" class="ml-0.5 opacity-70">×@{{ ing.quantity }}</span>
                                     </span>
                                 </div>
                                 <div class="flex flex-col gap-1">
@@ -1549,7 +1596,7 @@
                         // Dynamic steps from order_statuses table (exclude negative statuses)
                         steps: (() => {
                             const allSt = @json($allStatuses ?? []);
-                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed'];
+                            const negative = ['canceled', 'on_hold', 'refunded', 'closed', 'fraud', 'failed', 'completed'];
                             const defaultIcon = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
                             return allSt
                                 .filter(s => !negative.includes(s.code))

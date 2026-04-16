@@ -39,7 +39,7 @@ class BonusTransactionRepository extends Repository
     }
 
     /**
-     * Get available bonuses for customer (not expired).
+     * Get available bonuses for customer — returns actual balance from customer_bonuses table.
      *
      * @param  int  $customerId
      * @param  string|null  $currencyCode
@@ -47,13 +47,8 @@ class BonusTransactionRepository extends Repository
      */
     public function getAvailableBonuses(int $customerId, ?string $currencyCode = null): float
     {
-        $currencyCode = $currencyCode ?? core()->getCurrentCurrencyCode();
+        $bonus = \Webkul\Bonus\Models\CustomerBonus::where('customer_id', $customerId)->first();
 
-        return (float) $this->model
-            ->where('customer_id', $customerId)
-            ->where('currency_code', $currencyCode)
-            ->where('type', 'accrual')
-            ->notExpired()
-            ->sum('amount');
+        return $bonus ? (float) $bonus->balance : 0.0;
     }
 }

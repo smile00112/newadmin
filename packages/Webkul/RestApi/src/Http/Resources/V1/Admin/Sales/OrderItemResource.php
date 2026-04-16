@@ -19,18 +19,37 @@ class OrderItemResource extends JsonResource
         $product = $this->product;
         $baseImage = null;
         $images = [];
+        $imageProduct = $product;
         $additional = $this->resolveAdditionalWithoutLocalId();
 
         if ($product) {
-            $baseImage = product_image()->getProductBaseImage($product);
-            $images = product_image()->getGalleryImages($product);
+            // For variants, prefer parent product for images if variant has none
+            if ($product->parent_id && $product->parent) {
+                $variantImages = $product->images ?? collect();
+                if ($variantImages->isEmpty()) {
+                    $imageProduct = $product->parent;
+                }
+            }
+            $baseImage = product_image()->getProductBaseImage($imageProduct);
+            $images = product_image()->getGalleryImages($imageProduct);
+        }
+
+        // Resolve display name: if product is a variant (has parent_id), use parent product's name
+        $displayName = $this->name;
+        if ($product && $product->parent_id) {
+            $parentName = \Webkul\Product\Models\ProductFlat::where('product_id', $product->parent_id)
+                ->where('locale', app()->getLocale())
+                ->value('name');
+            if ($parentName) {
+                $displayName = $parentName;
+            }
         }
 
         return [
             'id'                                 => $this->id,
             'sku'                                => $this->sku,
             'type'                               => $this->type,
-            'name'                               => $this->name,
+            'name'                               => $displayName,
             'product_id'                         => $this->product_id,
             'coupon_code'                        => $this->coupon_code,
             'weight'                             => $this->weight,

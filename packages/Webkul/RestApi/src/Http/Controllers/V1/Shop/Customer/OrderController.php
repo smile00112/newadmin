@@ -427,6 +427,16 @@ class OrderController extends CustomerController
 
                             $order->refresh();
 
+                            // Return/cancel bonuses for this order
+                            try {
+                                app(\Webkul\Bonus\Services\BonusService::class)->returnBonuses($order);
+                            } catch (\Exception $e) {
+                                Log::channel($alfabankLogChannel)->warning('Alfabank cancel: bonus return failed', [
+                                    'order_id' => $order->id,
+                                    'error'    => $e->getMessage(),
+                                ]);
+                            }
+
                             $this->refreshOrdersCacheForCustomer($order, (int) $customer->id);
                         }
 
@@ -523,6 +533,16 @@ class OrderController extends CustomerController
             ], $order->id);
 
             $order->refresh();
+
+            // Return/cancel bonuses for this order
+            try {
+                $this->bonusService->returnBonuses($order);
+            } catch (\Exception $e) {
+                Log::channel($alfabankLogChannel)->warning('Alfabank cancel (forced): bonus return failed', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
 
             $this->refreshOrdersCacheForCustomer($order, (int) $order->customer_id);
 
@@ -972,6 +992,10 @@ class OrderController extends CustomerController
 
     /**
      * Get active orders.
+     *
+     * Also includes recently canceled orders (within 2 minutes) so the mobile
+     * app can detect the cancellation via polling and update the UI in real-time
+     * without requiring WebSocket or push notifications.
      */
     public function activeOrders(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
@@ -992,7 +1016,76 @@ class OrderController extends CustomerController
             $statuses = array_map('trim', $statuses);
         }
 
-        return $this->getOrdersByStatuses($request, $statuses, 'active');
+        return $this->getActiveOrdersWithRecentlyCanceled($request, $statuses);
+    }
+
+    /**
+     * Active orders + recently canceled (for real-time UI update via polling).
+     *
+     * Canceled orders are included for 2 minutes after status change so the
+     * mobile app sees status='canceled' instead of the order just disappearing.
+     */
+    protected function getActiveOrdersWithRecentlyCanceled(
+        Request $request,
+        array $activeStatuses
+    ): \Symfony\Component\HttpFoundation\StreamedResponse {
+        $customerId = $this->resolveShopUser($request)->id;
+        $recentCancelMinutes = 2;
+
+        // Build cache key that includes the cancel window
+        $params = array_merge(
+            $request->only(['page', 'limit', 'pagination', 'sort', 'order']),
+            $request->except(array_merge($this->requestException, ['token'])),
+            [
+                'list_type'              => 'active',
+                'statuses'               => $activeStatuses,
+                'include_recent_canceled' => $recentCancelMinutes,
+            ]
+        );
+
+        $cacheKey = CustomerOrdersCache::key($customerId, $params);
+
+        $data = Cache::remember($cacheKey, CustomerOrdersCache::ttl(), function () use ($request, $activeStatuses, $recentCancelMinutes) {
+            $query = $this->getRepositoryInstance()->scopeQuery(function ($query) use ($request, $activeStatuses, $recentCancelMinutes) {
+                $customerId = $this->resolveShopUser($request)->id;
+
+                $query = $query->where('customer_id', $customerId)
+                    ->where(function ($q) use ($activeStatuses, $recentCancelMinutes) {
+                        // Active statuses (normal)
+                        $q->whereIn('status', $activeStatuses)
+                          // OR recently canceled (within N minutes)
+                          ->orWhere(function ($q2) use ($recentCancelMinutes) {
+                              $q2->where('status', Order::STATUS_CANCELED)
+                                 ->where('updated_at', '>=', now()->subMinutes($recentCancelMinutes));
+                          });
+                    });
+
+                if ($sort = $request->input('sort')) {
+                    $query = $query->orderBy($sort, $request->input('order') ?? 'desc');
+                } else {
+                    $query = $query->orderBy('id', 'desc');
+                }
+
+                return $query;
+            });
+
+            $query->with([
+                'items.order',
+                'items.product.images',
+                'items.product.parent.images',
+            ]);
+
+            $results = $query->get();
+            $resourceClass = $this->listResource();
+
+            return [
+                'data' => $resourceClass::collection($results)->resolve($request),
+            ];
+        });
+
+        $jsonResponse = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return api_stream_json($jsonResponse, 'orders.json');
     }
 
     /**

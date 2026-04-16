@@ -426,6 +426,11 @@ class BonusService
                     $returnAmount,
                     $currencyCode
                 );
+
+                // Reset used bonus fields to prevent double return
+                // (returnBonuses may be called from both afterStatusUpdated and afterCanceled)
+                $order->base_bonus_amount_used = 0;
+                $order->bonus_amount_used = 0;
             }
 
             // Cancel accrual if exists - найти и обновить исходную транзакцию начисления
@@ -466,8 +471,78 @@ class BonusService
                 // Обнулить начисленные бонусы в заказе
                 $order->base_bonus_amount_accrued = 0;
                 $order->bonus_amount_accrued = 0;
-                $order->save();
             }
+
+            // Save all zeroed-out fields in one call
+            $order->save();
+        });
+
+        Event::dispatch('bonus.balance.changed', $order->customer_id);
+    }
+
+    /**
+     * Re-deduct bonuses when a previously cancelled order is reactivated.
+     * Finds the return transaction and reverses it.
+     *
+     * @param  \Webkul\Sales\Contracts\Order  $order
+     * @return void
+     */
+    public function reDeductAfterReactivation($order): void
+    {
+        if (! $this->isEnabled()) {
+            return;
+        }
+
+        if (! $order->customer_id || $order->is_guest) {
+            return;
+        }
+
+        // Find the most recent return transaction for this order
+        $returnTransaction = $this->bonusTransactionRepository->getModel()
+            ->where('order_id', $order->id)
+            ->where('type', BonusTransaction::TYPE_RETURN)
+            ->where('amount', '>', 0)
+            ->latest()
+            ->first();
+
+        if (! $returnTransaction) {
+            return;
+        }
+
+        // Check if already re-deducted after the return (a deduction was created after the return)
+        $alreadyReDeducted = $this->bonusTransactionRepository->getModel()
+            ->where('order_id', $order->id)
+            ->where('type', BonusTransaction::TYPE_DEDUCTION)
+            ->where('created_at', '>', $returnTransaction->created_at)
+            ->exists();
+
+        if ($alreadyReDeducted) {
+            return;
+        }
+
+        $amount = (float) $returnTransaction->amount;
+        $currencyCode = $returnTransaction->currency_code;
+
+        DB::transaction(function () use ($order, $amount, $currencyCode) {
+            // Create re-deduction transaction
+            $this->bonusTransactionRepository->create([
+                'customer_id' => $order->customer_id,
+                'order_id'    => $order->id,
+                'type'        => BonusTransaction::TYPE_DEDUCTION,
+                'amount'      => -$amount,
+                'currency_code' => $currencyCode,
+                'description' => trans('bonus::app.transactions.deduction_description', [
+                    'order_id' => $order->increment_id,
+                ]),
+            ]);
+
+            // Update customer balance
+            $this->customerBonusRepository->updateBalance($order->customer_id, -$amount, $currencyCode);
+
+            // Restore order fields so a subsequent cancellation can return again
+            $order->base_bonus_amount_used = $amount;
+            $order->bonus_amount_used = $amount;
+            $order->save();
         });
 
         Event::dispatch('bonus.balance.changed', $order->customer_id);

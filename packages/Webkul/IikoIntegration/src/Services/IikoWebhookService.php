@@ -5,7 +5,6 @@ namespace Webkul\IikoIntegration\Services;
 use Illuminate\Support\Facades\Log;
 use Webkul\IikoIntegration\Models\IikoSyncLog;
 use Webkul\IikoIntegration\Models\IikoOrderSync;
-use Webkul\IikoIntegration\Models\IikoSyncLog;
 use Webkul\IikoIntegration\Repositories\IikoOrderSyncRepository;
 use Webkul\IikoIntegration\Repositories\IikoSettingRepository;
 use Webkul\IikoIntegration\Repositories\IikoSyncLogRepository;
@@ -191,6 +190,8 @@ class IikoWebhookService
                 $this->orderRepository->update([
                     'status' => Order::STATUS_CANCELED,
                 ], $order->id);
+
+                $order->refresh();
 
                 // Update sync status
                 $this->orderSyncRepository->update([

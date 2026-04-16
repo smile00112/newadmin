@@ -70,7 +70,7 @@ class CustomerBonusRepository extends Repository
         $currencyCode = $currencyCode ?? core()->getCurrentCurrencyCode();
 
         $bonus = $this->getOrCreateBalance($customerId, $currencyCode);
-        $bonus->balance += $amount;
+        $bonus->balance = round($bonus->balance + $amount);
         $bonus->save();
 
         return $bonus;

@@ -11,6 +11,9 @@
         </p>
     </div>
 
+    <!-- Status Filter Tabs -->
+    <v-order-status-filter></v-order-status-filter>
+
     <x-admin::datagrid
         :src="route('admin.customers.customers.view', [
             'id'   => $customer->id,
@@ -162,3 +165,103 @@
         </template>
     </x-admin::datagrid>
 </div>
+
+@pushOnce('scripts')
+    <script
+        type="text/x-template"
+        id="v-order-status-filter-template"
+    >
+        <div class="mt-4 mb-4 flex flex-wrap gap-2">
+            <button
+                @click="filterByStatus(null)"
+                :class="[
+                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200',
+                    activeStatus === null
+                        ? 'bg-gray-800 text-white shadow-md dark:bg-gray-200 dark:text-gray-800'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ]"
+            >
+                <span>Все</span>
+                <span
+                    :class="[
+                        'rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
+                        activeStatus === null
+                            ? 'bg-white/20 text-white dark:bg-gray-800/30 dark:text-gray-800'
+                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                    ]"
+                >
+                    @{{ totalCount }}
+                </span>
+            </button>
+
+            <button
+                v-for="status in statuses"
+                :key="status.code"
+                @click="filterByStatus(status.code)"
+                :class="[
+                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200',
+                    activeStatus === status.code
+                        ? 'shadow-md text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+                ]"
+                :style="activeStatus === status.code ? { backgroundColor: status.color } : {}"
+            >
+                <span
+                    v-if="activeStatus !== status.code"
+                    class="h-2 w-2 rounded-full"
+                    :style="{ backgroundColor: status.color }"
+                ></span>
+                <span>@{{ status.name }}</span>
+                <span
+                    v-if="statusCounts[status.code]"
+                    :class="[
+                        'rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
+                        activeStatus === status.code
+                            ? 'bg-white/20 text-white'
+                            : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                    ]"
+                >
+                    @{{ statusCounts[status.code] }}
+                </span>
+            </button>
+        </div>
+    </script>
+
+    <script type="module">
+        app.component('v-order-status-filter', {
+            template: '#v-order-status-filter-template',
+
+            data() {
+                return {
+                    activeStatus: null,
+                    statuses: @json($orderStatuses ?? []),
+                    totalCount: {{ count($customer->orders) }},
+                    statusCounts: @json($customer->orders->groupBy('status')->map->count()),
+                };
+            },
+
+            methods: {
+                filterByStatus(code) {
+                    if (this.activeStatus === code) {
+                        return;
+                    }
+
+                    this.activeStatus = code;
+
+                    if (code === null) {
+                        this.$emitter.emit('datagrid:filter', {
+                            columns: [],
+                        });
+                    } else {
+                        this.$emitter.emit('datagrid:filter', {
+                            columns: [{
+                                index: 'status',
+                                value: [code],
+                            }],
+                        });
+                    }
+                },
+            },
+        });
+    </script>
+@endPushOnce

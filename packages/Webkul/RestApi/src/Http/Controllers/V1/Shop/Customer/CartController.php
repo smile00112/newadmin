@@ -302,6 +302,12 @@ class CartController extends CustomerController
             ], 400);
         }
 
+        // Recalculate totals first to ensure base_grand_total is up to date.
+        // Without this, the bonus amount could be computed from a stale grand_total
+        // (e.g. after a price change or an old corrupted constructor item in cart).
+        Cart::collectTotals();
+        $cart = Cart::getCart();
+
         $maxAmount = $this->bonusService->getMaxUsableBonuses($cart, (int) $cart->customer_id);
 
         try {

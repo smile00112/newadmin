@@ -42,6 +42,7 @@ class OrderDataGrid extends DataGrid
 
         $this->addFilter('full_name', DB::raw('CONCAT('.$tablePrefix.'orders.customer_first_name, " ", '.$tablePrefix.'orders.customer_last_name)'));
         $this->addFilter('created_at', 'orders.created_at');
+        $this->addFilter('status', 'orders.status');
 
         return $queryBuilder;
     }

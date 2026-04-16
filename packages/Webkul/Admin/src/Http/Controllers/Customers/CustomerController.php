@@ -12,6 +12,7 @@ use Webkul\Admin\DataGrids\Customers\View\OrderDataGrid;
 use Webkul\Admin\DataGrids\Customers\View\ReviewDataGrid;
 use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Admin\Http\Requests\MassDestroyRequest;
+use Webkul\Sales\Models\OrderStatus;
 use Webkul\Admin\Http\Requests\MassUpdateRequest;
 use Webkul\Admin\Mail\Customer\NewCustomerNotification;
 use Webkul\Core\Rules\PhoneNumber;
@@ -265,7 +266,20 @@ class CustomerController extends Controller
             }
         }
 
-        return view('admin::customers.customers.view', compact('customer', 'groups'));
+        $orderStatuses = [];
+
+        try {
+            $orderStatuses = OrderStatus::orderBy('sort_order')->get(['code', 'name', 'color'])->toArray();
+        } catch (\Exception $e) {
+            $orderStatuses = [
+                ['code' => 'pending', 'name' => 'Новый', 'color' => '#f59e0b'],
+                ['code' => 'processing', 'name' => 'Обработка', 'color' => '#3b82f6'],
+                ['code' => 'completed', 'name' => 'Выполнен', 'color' => '#10b981'],
+                ['code' => 'canceled', 'name' => 'Отменён', 'color' => '#ef4444'],
+            ];
+        }
+
+        return view('admin::customers.customers.view', compact('customer', 'groups', 'orderStatuses'));
     }
 
     /**

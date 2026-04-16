@@ -91,6 +91,21 @@ class Order
 
                 $this->bonusService->accrueBonuses($order);
             }
+
+            // Return bonuses when order is cancelled via status dropdown
+            // (cancel button fires sales.order.cancel.after → afterCanceled,
+            //  but status dropdown fires only sales.order.update-status.after)
+            if ($status === \Webkul\Sales\Models\Order::STATUS_CANCELED) {
+                Log::info('bonus.listener.after_status_updated.returning_bonuses', [
+                    'order_id'     => $order->id,
+                    'customer_id'  => $order->customer_id,
+                ]);
+
+                $this->bonusService->returnBonuses($order);
+            } else {
+                // Re-deduct bonuses if the order was previously cancelled and is now reactivated
+                $this->bonusService->reDeductAfterReactivation($order);
+            }
         } catch (\Exception $e) {
             report($e);
         }

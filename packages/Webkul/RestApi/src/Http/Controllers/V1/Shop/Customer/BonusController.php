@@ -219,7 +219,7 @@ class BonusController extends CustomerController
             return [
                 'id' => $transaction->id,
                 'type' => $transaction->type,
-                'amount' => (float) abs($transaction->amount),
+                'amount' => (int) round(abs($transaction->amount)),
                 'currency_code' => $transaction->currency_code,
                 'description' => $transaction->description,
                 'order_id' => $transaction->order_id,
@@ -228,8 +228,8 @@ class BonusController extends CustomerController
         })->toArray();
 
         return [
-            'points_balance' => (float) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN),
-            'balance' => (float) round($totalBalance, 0, PHP_ROUND_HALF_DOWN),
+            'points_balance' => (int) round($pointsBalance, 0, PHP_ROUND_HALF_DOWN),
+            'balance' => (int) round($totalBalance, 0, PHP_ROUND_HALF_DOWN),
             'spent_sum' => (float) round($spentSum),
             'orders_count' => (int) $ordersCount,
             'remaining' => (int) $remaining,

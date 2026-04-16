@@ -386,8 +386,8 @@ class AlfabankApiService
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS    => http_build_query($data, '', '&'),
             CURLOPT_HTTPHEADER     => array_merge($defaultHeaders, $headers),
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_SSL_VERIFYPEER => ! $this->testMode,
+            CURLOPT_SSL_VERIFYHOST => $this->testMode ? 0 : 2,
             CURLOPT_TIMEOUT        => 30,
         ]);
 
