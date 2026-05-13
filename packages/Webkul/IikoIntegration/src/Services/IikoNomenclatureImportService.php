@@ -1877,48 +1877,48 @@ class IikoNomenclatureImportService
         $nutritionalData = [];
 
         // Calories (калории)
-        $calories = $item['calories'] 
-            ?? $item['energy'] 
-            ?? $item['energyValue'] 
-            ?? $item['nutritionalInfo']['calories'] 
-            ?? $item['nutritionalInfo']['energy'] 
+        $calories = $item['calories']
+            ?? $item['energy']
+            ?? $item['energyValue']
+            ?? $item['nutritionalInfo']['calories']
+            ?? $item['nutritionalInfo']['energy']
             ?? null;
-        
+
         if ($calories !== null && is_numeric($calories)) {
             $nutritionalData['calories'] = (float) $calories;
         }
 
         // Proteins (белки)
-        $proteins = $item['proteins'] 
-            ?? $item['protein'] 
-            ?? $item['nutritionalInfo']['proteins'] 
-            ?? $item['nutritionalInfo']['protein'] 
+        $proteins = $item['proteins']
+            ?? $item['protein']
+            ?? $item['nutritionalInfo']['proteins']
+            ?? $item['nutritionalInfo']['protein']
             ?? null;
-        
+
         if ($proteins !== null && is_numeric($proteins)) {
             $nutritionalData['proteins'] = (float) $proteins;
         }
 
         // Fats (жиры)
-        $fats = $item['fats'] 
-            ?? $item['fat'] 
-            ?? $item['nutritionalInfo']['fats'] 
-            ?? $item['nutritionalInfo']['fat'] 
+        $fats = $item['fats']
+            ?? $item['fat']
+            ?? $item['nutritionalInfo']['fats']
+            ?? $item['nutritionalInfo']['fat']
             ?? null;
-        
+
         if ($fats !== null && is_numeric($fats)) {
             $nutritionalData['fats'] = (float) $fats;
         }
 
         // Carbohydrates (углеводы)
-        $carbs = $item['carbs'] 
-            ?? $item['carbohydrates'] 
-            ?? $item['carbohydrate'] 
-            ?? $item['nutritionalInfo']['carbs'] 
-            ?? $item['nutritionalInfo']['carbohydrates'] 
-            ?? $item['nutritionalInfo']['carbohydrate'] 
+        $carbs = $item['carbs']
+            ?? $item['carbohydrates']
+            ?? $item['carbohydrate']
+            ?? $item['nutritionalInfo']['carbs']
+            ?? $item['nutritionalInfo']['carbohydrates']
+            ?? $item['nutritionalInfo']['carbohydrate']
             ?? null;
-        
+
         if ($carbs !== null && is_numeric($carbs)) {
             $nutritionalData['carbs'] = (float) $carbs;
         }
