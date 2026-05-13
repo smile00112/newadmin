@@ -247,9 +247,11 @@ class IikoNomenclatureImportService
                 }
             }
 
+            // additional must be JSON-encoded: Category model has no JSON cast,
+            // so passing a raw PHP array causes Grammar::parameterize() TypeError.
             $categoryDataToSave = [
-                'additional' => ['iiko_id' => $iikoId],
                 'status' => 1,
+                'additional' => json_encode(['iiko_id' => $iikoId]),
             ];
 
             // Set parent_id if parent exists

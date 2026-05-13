@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unsignedInteger('sent_count')->default(0);
             $table->unsignedInteger('delivered_count')->default(0);
             $table->unsignedInteger('opened_count')->default(0);
-            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedInteger('created_by')->nullable();
             $table->foreign('created_by')->references('id')->on('admins')->nullOnDelete();
             $table->timestamps();
 
