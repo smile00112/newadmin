@@ -80,6 +80,7 @@ class NomenclatureController extends CatalogController
             'variants.attribute_family',
             'up_sells:id', 'cross_sells:id', 'drinks:id',
             'constructor.groups.products:id,type',
+            'constructor.groups.incompatibilityTemplate.incompatibilities',
         ])
             ->whereIn('id', function ($query) use ($channelCode, $locale) {
                 $query->select('product_id')

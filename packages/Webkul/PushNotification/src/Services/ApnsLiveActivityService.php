@@ -55,8 +55,17 @@ class ApnsLiveActivityService
     public function send(OrderLiveActivityToken $tokenRecord, Order $order): int
     {
         $isTerminal = in_array($order->status, self::TERMINAL_STATUSES, true);
+
+        // Терминальные статусы заказа должны уходить как канонический event=end
+        // с минимальным content-state и dismissal-date — см. docs/live-activity.md.
+        if ($isTerminal) {
+            return $this->sendEnd($tokenRecord, $order, 'close', '');
+        }
+
         $timestamp  = $this->resolveTimestamp($tokenRecord);
-        $payload    = $this->buildPayload($order, $timestamp, $isTerminal);
+        $version    = $this->nextVersion($tokenRecord);
+        $updatedAt  = $this->resolveUpdatedAt($tokenRecord, $timestamp);
+        $payload    = $this->buildPayload($order, $timestamp, $updatedAt, $version, false);
 
         $jwt  = $this->getJwt();
         $host = $this->getHost();
@@ -101,23 +110,18 @@ class ApnsLiveActivityService
         }
 
         if ($status === self::STATUS_OK) {
-            $tokenRecord->update(['last_apns_timestamp' => $timestamp]);
+            $tokenRecord->update([
+                'last_apns_timestamp' => $timestamp,
+                'last_version'        => $version,
+            ]);
 
-            if ($isTerminal) {
-                $tokenRecord->delete();
-
-                Log::info('ApnsLiveActivity: end event sent, token deleted', [
-                    'order_id'       => $order->id,
-                    'order_increment' => $order->increment_id,
-                ]);
-            } else {
-                Log::debug('ApnsLiveActivity: update event sent', [
-                    'order_id'       => $order->id,
-                    'order_increment' => $order->increment_id,
-                    'status'         => $order->status,
-                    'timestamp'      => $timestamp,
-                ]);
-            }
+            Log::debug('ApnsLiveActivity: update event sent', [
+                'order_id'       => $order->id,
+                'order_increment' => $order->increment_id,
+                'status'         => $order->status,
+                'timestamp'      => $timestamp,
+                'version'        => $version,
+            ]);
         } elseif ($status === self::STATUS_GONE) {
             $tokenRecord->delete();
 
@@ -148,7 +152,9 @@ class ApnsLiveActivityService
         string $statusLabel,
     ): int {
         $timestamp = $this->resolveTimestamp($tokenRecord);
-        $payload   = $this->buildCustomPayload($order, $timestamp, $status, $statusLabel);
+        $version   = $this->nextVersion($tokenRecord);
+        $updatedAt = $this->resolveUpdatedAt($tokenRecord, $timestamp);
+        $payload   = $this->buildCustomPayload($order, $timestamp, $updatedAt, $version, $status, $statusLabel);
 
         $jwt    = $this->getJwt();
         $host   = $this->getHost();
@@ -193,7 +199,10 @@ class ApnsLiveActivityService
         }
 
         if ($httpStatus === self::STATUS_OK) {
-            $tokenRecord->update(['last_apns_timestamp' => $timestamp]);
+            $tokenRecord->update([
+                'last_apns_timestamp' => $timestamp,
+                'last_version'        => $version,
+            ]);
 
             Log::debug('ApnsLiveActivity: custom status update sent', [
                 'order_id'       => $order->id,
@@ -222,44 +231,145 @@ class ApnsLiveActivityService
     }
 
     /**
-     * Build the APNs payload for a Live Activity push.
-     *
-     * @return array<string, mixed>
+     * Send a canonical Live Activity "end" push with minimal content-state and dismissal-date.
+     * Используется для удаления плашки с экрана клиента (status=close или другой терминальный).
      */
-    private function buildPayload(Order $order, int $timestamp, bool $isTerminal): array
-    {
-        $contentState = [
-            'status'      => $order->status,
-            'statusLabel' => $order->status_label,
-            'tableNumber' => $order->table_number ?? null,
-            'isRated'     => isset($order->rating) ? (bool) $order->rating : null,
+    public function sendEnd(
+        OrderLiveActivityToken $tokenRecord,
+        Order $order,
+        string $status = 'close',
+        string $statusLabel = '',
+    ): int {
+        $timestamp = $this->resolveTimestamp($tokenRecord);
+        $updatedAt = $this->resolveUpdatedAt($tokenRecord, $timestamp);
+
+        $payload = [
+            'aps' => [
+                'timestamp'      => $timestamp,
+                'event'          => 'end',
+                'content-state'  => [
+                    'status'      => $status,
+                    'statusLabel' => $statusLabel,
+                    'updatedAt'   => $updatedAt,
+                ],
+                'dismissal-date' => $timestamp,
+            ],
         ];
 
-        $aps = [
-            'timestamp'     => $timestamp,
-            'event'         => $isTerminal ? 'end' : 'update',
-            'content-state' => $contentState,
+        $jwt   = $this->getJwt();
+        $host  = $this->getHost();
+        $topic = $this->getTopic();
+
+        $context = [
+            'order_id'        => $order->id,
+            'order_increment' => $order->increment_id,
+            'event'           => 'end',
+            'custom_status'   => $status,
+            'timestamp'       => $timestamp,
         ];
 
-        if ($isTerminal) {
-            $aps['dismissal-date'] = $timestamp + 3600;
+        $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE);
+
+        $httpStatus = $this->sendHttp2(
+            host:        $host,
+            deviceToken: $tokenRecord->push_token,
+            topic:       $topic,
+            jwt:         $jwt,
+            payload:     $encoded,
+            context:     $context,
+        );
+
+        if ($httpStatus === 401 || $httpStatus === 403) {
+            Cache::forget(self::JWT_CACHE_KEY);
+            $jwt = $this->getJwt();
+            $httpStatus = $this->sendHttp2(
+                host:        $host,
+                deviceToken: $tokenRecord->push_token,
+                topic:       $topic,
+                jwt:         $jwt,
+                payload:     $encoded,
+                context:     array_merge($context, ['retry' => true]),
+            );
         }
 
-        return ['aps' => $aps];
+        if ($httpStatus === self::STATUS_OK || $httpStatus === self::STATUS_GONE) {
+            $tokenRecord->delete();
+
+            Log::info('ApnsLiveActivity: end event sent, token deleted', [
+                'order_id'        => $order->id,
+                'order_increment' => $order->increment_id,
+                'apns_status'     => $httpStatus,
+            ]);
+        } else {
+            Log::error('ApnsLiveActivity: unexpected APNs status on end', [
+                'order_id'        => $order->id,
+                'order_increment' => $order->increment_id,
+                'apns_status'     => $httpStatus,
+            ]);
+        }
+
+        return $httpStatus;
     }
 
     /**
-     * Build the APNs payload for a custom Live Activity status (e.g. "rateOrder", "close").
+     * Build the APNs payload for a Live Activity update push.
      *
      * @return array<string, mixed>
      */
-    private function buildCustomPayload(Order $order, int $timestamp, string $status, string $statusLabel): array
+    private function buildPayload(Order $order, int $timestamp, float $updatedAt, int $version, bool $isTerminal): array
     {
+        $hasRating     = $order->rating !== null;
+        $ratingChoice  = $hasRating ? ((bool) $order->rating ? 'like' : 'dislike') : null;
+        $showThankYou  = $hasRating ? true : false;
+
         $contentState = [
-            'status'      => $status,
-            'statusLabel' => $statusLabel,
-            'tableNumber' => $order->table_number ?? null,
-            'isRated'     => isset($order->rating) ? (bool) $order->rating : null,
+            'status'               => $order->status,
+            'statusLabel'          => $order->status_label,
+            'tableNumber'          => $order->table_number ?? null,
+            'isRated'              => $hasRating ? (bool) $order->rating : false,
+            'ratingChoice'         => $ratingChoice,
+            'showPostLikeThankYou' => $showThankYou,
+            // Newer-wins: клиент использует этот ts, чтобы polling-diff не перетёр
+            // свежий APNs push. Обязательное поле по контракту docs/live-activity.md.
+            'updatedAt'            => $updatedAt,
+            'version'              => $version,
+        ];
+
+        return [
+            'aps' => [
+                'timestamp'     => $timestamp,
+                'event'         => 'update',
+                'content-state' => $contentState,
+            ],
+        ];
+    }
+
+    /**
+     * Build the APNs payload for a custom Live Activity status (e.g. "rateOrder").
+     *
+     * @return array<string, mixed>
+     */
+    private function buildCustomPayload(
+        Order $order,
+        int $timestamp,
+        float $updatedAt,
+        int $version,
+        string $status,
+        string $statusLabel,
+    ): array {
+        $hasRating     = $order->rating !== null;
+        $ratingChoice  = $hasRating ? ((bool) $order->rating ? 'like' : 'dislike') : null;
+        $showThankYou  = $hasRating ? true : false;
+
+        $contentState = [
+            'status'               => $status,
+            'statusLabel'          => $statusLabel,
+            'tableNumber'          => $order->table_number ?? null,
+            'isRated'              => $hasRating ? (bool) $order->rating : false,
+            'ratingChoice'         => $ratingChoice,
+            'showPostLikeThankYou' => $showThankYou,
+            'updatedAt'            => $updatedAt,
+            'version'              => $version,
         ];
 
         return [
@@ -280,6 +390,30 @@ class ApnsLiveActivityService
         $last = (int) $tokenRecord->last_apns_timestamp;
 
         return $now > $last ? $now : $last + 1;
+    }
+
+    /**
+     * Resolve next monotonically-increasing version per token (1, 2, 3, ...).
+     */
+    private function nextVersion(OrderLiveActivityToken $tokenRecord): int
+    {
+        return ((int) $tokenRecord->last_version) + 1;
+    }
+
+    /**
+     * Resolve millisecond-precision updatedAt (Unix seconds.fraction).
+     * Гарантируется не меньше $timestamp — клиент ждёт float с дробной частью
+     * (см. docs/live-activity.md, пример `1715000101.001`).
+     */
+    private function resolveUpdatedAt(OrderLiveActivityToken $tokenRecord, int $timestamp): float
+    {
+        $micro = round(microtime(true), 3);
+
+        if ($micro < (float) $timestamp) {
+            $micro = (float) $timestamp + 0.001;
+        }
+
+        return $micro;
     }
 
     /**

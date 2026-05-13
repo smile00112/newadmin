@@ -151,7 +151,7 @@
                     style="cursor: pointer;"
                     @mouseenter="$event.currentTarget.style.boxShadow='inset 3px 0 0 #06b6d4'"
                     @mouseleave="$event.currentTarget.style.boxShadow='none'"
-                    @click="if (!$event.target.closest('a, button, label, input')) window.location.href = `{{ route('admin.customers.customers.view', '') }}/${record.customer_id}`"
+                    @click="!$event.target.closest('a, button, label, input') && (window.location.href = `{{ route('admin.customers.customers.view', '') }}/${record.customer_id}`)"
                 >
                     <div class="flex gap-2.5 items-center">
                         @if ($hasPermission)

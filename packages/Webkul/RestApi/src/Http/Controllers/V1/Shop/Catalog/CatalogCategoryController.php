@@ -80,7 +80,11 @@ class CatalogCategoryController extends CatalogController
             ->with([
                 'translations',
                 'products' => function ($query) {
-                    $query->with([
+                    $query->whereIn('products.id', function ($sub) {
+                        $sub->select('product_id')
+                            ->from('product_flat')
+                            ->where('status', 1);
+                    })->with([
                         'images',
                         'videos',
                         'half_portion_pair_product',
@@ -89,6 +93,7 @@ class CatalogCategoryController extends CatalogController
                         'constructor.groups.products' => function ($query) {
                             $query->with(['images', 'half_portion_pair_product']);
                         },
+                        'constructor.groups.incompatibilityTemplate.incompatibilities',
                         'grouped_products.associated_product',
                         'variants',
                         'downloadable_links',

@@ -269,6 +269,18 @@ return [
         'route'      => 'admin.marketing.search_seo.sitemaps.index',
         'sort'       => 4,
         'icon'       => '',
+    ], [
+        'key'        => 'marketing.push_notifications',
+        'name'       => 'Пуш-рассылки',
+        'route'      => 'admin.marketing.push_notifications.campaigns.index',
+        'sort'       => 4,
+        'icon'       => '',
+    ], [
+        'key'        => 'marketing.push_notifications.campaigns',
+        'name'       => 'Кампании',
+        'route'      => 'admin.marketing.push_notifications.campaigns.index',
+        'sort'       => 1,
+        'icon'       => '',
     ],
 
     /**

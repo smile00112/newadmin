@@ -39,6 +39,20 @@ class PushNotificationServiceProvider extends ServiceProvider
             \Webkul\PushNotification\Contracts\OrderLiveActivityToken::class,
             \Webkul\PushNotification\Models\OrderLiveActivityToken::class
         );
+
+        $this->app->bind(
+            \Webkul\PushNotification\Contracts\PushCampaign::class,
+            \Webkul\PushNotification\Models\PushCampaign::class
+        );
+
+        $this->app->bind(
+            \Webkul\PushNotification\Contracts\PushCampaignLog::class,
+            \Webkul\PushNotification\Models\PushCampaignLog::class
+        );
+
+        $this->app->singleton(
+            \Webkul\PushNotification\Services\PushCampaignService::class
+        );
     }
 
     /**

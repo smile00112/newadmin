@@ -376,8 +376,26 @@ class Configurable extends AbstractType
     {
         $data['quantity'] = parent::handleQuantity((int) $data['quantity']);
 
+        // Fallback: если клиент не передал вариант, авто-выбираем первый
+        // доступный (saleable) вариант. Это необходимо для конфигурируемых
+        // напитков/простых configurable, где UI не показывает пикер и просто
+        // кидает product_id родителя. Без этого fallback запрос возвращал
+        // 400 и товар молча пропадал из корзины.
         if (empty($data['selected_configurable_option'])) {
-            return trans('product::app.checkout.cart.missing-options');
+            $fallbackVariantId = null;
+
+            foreach ($this->product->variants as $variant) {
+                if ($variant->getTypeInstance()->isSaleable()) {
+                    $fallbackVariantId = $variant->id;
+                    break;
+                }
+            }
+
+            if ($fallbackVariantId === null) {
+                return trans('product::app.checkout.cart.missing-options');
+            }
+
+            $data['selected_configurable_option'] = $fallbackVariantId;
         }
 
         $data = $this->getQtyRequest($data);

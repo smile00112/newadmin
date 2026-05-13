@@ -8,6 +8,7 @@ use Webkul\Admin\Http\Controllers\Marketing\Communications\TemplateController;
 use Webkul\Admin\Http\Controllers\Marketing\Promotions\CartRuleController;
 use Webkul\Admin\Http\Controllers\Marketing\Promotions\CartRuleCouponController;
 use Webkul\Admin\Http\Controllers\Marketing\Promotions\CatalogRuleController;
+use Webkul\Admin\Http\Controllers\Marketing\PushNotifications\PushCampaignController;
 use Webkul\Admin\Http\Controllers\Marketing\SearchSEO\SearchSynonymController;
 use Webkul\Admin\Http\Controllers\Marketing\SearchSEO\SearchTermController;
 use Webkul\Admin\Http\Controllers\Marketing\SearchSEO\SitemapController;
@@ -210,6 +211,33 @@ Route::prefix('marketing')->group(function () {
             Route::put('edit', 'update')->name('admin.marketing.search_seo.sitemaps.update');
 
             Route::delete('edit/{id}', 'destroy')->name('admin.marketing.search_seo.sitemaps.delete');
+        });
+    });
+
+    /**
+     * Push Notifications campaigns routes.
+     */
+    Route::prefix('push-notifications')->group(function () {
+        Route::controller(PushCampaignController::class)->prefix('campaigns')->group(function () {
+            Route::get('', 'index')->name('admin.marketing.push_notifications.campaigns.index');
+
+            Route::get('create-panel', 'createPanel')->name('admin.marketing.push_notifications.campaigns.create_panel');
+
+            Route::post('create', 'store')->name('admin.marketing.push_notifications.campaigns.store');
+
+            Route::get('edit-panel/{id}', 'editPanel')->name('admin.marketing.push_notifications.campaigns.edit_panel');
+
+            Route::put('edit/{id}', 'update')->name('admin.marketing.push_notifications.campaigns.update');
+
+            Route::post('send/{id}', 'send')->name('admin.marketing.push_notifications.campaigns.send');
+
+            Route::post('audience-count', 'audienceCount')->name('admin.marketing.push_notifications.campaigns.audience_count');
+
+            Route::get('customer-search', 'customerSearch')->name('admin.marketing.push_notifications.campaigns.customer_search');
+
+            Route::get('show/{id}', 'show')->name('admin.marketing.push_notifications.campaigns.show');
+
+            Route::delete('edit/{id}', 'destroy')->name('admin.marketing.push_notifications.campaigns.delete');
         });
     });
 });

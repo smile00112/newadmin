@@ -1,0 +1,533 @@
+<?php
+
+namespace Webkul\RestApi\Http\Controllers\V1\Shop\Customer;
+
+use App\Services\BonusPaymentService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Webkul\AlfabankPayment\Services\AlfabankApiService;
+use Webkul\Bonus\Services\BonusService;
+use Webkul\Checkout\Facades\Cart;
+use Webkul\Core\Rules\PhoneNumber;
+use Webkul\Customer\Repositories\CustomerGroupRepository;
+use Webkul\Customer\Repositories\CustomerRepository;
+use Webkul\Customer\Repositories\CustomerAddressRepository;
+use Webkul\MobileApp\Repositories\MobileAppSettingRepository;
+use Webkul\Payment\Facades\Payment;
+use Webkul\Product\Repositories\ProductRepository;
+use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartResource;
+use Webkul\RestApi\Http\Resources\V1\Shop\Checkout\CartShippingRateResource;
+use Webkul\RestApi\Http\Resources\V1\Shop\Sales\OrderResource;
+use Webkul\RestApi\Services\Auth\CustomerTokenLogService;
+use Webkul\Sales\Repositories\OrderRepository;
+use Webkul\Sales\Transformers\OrderResource as OrderTransformer;
+use Webkul\Shipping\Facades\Shipping;
+
+/**
+ * Unified Checkout Controller
+ *
+ * Combines the entire checkout pipeline into a single API call:
+ *   address → shipping → payment → bonus → table → order [→ payment registration]
+ *
+ * Old individual endpoints remain intact for backward compatibility.
+ */
+class UnifiedCheckoutController extends CustomerController
+{
+    public function __construct(
+        protected CustomerAddressRepository $customerAddressRepository,
+        protected MobileAppSettingRepository $mobileAppSettingRepository,
+        protected CustomerRepository $customerRepository,
+        protected CustomerGroupRepository $customerGroupRepository,
+        protected CustomerTokenLogService $customerTokenLogService,
+        protected BonusPaymentService $bonusPaymentService,
+        protected BonusService $bonusService,
+        protected OrderRepository $orderRepository,
+        protected AlfabankApiService $alfabankApiService,
+        protected ProductRepository $productRepository,
+    ) {}
+
+    /**
+     * Unified checkout — one request to rule them all.
+     *
+     * POST /api/v1/customer/checkout/unified
+     *
+     * Accepts a JSON body with optional sections. Any section omitted
+     * will be skipped (defaults / auto-assign logic in saveOrder applies).
+     *
+     * @see \Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CheckoutController
+     */
+    public function checkout(Request $request): JsonResponse
+    {
+        try {
+            $cart = Cart::getCart();
+
+            if (! $cart) {
+                return response()->json([
+                    'message' => trans('rest-api::app.shop.checkout.cart.item.empty'),
+                ], 400);
+            }
+
+            if (Cart::hasError()) {
+                return response()->json([
+                    'message' => trans('rest-api::app.shop.checkout.error'),
+                    'errors'  => Cart::getErrors(),
+                ], 400);
+            }
+
+            $steps = [];
+
+            // ── 1. Address ───────────────────────────────────────────
+            if ($request->has('billing') || $request->has('shipping')) {
+                $steps['address'] = $this->stepSaveAddress($request);
+                if ($steps['address']['error']) {
+                    return $this->errorResponse('address', $steps['address']['message']);
+                }
+            }
+
+            // ── 2. Shipping method ──────────────────────────────────
+            if ($request->has('shipping_method')) {
+                $steps['shipping'] = $this->stepSaveShipping($request->input('shipping_method'));
+                if ($steps['shipping']['error']) {
+                    return $this->errorResponse('shipping', $steps['shipping']['message']);
+                }
+            }
+
+            // ── 3. Payment method ───────────────────────────────────
+            if ($request->has('payment') || $request->has('payment_method')) {
+                $steps['payment'] = $this->stepSavePayment($request);
+                if ($steps['payment']['error']) {
+                    return $this->errorResponse('payment', $steps['payment']['message']);
+                }
+            }
+
+            // ── 4. Bonus auto-apply ─────────────────────────────────
+            if ($request->boolean('auto_apply_bonus', false)) {
+                $steps['bonus'] = $this->stepAutoApplyBonus();
+                if ($steps['bonus']['error']) {
+                    // Non-critical — log & continue
+                    Log::warning('UnifiedCheckout: bonus auto-apply failed', $steps['bonus']);
+                }
+            }
+
+            // ── 5. Table binding ────────────────────────────────────
+            if ($request->has('table_number')) {
+                $steps['table'] = $this->stepBindTable($request->input('table_number'));
+                if ($steps['table']['error']) {
+                    return $this->errorResponse('table', $steps['table']['message']);
+                }
+            }
+
+            // ── 6. Create order ─────────────────────────────────────
+            $orderResult = $this->stepSaveOrder($request);
+            if ($orderResult['error']) {
+                return response()->json([
+                    'message' => $orderResult['message'],
+                    'step'    => 'save_order',
+                    'steps'   => $steps,
+                    'debug'   => config('app.debug') ? ($orderResult['debug'] ?? null) : null,
+                ], 400);
+            }
+
+            $responseData = $orderResult['data'];
+
+            // ── 7. Alfabank payment registration (optional) ─────────
+            if ($request->boolean('register_payment', false) && isset($responseData['payment_url'])) {
+                $order = $orderResult['order'];
+                $paymentReg = $this->stepRegisterPayment($request, $order);
+                if (! $paymentReg['error']) {
+                    $responseData['payment_gateway'] = $paymentReg['data'];
+                }
+                $steps['payment_registration'] = $paymentReg;
+            }
+
+            return response()->json([
+                'data'    => $responseData,
+                'steps'   => $steps,
+                'message' => trans('rest-api::app.shop.checkout.order-saved'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('UnifiedCheckout error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message'   => $e->getMessage(),
+                'exception' => config('app.debug') ? get_class($e) : null,
+                'file'      => config('app.debug') ? $e->getFile() : null,
+                'line'      => config('app.debug') ? $e->getLine() : null,
+                'trace'     => config('app.debug') ? $e->getTraceAsString() : null,
+            ], 500);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Private step methods
+    // ═══════════════════════════════════════════════════════════════
+
+    private function stepSaveAddress(Request $request): array
+    {
+        try {
+            $data = $request->only(['billing', 'shipping']);
+
+            if (! Shipping::collectRates()) {
+                return ['error' => true, 'message' => trans('rest-api::app.shop.checkout.error')];
+            }
+
+            Cart::saveAddresses($data);
+
+            $shippingMethods = Shipping::collectRates()['shippingMethods'] ?? [];
+            $rates = [];
+
+            foreach ($shippingMethods as $code => $shippingMethod) {
+                $rates[] = [
+                    'carrier_title' => $shippingMethod['carrier_title'],
+                    'rates'         => CartShippingRateResource::collection(collect($shippingMethod['rates'])),
+                ];
+            }
+
+            Cart::collectTotals();
+
+            return ['error' => false, 'message' => 'Address saved', 'rates' => $rates];
+        } catch (\Exception $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function stepSaveShipping(string $shippingMethod): array
+    {
+        try {
+            if (Cart::hasError() || ! Cart::saveShippingMethod($shippingMethod)) {
+                return ['error' => true, 'message' => trans('rest-api::app.shop.checkout.error')];
+            }
+
+            Shipping::collectRates();
+
+            $cart = Cart::getCart();
+            if (! $cart->selected_shipping_rate) {
+                $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+                if ($skipAddressValidation && $cart->shipping_method) {
+                    foreach (Config::get('carriers') as $carrier) {
+                        $object = new $carrier['class'];
+                        if ($object->getMethod() === $cart->shipping_method) {
+                            if ($rate = $object->calculate()) {
+                                $rate->cart_id = $cart->id;
+                                $rate->cart_address_id = null;
+                                $rate->price_incl_tax = $rate->price;
+                                $rate->base_price_incl_tax = $rate->base_price;
+                                $rate->save();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Cart::collectTotals();
+
+            return ['error' => false, 'message' => 'Shipping method saved'];
+        } catch (\Exception $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function stepSavePayment(Request $request): array
+    {
+        try {
+            $paymentInput = $request->input('payment') ?? $request->input('payment_method');
+
+            if (is_array($paymentInput)) {
+                $payment = $paymentInput;
+                if (empty($payment['method'])) {
+                    return ['error' => true, 'message' => 'Payment method is required'];
+                }
+            } else {
+                $payment = ['method' => $paymentInput];
+            }
+
+            if (Cart::hasError() || empty($payment['method']) || ! Cart::savePaymentMethod($payment)) {
+                return ['error' => true, 'message' => trans('rest-api::app.shop.checkout.error')];
+            }
+
+            Cart::collectTotals();
+
+            return ['error' => false, 'message' => 'Payment method saved'];
+        } catch (\Exception $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function stepAutoApplyBonus(): array
+    {
+        try {
+            $cart = Cart::getCart();
+
+            if (! $cart || ! $cart->customer_id) {
+                return ['error' => true, 'message' => 'Cart is empty'];
+            }
+
+            if (! $this->bonusService->isEnabled()) {
+                return ['error' => true, 'message' => 'Bonus system is disabled'];
+            }
+
+            Cart::collectTotals();
+            $cart = Cart::getCart();
+
+            $maxAmount = $this->bonusService->getMaxUsableBonuses($cart, (int) $cart->customer_id);
+            $this->bonusPaymentService->applyBonusToCart($cart, $maxAmount);
+            $cart->update(['auto_apply' => true]);
+
+            Cart::collectTotals();
+
+            return ['error' => false, 'message' => 'Bonus applied', 'amount' => $maxAmount];
+        } catch (\Exception $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function stepBindTable(int|string $tableNumber): array
+    {
+        try {
+            $cart = Cart::getCart();
+
+            if (! $cart) {
+                return ['error' => true, 'message' => 'Cart is empty'];
+            }
+
+            $tableNumber = (int) $tableNumber;
+            if ($tableNumber < 1) {
+                return ['error' => true, 'message' => 'Invalid table number'];
+            }
+
+            $cart->update(['table_number' => $tableNumber]);
+            Cart::collectTotals();
+
+            return ['error' => false, 'message' => 'Table bound'];
+        } catch (\Exception $e) {
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+    }
+
+    private function stepSaveOrder(Request $request): array
+    {
+        try {
+            if (Cart::hasError()) {
+                return [
+                    'error'   => true,
+                    'message' => trans('rest-api::app.shop.checkout.error'),
+                ];
+            }
+
+            $this->applyDefaultOrderMethodsIfNeeded();
+            $this->validateOrder();
+
+            Cart::refreshCart();
+            $cart = Cart::getCart();
+
+            $paymentMethod = $cart->payment->method ?? null;
+            $redirectUrl = ($paymentMethod === 'alfabank') ? null : Payment::getRedirectUrl($cart);
+
+            $data = (new OrderTransformer($cart))->jsonSerialize();
+            $data = OrderTransformer::mergeCartBonusIntoOrderData($data, $cart);
+
+            // Order labels
+            $orderLabels = $request->input('order_labels', []);
+            if (is_array($orderLabels) && ! empty($orderLabels)) {
+                $channelCode = $cart->channel->code ?? core()->getDefaultChannelCode();
+                $availableLabels = core()->getConfigData('sales.order_settings.order_labels.labels_list', $channelCode);
+                $availableLabelsArray = [];
+                if ($availableLabels) {
+                    $availableLabelsArray = array_filter(
+                        array_map('trim', explode("\n", $availableLabels)),
+                        fn ($label) => ! empty($label)
+                    );
+                }
+
+                $validatedLabels = array_filter(
+                    array_map('trim', $orderLabels),
+                    fn ($label) => ! empty($label) && in_array($label, $availableLabelsArray)
+                );
+
+                $data['order_labels'] = array_values(array_unique($validatedLabels));
+            } else {
+                $data['order_labels'] = [];
+            }
+
+            $data['table_number'] = $cart->table_number ?? null;
+
+            $order = $this->orderRepository->create($data);
+            Cart::deActivateCart();
+
+            $responseData = [
+                'order' => new OrderResource($order),
+            ];
+
+            if ($paymentMethod === 'alfabank') {
+                $responseData['payment_url'] = route('alfabank.payment.start', ['order_id' => $order->id]);
+            } elseif ($redirectUrl) {
+                $responseData['payment_url'] = $redirectUrl;
+            }
+
+            return [
+                'error' => false,
+                'data'  => $responseData,
+                'order' => $order,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'error'   => true,
+                'message' => $e->getMessage(),
+                'debug'   => [
+                    'exception' => get_class($e),
+                    'file'      => $e->getFile(),
+                    'line'      => $e->getLine(),
+                ],
+            ];
+        }
+    }
+
+    private function stepRegisterPayment(Request $request, $order): array
+    {
+        try {
+            $customer = $request->user();
+
+            $amount = (int) round($order->grand_total * 100); // convert to cents
+            $orderNumber = $order->increment_id;
+
+            $orderData = [
+                'amount'      => $amount,
+                'orderNumber' => $orderNumber,
+                'returnUrl'   => $request->input('payment_return_url', 'sdk://done'),
+                'failUrl'     => $request->input('payment_fail_url', 'sdk://done'),
+                'clientId'    => 'customer_' . ($customer ? $customer->id : 'guest'),
+            ];
+
+            $result = $this->alfabankApiService->registerOrder($orderData);
+
+            if (isset($result['errorCode']) && $result['errorCode'] !== '0' && $result['errorCode'] !== 0) {
+                return [
+                    'error'   => true,
+                    'message' => $result['errorMessage'] ?? 'Payment registration failed',
+                ];
+            }
+
+            return [
+                'error' => false,
+                'data'  => [
+                    'orderId' => $result['orderId'] ?? null,
+                    'formUrl' => $result['formUrl'] ?? null,
+                ],
+            ];
+        } catch (\Exception $e) {
+            Log::error('UnifiedCheckout: payment registration failed', [
+                'order_id' => $order->id,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return [
+                'error'   => true,
+                'message' => 'Payment gateway error',
+            ];
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Helpers (replicated from CheckoutController to avoid coupling)
+    // ═══════════════════════════════════════════════════════════════
+
+    protected function applyDefaultOrderMethodsIfNeeded(): void
+    {
+        $cart = Cart::getCart();
+        if (! $cart) {
+            return;
+        }
+
+        $channelCode = $cart->channel->code ?? core()->getDefaultChannelCode();
+        $settings = $this->mobileAppSettingRepository->getAllSettings($channelCode);
+
+        $autoAssignShipping = filter_var($settings['auto_assign_shipping_method'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $defaultShipping = trim((string) ($settings['default_shipping_method'] ?? ''));
+        $autoAssignPayment = filter_var($settings['auto_assign_payment_method'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $defaultPayment = trim((string) ($settings['default_payment_method'] ?? ''));
+
+        if (
+            $autoAssignShipping
+            && $defaultShipping !== ''
+            && $cart->haveStockableItems()
+            && Shipping::isMethodCodeExists($defaultShipping)
+        ) {
+            if (Cart::saveShippingMethod($defaultShipping)) {
+                Shipping::collectRates();
+                $cart = Cart::getCart();
+
+                if ($cart && ! $cart->selected_shipping_rate) {
+                    $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+                    if ($skipAddressValidation && $cart->shipping_method) {
+                        foreach (Config::get('carriers', []) as $shippingMethod) {
+                            $object = new $shippingMethod['class'];
+                            if ($object->getMethod() === $cart->shipping_method) {
+                                if ($rate = $object->calculate()) {
+                                    $rate->cart_id = $cart->id;
+                                    $rate->cart_address_id = null;
+                                    $rate->price_incl_tax = $rate->price;
+                                    $rate->base_price_incl_tax = $rate->base_price;
+                                    $rate->save();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $cart = Cart::getCart();
+        if ($autoAssignPayment && $defaultPayment !== '' && $cart && ! $cart->payment) {
+            Cart::savePaymentMethod(['method' => $defaultPayment]);
+        }
+
+        Cart::collectTotals();
+    }
+
+    protected function validateOrder(): void
+    {
+        $cart = Cart::getCart();
+
+        $minimumOrderAmount = core()->getConfigData('sales.orderSettings.minimum-order.minimum_order_amount') ?: 0;
+
+        if (! Cart::haveMinimumOrderAmount()) {
+            throw new \Exception(trans('rest-api::app.shop.checkout.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]));
+        }
+
+        $skipAddressValidation = in_array($cart->shipping_method, ['pickup_pickup', 'dinein_dinein']);
+
+        if (
+            $cart->haveStockableItems()
+            && ! $skipAddressValidation
+            && ! $cart->shipping_address
+        ) {
+            throw new \Exception(trans('rest-api::app.shop.checkout.check-shipping-address'));
+        }
+
+        if (! $skipAddressValidation && ! $cart->billing_address) {
+            throw new \Exception(trans('rest-api::app.shop.checkout.check-billing-address'));
+        }
+
+        if ($cart->haveStockableItems() && ! $cart->selected_shipping_rate) {
+            throw new \Exception(trans('rest-api::app.shop.checkout.specify-shipping-method'));
+        }
+
+        if (! $cart->payment) {
+            throw new \Exception(trans('rest-api::app.shop.checkout.specify-payment-method'));
+        }
+    }
+
+    private function errorResponse(string $step, string $message, int $status = 400): JsonResponse
+    {
+        return response()->json([
+            'message' => $message,
+            'step'    => $step,
+        ], $status);
+    }
+}

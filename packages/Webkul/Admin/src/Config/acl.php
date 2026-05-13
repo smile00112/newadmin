@@ -595,6 +595,41 @@ return [
         'name'  => 'admin::app.acl.delete',
         'route' => 'admin.marketing.search_seo.sitemaps.delete',
         'sort'  => 3,
+    ], [
+        'key'   => 'marketing.push_notifications',
+        'name'  => 'Пуш-рассылки',
+        'route' => 'admin.marketing.push_notifications.campaigns.index',
+        'sort'  => 5,
+    ], [
+        'key'   => 'marketing.push_notifications.campaigns',
+        'name'  => 'Кампании',
+        'route' => 'admin.marketing.push_notifications.campaigns.index',
+        'sort'  => 1,
+    ], [
+        'key'   => 'marketing.push_notifications.campaigns.view',
+        'name'  => 'Просмотр статистики',
+        'route' => 'admin.marketing.push_notifications.campaigns.show',
+        'sort'  => 1,
+    ], [
+        'key'   => 'marketing.push_notifications.campaigns.create',
+        'name'  => 'admin::app.acl.create',
+        'route' => 'admin.marketing.push_notifications.campaigns.store',
+        'sort'  => 2,
+    ], [
+        'key'   => 'marketing.push_notifications.campaigns.edit',
+        'name'  => 'admin::app.acl.edit',
+        'route' => 'admin.marketing.push_notifications.campaigns.update',
+        'sort'  => 3,
+    ], [
+        'key'   => 'marketing.push_notifications.campaigns.send',
+        'name'  => 'Отправить рассылку',
+        'route' => 'admin.marketing.push_notifications.campaigns.send',
+        'sort'  => 4,
+    ], [
+        'key'   => 'marketing.push_notifications.campaigns.delete',
+        'name'  => 'admin::app.acl.delete',
+        'route' => 'admin.marketing.push_notifications.campaigns.delete',
+        'sort'  => 5,
     ],
 
     /*

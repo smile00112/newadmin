@@ -28,6 +28,7 @@ class OrderLiveActivityToken extends Model implements OrderLiveActivityTokenCont
         'order_increment_id',
         'push_token',
         'last_apns_timestamp',
+        'last_version',
     ];
 
     /**
@@ -37,6 +38,7 @@ class OrderLiveActivityToken extends Model implements OrderLiveActivityTokenCont
      */
     protected $casts = [
         'last_apns_timestamp' => 'integer',
+        'last_version'        => 'integer',
     ];
 
     /**

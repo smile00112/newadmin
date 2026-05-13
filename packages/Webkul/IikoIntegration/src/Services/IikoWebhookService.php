@@ -56,9 +56,14 @@ class IikoWebhookService
             $mappedStatus = $this->mapIikoStatusToOrderStatus($status);
 
             if ($mappedStatus && $order->status !== $mappedStatus) {
+                $oldStatus = $order->status;
+
                 $this->orderRepository->update([
                     'status' => $mappedStatus,
                 ], $order->id);
+
+                // Ensure listeners (Live Activity, push, analytics) receive fresh status.
+                $order->refresh();
 
                 // Fire event for order status update
                 event('sales.order.update-status.after', $order);
@@ -66,7 +71,7 @@ class IikoWebhookService
                 Log::info('iiko: Order status updated from webhook', [
                     'order_id'      => $order->id,
                     'iiko_order_id' => $iikoOrderId,
-                    'old_status'    => $order->status,
+                    'old_status'    => $oldStatus,
                     'new_status'     => $mappedStatus,
                 ]);
             }
@@ -192,6 +197,9 @@ class IikoWebhookService
                 ], $order->id);
 
                 $order->refresh();
+
+                // Live Activity listens to update-status.after, not cancel.after.
+                event('sales.order.update-status.after', $order);
 
                 // Update sync status
                 $this->orderSyncRepository->update([

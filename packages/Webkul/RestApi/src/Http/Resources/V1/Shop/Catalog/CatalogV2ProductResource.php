@@ -3,6 +3,7 @@
 namespace Webkul\RestApi\Http\Resources\V1\Shop\Catalog;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Log;
 use Webkul\Product\Facades\ProductImage;
 use Webkul\RestApi\Http\Resources\V1\Shop\Catalog\Concerns\ProductResourceFields;
 
@@ -22,13 +23,47 @@ class CatalogV2ProductResource extends JsonResource
         $productTypeInstance = $product->getTypeInstance();
         $categoryImage = $this->getCategoryImage($product) ?? ProductImage::getProductBaseImage($product);
 
+        $minPrice = $productTypeInstance->getMinimalPrice();
+
+        // PRICE_DBG: лог цены для товаров с "матч" в имени
+        if (stripos((string) $product->name, 'матч') !== false || (int) $product->id === 151) {
+            try {
+                $cgId = optional(\Webkul\Customer\Facades\Customer::user())->customer_group_id
+                    ?? optional(app(\Webkul\Customer\Repositories\CustomerGroupRepository::class)->findOneByField('code', 'guest'))->id;
+                Log::info('PRICE_DBG_CATALOG_V2', [
+                    'src'              => 'catalog-v2',
+                    'product_id'       => (int) $product->id,
+                    'sku'              => $product->sku,
+                    'name'             => $product->name,
+                    'type'             => $product->type,
+                    'min_price'        => $minPrice,
+                    'product_price'    => $product->price,
+                    'special_price'    => $product->special_price,
+                    'channel_id'       => core()->getCurrentChannel()->id,
+                    'customer_group_id' => $cgId,
+                    'customer_id'      => optional(\Webkul\Customer\Facades\Customer::user())->id,
+                    'price_indices'    => $product->relationLoaded('price_indices')
+                        ? $product->price_indices->map(fn ($i) => [
+                            'channel_id'        => $i->channel_id,
+                            'customer_group_id' => $i->customer_group_id,
+                            'min_price'         => $i->min_price,
+                            'regular_min_price' => $i->regular_min_price ?? null,
+                            'max_price'         => $i->max_price ?? null,
+                        ])->all()
+                        : 'not_loaded',
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('PRICE_DBG_CATALOG_V2_ERR', ['err' => $e->getMessage()]);
+            }
+        }
+
         return [
             'id'                      => $product->id,
             'sku'                     => $product->sku,
             'type'                    => $product->type,
             'name'                    => $product->name,
-            'price'                   => core()->convertPrice($productTypeInstance->getMinimalPrice()),
-            'formatted_price'         => core()->currency($productTypeInstance->getMinimalPrice()),
+            'price'                   => core()->convertPrice($minPrice),
+            'formatted_price'         => core()->currency($minPrice),
             'short_description'       => $this->cleanHtmlDescription($product->short_description),
             'description'             => $this->cleanHtmlDescription($product->description),
             'category_image'          => $categoryImage,
@@ -129,6 +164,12 @@ class CatalogV2ProductResource extends JsonResource
                         'double_portions'             => $group->double_portions,
                         'half_portions'               => $group->half_portions,
                         'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
+                        'ingredients_incompatibilities' => $group->incompatibilityTemplate
+                            ? $group->incompatibilityTemplate->incompatibilities->map(fn ($i) => [
+                                'parent_id'  => $i->parent_id,
+                                'product_id' => $i->product_id,
+                            ])->all()
+                            : [],
                         'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
                         'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
                         'product_ids'                 => $group->products->pluck('id')->values()->all(),

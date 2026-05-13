@@ -71,6 +71,7 @@ class SendCloseLiveActivityJob implements ShouldQueue
             return;
         }
 
-        $apnsService->sendCustomStatus($tokenRecord, $order, 'close', '');
+        // event=end + dismissal-date — каноническое закрытие LA на клиенте.
+        $apnsService->sendEnd($tokenRecord, $order, 'close', '');
     }
 }

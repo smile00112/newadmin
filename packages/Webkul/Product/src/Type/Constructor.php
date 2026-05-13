@@ -324,7 +324,46 @@ class Constructor extends AbstractType
             }
         }
 
-        // Recalculate per-unit prices after adding all ingredients
+        // Process drinks as child cart items (same pattern as constructor_options ingredients)
+        if (! empty($data['drinks']) && is_array($data['drinks'])) {
+            foreach ($data['drinks'] as $drinkProductId => $qty) {
+                if (! $qty) {
+                    continue;
+                }
+
+                $drinkProduct = $this->productRepository->find($drinkProductId);
+
+                if (! $drinkProduct) {
+                    continue;
+                }
+
+                if (! $drinkProduct->getTypeInstance()->isSaleable()) {
+                    continue;
+                }
+
+                $cartProduct = $drinkProduct->getTypeInstance()->prepareForCart([
+                    'product_id' => $drinkProductId,
+                    'quantity'   => $qty,
+                    'parent_id'  => $this->product->id,
+                ]);
+
+                if (is_string($cartProduct)) {
+                    continue;
+                }
+
+                $cartProduct[0]['parent_id'] = $this->product->id;
+
+                $cartProductsList[] = $cartProduct;
+
+                $products[0]['total'] += $cartProduct[0]['total'] * $constructorQuantity;
+                $products[0]['total_incl_tax'] += $cartProduct[0]['total'] * $constructorQuantity;
+                $products[0]['base_total'] += $cartProduct[0]['base_total'] * $constructorQuantity;
+                $products[0]['base_total_incl_tax'] += $cartProduct[0]['base_total'] * $constructorQuantity;
+                $products[0]['weight'] += $cartProduct[0]['total_weight'];
+            }
+        }
+
+        // Recalculate per-unit prices after adding all ingredients and drinks
         // Price per unit = total / quantity
         if ($constructorQuantity > 0) {
             $products[0]['base_price'] = $products[0]['base_total'] / $constructorQuantity;

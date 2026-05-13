@@ -229,7 +229,7 @@ services:
     container_name: ${APP_NAME:-Surprise}_queue
     restart: unless-stopped
     working_dir: /var/www/html
-    command: php artisan queue:work redis --queue=default,broadcastable --sleep=3 --tries=3 --max-time=3600 --timeout=300
+    command: php artisan queue:work redis --queue=default,broadcastable,auth --sleep=3 --tries=3 --max-time=3600 --timeout=300
     volumes:
       - ./storage:/var/www/html/storage
       - ./bootstrap/cache:/var/www/html/bootstrap/cache

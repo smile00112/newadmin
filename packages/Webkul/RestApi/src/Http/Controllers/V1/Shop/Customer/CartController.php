@@ -66,6 +66,8 @@ class CartController extends CustomerController
      */
     public function store($productId): Response
     {
+        \Log::info('DEBUG cart/add', ['productId' => $productId, 'body' => request()->all()]);
+
         $this->validate(request(), [
             'product_id' => 'required|integer|exists:products,id',
             'is_buy_now' => 'integer|in:0,1',
@@ -348,11 +350,16 @@ class CartController extends CustomerController
             ], 400);
         }
 
-        // Remove bonus from cart
-        $this->bonusPaymentService->removeBonusFromCart($cart);
-
-        // Set auto_apply to false
+        // Set auto_apply=false BEFORE collectTotals() so AutoApplyBonusListener
+        // does not re-apply bonuses when collect.totals.after fires.
         $cart->update(['auto_apply' => false]);
+
+        // Refresh in-memory model so the listener reads auto_apply=false from memory,
+        // not the stale true value that was set before this request.
+        Cart::refreshCart();
+
+        // Remove bonus from cart
+        $this->bonusPaymentService->removeBonusFromCart(Cart::getCart());
 
         Cart::collectTotals();
         $cart = Cart::getCart();

@@ -81,16 +81,14 @@ class CatalogCategoryV2Controller extends CatalogController
         $query = $this->getRepositoryInstance()
             ->with([
                 'translations',
-                'products' => function ($query) use ($channelId, $channelCode, $locale) {
+                'products' => function ($query) use ($channelCode, $locale) {
+                    // Project does not track real stock quantities — visibility is driven solely by product_flat.status.
                     $query->whereIn('id', function ($subQuery) use ($channelCode, $locale) {
                         $subQuery->select('product_id')
                             ->from('product_flat')
                             ->where('channel', $channelCode)
                             ->where('locale', $locale)
                             ->where('status', 1);
-                    })->whereHas('inventory_indices', function ($inventoryQuery) use ($channelId) {
-                        $inventoryQuery->where('channel_id', $channelId)
-                            ->where('qty', '>', 0);
                     });
 
                     $query->with([
@@ -99,6 +97,7 @@ class CatalogCategoryV2Controller extends CatalogController
                         'cross_sells:id',
                         'drinks:id',
                         'constructor.groups.products:id,type',
+                        'constructor.groups.incompatibilityTemplate.incompatibilities',
                     ]);
                 },
             ])

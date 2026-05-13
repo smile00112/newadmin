@@ -450,9 +450,16 @@ class PaymentController extends Controller
             if ($orderStatus == '1' || $orderStatus == '2') {
                 // Payment successful
                 if (in_array($order->status, ['pending', 'failed'])) {
+                    $oldStatus = $order->status;
+
                     $order->update([
                         'status' => $orderStatusPaid,
                     ]);
+
+                    $order->refresh();
+
+                    // Keep all status-dependent listeners in sync (Live Activity, push, analytics, bonus).
+                    event('sales.order.update-status.after', $order);
 
                     // Store transaction ID
                     if (isset($response['authRefNum'])) {
@@ -471,6 +478,8 @@ class PaymentController extends Controller
 
                     Log::info('Alfabank payment successful', [
                         'orderId' => $order->id,
+                        'oldStatus' => $oldStatus,
+                        'newStatus' => $order->status,
                         'orderStatus' => $orderStatus,
                         'transactionId' => $response['authRefNum'] ?? null,
                     ]);
@@ -495,12 +504,20 @@ class PaymentController extends Controller
             } else {
                 // Payment failed
                 if ($order->status == 'pending') {
+                    $oldStatus = $order->status;
+
                     $order->update([
                         'status' => 'failed',
                     ]);
 
+                    $order->refresh();
+
+                    event('sales.order.update-status.after', $order);
+
                     Log::warning('Alfabank payment failed', [
                         'orderId' => $order->id,
+                        'oldStatus' => $oldStatus,
+                        'newStatus' => $order->status,
                         'orderStatus' => $orderStatus,
                         'errorMessage' => $response['actionCodeDescription'] ?? null,
                     ]);

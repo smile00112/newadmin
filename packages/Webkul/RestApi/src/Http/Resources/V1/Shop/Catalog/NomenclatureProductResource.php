@@ -253,6 +253,12 @@ class NomenclatureProductResource extends JsonResource
                         'double_portions'             => $group->double_portions,
                         'half_portions'               => $group->half_portions,
                         'ingredients_incompatibilities_id' => $group->ingredients_incompatibilities_id,
+                        'ingredients_incompatibilities' => $group->incompatibilityTemplate
+                            ? $group->incompatibilityTemplate->incompatibilities->map(fn ($i) => [
+                                'parent_id'  => $i->parent_id,
+                                'product_id' => $i->product_id,
+                            ])->all()
+                            : [],
                         'sale_by_sizes'               => (bool) ($group->sale_by_sizes ?? false),
                         'portion_sizes'               => $this->normalizePortionSizes($group->portion_sizes ?? []),
                         'products'                    => ($group->products ?? collect())

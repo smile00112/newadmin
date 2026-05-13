@@ -9,6 +9,7 @@ use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\BonusController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\AlfabankSettingsController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CartController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\CheckoutController;
+use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\UnifiedCheckoutController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\GDPRController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\InvoiceController;
 use Webkul\RestApi\Http\Controllers\V1\Shop\Customer\MultiChannelAuthController;
@@ -250,6 +251,14 @@ Route::group(['middleware' => ['auth:sanctum', 'sanctum.customer']], function ()
         Route::post('check-minimum-order', 'checkMinimumOrder');
 
         Route::post('save-order', 'saveOrder');
+    });
+
+    /**
+     * Unified checkout — single request for the entire checkout pipeline.
+     * Old individual endpoints above remain intact for backward compatibility.
+     */
+    Route::controller(UnifiedCheckoutController::class)->prefix('customer/checkout')->group(function () {
+        Route::post('unified', 'checkout');
     });
 
     /**

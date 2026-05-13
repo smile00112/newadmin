@@ -3,7 +3,6 @@
 namespace Webkul\PushNotification\Listeners;
 
 use Illuminate\Support\Facades\Log;
-use Webkul\PushNotification\Jobs\SendCloseLiveActivityJob;
 use Webkul\PushNotification\Jobs\SendLiveActivityPushJob;
 use Webkul\PushNotification\Jobs\SendRateOrderLiveActivityJob;
 use Webkul\PushNotification\Models\OrderLiveActivityToken;
@@ -40,20 +39,17 @@ class LiveActivityStatusChanged
             SendLiveActivityPushJob::dispatch($order->id, $tokenRecord->id);
 
             if ($order->status === Order::STATUS_READY) {
-                $rateDelay  = (int) core()->getConfigData('mobile_app.apple_live_activity.settings.rate_order_delay_minutes') ?: 10;
-                $closeDelay = (int) core()->getConfigData('mobile_app.apple_live_activity.settings.close_delay_minutes') ?: 60;
+                $rateDelay = (int) core()->getConfigData('mobile_app.apple_live_activity.settings.rate_order_delay_minutes') ?: 10;
 
+                // Close-пуш диспатчится цепочкой из SendRateOrderLiveActivityJob
+                // (через `close_after_rate_delay_minutes`, default 5 мин после rateOrder).
                 SendRateOrderLiveActivityJob::dispatch($order->id, $tokenRecord->id)
                     ->delay(now()->addMinutes($rateDelay));
 
-                SendCloseLiveActivityJob::dispatch($order->id, $tokenRecord->id)
-                    ->delay(now()->addMinutes($closeDelay));
-
-                Log::debug('LiveActivityStatusChanged: delayed rateOrder/close jobs dispatched', [
+                Log::debug('LiveActivityStatusChanged: delayed rateOrder job dispatched', [
                     'order_id'        => $order->id,
                     'order_increment' => $order->increment_id,
                     'rate_delay_min'  => $rateDelay,
-                    'close_delay_min' => $closeDelay,
                 ]);
             }
 

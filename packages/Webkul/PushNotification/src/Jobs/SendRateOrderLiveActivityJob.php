@@ -8,10 +8,10 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Webkul\PushNotification\Jobs\SendCloseLiveActivityJob;
 use Webkul\PushNotification\Models\OrderLiveActivityToken;
 use Webkul\PushNotification\Services\ApnsLiveActivityService;
 use Webkul\Sales\Models\Order;
-
 class SendRateOrderLiveActivityJob implements ShouldQueue
 {
     use Dispatchable, Queueable, InteractsWithQueue, SerializesModels;
@@ -62,6 +62,26 @@ class SendRateOrderLiveActivityJob implements ShouldQueue
             return;
         }
 
+        if ($order->rating !== null) {
+            Log::debug('SendRateOrderLiveActivityJob: order already rated, skipping rateOrder', [
+                'order_id' => $this->orderId,
+                'rating'   => $order->rating,
+            ]);
+
+            return;
+        }
+
         $apnsService->sendCustomStatus($tokenRecord, $order, 'rateOrder', 'Как всё прошло');
+
+        // Через N минут после rateOrder — закрываем LA event=end (если пользователь не поставил оценку).
+        $closeDelay = (int) core()->getConfigData('mobile_app.apple_live_activity.settings.close_after_rate_delay_minutes') ?: 5;
+
+        SendCloseLiveActivityJob::dispatch($this->orderId, $this->tokenRecordId)
+            ->delay(now()->addMinutes($closeDelay));
+
+        Log::debug('SendRateOrderLiveActivityJob: close job scheduled', [
+            'order_id'        => $this->orderId,
+            'close_delay_min' => $closeDelay,
+        ]);
     }
 }
