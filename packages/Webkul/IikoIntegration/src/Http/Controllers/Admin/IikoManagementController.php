@@ -268,7 +268,7 @@ class IikoManagementController extends Controller
                             'parentGroup' => $group['parentGroup'] ?? null,
                         ];
                     }
-                } 
+                }
                 // Fallback to itemCategories (new API format before normalization)
                 elseif (isset($nomenclature['itemCategories']) && is_array($nomenclature['itemCategories'])) {
                     foreach ($nomenclature['itemCategories'] as $category) {
