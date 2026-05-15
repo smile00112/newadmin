@@ -7,7 +7,10 @@
       "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" cache:clear)",
       "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" config:clear)",
       "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" route:clear)",
-      "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" view:clear)"
+      "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" view:clear)",
+      "Bash(Get-Content \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\.env\")",
+      "Bash(Select-String -Pattern \"QUEUE|REDIS|DATABASE_URL\")",
+      "Bash(Select-Object -First 15)"
     ]
   }
 }
