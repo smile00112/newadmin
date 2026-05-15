@@ -16,6 +16,7 @@ Route::prefix('iiko')->group(function () {
         Route::post('management/menu', 'getMenu')->name('admin.iiko.management.menu');
         Route::post('management/nomenclature', 'getNomenclature')->name('admin.iiko.management.nomenclature');
         Route::post('management/import-nomenclature', 'importNomenclature')->name('admin.iiko.management.import-nomenclature');
+        Route::get('management/import-status', 'importStatus')->name('admin.iiko.management.import-status');
         Route::post('management/customer-by-phone', 'getCustomerByPhone')->name('admin.iiko.management.customer-by-phone');
         Route::post('management/promotions', 'getPromotions')->name('admin.iiko.management.promotions');
         Route::post('management/payment-types', 'getPaymentTypes')->name('admin.iiko.management.payment-types');

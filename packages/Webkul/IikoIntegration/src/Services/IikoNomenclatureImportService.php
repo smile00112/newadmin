@@ -27,6 +27,18 @@ class IikoNomenclatureImportService
     /**
      * Create a new service instance.
      */
+    private array $productsToRefresh = [];
+
+    private array $imagesToDownload = [];
+
+    private mixed $cachedAttributeFamily = null;
+
+    private ?array $cachedLocales = null;
+
+    private ?string $cachedChannelCode = null;
+
+    private ?int $cachedChannelId = null;
+
     public function __construct(
         protected CategoryRepository $categoryRepository,
         protected ProductRepository $productRepository,
@@ -52,6 +64,9 @@ class IikoNomenclatureImportService
     public function importNomenclature(string $organizationId, array $nomenclatureData, ?array $selectedGroupIds = null): array
     {
         try {
+            $this->productsToRefresh = [];
+            $this->imagesToDownload = [];
+
             Log::debug('iiko[service]: STEP A — importNomenclature start', [
                 'organization_id' => $organizationId,
                 'nomenclature_keys' => array_keys($nomenclatureData),
@@ -195,6 +210,26 @@ class IikoNomenclatureImportService
             Log::debug('iiko[service]: STEP L — committing DB transaction');
             DB::commit();
 
+            // Run flat index rebuild AFTER commit (heavy operation, must not hold DB lock)
+            Log::debug('iiko[service]: STEP M — rebuilding flat index', ['count' => count($this->productsToRefresh)]);
+            foreach ($this->productsToRefresh as $product) {
+                try {
+                    $this->flatIndexer->refresh($product);
+                } catch (\Exception $e) {
+                    Log::warning('iiko: flatIndexer refresh failed', ['product_id' => $product->id, 'message' => $e->getMessage()]);
+                }
+            }
+
+            // Download images AFTER commit (HTTP calls must not hold DB lock)
+            Log::debug('iiko[service]: STEP N — downloading images', ['count' => count($this->imagesToDownload)]);
+            foreach ($this->imagesToDownload as [$product, $url]) {
+                try {
+                    $this->downloadAndSaveImage($url, $product);
+                } catch (\Exception $e) {
+                    Log::warning('iiko: image download failed', ['product_id' => $product->id, 'url' => $url, 'message' => $e->getMessage()]);
+                }
+            }
+
             Log::info('iiko: Nomenclature imported successfully', [
                 'organization_id' => $organizationId,
                 'stats' => $stats,
@@ -288,7 +323,7 @@ class IikoNomenclatureImportService
             }
 
             // Set translations for all locales
-            $locales = core()->getAllLocales();
+            $locales = $this->getCachedLocales();
             foreach ($locales as $locale) {
                 $localeCode = is_string($locale->code) ? $locale->code : (string) $locale->code;
                 $categoryDataToSave[$localeCode] = [
@@ -550,11 +585,7 @@ class IikoNomenclatureImportService
             // Get default attribute family
             $attributeFamily = $this->getDefaultAttributeFamily();
 
-            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-            $channels = [];
-            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                $channels[] = (int) $defaultChannelId;
-            }
+            $channels = $this->getDefaultChannels();
 
             // Check if main grouped product already exists by SKU
             $mainSku = 'iiko_' . $iikoId;
@@ -577,8 +608,8 @@ class IikoNomenclatureImportService
 
                 // Save attribute values for each locale separately
                 $productName = $item['name'] ?? 'Unnamed Product';
-                $locales = core()->getAllLocales();
-                $defaultChannelCode = core()->getDefaultChannelCode();
+                $locales = $this->getCachedLocales();
+                $defaultChannelCode = $this->getCachedChannelCode();
                 $attributeFamily = $mainProduct->attribute_family;
                 $customAttributes = $attributeFamily->custom_attributes;
 
@@ -599,7 +630,7 @@ class IikoNomenclatureImportService
                 $this->ensureProductInventory($mainProduct);
 
                 // Refresh product_flat index for main product
-                $this->flatIndexer->refresh($mainProduct);
+                $this->queueProductRefresh($mainProduct);
             } else {
                 $productName = $item['name'] ?? 'Unnamed Product';
             }
@@ -632,11 +663,7 @@ class IikoNomenclatureImportService
                 if (!$variantProduct) {
                     $variantName = $productName . ($priceName ? ' - ' . $priceName : '');
 
-                    $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-                    $variantChannels = [];
-                    if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                        $variantChannels[] = (int) $defaultChannelId;
-                    }
+                    $variantChannels = $this->getDefaultChannels();
 
                     $variantData = [
                         'type' => 'simple',
@@ -656,7 +683,7 @@ class IikoNomenclatureImportService
                     $variantProduct->refresh();
 
                     // Save attribute values for each locale separately
-                    $defaultChannelCode = core()->getDefaultChannelCode();
+                    $defaultChannelCode = $this->getCachedChannelCode();
                     $attributeFamily = $variantProduct->attribute_family;
                     $customAttributes = $attributeFamily->custom_attributes;
 
@@ -678,7 +705,7 @@ class IikoNomenclatureImportService
                     $this->ensureProductInventory($variantProduct);
 
                     // Refresh product_flat index for variant
-                    $this->flatIndexer->refresh($variantProduct);
+                    $this->queueProductRefresh($variantProduct);
 
                     // Set category for variant
                     $priceVariantCategoryId = $priceVariantsCategory->id ?? null;
@@ -711,7 +738,7 @@ class IikoNomenclatureImportService
 
             // Refresh main product again after linking variants
             $mainProduct->refresh();
-            $this->flatIndexer->refresh($mainProduct);
+            $this->queueProductRefresh($mainProduct);
 
             return [
                 'variants_created' => $variantsCreated,
@@ -752,11 +779,7 @@ class IikoNomenclatureImportService
             }
 
             $attributeFamily = $this->getDefaultAttributeFamily();
-            $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-            $channels = [];
-            if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-                $channels[] = (int) $defaultChannelId;
-            }
+            $channels = $this->getDefaultChannels();
 
             $productName = $item['name'] ?? 'Unnamed Product';
             $price = 0;
@@ -785,8 +808,8 @@ class IikoNomenclatureImportService
                 $product = $existingProduct->refresh();
 
                 // Save attribute values for each locale separately
-                $locales = core()->getAllLocales();
-                $defaultChannelCode = core()->getDefaultChannelCode();
+                $locales = $this->getCachedLocales();
+                $defaultChannelCode = $this->getCachedChannelCode();
                 $attributeFamily = $product->attribute_family;
                 $customAttributes = $attributeFamily->custom_attributes;
 
@@ -829,8 +852,8 @@ class IikoNomenclatureImportService
                 $product->refresh();
 
                 // Save attribute values for each locale separately
-                $locales = core()->getAllLocales();
-                $defaultChannelCode = core()->getDefaultChannelCode();
+                $locales = $this->getCachedLocales();
+                $defaultChannelCode = $this->getCachedChannelCode();
                 $attributeFamily = $product->attribute_family;
                 $customAttributes = $attributeFamily->custom_attributes;
 
@@ -867,7 +890,7 @@ class IikoNomenclatureImportService
                 $this->productConstructorRepository->saveConstructor($constructorData, $product);
             }
 
-            $this->flatIndexer->refresh($product);
+            $this->queueProductRefresh($product);
             return $result;
         } catch (\Exception $e) {
             Log::error('iiko: Error handling constructor product', [
@@ -940,8 +963,8 @@ class IikoNomenclatureImportService
             }
 
             // Save attribute values for main product
-            $locales = core()->getAllLocales();
-            $defaultChannelCode = core()->getDefaultChannelCode();
+            $locales = $this->getCachedLocales();
+            $defaultChannelCode = $this->getCachedChannelCode();
             $customAttributes = $mainProduct->attribute_family->custom_attributes;
 
             foreach ($locales as $locale) {
@@ -1027,7 +1050,7 @@ class IikoNomenclatureImportService
                     }
                 }
 
-                $this->flatIndexer->refresh($variantProduct);
+                $this->queueProductRefresh($variantProduct);
                 $variantProducts[] = $variantProduct;
             }
 
@@ -1047,7 +1070,7 @@ class IikoNomenclatureImportService
             );
 
             $mainProduct->refresh();
-            $this->flatIndexer->refresh($mainProduct);
+            $this->queueProductRefresh($mainProduct);
 
             return $result;
         } catch (\Exception $e) {
@@ -1179,8 +1202,8 @@ class IikoNomenclatureImportService
             }
 
             // Save attribute values
-            $locales = core()->getAllLocales();
-            $defaultChannelCode = core()->getDefaultChannelCode();
+            $locales = $this->getCachedLocales();
+            $defaultChannelCode = $this->getCachedChannelCode();
             $customAttributes = $product->attribute_family->custom_attributes;
 
             foreach ($locales as $locale) {
@@ -1216,14 +1239,14 @@ class IikoNomenclatureImportService
                 foreach ($images as $img) {
                     $imgUrl = $img['url'] ?? null;
                     if ($imgUrl) {
-                        $this->downloadAndSaveImage($imgUrl, $product);
+                        $this->queueImageDownload($product, $imgUrl);
                         break; // Only download first image
                     }
                 }
             }
 
             $this->ensureProductInventory($product);
-            $this->flatIndexer->refresh($product);
+            $this->queueProductRefresh($product);
 
             return $result;
         } catch (\Exception $e) {
@@ -1625,7 +1648,7 @@ class IikoNomenclatureImportService
         // Ensure inventory exists
         $this->ensureProductInventory($product);
 
-        $this->flatIndexer->refresh($product);
+        $this->queueProductRefresh($product);
 
         return $product;
     }
@@ -1660,7 +1683,7 @@ class IikoNomenclatureImportService
         // Ensure inventory exists
         $this->ensureProductInventory($product);
 
-        $this->flatIndexer->refresh($product);
+        $this->queueProductRefresh($product);
 
         return $product;
     }
@@ -1674,8 +1697,8 @@ class IikoNomenclatureImportService
      */
     protected function saveIngredientAttributes($product, array $ingredientData): void
     {
-        $locales = core()->getAllLocales();
-        $defaultChannelCode = core()->getDefaultChannelCode();
+        $locales = $this->getCachedLocales();
+        $defaultChannelCode = $this->getCachedChannelCode();
         $attributeFamily = $product->attribute_family;
         $customAttributes = $attributeFamily->custom_attributes;
 
@@ -1703,9 +1726,7 @@ class IikoNomenclatureImportService
      */
     protected function handleIngredientImage($product, ?string $imageUrl): void
     {
-        if (!empty($imageUrl)) {
-            $this->downloadAndSaveImage($imageUrl, $product);
-        }
+        $this->queueImageDownload($product, $imageUrl);
     }
 
     /**
@@ -1715,14 +1736,48 @@ class IikoNomenclatureImportService
      */
     protected function getDefaultChannels(): array
     {
-        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-        $channels = [];
+        $channelId = $this->getCachedChannelId();
+        return $channelId ? [$channelId] : [];
+    }
 
-        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-            $channels[] = (int) $defaultChannelId;
+    protected function getCachedLocales(): array
+    {
+        if ($this->cachedLocales === null) {
+            $this->cachedLocales = $this->getCachedLocales()->all();
         }
 
-        return $channels;
+        return $this->cachedLocales;
+    }
+
+    protected function getCachedChannelCode(): string
+    {
+        if ($this->cachedChannelCode === null) {
+            $this->cachedChannelCode = $this->getCachedChannelCode();
+        }
+
+        return $this->cachedChannelCode;
+    }
+
+    protected function getCachedChannelId(): ?int
+    {
+        if ($this->cachedChannelId === null) {
+            $id = core()->getDefaultChannel()->id ?? null;
+            $this->cachedChannelId = ($id && is_numeric($id) && $id > 0) ? (int) $id : 0;
+        }
+
+        return $this->cachedChannelId > 0 ? $this->cachedChannelId : null;
+    }
+
+    protected function queueProductRefresh($product): void
+    {
+        $this->productsToRefresh[$product->id] = $product;
+    }
+
+    protected function queueImageDownload($product, ?string $url): void
+    {
+        if (!empty($url)) {
+            $this->imagesToDownload[] = [$product, $url];
+        }
     }
 
     /**
@@ -1750,12 +1805,7 @@ class IikoNomenclatureImportService
 
         $attributeFamily = $this->getDefaultAttributeFamily();
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
-
-        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-        $channels = [];
-        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-            $channels[] = (int) $defaultChannelId;
-        }
+        $channels = $this->getDefaultChannels();
 
         $productData = [
             'type' => $productType,
@@ -1772,8 +1822,8 @@ class IikoNomenclatureImportService
 
         // Save attribute values for each locale separately
         $productName = $item['name'] ?? 'Unnamed Product';
-        $locales = core()->getAllLocales();
-        $defaultChannelCode = core()->getDefaultChannelCode();
+        $locales = $this->getCachedLocales();
+        $defaultChannelCode = $this->getCachedChannelCode();
         $attributeFamily = $product->attribute_family;
         $customAttributes = $attributeFamily->custom_attributes;
 
@@ -1808,7 +1858,7 @@ class IikoNomenclatureImportService
 
         // Refresh product_flat index after creating product and setting categories
         $product->refresh();
-        $this->flatIndexer->refresh($product);
+        $this->queueProductRefresh($product);
     }
 
     /**
@@ -1824,7 +1874,7 @@ class IikoNomenclatureImportService
     protected function updateProduct($product, array $item, string $productType, array $categoryMap, array $prices): void
     {
         // Get import settings
-        $channelCode = core()->getDefaultChannelCode();
+        $channelCode = $this->getCachedChannelCode();
         $settings = $this->settingRepository->getAllSettings(IikoSetting::CHANNEL, $channelCode);
 
         $price = !empty($prices) ? ($prices[0]['price'] ?? 0) : 0;
@@ -1832,11 +1882,7 @@ class IikoNomenclatureImportService
 
         // Support both 'id' and 'itemId' from new API format
         $itemId = $item['id'] ?? $item['itemId'] ?? null;
-        $defaultChannelId = core()->getDefaultChannel()->id ?? null;
-        $channels = [];
-        if ($defaultChannelId && is_numeric($defaultChannelId) && $defaultChannelId > 0) {
-            $channels[] = (int) $defaultChannelId;
-        }
+        $channels = $this->getDefaultChannels();
 
         $productData = [
             'type' => $productType,
@@ -1861,8 +1907,8 @@ class IikoNomenclatureImportService
         $product->refresh();
 
         // Save attribute values for each locale separately
-        $locales = core()->getAllLocales();
-        $defaultChannelCode = core()->getDefaultChannelCode();
+        $locales = $this->getCachedLocales();
+        $defaultChannelCode = $this->getCachedChannelCode();
         $attributeFamily = $product->attribute_family;
         $customAttributes = $attributeFamily->custom_attributes;
 
@@ -1892,9 +1938,9 @@ class IikoNomenclatureImportService
             $this->productAttributeValueRepository->saveValues($localeData, $product, $customAttributes);
         }
 
-        // Update product image if setting allows
+        // Update product image if setting allows (queued — runs after DB commit)
         if (($settings['update_product_image'] ?? true) && !empty($item['imageUrl'])) {
-            $this->downloadAndSaveImage($item['imageUrl'], $product);
+            $this->queueImageDownload($product, $item['imageUrl']);
         }
 
         // Update nutritional values (КЖБУ) if setting allows
@@ -1907,7 +1953,7 @@ class IikoNomenclatureImportService
 
         // Refresh product_flat index after updating product
         $product->refresh();
-        $this->flatIndexer->refresh($product);
+        $this->queueProductRefresh($product);
     }
 
     /**
@@ -1919,8 +1965,8 @@ class IikoNomenclatureImportService
      */
     protected function updateProductNutritional($product, array $item): void
     {
-        $locales = core()->getAllLocales();
-        $defaultChannelCode = core()->getDefaultChannelCode();
+        $locales = $this->getCachedLocales();
+        $defaultChannelCode = $this->getCachedChannelCode();
         $attributeFamily = $product->attribute_family;
         $customAttributes = $attributeFamily->custom_attributes;
 
@@ -2075,7 +2121,7 @@ class IikoNomenclatureImportService
         }
 
         // Create new category
-        $locales = core()->getAllLocales();
+        $locales = $this->getCachedLocales();
         $categoryData = [
             'status' => 1,
             'additional' => ['iiko_price_variants' => true],
@@ -2099,6 +2145,10 @@ class IikoNomenclatureImportService
      */
     protected function getDefaultAttributeFamily()
     {
+        if ($this->cachedAttributeFamily !== null) {
+            return $this->cachedAttributeFamily;
+        }
+
         $family = $this->attributeFamilyRepository->findWhere(['code' => 'default'])->first();
 
         if (!$family) {
@@ -2109,7 +2159,7 @@ class IikoNomenclatureImportService
             throw new \Exception('No attribute family found');
         }
 
-        return $family;
+        return $this->cachedAttributeFamily = $family;
     }
 
     /**

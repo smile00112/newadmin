@@ -17,9 +17,11 @@ use Webkul\IikoIntegration\Services\IikoPromotionService;
 use Webkul\IikoIntegration\Services\IikoPaymentTypeService;
 use Webkul\Inventory\Repositories\InventorySourceRepository;
 use Webkul\Inventory\Repositories\PickupPointRepository;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Webkul\IikoIntegration\Jobs\ImportNomenclatureJob;
 
 class IikoManagementController extends Controller
 {
@@ -366,31 +368,31 @@ class IikoManagementController extends Controller
                 }
             }
 
-            // Import nomenclature using import service
-            Log::debug('iiko[import-nomenclature]: STEP 6 — calling IikoNomenclatureImportService', [
+            // Dispatch import job — runs async to avoid HTTP timeout
+            $statusKey = 'iiko_import_' . md5($organizationId . microtime());
+            Log::debug('iiko[import-nomenclature]: STEP 6 — dispatching ImportNomenclatureJob', [
                 'organization_id' => $organizationId,
                 'group_ids' => !empty($groupIds) ? array_values($groupIds) : null,
-            ]);
-            $importService = app(\Webkul\IikoIntegration\Services\IikoNomenclatureImportService::class);
-            $result = $importService->importNomenclature($organizationId, $nomenclature, !empty($groupIds) ? $groupIds : null);
-            Log::debug('iiko[import-nomenclature]: STEP 7 — service returned', [
-                'success' => $result['success'] ?? null,
-                'message' => $result['message'] ?? null,
-                'data' => $result['data'] ?? null,
+                'status_key' => $statusKey,
             ]);
 
-            if ($result['success']) {
-                return response()->json([
-                    'success' => true,
-                    'message' => trans('iiko-integration::app.management.import-nomenclature-success'),
-                    'data' => $result['data'] ?? [],
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => $result['message'] ?? trans('iiko-integration::app.management.import-nomenclature-error'),
-                ], 500);
-            }
+            Cache::put($statusKey, [
+                'status'    => 'queued',
+                'queued_at' => now()->toISOString(),
+            ], 7200);
+
+            ImportNomenclatureJob::dispatch(
+                $organizationId,
+                !empty($groupIds) ? array_values($groupIds) : null,
+                $statusKey
+            );
+
+            return response()->json([
+                'success'    => true,
+                'queued'     => true,
+                'status_key' => $statusKey,
+                'message'    => trans('iiko-integration::app.management.import-nomenclature-queued'),
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -556,6 +558,26 @@ class IikoManagementController extends Controller
                 'message' => trans('iiko-integration::app.management.error') . ': ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Poll import job status.
+     */
+    public function importStatus(Request $request): JsonResponse
+    {
+        $key = $request->input('key');
+
+        if (!$key) {
+            return response()->json(['success' => false, 'message' => 'Missing key'], 400);
+        }
+
+        $status = Cache::get($key);
+
+        if (!$status) {
+            return response()->json(['success' => false, 'status' => 'not_found'], 404);
+        }
+
+        return response()->json(array_merge(['success' => true], $status));
     }
 
     /**

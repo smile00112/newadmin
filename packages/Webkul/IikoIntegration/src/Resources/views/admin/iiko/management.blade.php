@@ -736,6 +736,46 @@
                 }
             }
 
+            let importPollTimer = null;
+
+            function stopImportPolling() {
+                if (importPollTimer) {
+                    clearInterval(importPollTimer);
+                    importPollTimer = null;
+                }
+            }
+
+            async function pollImportStatus(statusKey, originalButtonText) {
+                try {
+                    const response = await fetch(
+                        "{{ route('admin.iiko.management.import-status') }}?key=" + encodeURIComponent(statusKey),
+                        { headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' } }
+                    );
+                    const data = await response.json();
+
+                    if (data.status === 'completed') {
+                        stopImportPolling();
+                        restoreButtonText('btn-import-nomenclature', originalButtonText);
+                        const stats = data.data || {};
+                        const summary = `Импорт завершён. Категорий: +${stats.categories_created ?? 0}/~${stats.categories_updated ?? 0}, Товаров: +${stats.products_created ?? 0}/~${stats.products_updated ?? 0}`;
+                        showMessage(summary, 'success');
+                        logRequest('Import Nomenclature — done', null, data);
+                    } else if (data.status === 'failed') {
+                        stopImportPolling();
+                        restoreButtonText('btn-import-nomenclature', originalButtonText);
+                        showMessage(data.message || "@lang('iiko-integration::app.management.import-error')", 'error');
+                        logRequest('Import Nomenclature — failed', null, data);
+                    } else if (data.status === 'not_found') {
+                        stopImportPolling();
+                        restoreButtonText('btn-import-nomenclature', originalButtonText);
+                        showMessage('Статус импорта не найден.', 'error');
+                    }
+                    // still 'queued' or 'running' — keep polling
+                } catch (err) {
+                    console.warn('iiko: poll error', err);
+                }
+            }
+
             async function importNomenclature() {
                 if (!selectedOrganizationId) {
                     showMessage("@lang('iiko-integration::app.management.select-organization')", 'error');
@@ -752,6 +792,8 @@
                     return;
                 }
 
+                stopImportPolling();
+
                 const button = document.getElementById('btn-import-nomenclature');
                 const originalText = button.innerHTML;
                 setButtonLoading('btn-import-nomenclature', true);
@@ -759,7 +801,7 @@
                 const requestData = {
                     endpoint: "{{ route('admin.iiko.management.import-nomenclature') }}",
                     method: 'POST',
-                    body: { 
+                    body: {
                         organization_id: selectedOrganizationId,
                         group_ids: groupIds
                     }
@@ -778,16 +820,24 @@
                     const data = await response.json();
                     logRequest('Import Nomenclature', requestData, data, response.ok ? null : new Error(`HTTP ${response.status}`));
 
-                    if (data.success) {
+                    if (data.success && data.queued && data.status_key) {
+                        showMessage('Импорт запущен, ожидайте...', 'success');
+                        // Poll every 3 seconds until done
+                        importPollTimer = setInterval(
+                            () => pollImportStatus(data.status_key, originalText),
+                            3000
+                        );
+                    } else if (data.success) {
+                        restoreButtonText('btn-import-nomenclature', originalText);
                         showMessage(data.message, 'success');
                     } else {
+                        restoreButtonText('btn-import-nomenclature', originalText);
                         showMessage(data.message || "@lang('iiko-integration::app.management.import-error')", 'error');
                     }
                 } catch (error) {
                     logRequest('Import Nomenclature', requestData, null, error);
-                    showMessage("@lang('iiko-integration::app.management.import-error')", 'error');
-                } finally {
                     restoreButtonText('btn-import-nomenclature', originalText);
+                    showMessage("@lang('iiko-integration::app.management.import-error')", 'error');
                 }
             }
 
