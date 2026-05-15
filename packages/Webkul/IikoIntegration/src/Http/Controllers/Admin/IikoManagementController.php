@@ -289,7 +289,13 @@ class IikoManagementController extends Controller
                 'groups'  => $groups,
                 'message' => trans('iiko-integration::app.management.success'),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error('iiko[get-nomenclature]: controller exception', [
+                'error_class' => get_class($e),
+                'message'     => $e->getMessage(),
+                'file'        => $e->getFile(),
+                'line'        => $e->getLine(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => trans('iiko-integration::app.management.error') . ': ' . $e->getMessage(),

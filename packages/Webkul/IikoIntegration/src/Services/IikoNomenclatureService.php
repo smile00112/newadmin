@@ -32,11 +32,14 @@ class IikoNomenclatureService
             }
 
             return $response;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('iiko: Exception getting nomenclature', [
                 'organization_ids' => $organizationIds,
                 'external_menu_id' => $externalMenuId,
+                'error_class'    => get_class($e),
                 'message'        => $e->getMessage(),
+                'file'           => $e->getFile(),
+                'line'           => $e->getLine(),
             ]);
 
             return null;
@@ -183,11 +186,14 @@ class IikoNomenclatureService
             ]);
 
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('iiko: Exception syncing nomenclature', [
                 'organization_ids' => $organizationIds,
                 'external_menu_id' => $externalMenuId,
+                'error_class'    => get_class($e),
                 'message'        => $e->getMessage(),
+                'file'           => $e->getFile(),
+                'line'           => $e->getLine(),
             ]);
 
             $organizationId = $organizationIds[0] ?? null;
