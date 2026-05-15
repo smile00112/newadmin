@@ -19,6 +19,7 @@ use Webkul\Inventory\Repositories\InventorySourceRepository;
 use Webkul\Inventory\Repositories\PickupPointRepository;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class IikoManagementController extends Controller
 {
@@ -303,6 +304,12 @@ class IikoManagementController extends Controller
             $organizationId = $request->input('organization_id');
             $groupIds = $request->input('group_ids', []);
 
+            Log::debug('iiko[import-nomenclature]: STEP 1 — request received', [
+                'organization_id' => $organizationId,
+                'group_ids_count' => count((array) $groupIds),
+                'group_ids' => $groupIds,
+            ]);
+
             if (!$organizationId) {
                 return response()->json([
                     'success' => false,
@@ -311,7 +318,16 @@ class IikoManagementController extends Controller
             }
 
             // Check if nomenclature exists
+            Log::debug('iiko[import-nomenclature]: STEP 2 — loading cached nomenclature', [
+                'organization_id' => $organizationId,
+            ]);
             $nomenclature = $this->nomenclatureService->getCachedNomenclature($organizationId);
+            Log::debug('iiko[import-nomenclature]: STEP 3 — cached nomenclature loaded', [
+                'is_null' => is_null($nomenclature),
+                'keys' => is_array($nomenclature) ? array_keys($nomenclature) : null,
+                'groups_count' => is_array($nomenclature['groups'] ?? null) ? count($nomenclature['groups']) : 0,
+                'items_count' => is_array($nomenclature['items'] ?? null) ? count($nomenclature['items']) : 0,
+            ]);
 
             if (!$nomenclature) {
                 return response()->json([
@@ -321,6 +337,9 @@ class IikoManagementController extends Controller
             }
 
             // Validate group_ids if provided
+            Log::debug('iiko[import-nomenclature]: STEP 4 — validating group_ids', [
+                'group_ids' => $groupIds,
+            ]);
             if (!empty($groupIds) && is_array($groupIds)) {
                 $availableGroupIds = [];
                 if (isset($nomenclature['groups']) && is_array($nomenclature['groups'])) {
@@ -333,6 +352,11 @@ class IikoManagementController extends Controller
 
                 // Filter to only include valid group IDs
                 $groupIds = array_intersect($groupIds, $availableGroupIds);
+                Log::debug('iiko[import-nomenclature]: STEP 5 — group_ids after intersect', [
+                    'available_count' => count($availableGroupIds),
+                    'filtered_count' => count($groupIds),
+                    'filtered_group_ids' => array_values($groupIds),
+                ]);
 
                 if (empty($groupIds)) {
                     return response()->json([
@@ -343,8 +367,17 @@ class IikoManagementController extends Controller
             }
 
             // Import nomenclature using import service
+            Log::debug('iiko[import-nomenclature]: STEP 6 — calling IikoNomenclatureImportService', [
+                'organization_id' => $organizationId,
+                'group_ids' => !empty($groupIds) ? array_values($groupIds) : null,
+            ]);
             $importService = app(\Webkul\IikoIntegration\Services\IikoNomenclatureImportService::class);
             $result = $importService->importNomenclature($organizationId, $nomenclature, !empty($groupIds) ? $groupIds : null);
+            Log::debug('iiko[import-nomenclature]: STEP 7 — service returned', [
+                'success' => $result['success'] ?? null,
+                'message' => $result['message'] ?? null,
+                'data' => $result['data'] ?? null,
+            ]);
 
             if ($result['success']) {
                 return response()->json([

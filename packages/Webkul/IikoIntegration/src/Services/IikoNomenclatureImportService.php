@@ -52,12 +52,19 @@ class IikoNomenclatureImportService
     public function importNomenclature(string $organizationId, array $nomenclatureData, ?array $selectedGroupIds = null): array
     {
         try {
+            Log::debug('iiko[service]: STEP A — importNomenclature start', [
+                'organization_id' => $organizationId,
+                'nomenclature_keys' => array_keys($nomenclatureData),
+                'selected_group_ids' => $selectedGroupIds,
+            ]);
+
             // Validate nomenclature data structure
             if (empty($nomenclatureData)) {
                 throw new \Exception('Nomenclature data is empty');
             }
 
             DB::beginTransaction();
+            Log::debug('iiko[service]: STEP B — DB transaction started');
 
             $stats = [
                 'categories_created' => 0,
@@ -75,6 +82,10 @@ class IikoNomenclatureImportService
             // New format is normalized in IikoNomenclatureService, but we handle both for safety
             $categories = $nomenclatureData['groups'] ?? $nomenclatureData['categories'] ?? [];
             $items = $nomenclatureData['items'] ?? $nomenclatureData['products'] ?? [];
+            Log::debug('iiko[service]: STEP C — raw extract', [
+                'categories_count' => count($categories),
+                'items_count' => count($items),
+            ]);
 
             // If no groups/items found, try to extract from itemCategories (new API format)
             if (empty($categories) && isset($nomenclatureData['itemCategories']) && is_array($nomenclatureData['itemCategories'])) {
@@ -100,6 +111,11 @@ class IikoNomenclatureImportService
                 }
             }
 
+            Log::debug('iiko[service]: STEP D — after itemCategories fallback', [
+                'categories_count' => count($categories),
+                'items_count' => count($items),
+            ]);
+
             // Filter by selected group IDs if provided
             if (!empty($selectedGroupIds) && is_array($selectedGroupIds)) {
                 // Filter categories - only include groups with IDs in selectedGroupIds
@@ -115,12 +131,19 @@ class IikoNomenclatureImportService
                 });
             }
 
+            Log::debug('iiko[service]: STEP E — after filtering by groupIds', [
+                'categories_count' => count($categories),
+                'items_count' => count($items),
+            ]);
+
             // Import categories first
             if (!empty($categories)) {
+                Log::debug('iiko[service]: STEP F — importing categories', ['count' => count($categories)]);
                 try {
                     $categoryStats = $this->importCategories($categories);
                     $stats['categories_created'] = $categoryStats['created'];
                     $stats['categories_updated'] = $categoryStats['updated'];
+                    Log::debug('iiko[service]: STEP G — categories imported', $categoryStats);
                 } catch (\Exception $e) {
                     Log::error('iiko: Error importing categories', [
                         'organization_id' => $organizationId,
@@ -132,6 +155,7 @@ class IikoNomenclatureImportService
 
             // Import products
             if (!empty($items)) {
+                Log::debug('iiko[service]: STEP H — importing products', ['count' => count($items)]);
                 try {
                     $productStats = $this->importProducts($items);
                     $stats['products_created'] = $productStats['created'];
@@ -140,6 +164,7 @@ class IikoNomenclatureImportService
                     $stats['constructor_products_created'] = $productStats['constructor_created'] ?? 0;
                     $stats['configurable_constructor_products_created'] = $productStats['configurable_constructor_created'] ?? 0;
                     $stats['combo_products_created'] = $productStats['combo_created'] ?? 0;
+                    Log::debug('iiko[service]: STEP I — products imported', $productStats);
                 } catch (\Exception $e) {
                     Log::error('iiko: Error importing products', [
                         'organization_id' => $organizationId,
@@ -151,11 +176,13 @@ class IikoNomenclatureImportService
 
             // Import combo products from comboCategories
             $comboCategories = $nomenclatureData['comboCategories'] ?? [];
+            Log::debug('iiko[service]: STEP J — combo categories check', ['count' => count($comboCategories)]);
             if (!empty($comboCategories)) {
                 try {
                     $comboStats = $this->importComboProducts($comboCategories, $this->buildCategoryMap());
                     $stats['combo_products_created'] += $comboStats['created'] ?? 0;
                     $stats['products_created'] += $comboStats['created'] ?? 0;
+                    Log::debug('iiko[service]: STEP K — combo products imported', $comboStats);
                 } catch (\Exception $e) {
                     Log::error('iiko: Error importing combo products', [
                         'organization_id' => $organizationId,
@@ -165,6 +192,7 @@ class IikoNomenclatureImportService
                 }
             }
 
+            Log::debug('iiko[service]: STEP L — committing DB transaction');
             DB::commit();
 
             Log::info('iiko: Nomenclature imported successfully', [
@@ -313,11 +341,12 @@ class IikoNomenclatureImportService
         $stats = ['created' => 0, 'updated' => 0, 'grouped_created' => 0, 'constructor_created' => 0, 'configurable_constructor_created' => 0];
         $categoryMap = $this->buildCategoryMap();
 
-        foreach ($items as $item) {
+        foreach ($items as $itemIndex => $item) {
             // Support both 'id' and 'itemId' from new API format
             $iikoId = $item['id'] ?? $item['itemId'] ?? null;
 
             if (!$iikoId) {
+                Log::debug('iiko[service]: ITEM skip — no iikoId', ['index' => $itemIndex]);
                 continue;
             }
 
@@ -325,9 +354,21 @@ class IikoNomenclatureImportService
             $sizePrices = $this->extractSizePrices($item);
             $hasMultipleSizes = count($sizePrices) > 1;
 
+            Log::debug('iiko[service]: ITEM start', [
+                'index' => $itemIndex,
+                'iikoId' => $iikoId,
+                'name' => $item['name'] ?? null,
+                'type' => $item['type'] ?? null,
+                'hasModifiers' => $hasModifiers,
+                'sizePrices_count' => count($sizePrices),
+                'hasMultipleSizes' => $hasMultipleSizes,
+            ]);
+
             // Priority 1: Multiple sizes + modifiers → configurable_constructor
             if ($hasModifiers && $hasMultipleSizes) {
+                Log::debug('iiko[service]: ITEM → configurable_constructor', ['iikoId' => $iikoId]);
                 $result = $this->handleConfigurableConstructorProduct($item, $categoryMap, $sizePrices);
+                Log::debug('iiko[service]: ITEM configurable_constructor result', ['iikoId' => $iikoId, 'result' => $result]);
                 if ($result) {
                     $stats['configurable_constructor_created']++;
                     if ($result === 'created') {
@@ -341,7 +382,9 @@ class IikoNomenclatureImportService
 
             // Priority 2: Modifiers (single size or no sizes) → constructor
             if ($hasModifiers) {
+                Log::debug('iiko[service]: ITEM → constructor', ['iikoId' => $iikoId]);
                 $result = $this->handleConstructorProduct($item, $categoryMap);
+                Log::debug('iiko[service]: ITEM constructor result', ['iikoId' => $iikoId, 'result' => $result]);
                 if ($result) {
                     $stats['constructor_created']++;
                     if ($result === 'created') {
@@ -363,7 +406,9 @@ class IikoNomenclatureImportService
 
             // Priority 3: Multiple prices → grouped
             if ($hasMultipleSizes) {
+                Log::debug('iiko[service]: ITEM → grouped (multi-price)', ['iikoId' => $iikoId, 'productType' => $productType]);
                 $result = $this->handleMultiPriceProduct($item, $categoryMap);
+                Log::debug('iiko[service]: ITEM grouped result', ['iikoId' => $iikoId, 'result' => $result]);
                 if ($result) {
                     $stats['grouped_created']++;
                     $stats['created'] += $result['variants_created'] ?? 0;
@@ -378,6 +423,12 @@ class IikoNomenclatureImportService
                     $existingProduct = $this->findProductBySku($sku);
                 }
 
+                Log::debug('iiko[service]: ITEM → simple/bundle', [
+                    'iikoId' => $iikoId,
+                    'productType' => $productType,
+                    'action' => $existingProduct ? 'update' : 'create',
+                ]);
+
                 if ($existingProduct) {
                     $this->updateProduct($existingProduct, $item, $productType, $categoryMap, $sizePrices);
                     $stats['updated']++;
@@ -385,6 +436,7 @@ class IikoNomenclatureImportService
                     $this->createProduct($item, $productType, $categoryMap, $sizePrices);
                     $stats['created']++;
                 }
+                Log::debug('iiko[service]: ITEM simple/bundle done', ['iikoId' => $iikoId]);
             }
         }
 
