@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Skill(superpowers:brainstorming)",
-      "Skill(superpowers:brainstorming:*)"
+      "Skill(superpowers:brainstorming:*)",
+      "Bash(php -r \"echo PHP_VERSION;\")",
+      "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" cache:clear)",
+      "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" config:clear)",
+      "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" route:clear)",
+      "Bash(php \"d:\\\\_WORK_\\\\laragon_2025\\\\www\\\\dolinger_new_admin\\\\artisan\" view:clear)"
     ]
   }
 }

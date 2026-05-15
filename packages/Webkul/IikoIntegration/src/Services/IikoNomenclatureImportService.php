@@ -67,6 +67,9 @@ class IikoNomenclatureImportService
             $this->productsToRefresh = [];
             $this->imagesToDownload = [];
 
+            // Prevent PHP execution-time kill for large nomenclatures
+            set_time_limit(0);
+
             Log::debug('iiko[service]: STEP A — importNomenclature start', [
                 'organization_id' => $organizationId,
                 'nomenclature_keys' => array_keys($nomenclatureData),
@@ -240,12 +243,15 @@ class IikoNomenclatureImportService
                 'data' => $stats,
                 'message' => 'Nomenclature imported successfully',
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
             Log::error('iiko: Exception importing nomenclature', [
                 'organization_id' => $organizationId,
+                'error_class' => get_class($e),
                 'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
