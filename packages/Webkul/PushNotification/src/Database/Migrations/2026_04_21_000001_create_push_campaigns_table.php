@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('push_campaigns', function (Blueprint $table) {
             $table->id();
             $table->string('name') ;
-            $table->string('title');
+            $table->string('title') ;
             $table->text('body');
             $table->string('image_url')->nullable();
             $table->string('deep_link')->nullable();
